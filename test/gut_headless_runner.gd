@@ -82,7 +82,34 @@ func _on_run_finished() -> void:
 		)
 		return
 
-	_report(passes, failures, pending, _failing_test_names())
+	var orphans: int = _orphan_count()
+	if orphans > 0:
+		# Step 11.3. A fixture, timer or cue that outlives its test is a leak
+		# the assertions cannot see: every one of them can pass while the tree
+		# keeps growing.
+		_report(
+			passes,
+			maxi(failures, 1),
+			pending,
+			"ORPHAN NODES: " + str(orphans) + " node(s) outlived the run; "
+			+ "a fixture, timer or cue is not being freed",
+			orphans
+		)
+		return
+
+	_report(passes, failures, pending, _failing_test_names(), orphans)
+
+
+## Nodes still alive after GUT finished, counted by GUT itself.
+##
+## GUT records these inside end_run, and this runs on its end_run signal, so
+## the count is final by the time it is read.
+func _orphan_count() -> int:
+	@warning_ignore_start("unsafe_method_access")
+	var gut: Object = _runner.get_gut()
+	var counted: int = gut.get_orphan_counter().get_count()
+	@warning_ignore_restore("unsafe_method_access")
+	return counted
 
 
 ## How many test scripts GUT actually LOADED.
@@ -134,13 +161,19 @@ func _failing_test_names() -> String:
 	return (", ").join(names)
 
 
-func _report(passes: int, failures: int, pending: int, note: String) -> void:
+## `orphans` is -1 when the run ended before the count could be taken, which is
+## reported as unknown rather than as zero: a receipt that says "orphans=0"
+## because nobody looked is worse than one that admits it.
+func _report(
+	passes: int, failures: int, pending: int, note: String, orphans: int = -1
+) -> void:
 	var verdict: String = "PASS" if failures == 0 and passes > 0 else "FAIL"
 	var line: String = (
 		RESULT_PREFIX + " " + verdict
 		+ " passed=" + str(passes)
 		+ " failed=" + str(failures)
 		+ " pending=" + str(pending)
+		+ " orphans=" + (str(orphans) if orphans >= 0 else "unknown")
 	)
 	print(line)
 	_write_receipt(verdict, line, note)

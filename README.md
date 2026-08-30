@@ -91,10 +91,12 @@ addons/GodotGAS/
   events/        typed event data and hierarchical dispatch
   cues/          typed cue params, pooling
   target_data/   typed hits and effect context
+  managers/      the GameplayCueManager autoload
+  utilities/     project settings, the GDScript the generators emit
   editor/        the dashboard; not enabled this phase
 addons/gut/      GUT v9.7.1, vendored and immutable
-test/            fixtures and the unit suite
-tooling/         the four quality gates and the verification runner
+test/            fixtures, the unit suite, the headless runner
+tooling/         the four quality gates, the seal, and the verification runner
 ```
 
 The `AbilitySystemComponent` is a facade. Tags, attributes, effects, timing and
@@ -110,17 +112,54 @@ godot --headless --path . --import
 godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gexit
 ```
 
+The import pass is not optional on a fresh clone: GUT's own `gut_config.gd`
+needs `GutUtils` in the global class cache, which the first import builds.
+
 Inside this project the engine stages go through the Godot MCP servers, which
 cannot pass command-line arguments, so `test/gut_headless_runner.tscn` builds
-the same configuration in-project and writes its verdict to a file.
+the same configuration in-project and writes its verdict to a file. That runner
+refuses two greens the assertions cannot see: a suite where fewer scripts loaded
+than exist on disk, and a run that leaves orphan nodes behind. Its receipt is
+timestamped, so a stale one cannot be read as a fresh pass.
 
-The rest of the chain is processes with real exit codes:
+`tooling/gates/run_gate.py` owns the canonical invocation of each gate.
+
+## The autoload constraint
+
+Godot initialises autoloads before it has scanned the project for `class_name`
+declarations, so a global class name does not resolve inside an autoload or
+anything it preloads. In that closure a reference must be a `preload`:
+
+```gdscript
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+```
+
+A type annotation survives without the cache; an identifier does not. `->
+GameplayCueParams` parses where `GameplayCueParams.new()` fails with *Identifier
+not found* - which is why four scripts in that closure preload themselves under
+an alias and construct through it.
+
+None of this shows on a machine that has opened the project before, because
+`.godot/global_script_class_cache.cfg` already exists there. It shows on a fresh
+clone, and nowhere else. `tooling/project_invariants.py` computes each
+autoload's closure and enforces the rule, so the next person to reach for a
+global name there is told before the clone is.
+
+Everywhere outside that closure, global class names are the right thing to use.
+
+## Verification
 
 ```bash
 pwsh -File tooling/verify.ps1 -TaskId T11
 ```
 
-`tooling/gates/run_gate.py` owns the canonical invocation of each gate.
+In order: the policy seal, the gates' own tests, the project-file invariants,
+the four gates, the engine evidence written by the MCP stages, and
+`git diff --check`. Any of them failing stops the run.
+
+`tooling/seal_policy.py` owns the seal. It checks that every sealed file is
+unchanged *and* that every file the sealed globs reach is in the seal, so a new
+gate module cannot sit outside it while every hash still matches.
 
 ## Strict typing
 
