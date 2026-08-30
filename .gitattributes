@@ -1,0 +1,20 @@
+# Normalize every text file to LF in the repository AND in working copies.
+# The quality-gate policy seal (artifacts/gates/T0/*-policy-hashes.txt) stores
+# SHA-256 of gate sources. If Git rewrote line endings on checkout, a clean
+# clone would hash differently and tooling/verify.ps1 would report a false
+# POLICY_DRIFT. Pinning eol=lf keeps the seal reproducible on every platform.
+* text=auto eol=lf
+
+# Binary assets must never be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.svg text eol=lf
+*.ttf binary
+*.otf binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.pdf binary
+*.import text eol=lf
