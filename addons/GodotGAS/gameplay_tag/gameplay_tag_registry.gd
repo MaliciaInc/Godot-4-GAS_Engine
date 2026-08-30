@@ -34,8 +34,8 @@ var _validator: RegEx = null
 ## Add a tag, auto-formatting its casing first.
 ##
 ## Returns the formatted tag on success, or a message beginning with "Error: "
-## on failure. The string protocol is upstream's and is preserved here because
-## Task 2 changes typing, not behaviour.
+## on failure. The string protocol is upstream's and is preserved deliberately:
+## this fork changed the typing, not the behaviour a caller depends on.
 func add_tag(tag_string: String) -> String:
 	var clean_tag: String = tag_string.strip_edges()
 	if clean_tag.is_empty():

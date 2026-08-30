@@ -1,7 +1,8 @@
 ## The physics boundary: raw dictionaries in, typed hits out or nothing.
 ##
-## Section 2 of the plan says a dynamic boundary converts immediately to
-## semantic types. This is that boundary, and it had no tests. The value of
+## A dynamic boundary converts immediately to semantic types. This is that
+## boundary, and it is the one place allowed to read a raw physics result. The
+## value of
 ## converting once is that no consumer downstream ever calls `hit.get("collider")`
 ## and guesses; the value of refusing is that a half-understood hit never
 ## reaches them looking valid.

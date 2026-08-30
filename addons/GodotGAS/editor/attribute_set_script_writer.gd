@@ -4,7 +4,7 @@
 ## dialogs, no editor calls, so what it emits can be asserted directly in a test
 ## instead of being inspected by opening the generated file.
 ##
-## The emitted code was wrong after Task 2 and is corrected here. It used to
+## The emitted code is kept correct against the current hooks. It used to
 ## write `pre_attribute_change(attribute_name: String, ...)` - the hook now takes
 ## a StringName - it never wrote `pre_attribute_base_change` at all, and its
 ## dependency handling called `asc._apply_attribute_change()`, a method the ASC

@@ -1,11 +1,11 @@
-## Bootstrap smoke test for step 1.7.
+## Bootstrap smoke test.
 ##
 ## Proves that a clean checkout reaches a running test suite without anyone
 ## opening the editor: GUT executes, the two core GodotGAS types instantiate,
 ## and the GameplayCueManager autoload is present in a headless tree.
 ##
-## Every declaration here is explicitly typed and no `:=` appears anywhere, per
-## section 2.1. This file is the first example the rest of the phase copies.
+## Every declaration here is explicitly typed and no `:=` appears anywhere, as
+## in every file of this addon.
 extends GutTest
 
 const CUE_MANAGER_PATH: String = "/root/GameplayCueManager"
@@ -13,7 +13,7 @@ const CUE_MANAGER_PATH: String = "/root/GameplayCueManager"
 
 func test_gut_executes() -> void:
 	# If GUT could not run, this assertion would never be reached at all. Its
-	# value is that the suite reports it, which is the evidence step 1.7 wants.
+	# value is that the suite reports it, which is the evidence wanted.
 	assert_true(true, "GUT executed this test")
 
 

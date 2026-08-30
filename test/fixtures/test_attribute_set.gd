@@ -8,7 +8,7 @@
 ##   pre_attribute_base_change  keeps the durable value in range
 ##   pre_attribute_change       keeps the derived value in range
 ##
-## Section 3.9's policy: Health may not exceed MaxHealth.current, in base as
+## The policy: Health may not exceed MaxHealth.current, in base as
 ## well as in current. When a MaxHealth buff expires and Health is above the new
 ## maximum, the excess is lost from the base and reapplying the buff does not
 ## bring it back. Health that was only ever borrowed does not become durable.

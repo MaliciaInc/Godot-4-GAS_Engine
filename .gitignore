@@ -2,34 +2,6 @@
 .import/
 *.translation
 
-# Python bytecode from the quality-gate test suite.
-# Completion criterion 73 requires `git status --short` to be clean when the
-# phase is sealed, and running the gate self-tests produces these on every run.
-__pycache__/
-*.py[cod]
-
-# Volatile GUT scratch receipt. The durable one is copied into
-# artifacts/gates/<TaskId>/ by the task that ran it.
-artifacts/gut/
-
-# Injected by the Godot MCP servers at runtime and removed again on a clean
-# exit. A crashed run leaves it behind, where it is neither ours to fix nor
-# ours to hold to our limits - it was reported by the LOC gate as a 4874-line
-# file with a 250-line function.
-mcp_interaction_server.gd
-mcp_interaction_server.gd.uid
-mcp_bridge.gd
-mcp_bridge.gd.uid
-
-# Per-run console capture. The .md and .json reports beside them are the
-# receipts; a .log is one run stdout, and committing it makes the log of a
-# failed run part of the tree the next run checks.
-artifacts/**/*.log
-
-# Internal development material. This repository is public and is the addon,
-# not the process that built it: the phase plans, the quality gates and the
-# receipts they produce stay on the maintainer's machine.
 artifacts/
 docs/
 tooling/
-.quality-gates.json

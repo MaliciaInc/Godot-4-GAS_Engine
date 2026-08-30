@@ -15,7 +15,7 @@ class_name GameplayExecutionCalculation extends Resource
 #region Execution
 ## Compute flat deltas against the target's underlying base state.
 ##
-## Section 3.7: an execution calculation is an instant mutation of the durable
+## An execution calculation is an instant mutation of the durable
 ## value, never a temporary contribution. A Fireball may read Attack, Defense,
 ## tags and level and return a change to Health; a +20% Attack buff is a
 ## standard modifier instead, so that it lives and dies with its effect.

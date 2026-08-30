@@ -78,7 +78,7 @@ func _init(
 
 ## Snapshot every modifier's magnitude at this level, by index.
 ##
-## Section 3.10: standard magnitudes are snapshotted per application. A later
+## Standard magnitudes are snapshotted per application. A later
 ## change to the source's stats does not retroactively alter an active buff.
 func _snapshot_magnitudes() -> void:
 	for index: int in effect_def.modifiers.size():
@@ -129,7 +129,7 @@ func had_invalid_magnitude_access() -> bool:
 #region Application copy
 ## A spec for one more target, sharing only what is immutable.
 ##
-## Section 4.3's contract: the definition is shared, the context is a separate
+## The contract: the definition is shared, the context is a separate
 ## runtime instance, dynamic tags and magnitudes are duplicated, and anything
 ## accumulated for the previous target starts clean. Nothing mutable is shared,
 ## so writing to this copy cannot be observed through the original.

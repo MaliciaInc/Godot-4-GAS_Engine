@@ -1,8 +1,8 @@
 # Third-party dependencies
 
-Step 1.6 of the Phase 1 plan. Every vendored dependency is pinned to an exact
-commit — never a branch, never "latest" — and the pin was verified against the
-live remote before the files were copied.
+Every vendored dependency is pinned to an exact commit — never a branch, never
+"latest" — and each pin was verified against the live remote before the files
+were copied.
 
 ## Godot Engine
 
@@ -31,20 +31,20 @@ a green tree red without a line of this repository changing.
 | Vendored to | `addons/GodotGAS/` |
 | Vendored on | 2026-08-30 |
 
-The upstream `LICENSE` is reproduced at the repository root as `LICENSE`, per
-step 1.3, because this project is a derivative work of GodotGAS.
+The upstream `LICENSE` is reproduced at the repository root as `LICENSE`,
+because this project is a derivative work of GodotGAS.
 
-This pin is upstream `HEAD`, three commits past the `v1.0.6` tag. It carries the
-undocumented server-authority networking layer, which Task 10 removes. The pin
-is deliberate: it is the exact tree the phase was planned against, so the
-removal is a reviewable diff rather than an absence nobody can check.
+This pin is upstream `HEAD`, three commits past the `v1.0.6` tag. It carries an
+undocumented server-authority networking layer, which this fork removes. The pin
+is deliberate: pinning the tree that still contains it makes the removal a
+reviewable diff rather than an absence nobody can check.
 
 The GodotGAS `EditorPlugin` is **not enabled** in `project.godot` this phase.
 Upstream registers the `GameplayCueManager` autoload from `_enable_plugin()`,
 and `project.godot` declares that autoload directly; enabling both would create
 two authorities over the same singleton. Re-enabling the dashboard requires a
 deliberate task that makes the registration idempotent and proves there is no
-double authority. It is not a Phase 1 runtime requirement.
+double authority.
 
 ## GUT (Godot Unit Test)
 

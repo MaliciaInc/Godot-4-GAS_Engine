@@ -1,7 +1,7 @@
 ## Project settings this addon owns, read and registered in one place.
 ##
-## Every declaration is explicitly typed and no `:=` appears: section 2.1 of the
-## phase plan forbids inference, and this file is reached from the
+## Every declaration is explicitly typed and no `:=` appears. Inference is not
+## allowed anywhere in this addon, and this file is reached from the
 ## GameplayCueManager autoload, so an inference warning here is a boot failure
 ## rather than a lint note.
 ##

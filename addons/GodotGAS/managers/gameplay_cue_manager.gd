@@ -6,7 +6,7 @@
 ## `var cue: GameplayCueNotify` here fails to parse with "Could not find type"
 ## and takes the whole boot down with it. Upstream never sees this because its
 ## EditorPlugin registers the autoload from inside the editor, where the cache
-## already exists. Step 1.8 requires a clean, cache-free checkout to work, so
+## already exists. This addon has to work from a clean, cache-free checkout, so
 ## the dependency is removed rather than worked around at the call site.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork

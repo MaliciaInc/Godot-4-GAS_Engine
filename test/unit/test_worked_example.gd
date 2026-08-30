@@ -1,13 +1,13 @@
-## Section 13 of the phase plan, as assertions instead of prose.
+## The engine's worked example, asked step by step.
 ##
-## The plan closes by listing eight questions the engine must answer
-## deterministically. Four come with exact numbers that nothing else in the
-## suite asserts; the other four are already answered by tests organised around
-## the mechanism. Only the first four are re-asked here.
+## The rest of the suite is organised around the mechanism - aggregation,
+## lifecycle, isolation, periodicity. This file is organised around the question
+## someone actually asks: given these buffs, what is the number?
 ##
-## Re-asserting the rest would be duplication, and the duplication gate said so
-## when the first version of this file did it. They are mapped instead, which is
-## what a reader of section 13 actually needs - somewhere to go:
+## Four of those questions come with exact numbers that nothing else asserts,
+## and they are asked here. The others are already answered by a mechanism test,
+## so they are mapped rather than re-asserted; re-asserting them would be
+## duplication, and a reader who arrives with the question wants somewhere to go:
 ##
 ##     "three targets with different defences"
 ##         -> test_spec_isolation.gd::test_each_target_computes_against_its_own_attributes
@@ -19,9 +19,9 @@
 ##     "a max-health buff expires"
 ##         -> test_effect_lifecycle.gd::test_losing_the_buff_discards_the_excess_permanently
 ##
-## The numbers below are the plan's, copied from it rather than recomputed: a
-## test that derived them from the same formula the engine uses would agree with
-## the engine no matter what either of them did.
+## The numbers are stated here rather than derived: a test that computed them
+## from the same formula the engine uses would agree with the engine no matter
+## what either of them did.
 ##
 ## @meta_license: MIT
 extends GutTest
@@ -53,9 +53,9 @@ func after_each() -> void:
 	asc = null
 
 
-## One question from the plan: what changes, and what Attack must then read.
+## One question: what changes, and what Attack must then read.
 class Step extends RefCounted:
-	## The plan's own wording, so a failure quotes the document.
+	## Worded as the question is asked, so a failure reads like the question.
 	var question: String = ""
 	var expected: float = 0.0
 	## Buffs to remove before asking, by their index in the applied order.
@@ -87,12 +87,12 @@ func _worked_example() -> Array[Step]:
 	return [start, unflattened, relevelled, stripped] as Array[Step]
 
 
-## The plan's worked example, asked step by step in its own order.
+## The worked example, asked step by step in order.
 ##
 ## A sequence rather than four tests: each answer depends on the state the
 ## previous one left, and that dependency is the interesting part. Rebuilding
 ## the state for each would prove the arithmetic and not the continuity.
-func test_the_plans_worked_example_answers_exactly_as_written() -> void:
+func test_the_worked_example_answers_exactly_as_stated() -> void:
 	fixture.set_base(ATTACK, 100.0)
 
 	var applied: Array[ActiveGameplayEffect] = [

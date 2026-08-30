@@ -1,6 +1,6 @@
 ## The attribute aggregator: lookup, base mutation and recomposition.
 ##
-## This is the authority for section 3's formula and nothing else may implement
+## This is the authority for the canonical formula and nothing else may implement
 ## it:
 ##
 ##     current = ((base + sum(ADD)) * product(MULTIPLY)) / product(DIVIDE)
@@ -146,7 +146,7 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 	return result
 
 
-## Apply section 3.2's order to one attribute. Writes failure into `result`.
+## Apply the canonical order to one attribute. Writes failure into `result`.
 func _compose(
 	base: float, attribute_name: StringName, result: AttributeEvaluationResult
 ) -> float:
@@ -261,7 +261,7 @@ func recompose_all() -> Array[AttributeMutationResult]:
 
 
 #region Bootstrap
-## Deterministic attribute bootstrap, per step 7.1.
+## Deterministic attribute bootstrap.
 ##
 ## Lives here rather than on the ASC because attribute authority is this
 ## class: the facade should not be able to seed a value the aggregator did not

@@ -105,22 +105,17 @@ exactly one owner.
 
 ## Running the tests
 
-The suite runs headless without opening the editor interactively:
+Open the project in Godot and run the suite from the GUT panel against
+`res://test/unit`. Everything the suite needs is in this repository.
 
-```bash
-godot --headless --path . --import
-godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gexit
-```
+Let the first import finish before running it. A project that has never been
+imported has no global class cache, and GUT's own configuration needs one.
 
-The import pass is not optional on a fresh clone: GUT's own `gut_config.gd`
-needs `GutUtils` in the global class cache, which the first import builds.
-
-Inside this project the engine stages go through the Godot MCP servers, which
-cannot pass command-line arguments, so `test/gut_headless_runner.tscn` builds
-the same configuration in-project and writes its verdict to a file. That runner
-refuses two greens the assertions cannot see: a suite where fewer scripts loaded
-than exist on disk, and a run that leaves orphan nodes behind. Its receipt is
-timestamped, so a stale one cannot be read as a fresh pass.
+`test/gut_headless_runner.tscn` runs the same suite without the panel and writes
+its verdict to a file. It refuses two greens the assertions cannot see: a run
+where fewer scripts loaded than exist on disk, and a run that leaves orphan
+nodes behind. The verdict is timestamped, so a stale one cannot be read as a
+fresh pass.
 
 ## The autoload constraint
 
@@ -146,13 +141,10 @@ Everywhere outside that closure, global class names are the right thing to use.
 
 ## How this is verified
 
-Every change goes through a chain that stops at the first failure: four quality
-gates over the whole tree, a strict-typing pass across every engine script, and
-the full suite. The gates and the runner are development tooling and are not
-part of this repository, so what they guarantee is written here instead, where
-it can be checked against the code:
+Every change is held to the same standards. They are written here rather than
+asserted, so they can be checked against the code:
 
-- no file over 450 lines and no function over 120, gates included;
+- no file over 450 lines and no function over 120;
 - no repeated literal that could have been named, and no duplicated logic;
 - every script under `addons/GodotGAS/` parses with the eight warnings above
   promoted to errors;
@@ -176,6 +168,6 @@ warning. Only the trees they apply to differ.
 ## Licence and attribution
 
 MIT. See `LICENSE` for the upstream copyright and `THIRD_PARTY.md` for the
-pinned dependencies. This is a fork: after Task 2 it is not byte-identical to
-upstream GodotGAS and does not claim to be. `addons/gut` is unmodified and
-matches its pin.
+pinned dependencies. This is a fork and is no longer byte-identical to upstream
+GodotGAS; it does not claim to be. `addons/gut` is unmodified and matches its
+pin.

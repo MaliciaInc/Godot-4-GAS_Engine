@@ -1,6 +1,6 @@
 ## Local input reaching a granted ability, and nothing else reaching it.
 ##
-## Criterion 64 of the phase plan: ability input is proved local. There is no
+## Ability input is proved local here. There is no
 ## network path left in this addon, so "local" here means the whole route -
 ## press, slot lookup, activation gate, activation - runs inside one ASC with no
 ## authority check and no peer id anywhere in it.

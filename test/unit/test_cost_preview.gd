@@ -1,6 +1,6 @@
 ## Cost preview: the prediction and the commit are the same computation.
 ##
-## Section 8.5's contract is that a cost consumes durable base state. A
+## A cost consumes durable base state. A
 ## temporary contribution raises the number on screen; it does not create
 ## spendable resource. A cost the clamp had to shrink was not affordable, only
 ## survivable.

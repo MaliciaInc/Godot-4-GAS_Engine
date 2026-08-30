@@ -8,7 +8,7 @@
 ## The element type comes from `preload`, not from the `GameplayCueNotify`
 ## global name. This file is reached from the GameplayCueManager autoload, which
 ## is parsed before Godot has a global class cache on a clean checkout - and a
-## clean checkout with no cache is exactly the state step 1.8 requires to work.
+## checkout with no cache is exactly the state this addon has to work in.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_license: MIT

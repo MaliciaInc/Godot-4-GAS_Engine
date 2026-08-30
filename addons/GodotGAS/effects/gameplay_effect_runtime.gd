@@ -137,7 +137,7 @@ func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluation
 
 
 ## INSTANT and periodic effects transform the durable value once. DURATION and
-## INFINITE register contributions. Section 3.6 forbids one effect being both,
+## INFINITE register contributions. One effect cannot be both,
 ## because a periodic contributor would compound itself on every tick.
 static func _mode_for(spec: GameplayEffectSpec) -> GameplayEffectEvaluator.Mode:
 	if spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT:

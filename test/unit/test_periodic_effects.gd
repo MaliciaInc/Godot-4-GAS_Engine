@@ -183,7 +183,7 @@ func test_a_periodic_effect_contributes_nothing_to_the_aggregator() -> void:
 	var active: ActiveGameplayEffect = Factory.apply(
 		asc, Factory.infinite_periodic([Factory.add(HEALTH, -1.0)], 1.0)
 	)
-	# Section 3.6: one effect cannot be both periodic and a persistent
+	# One effect cannot be both periodic and a persistent
 	# contributor. A contributing DoT would compound its own damage every tick.
 	assert_false(active.has_contributions(), "no contributions registered")
 

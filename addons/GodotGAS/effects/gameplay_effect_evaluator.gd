@@ -5,7 +5,7 @@
 ## effects. That is what makes a cost preview and the commit that follows it
 ## provably the same computation: they call this, once each, on the same inputs.
 ##
-## Section 3.7's split is enforced here:
+## The split is enforced here:
 ##
 ##     standard active modifier  -> contribution to the aggregator
 ##     execution calculation     -> instant mutation of the underlying base
@@ -207,7 +207,7 @@ static func _stage_modifier_base_mutations(
 		result.base_mutations.append(staged)
 
 
-## Section 3.2 applied to one attribute using only THIS spec's modifiers.
+## The canonical order applied to one attribute using only THIS spec's modifiers.
 ##
 ## The aggregator applies the same order over active contributions. Both had to
 ## exist because the inputs differ - a base transformation versus a live stack -

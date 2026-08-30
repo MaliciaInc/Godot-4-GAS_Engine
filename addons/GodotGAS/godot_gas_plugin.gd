@@ -1,11 +1,11 @@
 ## The editor plugin: dashboard, tag inspector, and one-time project seeding.
 ##
-## Not enabled in Phase 1. `project.godot` declares the GameplayCueManager
-## autoload directly so a clean checkout reaches its tests without an editor,
-## and upstream's `_enable_plugin` registered the same autoload again - two
-## authorities over one singleton. The registration here is now idempotent, so
-## enabling the plugin later cannot produce a duplicate, but re-enabling it is
-## still a deliberate decision with its own tests, not a side effect.
+## `project.godot` declares the GameplayCueManager autoload directly so a clean
+## checkout reaches its tests without an editor, and upstream's `_enable_plugin`
+## registered the same autoload again - two authorities over one singleton. The
+## registration here is idempotent, so enabling the plugin cannot produce a
+## duplicate, but enabling it is a deliberate decision with its own tests, not a
+## side effect.
 ##
 ## Seeding the default registry resources lives here rather than in
 ## project_settings.gd. Doing it there required preloading both registry

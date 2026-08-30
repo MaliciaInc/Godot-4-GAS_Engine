@@ -154,7 +154,7 @@ func _classify(panel: PanelContainer) -> void:
 func _repaint(panel: PanelContainer) -> void:
 	if not panel.has_meta(PANEL_TYPE_META):
 		return
-	# get_meta returns Variant. Section 2.2 forbids a blind cast, so the shape
+	# get_meta returns Variant, and a blind cast is not allowed here, so the shape
 	# is checked before it is trusted.
 	var raw_slot: Variant = panel.get_meta(PANEL_TYPE_META)
 	if not raw_slot is String:

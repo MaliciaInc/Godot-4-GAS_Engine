@@ -1,6 +1,6 @@
 ## Cues: typed parameters, real execution and pooling.
 ##
-## Step 10.1 forbids proving a cue ran by asserting `true` after calling it.
+## Proving a cue ran by asserting `true` after calling it proves nothing.
 ## These tests use a recording GameplayCueNotify and check what it actually
 ## received: how many times, on which node, with which parameters.
 ##

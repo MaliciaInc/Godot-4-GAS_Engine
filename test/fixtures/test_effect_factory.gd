@@ -63,7 +63,7 @@ static func infinite(modifiers: Array[GameplayEffectModifier]) -> GameplayEffect
 	return effect
 
 
-## A periodic effect. Section 3.6 forbids one effect being both periodic and a
+## A periodic effect. One effect cannot be both periodic and a
 ## persistent contributor, so these modifiers mutate the base on each tick.
 static func periodic(
 	modifiers: Array[GameplayEffectModifier], seconds: float, period: float

@@ -30,19 +30,12 @@ GameplayCueManager="*res://addons/GodotGAS/managers/gameplay_cue_manager.gd"
 
 [debug]
 
-; Godot excludes addons/** from GDScript warnings by DEFAULT, which silently
-; exempted the entire engine - it lives in addons/GodotGAS - from the eight
-; settings below. Setting this to false is correct for our code and impossible
-; for the project as a whole: addons/gut is a vendored dependency pinned
-; byte-identical by step 11.6, is not strictly typed, and fails to parse under
-; the strict setting, taking the test suite with it.
-;
-; So the project runs permissive and is verified strict:
-;     python tooling/strict_typing_pass.py enter
-;     <validate addons/GodotGAS/** through the Godot MCP>
-;     python tooling/strict_typing_pass.py leave
-;
-; Neither mode weakens a warning. Only the trees they apply to differ.
+; Godot excludes addons/** from GDScript warnings by default. The addon's own
+; code is held to the eight settings below and is validated against them; the
+; test dependency vendored alongside it is not strictly typed and is not part
+; of the product's typing contract. The exclusion therefore stays on here, and
+; turning it off makes the vendored dependency fail to parse and takes the test
+; suite with it.
 gdscript/warnings/exclude_addons=true
 gdscript/warnings/untyped_declaration=2
 gdscript/warnings/inferred_declaration=2

@@ -9,7 +9,7 @@
 ## Upstream had only the second. With one hook, 500 damage against 100 health
 ## leaves `base = -400` while `current` clamps to 0, so a later heal of 30
 ## brings current back to 0 rather than 30 and the character stays dead through
-## a full heal. Section 3.8 makes that regression mandatory to prevent.
+## a full heal. Preventing exactly that is what the base clamp is for.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork

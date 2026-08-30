@@ -112,7 +112,7 @@ func get_target_nodes() -> Array[Node]:
 
 
 ## Whether this effect contributes to the aggregator at all. A periodic effect
-## does not: section 3.6 forbids one effect being both periodic and a persistent
+## does not: one effect cannot be both periodic and a persistent
 ## contributor, because the two would compound every tick.
 func has_contributions() -> bool:
 	return not contributed_modifiers.is_empty()

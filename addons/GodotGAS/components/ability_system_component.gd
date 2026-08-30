@@ -6,7 +6,7 @@
 ## GameplayEffectScheduler, abilities in AbilityRuntime. Each piece of mutable
 ## state has exactly one owner, so there is never a second copy to keep in step.
 ##
-## Networking is gone. Section 2.10: the final behaviour of this phase is local,
+## Networking is gone. The behaviour of this addon is local,
 ## and no `@rpc`, `MultiplayerSynchronizer` or authority branch remains.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
@@ -257,7 +257,7 @@ func apply_attribute_base_delta(
 
 ## Replace base values while preserving active contributions.
 ##
-## Section 8.4: this always means "replace the base", never "reset the entity".
+## This always means "replace the base", never "reset the entity".
 ## A x2 buff over base 10 shows 20; initializing the base to 50 shows 100, not
 ## 80 and not 50, because the buff was never touched.
 func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) -> void:
@@ -314,7 +314,7 @@ func get_active_effects() -> Array[ActiveGameplayEffect]:
 ## Whether every attribute this cost touches can pay it in full from its durable
 ## base.
 ##
-## Section 8.5: a temporary buff does not subsidise a durable cost. Mana base 10
+## A temporary buff does not subsidise a durable cost. Mana base 10
 ## with an active +20 cannot pay 20, because committing -20 to base would be
 ## reduced by the clamp - and a cost that the clamp had to shrink was not
 ## affordable, it was merely survivable.
