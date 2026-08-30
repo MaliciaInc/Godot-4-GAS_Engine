@@ -23,7 +23,12 @@ const GUT_CONFIG_SCRIPT: String = "res://addons/gut/gut_config.gd"
 const TEST_DIRECTORY: String = "res://test/unit"
 
 ## Where the verdict is written.
-const RESULT_PATH: String = "res://artifacts/gut/last-run.txt"
+##
+## `user://` rather than the project tree: a run writes this file, and a run
+## is not project content. Writing under `res://` would leave a directory
+## behind in every checkout that ran the suite, and would fail outright in an
+## exported build, where `res://` is read-only.
+const RESULT_PATH: String = "user://gut/last-run.txt"
 
 ## Prefix a caller can grep for in the debug output.
 const RESULT_PREFIX: String = "ARHALIES_GUT_RESULT:"
@@ -144,8 +149,8 @@ func _test_files_on_disk() -> int:
 
 ## The tests that did not pass, script by script.
 ##
-## A receipt that says only "13 failed" sends the reader back to the console
-## they may no longer have. Naming them is the difference between a receipt
+## A result that says only "13 failed" sends the reader back to the console
+## they may no longer have. Naming them is the difference between a report
 ## and a scoreboard.
 func _failing_test_names() -> String:
 	var names: Array[String] = []
@@ -162,8 +167,8 @@ func _failing_test_names() -> String:
 
 
 ## `orphans` is -1 when the run ended before the count could be taken, which is
-## reported as unknown rather than as zero: a receipt that says "orphans=0"
-## because nobody looked is worse than one that admits it.
+## reported as unknown rather than as zero: a report that says "orphans=0"
+## because nobody looked is worse than one that admits it did not look.
 func _report(
 	passes: int, failures: int, pending: int, note: String, orphans: int = -1
 ) -> void:
@@ -176,18 +181,18 @@ func _report(
 		+ " orphans=" + (str(orphans) if orphans >= 0 else "unknown")
 	)
 	print(line)
-	_write_receipt(verdict, line, note)
+	_write_result(verdict, line, note)
 
 
-func _write_receipt(verdict: String, line: String, note: String) -> void:
+func _write_result(verdict: String, line: String, note: String) -> void:
 	DirAccess.make_dir_recursive_absolute(RESULT_PATH.get_base_dir())
 	var file: FileAccess = FileAccess.open(RESULT_PATH, FileAccess.WRITE)
 	if file == null:
-		printerr("could not write the GUT receipt to " + RESULT_PATH)
+		printerr("could not write the GUT result to " + RESULT_PATH)
 		return
-	# Stamped so a stale receipt is visible. A previous Godot process holding
-	# the session made two runs silently not happen, and the old receipt read
-	# as a fresh pass both times.
+	# Stamped so a stale file is visible. A previous Godot process holding the
+	# session made two runs silently not happen, and the old file read as a
+	# fresh pass both times.
 	file.store_line("RESULT: " + verdict)
 	file.store_line("written: " + Time.get_datetime_string_from_system(true))
 	file.store_line(line)
