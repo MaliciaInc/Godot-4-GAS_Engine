@@ -1,0 +1,122 @@
+## What a commit will accept as a cost and as a cooldown.
+##
+## These are properties of an effect, not of an ability, and they are the reason
+## a commit can promise anything: a cost that can be previewed and reversed, and
+## a cooldown that leaves nothing behind when it is retired. Keeping them here
+## rather than on `GameplayAbility` also keeps them answerable without one - a
+## tool validating a resource can ask the same questions the runtime asks.
+##
+## Every function is static and reads only its arguments. There is no state to
+## get out of step with the ability that consults it.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_license: MIT
+class_name AbilityCommitContract extends RefCounted
+
+
+#region Cost
+## Whether `effect` is a legal ability cost. Null is legal: abilities may be free.
+##
+## A cost must be an instant, purely additive charge that announces nothing. That
+## is the only shape `can_afford_cost` can preview honestly and the only one a
+## rollback could undo, which is why these are refusals and not warnings.
+static func is_legal_cost(effect: GameplayEffect, level: float) -> bool:
+	if effect == null:
+		return true
+	if effect.policy != GameplayEffect.DurationPolicy.INSTANT:
+		return false
+	# An instant effect grants no tags in any case, so declaring one means the
+	# author expected something this cost can never deliver.
+	if not effect.granted_tags.is_empty():
+		return false
+	if not _is_quiet(effect):
+		return false
+	return _is_pure_charge(effect, level)
+
+
+## Every modifier subtracts, and at least one of them actually costs something.
+##
+## Only ADD is allowed. MULTIPLY, DIVIDE and OVERRIDE each depend on the value
+## they are charged against, so the amount previewed and the amount taken could
+## differ, and the charge could not be undone by adding a fixed amount back.
+## A consequence worth naming: this is why a percentage cost cannot be written
+## here. It is a different semantics, not a special case of this one.
+static func _is_pure_charge(effect: GameplayEffect, level: float) -> bool:
+	if effect.modifiers.is_empty():
+		return false
+	var charges_something: bool = false
+	for modifier: GameplayEffectModifier in effect.modifiers:
+		if modifier == null:
+			return false
+		if modifier.operation != GameplayEffectModifier.Operation.ADD:
+			return false
+		var magnitude: float = modifier.calculate_magnitude(level)
+		if magnitude > 0.0:
+			return false
+		if magnitude < 0.0:
+			charges_something = true
+	return charges_something
+#endregion
+
+
+#region Cooldown
+## Whether `effect` is a legal cooldown. Null is legal: an ability may have none.
+##
+## A cooldown is a tag that expires. It moves no attribute, because an attribute
+## it had moved would be reverted by the same rollback that retires it.
+static func is_legal_cooldown(effect: GameplayEffect) -> bool:
+	if effect == null:
+		return true
+	if not effect.modifiers.is_empty():
+		return false
+	# The tag is the cooldown. Without one, nothing can be asked whether the
+	# ability is still on cooldown, and the effect expires unobserved.
+	if effect.granted_tags.is_empty():
+		return false
+	if not _is_quiet(effect):
+		return false
+	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
+		return effect.duration > 0.0
+	if effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
+		return effect.duration_turns > 0
+	return false
+
+
+## Every cooldown a commit must start, once each.
+##
+## The ability's own first, then the shared ones in declaration order. A Resource
+## listed in both is one cooldown, not two: applying it twice would either
+## refresh it - hiding the second application - or stack it, and neither is what
+## sharing a cooldown means.
+static func unique_cooldowns(
+	own: GameplayEffect, shared: Array[GameplayEffect]
+) -> Array[GameplayEffect]:
+	var unique: Array[GameplayEffect] = []
+	if own != null:
+		unique.append(own)
+	for effect: GameplayEffect in shared:
+		if effect != null and not unique.has(effect):
+			unique.append(effect)
+	return unique
+#endregion
+
+
+#region Shared
+## The conditions a cost and a cooldown share: not periodic, and silent.
+##
+## Both are transaction bookkeeping rather than gameplay. An execution, a purge,
+## a cue or an event would be an observable side effect, and a commit that rolled
+## back could not take it back. Written once because the two answers have to
+## agree; two copies of the same eight conditions would eventually stop agreeing.
+static func _is_quiet(effect: GameplayEffect) -> bool:
+	return (
+		is_zero_approx(effect.period)
+		and effect.executions.is_empty()
+		and effect.remove_effects_with_tags.is_empty()
+		and effect.application_required_tags.is_empty()
+		and effect.application_ignore_tags.is_empty()
+		and effect.application_cue_tags.is_empty()
+		and effect.periodic_cue_tags.is_empty()
+		and effect.event_tags.is_empty()
+	)
+#endregion

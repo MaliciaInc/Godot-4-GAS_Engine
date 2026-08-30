@@ -111,13 +111,15 @@ func commit_ability() -> AbilityCommitResult:
 	if _committed:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
-	if not _validate_cost_definition(cost_effect):
+	if not AbilityCommitContract.is_legal_cost(cost_effect, ability_level):
 		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
 		return result
 
-	var cooldowns: Array[GameplayEffect] = _unique_cooldown_effects()
+	var cooldowns: Array[GameplayEffect] = AbilityCommitContract.unique_cooldowns(
+		cooldown_effect, shared_cooldown_effects
+	)
 	for cooldown: GameplayEffect in cooldowns:
-		if not _validate_cooldown_definition(cooldown):
+		if not AbilityCommitContract.is_legal_cooldown(cooldown):
 			result.status = AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION
 			return result
 
@@ -199,107 +201,6 @@ func end_ability(
 	ability_ended.emit(was_cancelled)
 #endregion
 
-
-#region Commit contract
-## Whether `effect` is a legal ability cost. Null is legal: abilities may be free.
-##
-## A cost must be an instant, purely additive charge that announces nothing. That
-## is the only shape `can_afford_cost` can preview honestly and the only one a
-## rollback could undo, which is why these are refusals and not warnings.
-func _validate_cost_definition(effect: GameplayEffect) -> bool:
-	if effect == null:
-		return true
-	if effect.policy != GameplayEffect.DurationPolicy.INSTANT:
-		return false
-	# An instant effect grants no tags in any case, so declaring one means the
-	# author expected something this cost can never deliver.
-	if not effect.granted_tags.is_empty():
-		return false
-	if not _is_quiet_transaction_effect(effect):
-		return false
-	return _modifiers_are_a_pure_charge(effect)
-
-
-## Every modifier subtracts, and at least one of them actually costs something.
-##
-## Only ADD is allowed. MULTIPLY, DIVIDE and OVERRIDE each depend on the value
-## they are charged against, so the amount previewed and the amount taken could
-## differ, and the charge could not be undone by adding a fixed amount back.
-## A consequence worth naming: this is why a percentage cost cannot be written
-## here. It is a different semantics, not a special case of this one.
-func _modifiers_are_a_pure_charge(effect: GameplayEffect) -> bool:
-	if effect.modifiers.is_empty():
-		return false
-	var charges_something: bool = false
-	for modifier: GameplayEffectModifier in effect.modifiers:
-		if modifier == null:
-			return false
-		if modifier.operation != GameplayEffectModifier.Operation.ADD:
-			return false
-		var magnitude: float = modifier.calculate_magnitude(ability_level)
-		if magnitude > 0.0:
-			return false
-		if magnitude < 0.0:
-			charges_something = true
-	return charges_something
-
-
-## Whether `effect` is a legal cooldown. Null is legal: an ability may have none.
-##
-## A cooldown is a tag that expires. It moves no attribute, because an attribute
-## it had moved would be reverted by the same rollback that retires it.
-func _validate_cooldown_definition(effect: GameplayEffect) -> bool:
-	if effect == null:
-		return true
-	if not effect.modifiers.is_empty():
-		return false
-	# The tag is the cooldown. Without one, nothing can be asked whether the
-	# ability is still on cooldown, and the effect expires unobserved.
-	if effect.granted_tags.is_empty():
-		return false
-	if not _is_quiet_transaction_effect(effect):
-		return false
-	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
-		return effect.duration > 0.0
-	if effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
-		return effect.duration_turns > 0
-	return false
-
-
-## The conditions a cost and a cooldown share: not periodic, and silent.
-##
-## Both are transaction bookkeeping rather than gameplay. An execution, a purge,
-## a cue or an event would be an observable side effect, and a commit that rolled
-## back could not take it back. Written once because the two validators have to
-## agree; two copies of the same eight conditions would eventually stop agreeing.
-func _is_quiet_transaction_effect(effect: GameplayEffect) -> bool:
-	return (
-		is_zero_approx(effect.period)
-		and effect.executions.is_empty()
-		and effect.remove_effects_with_tags.is_empty()
-		and effect.application_required_tags.is_empty()
-		and effect.application_ignore_tags.is_empty()
-		and effect.application_cue_tags.is_empty()
-		and effect.periodic_cue_tags.is_empty()
-		and effect.event_tags.is_empty()
-	)
-
-
-## Every cooldown this commit must start, once each.
-##
-## Its own first, then the shared ones in declaration order. A Resource listed in
-## both is one cooldown, not two: applying it twice would either refresh it -
-## hiding the second application - or stack it, and neither is what sharing a
-## cooldown means.
-func _unique_cooldown_effects() -> Array[GameplayEffect]:
-	var unique: Array[GameplayEffect] = []
-	if cooldown_effect != null:
-		unique.append(cooldown_effect)
-	for shared: GameplayEffect in shared_cooldown_effects:
-		if shared != null and not unique.has(shared):
-			unique.append(shared)
-	return unique
-#endregion
 
 
 #region Helpers
@@ -392,4 +293,57 @@ func _active_input_pressed(_asc: AbilitySystemComponent) -> void:
 ## fire".
 func _active_input_released(_asc: AbilitySystemComponent) -> void:
 	pass
+#endregion
+
+
+#region Task factories
+## Hand a freshly built task to the ASC that will own it.
+##
+## Null when there is no ASC. A task nobody owns is worse than no task: the
+## ability would suspend on something that nothing can ever cancel, and no
+## teardown path would reach it.
+func _own(task: GameplayAbilityTask) -> GameplayAbilityTask:
+	if task == null or owner_asc == null:
+		return null
+	return owner_asc.register_ability_task(task)
+
+
+func wait_delay(seconds: float) -> AbilityTaskWaitDelay:
+	return _own(AbilityTaskWaitDelay.create(self, seconds)) as AbilityTaskWaitDelay
+
+
+## Wait for a press. `-1` means this ability's own bound slot; any other value
+## is used as given.
+##
+## Resolved in the body rather than written as a default parameter value: a
+## default is evaluated against the class, so it would freeze whatever
+## `input_id` held at parse time instead of what it holds at the call.
+func wait_input_pressed(input_slot: int = -1) -> AbilityTaskWaitInput:
+	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.PRESSED)
+
+
+func wait_input_released(input_slot: int = -1) -> AbilityTaskWaitInput:
+	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.RELEASED)
+
+
+func _wait_input(
+	input_slot: int, transition: AbilityTaskWaitInput.Transition
+) -> AbilityTaskWaitInput:
+	var slot: int = input_id if input_slot == -1 else input_slot
+	return _own(AbilityTaskWaitInput.create(self, slot, transition)) as AbilityTaskWaitInput
+
+
+func wait_gameplay_event(tag: StringName) -> AbilityTaskWaitGameplayEvent:
+	var task: GameplayAbilityTask = _own(AbilityTaskWaitGameplayEvent.create(self, tag))
+	return task as AbilityTaskWaitGameplayEvent
+
+
+func wait_target_data() -> AbilityTaskWaitTargetData:
+	return _own(AbilityTaskWaitTargetData.create(self)) as AbilityTaskWaitTargetData
+
+
+## Answer this ability's own request for targets.
+func submit_target_data(data: GameplayAbilityTargetData) -> void:
+	if owner_asc != null:
+		owner_asc.submit_ability_target_data(self, data)
 #endregion

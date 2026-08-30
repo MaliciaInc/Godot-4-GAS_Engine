@@ -20,6 +20,10 @@ const OTHER_TAG: StringName = &"Ability.Other"
 const SLOT: int = 3
 const FRAME: float = 0.25
 
+const TOLERANCE: float = 0.0001
+const DAMAGE: StringName = &"Event.Damage"
+const CRITICAL: StringName = &"Event.Damage.Critical"
+
 const BY_ENDING: StringName = &"ending"
 const BY_ABORTING: StringName = &"aborting"
 const BY_REMOVING: StringName = &"removing"
@@ -34,6 +38,7 @@ class ClosingCase extends RefCounted:
 	func _init(closing: StringName, reason: GameplayAbilityTask.CancelReason) -> void:
 		how = closing
 		expected = reason
+
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -70,6 +75,12 @@ func _running() -> int:
 func _watch(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	task.finished.connect(_on_finished)
 	return task
+
+
+func _event(tag: StringName) -> GameplayEventData:
+	var event: GameplayEventData = GameplayEventData.new()
+	event.event_tag = tag
+	return event
 
 
 func _on_finished(
@@ -201,9 +212,7 @@ func test_a_finished_task_hears_nothing_further() -> void:
 	asc._process(FRAME)
 	asc.ability_local_input_pressed(SLOT)
 	asc.ability_local_input_released(SLOT)
-	var event: GameplayEventData = GameplayEventData.new()
-	event.event_tag = PROBE_TAG
-	asc.send_gameplay_event(event)
+	asc.send_gameplay_event(_event(PROBE_TAG))
 	asc.submit_ability_target_data(ability, GameplayAbilityTargetData.new())
 
 	assert_eq(task.deltas.size(), 0, "no frame reached it")
@@ -219,9 +228,7 @@ func test_a_live_task_hears_every_channel() -> void:
 	asc._process(FRAME)
 	asc.ability_local_input_pressed(SLOT)
 	asc.ability_local_input_released(SLOT)
-	var event: GameplayEventData = GameplayEventData.new()
-	event.event_tag = PROBE_TAG
-	asc.send_gameplay_event(event)
+	asc.send_gameplay_event(_event(PROBE_TAG))
 	asc.submit_ability_target_data(ability, GameplayAbilityTargetData.new())
 
 	assert_eq(task.deltas, [FRAME] as Array[float], "the frame arrived intact")
@@ -277,4 +284,132 @@ func test_nothing_is_left_running_after_the_asc_goes() -> void:
 
 	asc.cleanup()
 	assert_eq(_running(), 0, "teardown leaves the count at zero, not merely small")
+#endregion
+
+
+#region The standard tasks
+## A wait of zero seconds is still a wait of one tick.
+##
+## Finishing inside `start` would report before the caller could connect to
+## `finished`, so the shortest expressible wait is the next advance.
+func test_even_a_zero_delay_costs_one_advance() -> void:
+	var task: AbilityTaskWaitDelay = ability.wait_delay(0.0)
+	assert_false(task.is_finished(), "not over at the moment it began")
+
+	asc._process(0.0)
+	assert_true(task.is_finished(), "over on the first tick after")
+
+
+func test_a_delay_ends_once_its_seconds_have_gone_by() -> void:
+	var task: AbilityTaskWaitDelay = ability.wait_delay(1.0)
+
+	asc._process(0.4)
+	assert_false(task.is_finished(), "part of the way is not all of it")
+
+	asc._process(0.6)
+	assert_true(task.is_finished(), "and the rest of the way ends it")
+
+
+## One frame longer than the whole wait still ends it exactly once.
+##
+## A delay that only checked for equality would be skipped over by a long
+## frame and would wait forever on a machine having a bad moment.
+func test_one_long_frame_finishes_a_delay_it_overshoots() -> void:
+	var task: AbilityTaskWaitDelay = ability.wait_delay(1.0)
+
+	asc._process(10.0)
+
+	assert_true(task.is_finished(), "overshooting is still arriving")
+	assert_eq(_running(), 0, "and the runtime let it go")
+
+
+func test_a_negative_delay_is_clamped_rather_than_waited_out() -> void:
+	var task: AbilityTaskWaitDelay = ability.wait_delay(-5.0)
+	assert_almost_eq(task.duration, 0.0, TOLERANCE, "a negative wait is no wait")
+
+
+func test_an_input_task_wakes_only_on_its_own_slot_and_direction() -> void:
+	var press: AbilityTaskWaitInput = ability.wait_input_pressed(SLOT)
+
+	asc.ability_local_input_pressed(SLOT + 1)
+	assert_false(press.is_finished(), "another slot is not this one")
+
+	asc.ability_local_input_released(SLOT)
+	assert_false(press.is_finished(), "and a release is not a press")
+
+	asc.ability_local_input_pressed(SLOT)
+	assert_true(press.is_finished(), "its own press, in its own direction, ends it")
+
+
+## Hold to charge, release to fire: the release must survive its own press.
+func test_a_release_task_is_not_woken_by_the_press_before_it() -> void:
+	var release: AbilityTaskWaitInput = ability.wait_input_released(SLOT)
+
+	asc.ability_local_input_pressed(SLOT)
+	assert_false(release.is_finished(), "starting to charge is not firing")
+
+	asc.ability_local_input_released(SLOT)
+	assert_true(release.is_finished(), "letting go is")
+
+
+## The slot is read at the call, not frozen into a parameter default.
+func test_an_input_task_defaults_to_the_abilitys_own_slot() -> void:
+	ability.input_id = SLOT
+	var press: AbilityTaskWaitInput = ability.wait_input_pressed()
+	assert_eq(press.input_id, SLOT, "it followed the ability, not a default")
+
+
+## Tag hierarchy runs one way, and the task borrows the engine's answer.
+func test_an_event_task_matches_downwards_and_not_upwards() -> void:
+	var general: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_event(DAMAGE)
+	var exact: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_event(CRITICAL)
+
+	asc.send_gameplay_event(_event(CRITICAL))
+
+	assert_true(general.is_finished(), "the general listener hears the specific event")
+	assert_eq(
+		general.matched_event.event_tag, CRITICAL, "and keeps what actually woke it"
+	)
+	assert_true(exact.is_finished(), "and so does the exact one")
+
+	var narrow: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_event(CRITICAL)
+	asc.send_gameplay_event(_event(DAMAGE))
+	assert_false(narrow.is_finished(), "but the specific listener ignores the general")
+
+
+func test_a_target_data_task_ends_when_its_own_ability_submits() -> void:
+	var task: AbilityTaskWaitTargetData = ability.wait_target_data()
+	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
+
+	ability.submit_target_data(data)
+
+	assert_true(task.is_finished(), "the request it made was answered")
+	assert_eq(task.target_data, data, "with exactly what was handed over")
+
+
+func test_a_target_data_task_ignores_another_abilitys_submission() -> void:
+	var other: TaskProbeAbility = Probe.build(OTHER_TAG)
+	asc.grant_ability(other)
+	var task: AbilityTaskWaitTargetData = ability.wait_target_data()
+
+	other.submit_target_data(GameplayAbilityTargetData.new())
+
+	assert_false(task.is_finished(), "a request this ability never made stays open")
+
+
+## Without an ASC there is nothing to cancel the task, so none is handed out.
+func test_a_factory_refuses_when_no_asc_can_own_the_task() -> void:
+	var orphan: TaskProbeAbility = Probe.build(OTHER_TAG)
+	add_child_autofree(orphan)
+	assert_null(orphan.wait_delay(1.0), "a task nothing could ever end is not created")
+
+
+func test_closing_an_ability_cancels_a_standard_task_too() -> void:
+	ability.try_activate()
+	var delay: AbilityTaskWaitDelay = ability.wait_delay(10.0)
+
+	ability.end_ability()
+
+	assert_true(delay.is_finished(), "a standard task ends with the cast like any other")
+	assert_eq(_running(), 0, "and nothing outlives it")
 #endregion
