@@ -12,6 +12,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayCueNotify extends Node
 
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 ## Emitted when the effect is complete so the manager can pool it again.
 signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)
@@ -29,7 +30,7 @@ signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)
 var gameplay_cue_tag: StringName = &""
 
 ## The parameters of the current playback. Null between playbacks.
-var current_params: GameplayCueParams = null
+var current_params: CueParams = null
 
 ## Guards the auto-destroy timer so a cue re-taken from the pool before its
 ## previous timer fires cannot be finished twice.
@@ -38,7 +39,7 @@ var _playback_id: int = 0
 
 #region Execution Lifecycle
 ## Called by the manager when this cue is pulled from the pool and parented.
-func execute_cue(params: GameplayCueParams) -> void:
+func execute_cue(params: CueParams) -> void:
 	current_params = params
 	_playback_id += 1
 	play_cue(params)
@@ -69,6 +70,6 @@ func finish_cue() -> void:
 
 ## Override this in a specific cue script. The default does nothing, so a cue
 ## that forgets to override still pools correctly instead of hanging forever.
-func play_cue(_params: GameplayCueParams) -> void:
+func play_cue(_params: CueParams) -> void:
 	pass
 #endregion

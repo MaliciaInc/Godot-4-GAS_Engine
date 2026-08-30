@@ -14,6 +14,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayEffectContext extends RefCounted
 
+const TargetData = preload("res://addons/GodotGAS/target_data/gameplay_ability_target_data.gd")
 
 ## The entity that activated the ability, e.g. the player character.
 var instigator: Node = null
@@ -23,14 +24,14 @@ var instigator: Node = null
 var causer: Node = null
 
 ## Who, what and where the ability hit.
-var target_data: GameplayAbilityTargetData = null
+var target_data: TargetData = null
 
 
 #region Initialization
 func _init(in_instigator: Node = null, in_causer: Node = null) -> void:
 	instigator = in_instigator
 	causer = in_causer if in_causer != null else in_instigator
-	target_data = GameplayAbilityTargetData.new()
+	target_data = TargetData.new()
 #endregion
 
 
