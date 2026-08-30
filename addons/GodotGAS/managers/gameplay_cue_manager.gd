@@ -58,7 +58,7 @@ func _load_registry() -> void:
 ## A missing registry is normal in a project that declares no cues, and noisy in
 ## one that meant to. Only the second case warrants a warning.
 func _warn_missing_registry(cue_registry_path: String) -> void:
-	if Engine.is_editor_hint() and not EditorInterface.is_plugin_enabled("GodotGAS"):
+	if Engine.is_editor_hint() and not EditorInterface.is_plugin_enabled(GodotGasProjectSettings.ADDON_NAME):
 		return
 	push_warning("GodotGAS: No cue registry found at " + cue_registry_path)
 #endregion

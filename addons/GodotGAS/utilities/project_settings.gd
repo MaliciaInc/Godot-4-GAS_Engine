@@ -22,6 +22,9 @@ enum EditorTagsTagEditorPropertyMatchType {
 	ANYWHERE,
 }
 
+## The addon's display name, as the editor and the plugin registry know it.
+const ADDON_NAME: String = "GodotGAS"
+
 const PROJECT_SETTINGS_NAME: String = "godot_gas"
 const PROJECT_SETTINGS_NAME_EDITOR: String = PROJECT_SETTINGS_NAME + "/editor"
 const PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR: String = PROJECT_SETTINGS_NAME_EDITOR + "/tag_property_editor"

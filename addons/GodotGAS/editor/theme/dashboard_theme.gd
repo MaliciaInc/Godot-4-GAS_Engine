@@ -16,6 +16,26 @@ class_name DashboardTheme extends RefCounted
 const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## Meta key marking which palette slot a PanelContainer belongs to.
+#: Godot's own theme vocabulary. Named here so the tabs ask the theme layer
+#: rather than each retyping the engine's strings.
+const EDITOR_THEME_TYPE: String = "Editor"
+const EDITOR_ICON_THEME: String = "EditorIcons"
+const ACCENT_COLOR: String = "accent_color"
+const FONT_COLOR: String = "font_color"
+const DISABLED_FONT_COLOR: String = "disabled_font_color"
+const PANEL_STYLEBOX: String = "panel"
+
+## Icon names Godot ships that the dashboards reuse.
+const ICON_EDIT: String = "Edit"
+const ICON_REMOVE: String = "Remove"
+const ICON_COPY: String = "ActionCopy"
+const ICON_EXPAND_TREE: String = "ExpandTree"
+const ICON_COLLAPSE_TREE: String = "CollapseTree"
+
+## Labels the tree toolbars share.
+const LABEL_EXPAND_TREE: String = "Expand Tree"
+const LABEL_COLLAPSE_TREE: String = "Collapse Tree"
+
 const PANEL_TYPE_META: String = "panel_type"
 const PANEL_BASE: String = "base"
 const PANEL_DARK: String = "dark"
@@ -60,12 +80,12 @@ func sync_from_editor() -> bool:
 	if editor_theme == null:
 		return false
 
-	var base_color: Color = editor_theme.get_color("base_color", "Editor")
-	var dark_color: Color = editor_theme.get_color("dark_color_1", "Editor")
+	var base_color: Color = editor_theme.get_color("base_color", EDITOR_THEME_TYPE)
+	var dark_color: Color = editor_theme.get_color("dark_color_1", EDITOR_THEME_TYPE)
 	if base_color == Color.BLACK and dark_color == Color.BLACK:
 		return false
 
-	var accent: Color = editor_theme.get_color("accent_color", "Editor")
+	var accent: Color = editor_theme.get_color(ACCENT_COLOR, EDITOR_THEME_TYPE)
 	accent_html = accent.to_html(false)
 	text_accent = accent
 
@@ -119,7 +139,7 @@ func apply_panels(root: Node) -> void:
 func _classify(panel: PanelContainer) -> void:
 	if panel.has_meta(PANEL_TYPE_META):
 		return
-	var style: StyleBox = panel.get_theme_stylebox("panel")
+	var style: StyleBox = panel.get_theme_stylebox(PANEL_STYLEBOX)
 	if style == null or style.resource_path.is_empty():
 		return
 	if style.resource_path.contains(DARK_STYLE_MARKER):
@@ -139,11 +159,11 @@ func _repaint(panel: PanelContainer) -> void:
 	var slot: String = raw_slot
 	match slot:
 		PANEL_BASE:
-			panel.add_theme_stylebox_override("panel", base_panel)
+			panel.add_theme_stylebox_override(PANEL_STYLEBOX, base_panel)
 		PANEL_DARK:
-			panel.add_theme_stylebox_override("panel", dark_panel)
+			panel.add_theme_stylebox_override(PANEL_STYLEBOX, dark_panel)
 		PANEL_HEADER:
-			panel.add_theme_stylebox_override("panel", header_panel)
+			panel.add_theme_stylebox_override(PANEL_STYLEBOX, header_panel)
 
 
 ## Apply the shared selection and guide styling to a tree.
@@ -206,7 +226,7 @@ static func recoloured_icon(path: String) -> Texture2D:
 	file.close()
 
 	var editor_theme: Theme = EditorInterface.get_editor_theme()
-	var font_color: String = "#" + editor_theme.get_color("font_color", "Editor").to_html(false)
+	var font_color: String = "#" + editor_theme.get_color(FONT_COLOR, EDITOR_THEME_TYPE).to_html(false)
 	for grey: String in ICON_NEUTRAL_GREYS:
 		svg_text = svg_text.replace(grey, font_color)
 

@@ -185,7 +185,7 @@ func _refresh_tree() -> void:
 	var root = _tree.create_item()
 	var filter = _search_bar.text.to_lower()
 	var created_nodes: Dictionary = {}
-	var trash_icon = EditorInterface.get_editor_theme().get_icon("Remove", "EditorIcons")
+	var trash_icon = EditorInterface.get_editor_theme().get_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME)
 	
 	for tag in _registry.tags:
 		var tag_str = String(tag).strip_edges()
@@ -308,12 +308,12 @@ func _on_add_custom_tag() -> void:
 		
 	var result_message = _registry.add_tag(text)
 	
-	if not result_message.begins_with("Error:"):
+	if not result_message.begins_with(GameplayTagRegistry.ERROR_PREFIX.strip_edges()):
 		_set_status("Successfully added: " + result_message, true)
 		_new_tag_input.text = ""
 		_refresh_tree()
 	else:
-		_set_status(result_message.replace("Error: ", ""), false)
+		_set_status(result_message.replace(GameplayTagRegistry.ERROR_PREFIX, ""), false)
 
 
 func _set_status(message: String, is_success: bool) -> void:
@@ -321,7 +321,7 @@ func _set_status(message: String, is_success: bool) -> void:
 		_status_label.text = message
 		var editor_theme = EditorInterface.get_editor_theme()
 		if is_success:
-			_status_label.add_theme_color_override("font_color", editor_theme.get_color("success_color", "Editor"))
+			_status_label.add_theme_color_override("font_color", editor_theme.get_color("success_color", DashboardTheme.EDITOR_THEME_TYPE))
 		else:
-			_status_label.add_theme_color_override("font_color", editor_theme.get_color("error_color", "Editor"))
+			_status_label.add_theme_color_override("font_color", editor_theme.get_color("error_color", DashboardTheme.EDITOR_THEME_TYPE))
 #endregion

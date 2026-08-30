@@ -26,7 +26,9 @@ const INITIALISED_KEY: String = "_initialized"
 
 const VALUE_KEY: String = "value"
 const ICON_KEY: String = "icon"
-const DEFAULT_ICON: String = "Attribute"
+## The icon catalogue owns this name; a second constant holding the same
+## string is a second place to change it.
+const DEFAULT_ICON: String = AttributeIcons.DEFAULT_NAME
 
 
 ## One drafted attribute: its starting value and the icon it shows.

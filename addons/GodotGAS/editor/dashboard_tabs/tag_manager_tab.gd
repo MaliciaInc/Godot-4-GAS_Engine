@@ -67,7 +67,7 @@ func _load_registry() -> void:
 	if ResourceLoader.exists(tag_registry_path):
 		_registry = load(tag_registry_path) as GameplayTagRegistry
 	else:
-		if not Engine.is_editor_hint() or EditorInterface.is_plugin_enabled("GodotGAS"):
+		if not Engine.is_editor_hint() or EditorInterface.is_plugin_enabled(GodotGasProjectSettings.ADDON_NAME):
 			push_warning("GodotGAS: Tag Registry not found at " + tag_registry_path)
 
 
@@ -89,7 +89,7 @@ func _setup_ui() -> void:
 	# Connect Inputs
 	_btn_add_tag.pressed.connect(_on_add_tag_pressed)
 	_btn_expand_collapse.pressed.connect(_on_expand_collapse_pressed)
-	_btn_expand_collapse.icon = get_theme_icon("CollapseTree", "EditorIcons")
+	_btn_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_COLLAPSE_TREE, DashboardTheme.EDITOR_ICON_THEME)
 	
 	# Allow hitting 'Enter' in the text box to add the tag
 	_new_tag_input.text_submitted.connect(func(_text): _on_add_tag_pressed()) 
@@ -136,9 +136,9 @@ func _refresh_tag_tree() -> void:
 	var filter = _search_bar.text.to_lower() if _search_bar else ""
 
 	# Get Icons and Colors natively from Editor
-	var trash_icon = get_theme_icon("Remove", "EditorIcons")
+	var trash_icon = get_theme_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME)
 	var editor_theme = EditorInterface.get_editor_theme()
-	var accent_color = editor_theme.get_color("accent_color", "Editor")
+	var accent_color = editor_theme.get_color(DashboardTheme.ACCENT_COLOR, DashboardTheme.EDITOR_THEME_TYPE)
 
 	for tag_name in _registry.tags:
 		var tag_str = String(tag_name)
@@ -196,7 +196,7 @@ func _on_add_tag_pressed() -> void:
 	# Call your custom add_tag function which handles regex and sorting
 	var result = _registry.add_tag(input_text)
 	
-	if result.begins_with("Error:"):
+	if result.begins_with(GameplayTagRegistry.ERROR_PREFIX.strip_edges()):
 		# Show a native editor warning dialog
 		var warning = AcceptDialog.new()
 		warning.dialog_text = result
@@ -215,13 +215,13 @@ func _on_expand_collapse_pressed() -> void:
 		child.collapsed = !child.collapsed
 		
 	# Update tooltip
-	_btn_expand_collapse.tooltip_text = "Expand Tree" if _tag_tree.get_root().get_first_child().collapsed else "Collapse Tree"
+	_btn_expand_collapse.tooltip_text = DashboardTheme.LABEL_EXPAND_TREE if _tag_tree.get_root().get_first_child().collapsed else DashboardTheme.LABEL_COLLAPSE_TREE
 	
 	# Update Icon
 	if _tag_tree.get_root().collapsed:
-		_btn_expand_collapse.icon = get_theme_icon("ExpandTree", "EditorIcons")
+		_btn_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_EXPAND_TREE, DashboardTheme.EDITOR_ICON_THEME)
 	else:
-		_btn_expand_collapse.icon = get_theme_icon("CollapseTree", "EditorIcons")
+		_btn_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_COLLAPSE_TREE, DashboardTheme.EDITOR_ICON_THEME)
 
 
 ## Triggered when an action button on a tree item is clicked (e.g., delete).

@@ -127,7 +127,7 @@ func _setup_ui() -> void:
 	_btn_add_mapping.pressed.connect(_on_add_mapping_pressed)
 	
 	_btn_cancel.pressed.connect(_reset_form)
-	_btn_cancel.icon = get_theme_icon("Close", "EditorIcons")
+	_btn_cancel.icon = get_theme_icon("Close", DashboardTheme.EDITOR_ICON_THEME)
 	
 	# Fetch theme colors and apply styling
 	_sync_theme_colors()
@@ -167,8 +167,8 @@ func _setup_ui() -> void:
 	search_hbox.add_child(_tag_search_bar)
 	
 	_btn_tag_expand_collapse = Button.new()
-	_btn_tag_expand_collapse.icon = get_theme_icon("CollapseTree", "EditorIcons")
-	_btn_tag_expand_collapse.tooltip_text = "Collapse Tree"
+	_btn_tag_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_COLLAPSE_TREE, DashboardTheme.EDITOR_ICON_THEME)
+	_btn_tag_expand_collapse.tooltip_text = DashboardTheme.LABEL_COLLAPSE_TREE
 	_btn_tag_expand_collapse.pressed.connect(_on_tag_expand_collapse_pressed)
 	search_hbox.add_child(_btn_tag_expand_collapse)
 	
@@ -214,8 +214,8 @@ func _on_select_tag_pressed() -> void:
 	_tag_search_bar.text = "" # Reset filter on open
 	
 	# Reset expand/collapse button state to default (Expanded)
-	_btn_tag_expand_collapse.icon = get_theme_icon("CollapseTree", "EditorIcons")
-	_btn_tag_expand_collapse.tooltip_text = "Collapse Tree"
+	_btn_tag_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_COLLAPSE_TREE, DashboardTheme.EDITOR_ICON_THEME)
+	_btn_tag_expand_collapse.tooltip_text = DashboardTheme.LABEL_COLLAPSE_TREE
 	
 	_build_tag_tree()
 	_tag_dialog.popup_centered()
@@ -241,11 +241,11 @@ func _on_tag_expand_collapse_pressed() -> void:
 		
 	# Update Button UI
 	if new_collapsed_state:
-		_btn_tag_expand_collapse.icon = get_theme_icon("ExpandTree", "EditorIcons")
-		_btn_tag_expand_collapse.tooltip_text = "Expand Tree"
+		_btn_tag_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_EXPAND_TREE, DashboardTheme.EDITOR_ICON_THEME)
+		_btn_tag_expand_collapse.tooltip_text = DashboardTheme.LABEL_EXPAND_TREE
 	else:
-		_btn_tag_expand_collapse.icon = get_theme_icon("CollapseTree", "EditorIcons")
-		_btn_tag_expand_collapse.tooltip_text = "Collapse Tree"
+		_btn_tag_expand_collapse.icon = get_theme_icon(DashboardTheme.ICON_COLLAPSE_TREE, DashboardTheme.EDITOR_ICON_THEME)
+		_btn_tag_expand_collapse.tooltip_text = DashboardTheme.LABEL_COLLAPSE_TREE
 
 
 ## Rebuild the tag picker, greying out tags this registry already maps.
@@ -257,7 +257,7 @@ func _build_tag_tree(filter: String = "") -> void:
 	style.leaf_icon = TAG_ICON
 	style.leaf_color = _theme.text_accent
 	style.unavailable_color = EditorInterface.get_editor_theme().get_color(
-		"disabled_font_color", "Editor"
+		DashboardTheme.DISABLED_FONT_COLOR, DashboardTheme.EDITOR_THEME_TYPE
 	)
 	GameplayTagTree.build(_tag_tree, filter, _mapped_tags(), style)
 
@@ -327,7 +327,7 @@ func _on_edit_pressed(index: int) -> void:
 	_lbl_selected_scene.text = entry.scene.resource_path.get_file() if entry.scene else "No Scene Selected"
 	
 	_btn_add_mapping.text = "Save Changes"
-	_btn_add_mapping.icon = get_theme_icon("Save", "EditorIcons")
+	_btn_add_mapping.icon = get_theme_icon("Save", DashboardTheme.EDITOR_ICON_THEME)
 	_btn_cancel.show()
 
 
@@ -368,7 +368,7 @@ func _reset_form() -> void:
 	_lbl_selected_scene.text = "No Scene Selected"
 	
 	_btn_add_mapping.text = "Add Mapping"
-	_btn_add_mapping.icon = get_theme_icon("Add", "EditorIcons")
+	_btn_add_mapping.icon = get_theme_icon("Add", DashboardTheme.EDITOR_ICON_THEME)
 	_btn_cancel.hide()
 
 
@@ -396,7 +396,7 @@ func _refresh_cue_list(filter: String = "") -> void:
 		
 		# --- NEW: Beautiful Card Background ---
 		var card = PanelContainer.new()
-		card.add_theme_stylebox_override("panel", _theme.list_item)
+		card.add_theme_stylebox_override(DashboardTheme.PANEL_STYLEBOX, _theme.list_item)
 		
 		var row = HBoxContainer.new()
 		card.add_child(row)
@@ -418,7 +418,7 @@ func _refresh_cue_list(filter: String = "") -> void:
 		
 		# Fetch the exact hex string of Godot's native font color
 		var editor_theme = EditorInterface.get_editor_theme()
-		var icon_color_hex = editor_theme.get_color("font_color", "Editor").to_html(false)
+		var icon_color_hex = editor_theme.get_color(DashboardTheme.FONT_COLOR, DashboardTheme.EDITOR_THEME_TYPE).to_html(false)
 		
 		# Multiply Godot's standard 16px icon size by the user's monitor UI scale
 		var icon_size = int(16 * EditorInterface.get_editor_scale())
@@ -434,11 +434,11 @@ func _refresh_cue_list(filter: String = "") -> void:
 		row.add_child(lbl_vbox)
 		
 		var edit_btn = Button.new()
-		edit_btn.icon = get_theme_icon("Edit", "EditorIcons")
+		edit_btn.icon = get_theme_icon(DashboardTheme.ICON_EDIT, DashboardTheme.EDITOR_ICON_THEME)
 		edit_btn.pressed.connect(_on_edit_pressed.bind(original_index))
 		
 		var del_btn = Button.new()
-		del_btn.icon = get_theme_icon("Remove", "EditorIcons")
+		del_btn.icon = get_theme_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME)
 		del_btn.pressed.connect(_on_delete_pressed.bind(original_index))
 		
 		row.add_child(edit_btn)

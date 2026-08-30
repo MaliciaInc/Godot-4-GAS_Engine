@@ -16,7 +16,6 @@ const ICON_STAR: String = "res://addons/GodotGAS/icons/godot_gas_icon_star.svg"
 const ICON_EDIT: String = "res://addons/GodotGAS/icons/godot_gas_icon_edit.svg"
 
 ## Godot's own icon theme, and the two confirmation subjects.
-const EDITOR_ICONS: String = "EditorIcons"
 const DELETE_SET: String = "set"
 const DELETE_ATTRIBUTE: String = "attribute"
 const ACTION_FAILED: String = "Action Failed"
@@ -196,9 +195,9 @@ func _refresh_set_tree() -> void:
 		item.set_icon(0, _set_icon)
 		item.set_metadata(0, set_name)
 		item.set_editable(0, false)
-		item.add_button(0, get_theme_icon("Edit", EDITOR_ICONS), TreeBtn.EDIT, false, "Rename Set")
-		item.add_button(0, get_theme_icon("ActionCopy", EDITOR_ICONS), TreeBtn.DUPLICATE, false, "Duplicate Set")
-		item.add_button(0, get_theme_icon("Remove", EDITOR_ICONS), TreeBtn.DELETE, false, "Delete Set")
+		item.add_button(0, get_theme_icon(DashboardTheme.ICON_EDIT, DashboardTheme.EDITOR_ICON_THEME), TreeBtn.EDIT, false, "Rename Set")
+		item.add_button(0, get_theme_icon(DashboardTheme.ICON_COPY, DashboardTheme.EDITOR_ICON_THEME), TreeBtn.DUPLICATE, false, "Duplicate Set")
+		item.add_button(0, get_theme_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME), TreeBtn.DELETE, false, "Delete Set")
 		if set_name == _current_set:
 			item.select(0)
 
@@ -310,8 +309,8 @@ func _build_attribute_row(root: TreeItem, key: String, entry: AttributeSetDrafts
 	item.set_text(1, str(entry.value))
 	item.set_editable(1, true)
 	item.add_button(1, _edit_icon_icon, TreeBtn.CHANGE_ICON, false, "Change Icon")
-	item.add_button(1, get_theme_icon("ActionCopy", EDITOR_ICONS), TreeBtn.DUPLICATE, false, "Duplicate Attribute")
-	item.add_button(1, get_theme_icon("Remove", EDITOR_ICONS), TreeBtn.DELETE, false, "Delete Attribute")
+	item.add_button(1, get_theme_icon(DashboardTheme.ICON_COPY, DashboardTheme.EDITOR_ICON_THEME), TreeBtn.DUPLICATE, false, "Duplicate Attribute")
+	item.add_button(1, get_theme_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME), TreeBtn.DELETE, false, "Delete Attribute")
 
 
 func _on_attribute_tree_button_clicked(

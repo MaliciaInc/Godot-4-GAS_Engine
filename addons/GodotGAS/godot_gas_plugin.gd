@@ -22,7 +22,7 @@ extends EditorPlugin
 
 const CUE_MANAGER_NAME: String = "GameplayCueManager"
 const CUE_MANAGER_PATH: String = "res://addons/GodotGAS/managers/gameplay_cue_manager.gd"
-const PLUGIN_DISPLAY_NAME: String = "GodotGAS"
+const PLUGIN_DISPLAY_NAME: String = GodotGasProjectSettings.ADDON_NAME
 const PLUGIN_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas.svg"
 
 const DASHBOARD_SCENE: PackedScene = preload("res://addons/GodotGAS/editor/godot_gas_dashboard.tscn")
