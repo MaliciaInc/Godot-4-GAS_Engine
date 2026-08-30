@@ -147,26 +147,29 @@ func _prototype_id_in_slot() -> StringName:
 
 #region Granting and taking back
 func _apply(grant: GlootGasEquipmentGrant) -> void:
-	# Built and type-checked before the ASC is touched, so the likeliest failure
-	# - a scene whose root is not an ability - costs nothing to discover.
-	var abilities: Array[GameplayAbility] = []
+	# Every scene is instantiated and validated before the ASC is touched, so
+	# the likeliest failure - a scene whose root is not an ability - costs
+	# nothing to discover. prepare_ability_grant is the one validation route;
+	# this never instantiates a scene itself.
+	var source: GameplayAbilityNamedSource = GameplayAbilityNamedSource.new()
+	source.id = grant.prototype_id
+	var runtime: AbilityRuntime = target_asc.ability_runtime
+	var prepared: Array[PreparedAbilityGrant] = []
 	for scene: PackedScene in grant.abilities:
-		var instance: Node = scene.instantiate()
-		var ability: GameplayAbility = instance as GameplayAbility
-		if ability == null:
-			instance.queue_free()
-			for built: GameplayAbility in abilities:
-				built.queue_free()
+		var one: PreparedAbilityGrant = runtime.prepare_ability_grant(scene, 1.0, -1, source)
+		if not one.validation.is_ok():
+			runtime.discard_prepared_grant(one)
+			for built: PreparedAbilityGrant in prepared:
+				runtime.discard_prepared_grant(built)
 			equipment_rejected.emit(grant.prototype_id)
 			return
-		abilities.append(ability)
+		prepared.append(one)
 
 	var receipt: GlootGasEquipmentReceipt = GlootGasEquipmentReceipt.new()
 	receipt.prototype_id = grant.prototype_id
 
-	for ability: GameplayAbility in abilities:
-		target_asc.grant_ability(ability)
-		receipt.granted_abilities.append(ability)
+	for one: PreparedAbilityGrant in prepared:
+		receipt.granted_abilities.append(runtime.commit_prepared_grant(one))
 
 	for effect: GameplayEffect in grant.passive_effects:
 		var applied: ActiveGameplayEffect = target_asc.apply_gameplay_effect(effect, target_asc)
@@ -190,8 +193,8 @@ func _take_back(receipt: GlootGasEquipmentReceipt) -> void:
 		target_asc.remove_tag(tag)
 	for applied: ActiveGameplayEffect in receipt.applied_effects:
 		target_asc.remove_active_effect(applied)
-	for ability: GameplayAbility in receipt.granted_abilities:
-		target_asc.remove_ability(ability)
+	for handle: GameplayAbilityHandle in receipt.granted_abilities:
+		target_asc.ability_runtime.remove_ability(handle)
 
 
 ## Take back the worn item's grant, if there is one. Safe to call repeatedly.

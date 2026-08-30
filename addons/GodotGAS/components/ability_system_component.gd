@@ -117,6 +117,7 @@ func _wire_runtimes() -> void:
 	ability_runtime.tasks.owner_asc = self
 
 	events.owner_asc = self
+	events.ability_runtime = ability_runtime
 
 
 func _process(delta: float) -> void:
@@ -395,16 +396,33 @@ func get_tag_turns_remaining(tag: StringName) -> int:
 
 
 #region Abilities, input and events
-func grant_ability(ability: GameplayAbility) -> void:
-	ability_runtime.grant(ability)
+## Grant an ability from its scene - the one authoring source, and the one
+## way an ability is ever granted. prepare -> commit under the hood; a
+## failed prepare frees whatever it instantiated and returns an invalid
+## handle rather than a Node nobody owns.
+func give_ability(
+	ability_scene: PackedScene,
+	level: float = 1.0,
+	input_id: int = -1,
+	source: GameplayAbilitySource = null
+) -> GameplayAbilityHandle:
+	return ability_runtime.give_ability(ability_scene, level, input_id, source)
 
 
+## Convenience for a caller holding the running instance rather than its
+## handle. A caller that only has the handle - GLoot's receipt, mainly -
+## uses ability_runtime.remove_ability(handle) directly; get_ability_spec
+## and get_ability_cooldown_state live there too, for the same reason.
 func remove_ability(ability: GameplayAbility) -> void:
 	ability_runtime.remove(ability)
 
 
 func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
-	var reason: AbilityRuntime.ActivationError = ability_runtime.activation_error(ability)
+	if ability == null or ability.current_spec == null:
+		return false
+	var reason: AbilityRuntime.ActivationError = ability_runtime.activation_error(
+		ability.current_spec
+	)
 	if reason == AbilityRuntime.ActivationError.NONE:
 		return true
 	if emit_failure:
@@ -451,5 +469,5 @@ func send_gameplay_event(event: GameplayEventData) -> void:
 	# A task already waiting for this event hears it before it can wake a
 	# sleeping ability that would then wait for the same one.
 	ability_runtime.tasks.gameplay_event(event)
-	events.dispatch(event, ability_runtime.abilities())
+	events.dispatch(event, ability_runtime.specs())
 #endregion

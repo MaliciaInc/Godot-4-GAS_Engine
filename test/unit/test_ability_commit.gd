@@ -16,6 +16,12 @@
 ## but the resolver ever builds one. Those regression tests live in
 ## test_ability_commit_contract.gd, which tests AbilityCommitContract directly.
 ##
+## costs and cooldown_effect are read from the frozen definition a grant
+## captured, not from this Node's live exports, so every test that needs a
+## specific one configures a fresh probe before granting it rather than
+## editing `ability` afterward - the same discipline a real designer's scene
+## follows, since the scene is exactly what the snapshot reads.
+##
 ## @meta_license: MIT
 extends GutTest
 
@@ -23,6 +29,7 @@ const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const AttributeSetScript = preload("res://test/fixtures/test_attribute_set.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const TOLERANCE: float = 0.0001
 const MANA: StringName = &"mana"
@@ -64,8 +71,7 @@ func before_each() -> void:
 	add_child_autofree(fixture.owner)
 	asc = fixture.asc
 	fixture.set_base(MANA, STARTING_MANA)
-	ability = Probe.build(PROBE_TAG)
-	asc.grant_ability(ability)
+	ability = _granted(asc)
 
 
 func after_each() -> void:
@@ -75,20 +81,35 @@ func after_each() -> void:
 
 
 #region Builders
-## A single absolute mana cost, for the many tests that only care about the
-## transaction shape and not the pricing model.
-func _cost(positive_amount: float) -> Array[GameplayAbilityCost]:
+func _cost(target: StringName, positive_amount: float) -> GameplayAbilityCost:
 	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
 	cost.mode = GameplayAbilityCost.Mode.ABSOLUTE
-	cost.target_attribute = MANA
+	cost.target_attribute = target
 	cost.amount = GameplayScalableFloat.new()
 	cost.amount.value = positive_amount
-	return [cost]
+	return cost
+
+
+## A single absolute mana cost, for the many tests that only care about the
+## transaction shape and not the pricing model.
+func _mana_cost(positive_amount: float) -> Array[GameplayAbilityCost]:
+	return [_cost(MANA, positive_amount)]
 
 
 func _cooldown(tag: StringName) -> GameplayEffect:
 	var no_modifiers: Array[GameplayEffectModifier] = []
 	return Factory.granting(Factory.duration(no_modifiers, COOLDOWN_SECONDS), [tag])
+
+
+## Grant a fresh probe on `on_asc`, configuring it first: costs, cooldowns and
+## every other export a grant snapshots are authored before the grant, never
+## edited on the instance afterward.
+func _granted(on_asc: AbilitySystemComponent, configure: Callable = Callable()) -> ProbeAbility:
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	if configure.is_valid():
+		configure.call(probe)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(on_asc, probe)
+	return spec.per_actor_instance as ProbeAbility
 
 
 ## The status of committing the ability under test, for the many cases whose
@@ -97,9 +118,9 @@ func _status() -> AbilityCommitResult.Status:
 	return ability.commit_ability().status
 
 
-## An ASC that will refuse whatever `refuses` matches, with an ability already
-## granted on it.
-func _caster_refusing(refuses: Callable) -> ProbeAbility:
+## An ASC that will refuse whatever `refuses` matches, with a configured
+## ability already granted on it.
+func _caster_refusing(refuses: Callable, configure: Callable = Callable()) -> ProbeAbility:
 	var host: Node = Node.new()
 	host.name = "Refuser"
 
@@ -111,9 +132,7 @@ func _caster_refusing(refuses: Callable) -> ProbeAbility:
 	host.add_child(refusing)
 	add_child_autofree(host)
 
-	var caster: ProbeAbility = Probe.build(PROBE_TAG)
-	refusing.grant_ability(caster)
-	return caster
+	return _granted(refusing, configure)
 #endregion
 
 
@@ -137,7 +156,7 @@ func test_an_ability_with_no_owner_reports_owner_missing() -> void:
 
 
 func test_a_second_commit_in_one_activation_is_refused() -> void:
-	ability.costs = _cost(COST_AMOUNT)
+	ability = _granted(asc, func(p: ProbeAbility) -> void: p.costs = _mana_cost(COST_AMOUNT))
 	assert_true(ability.commit_ability().is_ok(), "the first commit pays")
 
 	assert_eq(_status(), AbilityCommitResult.Status.ALREADY_COMMITTED, "one activation, one charge")
@@ -149,8 +168,10 @@ func test_a_second_commit_in_one_activation_is_refused() -> void:
 
 #region What a cooldown may be
 func test_a_cooldown_that_moves_an_attribute_is_refused() -> void:
-	ability.cooldown_effect = Factory.granting(
-		Factory.duration([Factory.add(MANA, -COST_AMOUNT)], COOLDOWN_SECONDS), [OWN_COOLDOWN]
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		p.cooldown_effect = Factory.granting(
+			Factory.duration([Factory.add(MANA, -COST_AMOUNT)], COOLDOWN_SECONDS), [OWN_COOLDOWN]
+		)
 	)
 	assert_eq(
 		_status(), AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION, "a cooldown is not a debuff"
@@ -158,16 +179,20 @@ func test_a_cooldown_that_moves_an_attribute_is_refused() -> void:
 
 
 func test_a_cooldown_without_a_granted_tag_is_refused() -> void:
-	var no_modifiers: Array[GameplayEffectModifier] = []
-	ability.cooldown_effect = Factory.duration(no_modifiers, COOLDOWN_SECONDS)
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		var no_modifiers: Array[GameplayEffectModifier] = []
+		p.cooldown_effect = Factory.duration(no_modifiers, COOLDOWN_SECONDS)
+	)
 	assert_eq(
 		_status(), AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION, "nothing could observe it"
 	)
 
 
 func test_an_instant_cooldown_is_refused() -> void:
-	var no_modifiers: Array[GameplayEffectModifier] = []
-	ability.cooldown_effect = Factory.granting(Factory.instant(no_modifiers), [OWN_COOLDOWN])
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		var no_modifiers: Array[GameplayEffectModifier] = []
+		p.cooldown_effect = Factory.granting(Factory.instant(no_modifiers), [OWN_COOLDOWN])
+	)
 	assert_eq(
 		_status(),
 		AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION,
@@ -179,8 +204,10 @@ func test_an_instant_cooldown_is_refused() -> void:
 #region The transaction
 func test_an_unaffordable_cost_starts_no_cooldown() -> void:
 	fixture.set_base(MANA, 5.0)
-	ability.costs = _cost(COST_AMOUNT)
-	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		p.costs = _mana_cost(COST_AMOUNT)
+		p.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	)
 
 	assert_eq(_status(), AbilityCommitResult.Status.INSUFFICIENT_RESOURCES, "the owner cannot pay")
 	assert_false(asc.has_tag(OWN_COOLDOWN), "and is therefore not on cooldown")
@@ -190,10 +217,11 @@ func test_an_unaffordable_cost_starts_no_cooldown() -> void:
 func test_a_cooldown_that_fails_to_apply_charges_nothing() -> void:
 	var cooldown: GameplayEffect = _cooldown(OWN_COOLDOWN)
 	var caster: ProbeAbility = _caster_refusing(
-		func(effect: GameplayEffect) -> bool: return effect == cooldown
+		func(effect: GameplayEffect) -> bool: return effect == cooldown,
+		func(p: ProbeAbility) -> void:
+			p.costs = _mana_cost(COST_AMOUNT)
+			p.cooldown_effect = cooldown
 	)
-	caster.costs = _cost(COST_AMOUNT)
-	caster.cooldown_effect = cooldown
 
 	var before: float = caster.owner_asc.get_attribute_base(MANA)
 	var result: AbilityCommitResult = caster.commit_ability()
@@ -210,10 +238,11 @@ func test_a_cooldown_that_fails_to_apply_charges_nothing() -> void:
 func test_a_cost_that_fails_to_apply_retires_the_cooldowns() -> void:
 	var caster: ProbeAbility = _caster_refusing(
 		func(effect: GameplayEffect) -> bool:
-			return effect.policy == GameplayEffect.DurationPolicy.INSTANT
+			return effect.policy == GameplayEffect.DurationPolicy.INSTANT,
+		func(p: ProbeAbility) -> void:
+			p.costs = _mana_cost(COST_AMOUNT)
+			p.cooldown_effect = _cooldown(OWN_COOLDOWN)
 	)
-	caster.costs = _cost(COST_AMOUNT)
-	caster.cooldown_effect = _cooldown(OWN_COOLDOWN)
 
 	var result: AbilityCommitResult = caster.commit_ability()
 
@@ -225,8 +254,10 @@ func test_a_cost_that_fails_to_apply_retires_the_cooldowns() -> void:
 
 func test_a_cooldown_listed_twice_is_applied_once() -> void:
 	var shared: GameplayEffect = _cooldown(SHARED_COOLDOWN)
-	ability.cooldown_effect = shared
-	ability.shared_cooldown_effects = [shared]
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		p.cooldown_effect = shared
+		p.shared_cooldown_effects = [shared]
+	)
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "sharing a cooldown with itself is legal")
@@ -235,8 +266,10 @@ func test_a_cooldown_listed_twice_is_applied_once() -> void:
 
 
 func test_a_successful_commit_charges_exactly_once() -> void:
-	ability.costs = _cost(COST_AMOUNT)
-	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		p.costs = _mana_cost(COST_AMOUNT)
+		p.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	)
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "affordable and well defined")
@@ -248,7 +281,7 @@ func test_a_successful_commit_charges_exactly_once() -> void:
 
 
 func test_a_new_activation_may_commit_again() -> void:
-	ability.costs = _cost(COST_AMOUNT)
+	ability = _granted(asc, func(p: ProbeAbility) -> void: p.costs = _mana_cost(COST_AMOUNT))
 	ability.commits = true
 
 	var first: bool = await ability.try_activate()
@@ -272,8 +305,10 @@ func test_a_new_activation_may_commit_again() -> void:
 ## resolve time and is never recalculated; only affordability is asked again.
 func test_a_cooldown_listener_that_drains_resources_rolls_back_and_reports_the_change() -> void:
 	fixture.set_base(MANA, COST_AMOUNT)
-	ability.costs = _cost(COST_AMOUNT)
-	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	ability = _granted(asc, func(p: ProbeAbility) -> void:
+		p.costs = _mana_cost(COST_AMOUNT)
+		p.cooldown_effect = _cooldown(OWN_COOLDOWN)
+	)
 
 	asc.tag_added.connect(func(_tag: StringName) -> void: asc.set_attribute_base(MANA, 0.0))
 
@@ -292,10 +327,10 @@ func test_a_cooldown_listener_that_drains_resources_rolls_back_and_reports_the_c
 #region Activation shares the resolver
 func test_activation_error_and_commit_ability_agree_on_affordability() -> void:
 	fixture.set_base(MANA, 5.0)
-	ability.costs = _cost(COST_AMOUNT)
+	ability = _granted(asc, func(p: ProbeAbility) -> void: p.costs = _mana_cost(COST_AMOUNT))
 
 	assert_eq(
-		asc.ability_runtime.activation_error(ability),
+		asc.ability_runtime.activation_error(ability.current_spec),
 		AbilityRuntime.ActivationError.INSUFFICIENT_RESOURCES,
 		"the gate refuses"
 	)

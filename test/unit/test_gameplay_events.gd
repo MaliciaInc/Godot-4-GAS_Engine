@@ -9,6 +9,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const DAMAGE: StringName = &"Event.Damage"
 const CRITICAL: StringName = &"Event.Damage.Critical"
@@ -40,23 +41,12 @@ func _event(tag: StringName) -> GameplayEventData:
 	return event
 
 
-## An ability that records what it received instead of doing anything.
-class RecordingAbility extends GameplayAbility:
-	var activations: int = 0
-	var last_context: GameplayEffectContext = null
-
-	func _activate_ability() -> bool:
-		activations += 1
-		last_context = current_context
-		return true
-
-
 func _listener(trigger: StringName) -> RecordingAbility:
-	var ability: RecordingAbility = RecordingAbility.new()
-	ability.trigger_event_tag = trigger
-	ability.ability_tag = &"Ability.Recorder"
-	asc.grant_ability(ability)
-	return ability
+	var probe: RecordingAbility = RecordingAbility.new()
+	probe.trigger_event_tag = trigger
+	probe.ability_tag = &"Ability.Recorder"
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	return spec.per_actor_instance as RecordingAbility
 
 
 #region Matching
@@ -128,18 +118,25 @@ func test_two_listeners_each_receive_once() -> void:
 
 
 func test_a_listener_granted_during_dispatch_does_not_receive_this_event() -> void:
-	var late: RecordingAbility = RecordingAbility.new()
-	late.trigger_event_tag = DAMAGE
-	late.ability_tag = &"Ability.Late"
+	var late_probe: RecordingAbility = RecordingAbility.new()
+	late_probe.trigger_event_tag = DAMAGE
+	late_probe.ability_tag = &"Ability.Late"
+	# A lambda captures an outer local by value: reassigning `late` inside the
+	# callback would rebind only its own copy, and the ability actually granted
+	# would never reach this scope. A one-element array is captured by the same
+	# reference on both sides, so writing into slot 0 is visible out here too.
+	var late: Array[RecordingAbility] = [null]
 
 	var granter: RecordingAbility = _listener(DAMAGE)
-	granter.ability_ended.connect(func(_cancelled: bool) -> void: asc.grant_ability(late))
+	granter.ability_ended.connect(func(_cancelled: bool) -> void:
+		late[0] = AbilityFactory.give(asc, late_probe).per_actor_instance as RecordingAbility
+	)
 
 	asc.send_gameplay_event(_event(DAMAGE))
 	# Eligible listeners are snapshotted before the first callback runs, so an
 	# ability granted mid-dispatch joins the next event, not this one.
 	assert_eq(granter.activations, 1)
-	assert_eq(late.activations, 0, "the newcomer waits for the next event")
+	assert_eq(late[0].activations, 0, "the newcomer waits for the next event")
 
 
 func test_dispatch_survives_a_listener_removing_another() -> void:

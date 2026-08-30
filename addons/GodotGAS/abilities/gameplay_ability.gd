@@ -53,20 +53,32 @@ var current_context: GameplayEffectContext = null
 
 var owner_asc: AbilitySystemComponent = null
 
+## What this instance was granted as. Null until AbilityRuntime's grant
+## pipeline assigns it, and the source of truth for level and input once it
+## does: ability_level and input_id above stay the authoring surface a scene
+## edits, but core logic reads through the accessors below instead.
+var current_spec: GameplayAbilitySpec = null
+
 var is_active: bool = false
 
 ## Whether this activation has already paid. One activation charges once.
 var _committed: bool = false
 
 
-#region Initialization
-func _ready() -> void:
-	if owner_asc != null:
-		return
-	var parent: Node = get_parent()
-	var parent_asc: AbilitySystemComponent = parent as AbilitySystemComponent
-	if parent_asc != null:
-		parent_asc.grant_ability(self)
+#region Spec accessors
+## The level this grant runs at. current_spec once granted; the exported
+## default otherwise, for a probe not yet committed to a spec.
+func get_ability_level() -> float:
+	return current_spec.level if current_spec != null else ability_level
+
+
+func get_input_id() -> int:
+	return current_spec.input_id if current_spec != null else input_id
+
+
+## Null when this instance was never granted through the grant pipeline.
+func get_ability_handle() -> GameplayAbilityHandle:
+	return current_spec.handle if current_spec != null else null
 #endregion
 
 
@@ -115,11 +127,16 @@ func commit_ability() -> AbilityCommitResult:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
 
+	# current_spec is guaranteed non-null here: the one place that sets
+	# owner_asc (AbilityRuntime.commit_prepared_grant) always sets both
+	# together. Costs/cooldowns are read from the frozen definition, never
+	# from this Node's own exports, which are authoring surface only once
+	# a spec exists.
 	# The only place a percentage is computed. Every step after this reads
-	# resolved.absolute_effect - never costs again - so nothing here can
-	# recalculate a percentage mid-commit.
+	# resolved.absolute_effect - never the definition's costs again - so
+	# nothing here can recalculate a percentage mid-commit.
 	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
-		costs, owner_asc, ability_level
+		current_spec.definition.costs, owner_asc, current_spec.level
 	)
 	result.resolved_cost = resolved
 	if (
@@ -136,7 +153,7 @@ func commit_ability() -> AbilityCommitResult:
 		return result
 
 	var cooldowns: Array[GameplayEffect] = AbilityCommitContract.unique_cooldowns(
-		cooldown_effect, shared_cooldown_effects
+		current_spec.definition.cooldown_effect, current_spec.definition.shared_cooldown_effects
 	)
 	for cooldown: GameplayEffect in cooldowns:
 		if not AbilityCommitContract.is_legal_cooldown(cooldown):
@@ -151,7 +168,7 @@ func commit_ability() -> AbilityCommitResult:
 
 	for cooldown: GameplayEffect in cooldowns:
 		var started: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
-			cooldown, owner_asc, ability_level
+			cooldown, owner_asc, current_spec.level
 		)
 		if started == null:
 			_roll_back(result)
@@ -269,7 +286,7 @@ func apply_effect_to_targets(
 	var context: GameplayEffectContext = GameplayEffectContext.new(avatar, avatar)
 	context.target_data = target_data
 
-	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, ability_level)
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, get_ability_level())
 	var reached: Array[int] = []
 	var unreachable: Array[int] = []
 	for target: Node in target_data.get_target_nodes():
@@ -310,55 +327,25 @@ static func find_asc_on(node: Node) -> AbilitySystemComponent:
 	return AbilitySystemLocator.find_for_node(node)
 
 
-## Every tag that represents a cooldown for this ability: its own, those of the
-## shared cooldown effects, and any declared explicitly.
+## Every tag that represents a cooldown for this ability: its own, those of
+## the shared cooldown effects, and any declared explicitly.
+##
+## A convenience wrapper: the one implementation lives on AbilityRuntime,
+## keyed by spec, so a tool that only has a handle gets the same answer
+## without needing a live instance.
 func get_cooldown_tags() -> Array[StringName]:
-	var cooldown_tags: Array[StringName] = []
-	if cooldown_effect != null:
-		cooldown_tags.append_array(cooldown_effect.granted_tags)
-	for effect: GameplayEffect in shared_cooldown_effects:
-		if effect != null:
-			cooldown_tags.append_array(effect.granted_tags)
-	cooldown_tags.append_array(shared_cooldown_tags)
-	return cooldown_tags
+	return AbilityRuntime.get_cooldown_tags(current_spec)
 
 
 ## Everything a UI needs to draw this ability's cooldown, read fresh.
 ##
-## Derived from the tags the cooldown effects grant, never from a clock of its
-## own. A parallel timer would be a second authority on when the ability is
-## ready again, and the two would part company the first time an effect was
-## refreshed, removed early, or expired on a turn instead of a second.
+## A convenience wrapper for when a live instance is at hand; the runtime
+## answers the same question by handle, so a tool that lost the Node but
+## kept the handle can still ask.
 func get_cooldown_state() -> AbilityCooldownState:
-	var state: AbilityCooldownState = AbilityCooldownState.new()
-	if owner_asc == null:
-		return state
-
-	for tag: StringName in get_cooldown_tags():
-		# A tag shared between the ability's own cooldown and a shared one is
-		# one wait, not two, and must not be counted twice.
-		if state.tags.has(tag):
-			continue
-		state.tags.append(tag)
-
-		var seconds: float = owner_asc.get_tag_duration_remaining(tag)
-		if is_inf(seconds):
-			state.infinite = true
-		elif seconds > state.seconds_remaining:
-			state.seconds_remaining = seconds
-
-		var turns: int = owner_asc.get_tag_turns_remaining(tag)
-		if turns > state.turns_remaining:
-			state.turns_remaining = turns
-
-		if owner_asc.has_tag(tag):
-			state.active = true
-
-	# A clock with time left means the ability is on cooldown even if the tag
-	# accounting were somehow out of step with it.
-	if state.infinite or state.seconds_remaining > 0.0 or state.turns_remaining > 0:
-		state.active = true
-	return state
+	if owner_asc == null or current_spec == null:
+		return AbilityCooldownState.new()
+	return owner_asc.ability_runtime.get_ability_cooldown_state(current_spec.handle)
 #endregion
 
 
@@ -423,7 +410,7 @@ func wait_input_released(input_slot: int = -1) -> AbilityTaskWaitInput:
 func _wait_input(
 	input_slot: int, transition: AbilityTaskWaitInput.Transition
 ) -> AbilityTaskWaitInput:
-	var slot: int = input_id if input_slot == -1 else input_slot
+	var slot: int = get_input_id() if input_slot == -1 else input_slot
 	return _own(AbilityTaskWaitInput.create(self, slot, transition)) as AbilityTaskWaitInput
 
 

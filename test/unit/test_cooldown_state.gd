@@ -5,12 +5,18 @@
 ## company with it the first time the cooldown was refreshed, removed early, or
 ## measured in turns instead of seconds. Everything here is asked, never stored.
 ##
+## cooldown_effect and its siblings are read from the frozen definition a grant
+## captured, so every test that needs a specific one configures a fresh probe
+## before granting it - editing `ability.cooldown_effect` after the grant would
+## simply not reach what get_cooldown_state() reads.
+##
 ## @meta_license: MIT
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const TOLERANCE: float = 0.0001
 const PROBE_TAG: StringName = &"Ability.Probe"
@@ -42,8 +48,7 @@ func before_each() -> void:
 	fixture = Fixture.create("Caster")
 	add_child_autofree(fixture.owner)
 	asc = fixture.asc
-	ability = Probe.build(PROBE_TAG)
-	asc.grant_ability(ability)
+	ability = _granted(Callable())
 
 
 func after_each() -> void:
@@ -66,6 +71,17 @@ func _turns_cooldown(tag: StringName, turns: int) -> GameplayEffect:
 func _endless_effect(tag: StringName) -> GameplayEffect:
 	var none: Array[GameplayEffectModifier] = []
 	return Factory.granting(Factory.infinite(none), [tag])
+
+
+## Grant a fresh probe, configured before the grant so what it sets - the
+## cooldown effect and its siblings - reaches the frozen definition
+## get_cooldown_state() actually reads.
+func _granted(configure: Callable) -> ProbeAbility:
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	if configure.is_valid():
+		configure.call(probe)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	return spec.per_actor_instance as ProbeAbility
 
 
 ## Start the cooldowns, and refuse to continue quietly if they were not started.
@@ -105,9 +121,13 @@ func test_a_cooldown_is_reported_in_its_own_unit(
 	scenario: UnitCase = use_parameters(_unit_cases())
 ) -> void:
 	if scenario.turn_based:
-		ability.cooldown_effect = _turns_cooldown(OWN_COOLDOWN, TURNS)
+		ability = _granted(func(p: ProbeAbility) -> void:
+			p.cooldown_effect = _turns_cooldown(OWN_COOLDOWN, TURNS)
+		)
 	else:
-		ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+		ability = _granted(func(p: ProbeAbility) -> void:
+			p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+		)
 	_commit()
 
 	var state: AbilityCooldownState = ability.get_cooldown_state()
@@ -125,7 +145,9 @@ func test_a_cooldown_is_reported_in_its_own_unit(
 
 
 func test_time_passing_lowers_the_reported_wait() -> void:
-	ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	)
 	_commit()
 
 	asc.scheduler.advance_time(SHORTER)
@@ -144,7 +166,9 @@ func test_time_passing_lowers_the_reported_wait() -> void:
 ## cooldown that expires - so it arrives the way a real one would: something else
 ## grants the tag, and the ability names that tag as one of its cooldowns.
 func test_an_endless_cooldown_tag_is_reported_as_infinite() -> void:
-	ability.shared_cooldown_tags = [OWN_COOLDOWN]
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.shared_cooldown_tags = [OWN_COOLDOWN]
+	)
 	Factory.apply(asc, _endless_effect(OWN_COOLDOWN))
 
 	var state: AbilityCooldownState = ability.get_cooldown_state()
@@ -156,8 +180,10 @@ func test_an_endless_cooldown_tag_is_reported_as_infinite() -> void:
 
 #region Several cooldowns at once
 func test_the_longest_of_several_waits_is_the_one_reported() -> void:
-	ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SHORTER)
-	ability.shared_cooldown_effects = [_seconds_cooldown(SHARED_COOLDOWN, SECONDS)]
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SHORTER)
+		p.shared_cooldown_effects = [_seconds_cooldown(SHARED_COOLDOWN, SECONDS)]
+	)
 	_commit()
 
 	var state: AbilityCooldownState = ability.get_cooldown_state()
@@ -166,8 +192,10 @@ func test_the_longest_of_several_waits_is_the_one_reported() -> void:
 
 
 func test_a_tag_named_twice_is_consulted_once() -> void:
-	ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
-	ability.shared_cooldown_tags = [OWN_COOLDOWN]
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+		p.shared_cooldown_tags = [OWN_COOLDOWN]
+	)
 	_commit()
 
 	var state: AbilityCooldownState = ability.get_cooldown_state()
@@ -178,11 +206,13 @@ func test_a_tag_named_twice_is_consulted_once() -> void:
 
 #region Staying honest
 func test_a_refreshed_cooldown_reports_the_new_time() -> void:
-	ability.cooldown_effect = Factory.refreshing(_seconds_cooldown(OWN_COOLDOWN, SECONDS))
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = Factory.refreshing(_seconds_cooldown(OWN_COOLDOWN, SECONDS))
+	)
 	_commit()
 	asc.scheduler.advance_time(SHORTER)
 
-	Factory.apply(asc, ability.cooldown_effect)
+	Factory.apply(asc, ability.current_spec.definition.cooldown_effect)
 
 	assert_almost_eq(
 		ability.get_cooldown_state().seconds_remaining,
@@ -193,7 +223,9 @@ func test_a_refreshed_cooldown_reports_the_new_time() -> void:
 
 
 func test_removing_the_effect_makes_the_ability_ready_again() -> void:
-	ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	)
 	_commit()
 	assert_true(ability.get_cooldown_state().active, "on cooldown to begin with")
 
@@ -205,7 +237,9 @@ func test_removing_the_effect_makes_the_ability_ready_again() -> void:
 
 
 func test_asking_for_the_state_changes_nothing() -> void:
-	ability.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	)
 	_commit()
 	var before: int = asc.get_active_effects().size()
 	watch_signals(asc)

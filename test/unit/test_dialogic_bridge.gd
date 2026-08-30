@@ -15,6 +15,7 @@ extends GutTest
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
 const Fake = preload("res://test/fixtures/fake_dialogic.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const CHANNEL: StringName = &"Player"
 const OTHER_CHANNEL: StringName = &"Companion"
@@ -224,9 +225,10 @@ func test_a_send_event_reaches_the_ability_system() -> void:
 ## An event reaches an ability through the ordinary trigger path, hierarchy and
 ## all - the bridge never activates anything directly.
 func test_an_event_from_a_dialogue_can_wake_a_listening_ability() -> void:
-	var ability: ProbeAbility = Probe.build(PROBE_TAG)
-	ability.trigger_event_tag = EVENT_PARENT
-	fixture.asc.grant_ability(ability)
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	probe.trigger_event_tag = EVENT_PARENT
+	var spec: GameplayAbilitySpec = AbilityFactory.give(fixture.asc, probe)
+	var ability: ProbeAbility = spec.per_actor_instance as ProbeAbility
 	assert_true(_bound())
 
 	dialogic.say(_message())

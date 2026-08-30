@@ -13,6 +13,7 @@ const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
 const Route = preload("res://test/fixtures/targeting_probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const TOLERANCE: float = 0.0001
 const PROBE_TAG: StringName = &"Ability.Probe"
@@ -39,8 +40,8 @@ var seen_source: AbilitySystemComponent = null
 func before_each() -> void:
 	caster = Fixture.create("Caster")
 	add_child_autofree(caster.owner)
-	ability = Probe.build(PROBE_TAG)
-	caster.asc.grant_ability(ability)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(caster.asc, Probe.build(PROBE_TAG))
+	ability = spec.per_actor_instance as ProbeAbility
 	seen_source = null
 
 
@@ -223,10 +224,14 @@ func _route_ability() -> TargetingProbeAbility:
 	probe.cooldown_effect = Factory.granting(
 		Factory.duration(no_modifiers, COOLDOWN_SECONDS), [COOLDOWN_TAG]
 	)
-	probe.payload = _damage()
-	probe.confirmation_tag = CONFIRMED
-	caster.asc.grant_ability(probe)
-	return probe
+	# payload/confirmation_tag are not exported, so packing would lose them -
+	# set on the running instance the grant actually returns, not on the
+	# probe that was only ever used to author the scene.
+	var spec: GameplayAbilitySpec = AbilityFactory.give(caster.asc, probe)
+	var instance: TargetingProbeAbility = spec.per_actor_instance as TargetingProbeAbility
+	instance.payload = _damage()
+	instance.confirmation_tag = CONFIRMED
+	return instance
 
 
 ## The route, walked once, with every joint asserted where it happens.

@@ -11,12 +11,18 @@
 ## a percentage priced against a buffed current value never spends durable
 ## base that was never there.
 ##
+## costs is read from the frozen definition a grant captured, and level from
+## the spec a grant was given rather than from ability_level - so a test needs
+## a specific price authors a fresh probe (and, for level, passes it to the
+## grant) before granting, never edits `ability` afterward.
+##
 ## @meta_license: MIT
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const TOLERANCE: float = 0.0001
 const MANA: StringName = &"mana"
@@ -37,8 +43,7 @@ func before_each() -> void:
 	add_child_autofree(fixture.owner)
 	asc = fixture.asc
 	fixture.set_base(MANA, STARTING_MANA)
-	ability = Probe.build(PROBE_TAG)
-	asc.grant_ability(ability)
+	ability = _granted([])
 
 
 func after_each() -> void:
@@ -73,6 +78,16 @@ func _percent(
 	return cost
 
 
+## Grant a fresh probe priced with exactly `costs`, at `level`. costs lives in
+## the frozen definition a grant captures, so it is authored on the probe
+## before granting, never edited on `ability` afterward.
+func _granted(costs: Array[GameplayAbilityCost], level: float = 1.0) -> ProbeAbility:
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	probe.costs = costs
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe, level)
+	return spec.per_actor_instance as ProbeAbility
+
+
 ## The status of committing the ability under test, for the many cases whose
 ## whole claim is which refusal came back.
 func _status() -> AbilityCommitResult.Status:
@@ -82,7 +97,7 @@ func _status() -> AbilityCommitResult.Status:
 
 #region Absolute and percentage costs
 func test_an_absolute_cost_charges_the_declared_amount() -> void:
-	ability.costs = [_absolute(MANA, COST_AMOUNT)]
+	ability = _granted([_absolute(MANA, COST_AMOUNT)])
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "a plain absolute charge commits")
 	assert_almost_eq(
@@ -103,8 +118,7 @@ func test_an_absolute_cost_scales_with_a_curve_and_level() -> void:
 	curve.add_point(Vector2(2.0, 2.0))
 	var cost: GameplayAbilityCost = _absolute(MANA, 10.0)
 	cost.amount.scaling_curve = curve
-	ability.costs = [cost]
-	ability.ability_level = 2.0
+	ability = _granted([cost], 2.0)
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "the curve is legal")
@@ -115,7 +129,7 @@ func test_an_absolute_cost_scales_with_a_curve_and_level() -> void:
 
 func test_ten_percent_of_base_charges_a_tenth_of_the_durable_value() -> void:
 	fixture.set_base(MANA, 200.0)
-	ability.costs = [_percent(MANA, MANA, 0.10, true)]
+	ability = _granted([_percent(MANA, MANA, 0.10, true)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "10% of a full base is affordable")
@@ -125,7 +139,7 @@ func test_ten_percent_of_base_charges_a_tenth_of_the_durable_value() -> void:
 func test_ten_percent_of_current_prices_against_the_derived_value() -> void:
 	fixture.set_base(MANA, 200.0)
 	Factory.apply(asc, Factory.infinite([Factory.add(MANA, 50.0)]))
-	ability.costs = [_percent(MANA, MANA, 0.10, false)]
+	ability = _granted([_percent(MANA, MANA, 0.10, false)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "affordable against the buffed pool")
@@ -136,7 +150,7 @@ func test_ten_percent_of_current_prices_against_the_derived_value() -> void:
 func test_a_cost_priced_against_a_different_attribute_than_it_spends() -> void:
 	fixture.set_base(MANA, 50.0)
 	fixture.set_base(MAX_MANA, 100.0)
-	ability.costs = [_percent(MANA, MAX_MANA, 0.10, true)]
+	ability = _granted([_percent(MANA, MAX_MANA, 0.10, true)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "target and reference may differ")
@@ -145,7 +159,7 @@ func test_a_cost_priced_against_a_different_attribute_than_it_spends() -> void:
 
 func test_five_percent_of_health_current_spends_health() -> void:
 	fixture.set_base(HEALTH, 100.0)
-	ability.costs = [_percent(HEALTH, HEALTH, 0.05, false)]
+	ability = _granted([_percent(HEALTH, HEALTH, 0.05, false)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "a percentage cost on a different attribute family")
@@ -154,7 +168,7 @@ func test_five_percent_of_health_current_spends_health() -> void:
 
 func test_twenty_five_percent_of_attack_base_spends_attack() -> void:
 	fixture.set_base(ATTACK, 40.0)
-	ability.costs = [_percent(ATTACK, ATTACK, 0.25, true)]
+	ability = _granted([_percent(ATTACK, ATTACK, 0.25, true)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "spending a fraction of the attacker's own attack")
@@ -162,7 +176,7 @@ func test_twenty_five_percent_of_attack_base_spends_attack() -> void:
 
 
 func test_a_zero_percent_cost_commits_without_writing_the_attribute() -> void:
-	ability.costs = [_percent(MANA, MANA, 0.0, true)]
+	ability = _granted([_percent(MANA, MANA, 0.0, true)])
 	watch_signals(asc)
 
 	var result: AbilityCommitResult = ability.commit_ability()
@@ -173,7 +187,7 @@ func test_a_zero_percent_cost_commits_without_writing_the_attribute() -> void:
 
 func test_a_hundred_percent_cost_takes_everything() -> void:
 	fixture.set_base(MANA, 30.0)
-	ability.costs = [_percent(MANA, MANA, 1.0, true)]
+	ability = _granted([_percent(MANA, MANA, 1.0, true)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "100% is the legal maximum")
@@ -181,14 +195,14 @@ func test_a_hundred_percent_cost_takes_everything() -> void:
 
 
 func test_a_percent_over_one_hundred_is_refused() -> void:
-	ability.costs = [_percent(MANA, MANA, 1.5, true)]
+	ability = _granted([_percent(MANA, MANA, 1.5, true)])
 	assert_eq(
 		_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "150% is not a fraction"
 	)
 
 
 func test_a_negative_percent_is_refused() -> void:
-	ability.costs = [_percent(MANA, MANA, -0.1, true)]
+	ability = _granted([_percent(MANA, MANA, -0.1, true)])
 	assert_eq(
 		_status(),
 		AbilityCommitResult.Status.INVALID_COST_DEFINITION,
@@ -197,15 +211,15 @@ func test_a_negative_percent_is_refused() -> void:
 
 
 func test_a_non_finite_percent_is_refused() -> void:
-	ability.costs = [_percent(MANA, MANA, NAN, true)]
+	ability = _granted([_percent(MANA, MANA, NAN, true)])
 	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "NaN")
 
-	ability.costs = [_percent(MANA, MANA, INF, true)]
+	ability = _granted([_percent(MANA, MANA, INF, true)])
 	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "and INF")
 
 
 func test_a_cost_naming_an_unknown_target_attribute_is_refused() -> void:
-	ability.costs = [_absolute(&"unknown_attribute", 10.0)]
+	ability = _granted([_absolute(&"unknown_attribute", 10.0)])
 	assert_eq(
 		_status(),
 		AbilityCommitResult.Status.INVALID_COST_DEFINITION,
@@ -214,7 +228,7 @@ func test_a_cost_naming_an_unknown_target_attribute_is_refused() -> void:
 
 
 func test_a_percent_cost_naming_an_unknown_reference_is_refused() -> void:
-	ability.costs = [_percent(MANA, &"unknown_attribute", 0.1, true)]
+	ability = _granted([_percent(MANA, &"unknown_attribute", 0.1, true)])
 	assert_eq(
 		_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "nothing to price against"
 	)
@@ -222,7 +236,7 @@ func test_a_percent_cost_naming_an_unknown_reference_is_refused() -> void:
 
 func test_two_costs_on_the_same_attribute_are_aggregated() -> void:
 	fixture.set_base(MANA, 200.0)
-	ability.costs = [_absolute(MANA, 30.0), _percent(MANA, MANA, 0.50, false)]
+	ability = _granted([_absolute(MANA, 30.0), _percent(MANA, MANA, 0.50, false)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "affordability sees the aggregated total, 30 plus 100")
@@ -232,7 +246,7 @@ func test_two_costs_on_the_same_attribute_are_aggregated() -> void:
 
 func test_costs_on_different_attributes_charge_both() -> void:
 	fixture.set_base(HEALTH, 100.0)
-	ability.costs = [_absolute(MANA, COST_AMOUNT), _absolute(HEALTH, 10.0)]
+	ability = _granted([_absolute(MANA, COST_AMOUNT), _absolute(HEALTH, 10.0)])
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "two attributes, two charges")
@@ -249,9 +263,9 @@ func test_a_temporary_buff_raises_the_price_but_not_the_durable_funds() -> void:
 	assert_almost_eq(fixture.current_of(MANA), 100.0, TOLERANCE, "the buff shows on screen")
 
 	# 50% of current (100) prices the cost at 50, but only 20 is durable.
-	ability.costs = [_percent(MANA, MANA, 0.5, false)]
+	ability = _granted([_percent(MANA, MANA, 0.5, false)])
 	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
-		ability.costs, asc, ability.ability_level
+		ability.current_spec.definition.costs, asc, ability.get_ability_level()
 	)
 	assert_almost_eq(resolved.entries[0].resolved_amount, 50.0, TOLERANCE, "the price is 50")
 	assert_false(resolved.is_ok(), "but the buff does not create 30 mana that does not exist")
@@ -261,10 +275,10 @@ func test_a_temporary_buff_raises_the_price_but_not_the_durable_funds() -> void:
 
 func test_preview_and_commit_agree_on_a_percentage_cost() -> void:
 	fixture.set_base(MANA, 40.0)
-	ability.costs = [_percent(MANA, MANA, 0.5, true)]
+	ability = _granted([_percent(MANA, MANA, 0.5, true)])
 
 	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
-		ability.costs, asc, ability.ability_level
+		ability.current_spec.definition.costs, asc, ability.get_ability_level()
 	)
 	var predicted: bool = resolved.is_ok()
 
@@ -273,7 +287,7 @@ func test_preview_and_commit_agree_on_a_percentage_cost() -> void:
 
 
 func test_a_second_activation_re_resolves_against_the_current_state() -> void:
-	ability.costs = [_percent(MANA, MANA, 0.5, true)]
+	ability = _granted([_percent(MANA, MANA, 0.5, true)])
 	ability.commits = true
 
 	var first: bool = await ability.try_activate()
@@ -290,10 +304,10 @@ func test_a_second_activation_re_resolves_against_the_current_state() -> void:
 func test_a_reference_changing_after_resolve_does_not_change_the_frozen_charge() -> void:
 	fixture.set_base(MANA, 100.0)
 	fixture.set_base(MAX_MANA, 100.0)
-	ability.costs = [_percent(MANA, MAX_MANA, 0.5, true)]
+	ability = _granted([_percent(MANA, MAX_MANA, 0.5, true)])
 
 	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
-		ability.costs, asc, ability.ability_level
+		ability.current_spec.definition.costs, asc, ability.get_ability_level()
 	)
 	assert_almost_eq(resolved.entries[0].resolved_amount, 50.0, TOLERANCE, "priced at 50% of 100")
 

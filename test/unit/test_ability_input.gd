@@ -15,6 +15,7 @@ extends GutTest
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const SLOT: int = 3
 const OTHER_SLOT: int = 4
@@ -38,12 +39,16 @@ func after_each() -> void:
 	asc = null
 
 
-## Grant an ability to the ASC. add_child triggers the grant the way a scene
-## does, so the test exercises the same path a designer's scene takes.
-func _granted(tag: StringName) -> ProbeAbility:
-	var ability: ProbeAbility = Probe.build(tag)
-	asc.add_child(ability)
-	return ability
+## Grant a configured ability to the ASC through the real grant pipeline.
+## Whatever configure sets - activation_blocked_tags, costs, anything the
+## grant snapshots - is authored before the grant, since editing it on the
+## running instance afterward would not reach the frozen definition.
+func _granted(tag: StringName, configure: Callable = Callable()) -> ProbeAbility:
+	var probe: ProbeAbility = Probe.build(tag)
+	if configure.is_valid():
+		configure.call(probe)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	return spec.per_actor_instance as ProbeAbility
 
 
 #region Routing a press
@@ -193,8 +198,9 @@ func test_a_release_reaches_nothing_when_the_ability_is_idle() -> void:
 
 #region The gate still applies to input
 func test_a_blocked_ability_does_not_activate_on_a_press() -> void:
-	var ability: ProbeAbility = _granted(FIRE)
-	ability.activation_blocked_tags = [STUNNED] as Array[StringName]
+	var ability: ProbeAbility = _granted(FIRE, func(p: ProbeAbility) -> void:
+		p.activation_blocked_tags = [STUNNED] as Array[StringName]
+	)
 	asc.bind_ability_to_input(ability, SLOT)
 	asc.add_tag(STUNNED)
 
@@ -210,12 +216,11 @@ func test_a_blocked_ability_does_not_activate_on_a_press() -> void:
 
 func test_a_press_cannot_pay_a_cost_the_owner_cannot_afford() -> void:
 	fixture.set_base(&"mana", 5.0)
-	var ability: ProbeAbility = _granted(FIRE)
 	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
 	cost.target_attribute = &"mana"
 	cost.amount = GameplayScalableFloat.new()
 	cost.amount.value = 50.0
-	ability.costs = [cost]
+	var ability: ProbeAbility = _granted(FIRE, func(p: ProbeAbility) -> void: p.costs = [cost])
 	asc.bind_ability_to_input(ability, SLOT)
 
 	asc.ability_local_input_pressed(SLOT)

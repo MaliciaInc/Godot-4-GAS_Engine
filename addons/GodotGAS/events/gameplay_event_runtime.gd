@@ -18,6 +18,12 @@ class_name GameplayEventRuntime extends RefCounted
 
 var owner_asc: AbilitySystemComponent = null
 
+## Where an eligible spec's activation is actually requested. Dispatch never
+## touches a per_actor_instance directly - it asks the runtime by spec, which
+## is what lets a later instancing policy answer this without event routing
+## having to change again.
+var ability_runtime: AbilityRuntime = null
+
 
 #region Dispatch
 ## Deliver one event to every eligible listener.
@@ -27,30 +33,43 @@ var owner_asc: AbilitySystemComponent = null
 ## what the NEXT event sees, never what this one delivers: without the snapshot,
 ## an ability removed mid-dispatch could make the loop skip its neighbour, and
 ## one granted mid-dispatch could receive an event it was not present for.
-func dispatch(event: GameplayEventData, abilities: Array[GameplayAbility]) -> void:
+func dispatch(event: GameplayEventData, specs: Array[GameplayAbilitySpec]) -> void:
 	if event == null or event.event_tag == &"":
 		return
 
-	var listeners: Array[GameplayAbility] = eligible_listeners(event.event_tag, abilities)
+	var listeners: Array[GameplayAbilitySpec] = eligible_listeners(event.event_tag, specs)
 
 	if owner_asc != null:
 		owner_asc.gameplay_event_received.emit(event)
 
-	for ability: GameplayAbility in listeners:
-		if is_instance_valid(ability):
-			ability.try_activate(event.context)
+	for spec: GameplayAbilitySpec in listeners:
+		_activate(spec, event.context)
 
 
-## Every ability whose trigger tag covers this event, as a stable snapshot.
+## PER_ACTOR's only route to activation this phase: ask by spec, not by
+## reaching into per_actor_instance directly. A future instancing policy
+## that resolves "the instance for this activation" differently changes
+## only this function.
+func _activate(spec: GameplayAbilitySpec, context: GameplayEffectContext) -> void:
+	var instance: GameplayAbility = spec.per_actor_instance
+	if instance != null and is_instance_valid(instance):
+		instance.try_activate(context)
+
+
+## Every spec whose definition's trigger tag covers this event, as a stable
+## snapshot.
 static func eligible_listeners(
-	event_tag: StringName, abilities: Array[GameplayAbility]
-) -> Array[GameplayAbility]:
-	var listeners: Array[GameplayAbility] = []
-	for ability: GameplayAbility in abilities:
-		if ability == null or ability.trigger_event_tag == &"":
+	event_tag: StringName, specs: Array[GameplayAbilitySpec]
+) -> Array[GameplayAbilitySpec]:
+	var listeners: Array[GameplayAbilitySpec] = []
+	for spec: GameplayAbilitySpec in specs:
+		if spec == null or spec.definition == null:
 			continue
-		if matches(event_tag, ability.trigger_event_tag):
-			listeners.append(ability)
+		var trigger: StringName = spec.definition.legacy_trigger_event_tag
+		if trigger == &"":
+			continue
+		if matches(event_tag, trigger):
+			listeners.append(spec)
 	return listeners
 
 

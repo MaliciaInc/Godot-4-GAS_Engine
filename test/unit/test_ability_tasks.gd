@@ -14,6 +14,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Probe = preload("res://test/fixtures/task_probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const PROBE_TAG: StringName = &"Ability.TaskProbe"
 const OTHER_TAG: StringName = &"Ability.Other"
@@ -55,8 +56,8 @@ func before_each() -> void:
 	fixture = Fixture.create("Caster")
 	add_child_autofree(fixture.owner)
 	asc = fixture.asc
-	ability = Probe.build(PROBE_TAG)
-	asc.grant_ability(ability)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, Probe.build(PROBE_TAG))
+	ability = spec.per_actor_instance as TaskProbeAbility
 	seen_reason = GameplayAbilityTask.CancelReason.NONE
 	seen_finishes = 0
 
@@ -239,8 +240,8 @@ func test_a_live_task_hears_every_channel() -> void:
 
 
 func test_target_data_reaches_only_the_ability_it_was_addressed_to() -> void:
-	var other: TaskProbeAbility = Probe.build(OTHER_TAG)
-	asc.grant_ability(other)
+	var other_spec: GameplayAbilitySpec = AbilityFactory.give(asc, Probe.build(OTHER_TAG))
+	var other: TaskProbeAbility = other_spec.per_actor_instance as TaskProbeAbility
 	var mine: TaskProbeAbility.ProbeTask = ability.register_loose_task()
 	var theirs: TaskProbeAbility.ProbeTask = other.register_loose_task()
 
@@ -354,7 +355,7 @@ func test_a_release_task_is_not_woken_by_the_press_before_it() -> void:
 
 ## The slot is read at the call, not frozen into a parameter default.
 func test_an_input_task_defaults_to_the_abilitys_own_slot() -> void:
-	ability.input_id = SLOT
+	asc.bind_ability_to_input(ability, SLOT)
 	var press: AbilityTaskWaitInput = ability.wait_input_pressed()
 	assert_eq(press.input_id, SLOT, "it followed the ability, not a default")
 
@@ -388,8 +389,8 @@ func test_a_target_data_task_ends_when_its_own_ability_submits() -> void:
 
 
 func test_a_target_data_task_ignores_another_abilitys_submission() -> void:
-	var other: TaskProbeAbility = Probe.build(OTHER_TAG)
-	asc.grant_ability(other)
+	var other_spec: GameplayAbilitySpec = AbilityFactory.give(asc, Probe.build(OTHER_TAG))
+	var other: TaskProbeAbility = other_spec.per_actor_instance as TaskProbeAbility
 	var task: AbilityTaskWaitTargetData = ability.wait_target_data()
 
 	other.submit_target_data(GameplayAbilityTargetData.new())

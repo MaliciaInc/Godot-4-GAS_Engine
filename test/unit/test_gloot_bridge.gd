@@ -159,7 +159,7 @@ func test_equipping_a_known_item_grants_all_three_kinds() -> void:
 	slot.equip(Item.build(SWORD))
 
 	assert_eq(applied, [SWORD] as Array[StringName], "the grant was applied")
-	assert_eq(fixture.asc.ability_runtime.abilities().size(), 1, "the ability arrived")
+	assert_eq(fixture.asc.ability_runtime.specs().size(), 1, "the ability arrived")
 	assert_almost_eq(
 		fixture.current_of(ATTACK), START_ATTACK + BONUS, TOLERANCE, "the passive buff too"
 	)
@@ -188,7 +188,7 @@ func test_a_grant_whose_scene_is_not_an_ability_gives_nothing() -> void:
 
 	assert_eq(rejected, [SWORD] as Array[StringName], "refused")
 	assert_false(fixture.asc.has_tag(SWORN), "and the tag it would also have given never landed")
-	assert_eq(fixture.asc.ability_runtime.abilities().size(), 0, "nor any ability")
+	assert_eq(fixture.asc.ability_runtime.specs().size(), 0, "nor any ability")
 
 
 ## A passive that expires is not a passive. Refused before anything is applied.
@@ -215,7 +215,7 @@ func test_unequipping_removes_exactly_what_was_given() -> void:
 	slot.clear()
 
 	assert_eq(removed, [SWORD] as Array[StringName], "reported")
-	assert_eq(fixture.asc.ability_runtime.abilities().size(), 0, "the ability went")
+	assert_eq(fixture.asc.ability_runtime.specs().size(), 0, "the ability went")
 	assert_almost_eq(fixture.current_of(ATTACK), START_ATTACK, TOLERANCE, "the buff went")
 	assert_false(fixture.asc.has_tag(SWORN), "and the tag went")
 
@@ -253,7 +253,7 @@ func test_swapping_items_takes_the_first_back_before_giving_the_second() -> void
 
 	assert_eq(removed, [SWORD] as Array[StringName], "the sword came off first")
 	assert_eq(applied, [SWORD, SHIELD] as Array[StringName], "and the shield went on")
-	assert_eq(fixture.asc.ability_runtime.abilities().size(), 0, "the sword's ability went with it")
+	assert_eq(fixture.asc.ability_runtime.specs().size(), 0, "the sword's ability went with it")
 	assert_almost_eq(fixture.current_of(ATTACK), START_ATTACK, TOLERANCE, "and its buff too")
 	assert_true(fixture.asc.has_tag(SWORN), "while the shield's own tag is held")
 
@@ -267,7 +267,7 @@ func test_unbinding_takes_back_whatever_was_worn() -> void:
 	bridge.unbind()
 
 	assert_eq(removed, [SWORD] as Array[StringName], "taken back on the way out")
-	assert_eq(fixture.asc.ability_runtime.abilities().size(), 0, "nothing was left behind")
+	assert_eq(fixture.asc.ability_runtime.specs().size(), 0, "nothing was left behind")
 	assert_null(bridge.target_asc, "and the bridge holds nobody")
 	assert_null(bridge.catalog, "and nothing to look things up in")
 

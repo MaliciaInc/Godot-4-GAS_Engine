@@ -23,6 +23,7 @@ extends GutTest
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"
@@ -126,9 +127,10 @@ func test_a_percentage_cost_composes_with_an_active_multiplier() -> void:
 	cost.amount = GameplayScalableFloat.new()
 	cost.amount.value = 0.25
 
-	var ability: ProbeAbility = Probe.build(PROBE_TAG)
-	ability.costs = [cost]
-	asc.grant_ability(ability)
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	probe.costs = [cost]
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	var ability: ProbeAbility = spec.per_actor_instance as ProbeAbility
 
 	var committed: AbilityCommitResult = ability.commit_ability()
 	assert_true(committed.is_ok(), "25% of a base of 100 is affordable")
