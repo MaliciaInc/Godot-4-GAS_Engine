@@ -25,6 +25,15 @@ class_name GameplayExecutionCalculation extends Resource
 ## staged AttributeBaseMutations before it reaches anything else. It is never
 ## carried through the runtime as a payload.
 ##
+## This has no gameplay side effects of its own: it reads state through
+## `spec` and `_target_asc` and returns deltas, and must not grant a tag,
+## apply or remove an effect, or write an attribute directly. The
+## evaluator runs this while an application may still be refused - a
+## divide-by-zero elsewhere in the same effect, say - and only its
+## returned deltas are staged for that refusal to undo. A mutation made
+## here happens whether or not the application it was part of ever
+## commits.
+##
 ## An attribute this returns a delta for must NOT also be written by a standard
 ## modifier of the same effect. That combination has no defined order and the
 ## evaluator refuses the whole application with AMBIGUOUS_ATTRIBUTE_WRITE.

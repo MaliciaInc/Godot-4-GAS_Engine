@@ -52,6 +52,25 @@ func active_count() -> int:
 	return _active.size()
 
 
+## Remove `active` from the registry without detaching or emitting
+## anything, and without clearing what it held. For
+## GameplayEffectPurgeTransaction alone, which manages tags and
+## contributions itself so it can capture exactly what changed and stay
+## reversible until the incoming effect's outcome is known.
+func extract_active(active: ActiveGameplayEffect) -> int:
+	var index: int = _active.find(active)
+	if index >= 0:
+		_active.remove_at(index)
+	return index
+
+
+## Undo extract_active: put `active` back at `at_index`, clamped to the
+## current size so a stale index from a registry that has since shrunk
+## still lands somewhere rather than erroring.
+func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
+	_active.insert(clampi(at_index, 0, _active.size()), active)
+
+
 ## The longest remaining duration among effects granting a tag, in seconds, for
 ## a cooldown sweep in the UI.
 ##
@@ -107,21 +126,26 @@ func apply(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 		if not tags.has_all(effect.application_required_tags):
 			return null
 
-	# The cleanser runs before evaluation so the new math sees the state it will
-	# actually land in, not the state the purged effects were still holding.
-	for purge_tag: StringName in effect.remove_effects_with_tags:
-		remove_effects_with_tag(purge_tag)
+	# The cleanser runs before evaluation so the new math sees the state it
+	# will actually land in. It stays reversible until the incoming effect's
+	# own outcome is known: "a refusal is total" applies to the purge too.
+	var purge: GameplayEffectPurgeTransaction = GameplayEffectPurgeTransaction.begin(
+		self, effect.remove_effects_with_tags
+	)
 
 	var refreshed: ActiveGameplayEffect = _try_refresh(spec)
 	if refreshed != null:
+		purge.commit()
 		return refreshed
 
 	var order: int = _next_application_order
 	var evaluation: GameplayEffectEvaluationResult = _evaluate(spec, order)
 	if not evaluation.is_ok():
+		purge.rollback()
 		_report_refusal(evaluation)
 		return null
 
+	purge.commit()
 	_next_application_order += 1
 	return _commit(spec, evaluation, order)
 
