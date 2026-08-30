@@ -75,7 +75,12 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 	is_active = true
 	current_context = context
 
-	var success: bool = await _activate_ability()
+	# `await` on a coroutine hands the value back untyped, and the declared
+	# type of the local does not convert it: a channelled ability - one that
+	# suspends inside _activate_ability - reached end_ability with an Object
+	# where a bool belonged and crashed on resume. Taken explicitly instead.
+	var outcome: Variant = await _activate_ability()
+	var success: bool = outcome is bool and outcome
 
 	# The subclass may already have ended the ability; only close it if it did
 	# not, so `ability_ended` fires exactly once.

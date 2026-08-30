@@ -402,10 +402,15 @@ func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 	ability_runtime.cancel_with_tags(cancel_tags)
 
 
+## Route an input slot to a granted ability. False when it was never granted.
+##
+## The runtime refuses that case and says so; the facade used to drop the
+## answer, so a caller binding an ability the ASC does not have was told
+## nothing and found out when the press reached no one.
 func bind_ability_to_input(
 	ability: GameplayAbility, input_id: int, unbind_others: bool = true
-) -> void:
-	ability_runtime.bind_to_input(ability, input_id, unbind_others)
+) -> bool:
+	return ability_runtime.bind_to_input(ability, input_id, unbind_others)
 
 
 func ability_local_input_pressed(input_id: int) -> void:
