@@ -7,6 +7,32 @@ A fork of [GodotGAS](https://github.com/yulrun/godot-gas) (MIT, Matthew Janes /
 YulRun), rewritten deeply enough that it is no longer the same engine. It is the
 combat foundation of the RPG *Arhalies*, and it is built before the game.
 
+## Features
+
+- **Transactional ability commit.** Paying for an ability is one operation with
+  one outcome. Cooldowns go on first, the cost is charged second, and if the
+  charge fails the cooldowns are taken back off - an ability is never left on
+  cooldown for something the caster did not pay for. The result is a typed
+  value naming what happened, not a bare `false`.
+- **Absolute, additive costs.** A cost in this release is a fixed amount
+  subtracted from an attribute. **Percentage costs are not supported**, and the
+  commit refuses any definition that tries to express one - a multiplier, a
+  divisor, an override or an execution calculation in a cost is rejected rather
+  than approximated. A cost of "20% of current mana" has to wait for a release
+  that can price it honestly.
+- **Cancellable ability tasks.** Waiting for a delay, an input, a gameplay
+  event or target data is a task the ability owns. Ending, cancelling or
+  removing the ability cancels every task it started, and a task reports
+  finishing exactly once whether it succeeded or was cancelled.
+- **Typed cooldown state.** How long an ability has left, in seconds or in
+  turns, answered by asking rather than by reading the tag stack. Asking
+  changes nothing.
+- **2D and 3D targeting.** Traces and overlaps in either space, converted once
+  at the physics boundary into typed hits. One actor wearing several colliders
+  arrives as one target, the caster is left out of its own sweep, and anything
+  without an ability system is not a target.
+- **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
+
 ## The arithmetic
 
 For every attribute, exactly this, and nothing else may implement it:
@@ -75,7 +101,7 @@ wrong.
   `Event.Damage.Critical`, but not `Event.Damages`, and never its own ancestor.
 - **Event and cue payloads are typed**, not `Variant` and `Dictionary`.
 - **Target hits are typed**, converted once at the physics boundary.
-- **Networking is removed.** The behaviour of this phase is local.
+- **Networking is removed.** The behaviour of this release is local.
 - **GDScript strict typing is mandatory**: no `:=`, no `Variant` or `Dictionary`
   as a domain contract, and eight warnings promoted to errors.
 - **Hard structural limits, enforced rather than intended**: 450 lines per
@@ -86,22 +112,53 @@ wrong.
 
 ```text
 addons/GodotGAS/
-  attributes/    AttributeData, AttributeSet, the aggregator, typed results
-  components/    the ASC facade, ability runtime, tag runtime
-  effects/       the pure evaluator, the effect runtime, the scheduler
-  events/        typed event data and hierarchical dispatch
-  cues/          typed cue params, pooling
-  target_data/   typed hits and effect context
-  managers/      the GameplayCueManager autoload
-  utilities/     project settings, the GDScript the generators emit
-  editor/        the dashboard; not enabled this phase
-addons/gut/      GUT v9.7.1, vendored and immutable
-test/            fixtures, the unit suite, the headless runner
+  abilities/       GameplayAbility, the transactional commit, typed results
+  abilities/tasks/ cancellable async ability tasks
+  attributes/      AttributeData, AttributeSet, the aggregator, typed results
+  components/      the ASC facade, ability runtime, tag runtime
+  cooldowns/       typed cooldown state
+  effects/         the pure evaluator, the effect runtime, the scheduler
+  events/          typed event data and hierarchical dispatch
+  cues/            typed cue params, pooling
+  gameplay_tag/    the tag registry and its one grammar
+  target_data/     typed hits and effect context
+  targeting/       ASC resolution and 2D/3D acquisition
+  integrations/    optional official bridges
+  managers/        the GameplayCueManager autoload
+  utilities/       project settings, the GDScript the generators emit
+  editor/          the dashboard
+addons/gut/        GUT v9.7.1, vendored and immutable
+godot_gas/         the tag and cue registries, and the constants generated
+                   from them
+test/              fixtures, the unit suite, the headless runner
 ```
 
 The `AbilitySystemComponent` is a facade. Tags, attributes, effects, timing and
 abilities each live in their own runtime, so every piece of mutable state has
 exactly one owner.
+
+## Optional integrations
+
+Three bridges ship with the addon: one for [Dialogic](
+https://github.com/dialogic-godot/dialogic), one for
+[GLoot](https://github.com/peter-kish/gloot), and one for
+[QuestSystem](https://github.com/shomykohai/quest-system).
+
+**The core works without any of them.** None of the three is included in this
+repository, none is a dependency, and nothing in the engine requires one to be
+installed. Each bridge detects whether its addon is actually present and
+validates the surface it needs before connecting to anything; on a project
+without that addon it declines quietly instead of failing.
+
+Each bridge depends on the smallest published surface it can: a single signal,
+a single node shape. It does not reach into subsystems, internal pools or
+editor structure, so a release that changes those does not change this.
+
+The certified versions are in `THIRD_PARTY.md`. Later versions may well work,
+but only the certified ones are a guarantee of this release: compatibility was
+established by running these bridges against those exact commits, and a version
+that has not been through that is a reasonable expectation rather than a
+promise.
 
 ## Running the tests
 
