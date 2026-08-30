@@ -36,16 +36,22 @@ var rejected: Array[DialogicGasCommandParser.Error] = []
 
 func before_each() -> void:
 	fixture = Fixture.create("Speaker")
-	add_child_autofree(fixture.owner)
-
 	dialogic = Fake.build()
-	add_child_autofree(dialogic)
-
 	bridge = DialogicGasBridge.new()
+	_enter_the_tree()
+	_start_recording()
+
+
+func _enter_the_tree() -> void:
+	add_child_autofree(fixture.owner)
+	add_child_autofree(dialogic)
 	add_child_autofree(bridge)
+
+
+## Listen to what the bridge announces, and start each test from silence.
+func _start_recording() -> void:
 	bridge.command_applied.connect(_on_applied)
 	bridge.command_rejected.connect(_on_rejected)
-
 	applied = []
 	rejected = []
 
