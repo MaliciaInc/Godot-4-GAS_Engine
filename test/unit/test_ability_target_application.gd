@@ -215,7 +215,11 @@ func _route_ability() -> TargetingProbeAbility:
 	caster.set_base(MANA, START_MANA)
 	var probe: TargetingProbeAbility = Route.build(ROUTE_TAG)
 	var no_modifiers: Array[GameplayEffectModifier] = []
-	probe.cost_effect = Factory.instant([Factory.add(MANA, COST)])
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.target_attribute = MANA
+	cost.amount = GameplayScalableFloat.new()
+	cost.amount.value = -COST
+	probe.costs = [cost]
 	probe.cooldown_effect = Factory.granting(
 		Factory.duration(no_modifiers, COOLDOWN_SECONDS), [COOLDOWN_TAG]
 	)

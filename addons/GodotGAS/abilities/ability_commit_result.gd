@@ -25,6 +25,7 @@ enum Status {
 	INSUFFICIENT_RESOURCES,
 	COOLDOWN_APPLICATION_FAILED,
 	COST_APPLICATION_FAILED,
+	RESOURCES_CHANGED_DURING_COMMIT,
 }
 
 var status: Status = Status.SUCCESS
@@ -36,6 +37,11 @@ var applied_cooldowns: Array[ActiveGameplayEffect] = []
 
 ## The cost handle, or null when the ability is free or the commit failed.
 var applied_cost: ActiveGameplayEffect = null
+
+## The frozen result of resolving `costs` against the owner, whatever the
+## outcome. Never null after a commit attempt reaches the resolver: even a
+## refusal keeps the resolved cost so a caller can see why.
+var resolved_cost: GameplayResolvedCost = null
 
 
 func is_ok() -> bool:

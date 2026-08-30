@@ -98,9 +98,16 @@ func activation_error(ability: GameplayAbility) -> ActivationError:
 		return ActivationError.ON_COOLDOWN
 	if not tags.has_all(ability.activation_required_tags):
 		return ActivationError.MISSING_TAG
-	if ability.cost_effect != null and owner_asc != null:
-		if not owner_asc.can_afford_cost(ability.cost_effect, ability.ability_level):
+	if owner_asc != null and not ability.costs.is_empty():
+		# The same resolver commit_ability() uses, so a preview here and the
+		# charge commit_ability() actually takes can never disagree.
+		var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
+			ability.costs, owner_asc, ability.ability_level
+		)
+		if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
 			return ActivationError.INSUFFICIENT_RESOURCES
+		if resolved.status != GameplayResolvedCost.Status.OK:
+			return ActivationError.INTERNAL_ERROR
 	return ActivationError.NONE
 
 

@@ -31,7 +31,10 @@ signal ability_ended(was_cancelled: bool)
 @export var activation_required_tags: Array[StringName] = []
 
 @export_category("Ability Mechanics")
-@export var cost_effect: GameplayEffect
+## Every priced entry this ability charges. Empty means free. Resolved as
+## one frozen, aggregated charge at commit time by
+## GameplayAbilityCostResolver - never a hand-authored GameplayEffect.
+@export var costs: Array[GameplayAbilityCost] = []
 @export var cooldown_effect: GameplayEffect
 @export var shared_cooldown_effects: Array[GameplayEffect] = []
 @export var shared_cooldown_tags: Array[StringName] = []
@@ -111,7 +114,24 @@ func commit_ability() -> AbilityCommitResult:
 	if _committed:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
-	if not AbilityCommitContract.is_legal_cost(cost_effect, ability_level):
+
+	# The only place a percentage is computed. Every step after this reads
+	# resolved.absolute_effect - never costs again - so nothing here can
+	# recalculate a percentage mid-commit.
+	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
+		costs, owner_asc, ability_level
+	)
+	result.resolved_cost = resolved
+	if (
+		resolved.status != GameplayResolvedCost.Status.OK
+		and resolved.status != GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES
+	):
+		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
+		return result
+	# A self-check against the resolver's own output, not against authoring:
+	# nothing but the resolver builds this effect. A violation here can only
+	# mean the resolver is broken.
+	if not AbilityCommitContract.is_reversible_charge(resolved.absolute_effect, 1.0):
 		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
 		return result
 
@@ -125,7 +145,7 @@ func commit_ability() -> AbilityCommitResult:
 
 	# Asked before anything is applied, so an ability nobody can afford does
 	# not start a cooldown it never paid for.
-	if not owner_asc.can_afford_cost(cost_effect, ability_level):
+	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
 		result.status = AbilityCommitResult.Status.INSUFFICIENT_RESOURCES
 		return result
 
@@ -139,11 +159,22 @@ func commit_ability() -> AbilityCommitResult:
 			return result
 		result.applied_cooldowns.append(started)
 
-	# The charge goes last: it is the only step whose failure would otherwise
-	# leave the owner on cooldown for an ability that never went off.
-	if cost_effect != null:
+	# The charge goes last, and is asked again here rather than trusted from
+	# resolve time: applying a cooldown grants tags and emits signals, and a
+	# synchronous listener can move the very resources the charge is about to
+	# take. The percentage stays frozen - this recomputes affordability
+	# against the same resolved.absolute_effect, never a percentage.
+	if (
+		resolved.absolute_effect != null
+		and not owner_asc.can_afford_cost(resolved.absolute_effect, 1.0)
+	):
+		_roll_back(result)
+		result.status = AbilityCommitResult.Status.RESOURCES_CHANGED_DURING_COMMIT
+		return result
+
+	if resolved.absolute_effect != null:
 		var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
-			cost_effect, owner_asc, ability_level
+			resolved.absolute_effect, owner_asc, 1.0
 		)
 		if charged == null:
 			_roll_back(result)

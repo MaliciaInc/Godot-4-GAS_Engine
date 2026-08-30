@@ -22,12 +22,16 @@ const MAX_HEALTH: StringName = &"max_health"
 const ATTACK: StringName = &"attack"
 const DEFENSE: StringName = &"defense"
 const MANA: StringName = &"mana"
+## No clamp relationship to MANA, unlike MAX_HEALTH to HEALTH: it exists only
+## so a percentage-cost test can price one attribute against a different one.
+const MAX_MANA: StringName = &"max_mana"
 
 @export var health: AttributeData = AttributeData.new(100.0)
 @export var max_health: AttributeData = AttributeData.new(100.0)
 @export var attack: AttributeData = AttributeData.new(10.0)
 @export var defense: AttributeData = AttributeData.new(5.0)
 @export var mana: AttributeData = AttributeData.new(50.0)
+@export var max_mana: AttributeData = AttributeData.new(100.0)
 
 
 func _init() -> void:
@@ -38,6 +42,7 @@ func _init() -> void:
 	attack = AttributeData.new(10.0)
 	defense = AttributeData.new(5.0)
 	mana = AttributeData.new(50.0)
+	max_mana = AttributeData.new(100.0)
 
 
 ## Guard the durable value.

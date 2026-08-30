@@ -211,7 +211,11 @@ func test_a_blocked_ability_does_not_activate_on_a_press() -> void:
 func test_a_press_cannot_pay_a_cost_the_owner_cannot_afford() -> void:
 	fixture.set_base(&"mana", 5.0)
 	var ability: ProbeAbility = _granted(FIRE)
-	ability.cost_effect = Factory.instant([Factory.add(&"mana", -50.0)])
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.target_attribute = &"mana"
+	cost.amount = GameplayScalableFloat.new()
+	cost.amount.value = 50.0
+	ability.costs = [cost]
 	asc.bind_ability_to_input(ability, SLOT)
 
 	asc.ability_local_input_pressed(SLOT)

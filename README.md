@@ -14,12 +14,16 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   charge fails the cooldowns are taken back off - an ability is never left on
   cooldown for something the caster did not pay for. The result is a typed
   value naming what happened, not a bare `false`.
-- **Absolute, additive costs.** A cost in this release is a fixed amount
-  subtracted from an attribute. **Percentage costs are not supported**, and the
-  commit refuses any definition that tries to express one - a multiplier, a
-  divisor, an override or an execution calculation in a cost is rejected rather
-  than approximated. A cost of "20% of current mana" has to wait for a release
-  that can price it honestly.
+- **Absolute and percentage costs.** A cost is a fixed amount, or a percentage
+  of any attribute's base or current value - 10% of MaxMana, 5% of Health.current,
+  25% of Attack.base. A fraction is 0.0 to 1.0; anything outside that range is
+  refused, as is a non-finite one. Several costs on the same attribute are
+  aggregated into one charge before affordability is asked. A percentage is
+  resolved once, against the attributes as they stand, and the resulting amount
+  is what the commit charges - a buff that raises what an attribute shows never
+  creates durable funds a percentage can spend that were not there before it.
+  A multiplier, a divisor, an override or an execution calculation still cannot
+  express a cost: only an absolute amount or a percentage can.
 - **Cancellable ability tasks.** Waiting for a delay, an input, a gameplay
   event or target data is a task the ability owns. Ending, cancelling or
   removing the ability cancels every task it started, and a task reports

@@ -50,8 +50,19 @@ func test_a_temporary_buff_does_not_subsidise_a_durable_cost() -> void:
 
 	# The displayed 30 is not spendable: paying 20 would drive the base to -10
 	# and the clamp would shrink the payment. A cost the clamp had to shrink was
-	# not affordable, only survivable.
-	assert_false(asc.can_afford_cost(Factory.instant([Factory.add(MANA, -20.0)])), "borrowed mana")
+	# not affordable, only survivable. Priced through the resolver, the same way
+	# an ability's percentage cost is: 100% of the displayed 30 is 30, but the
+	# resolver's own affordability check refuses it.
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.mode = GameplayAbilityCost.Mode.PERCENT_OF_CURRENT
+	cost.target_attribute = MANA
+	cost.reference_attribute = MANA
+	cost.amount = GameplayScalableFloat.new()
+	cost.amount.value = 1.0
+	var costs: Array[GameplayAbilityCost] = [cost]
+	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(costs, asc, 1.0)
+	assert_almost_eq(resolved.entries[0].resolved_amount, 30.0, TOLERANCE, "priced at the full 30")
+	assert_false(resolved.is_ok(), "borrowed mana does not pay for itself")
 
 
 func test_a_preview_mutates_nothing() -> void:

@@ -1,15 +1,20 @@
 ## Committing an ability is a transaction: the whole price, or none of it.
 ##
-## The price is a cost and some cooldowns, and the two can disagree. Charging
-## first and then failing to start a cooldown bills a player for nothing;
-## starting a cooldown and then failing to charge locks an ability that never
-## went off. Both are worse than refusing, so a commit that cannot finish undoes
-## what it had already done and reports what it refused on.
+## Charging first and then failing to start a cooldown bills a player for
+## nothing; starting a cooldown and then failing to charge locks an ability
+## that never went off. Both are worse than refusing, so a commit that cannot
+## finish undoes what it had already done and reports what it refused on.
 ##
-## The refusals are also a design boundary rather than defensiveness. A cost has
-## to be previewable by `can_afford_cost` and reversible by adding a fixed
-## amount back, and only an instant, purely additive charge is both. That is why
-## a percentage cost cannot be written here at all.
+## What a cost actually charges - absolute amounts, percentages, aggregation,
+## the durable-funds rule - lives in test_ability_cost_pricing.gd. This file is
+## the transaction around that price: cooldown legality, rollback, the second
+## affordability check after cooldowns are applied, and the lifecycle of a
+## commit itself.
+##
+## What a cost effect's own shape may be - INSTANT, ADD-only, no tags, no
+## cues, no events - is no longer reachable through authoring at all: nothing
+## but the resolver ever builds one. Those regression tests live in
+## test_ability_commit_contract.gd, which tests AbilityCommitContract directly.
 ##
 ## @meta_license: MIT
 extends GutTest
@@ -25,40 +30,28 @@ const OWN_COOLDOWN: StringName = &"Cooldown.Probe"
 const SHARED_COOLDOWN: StringName = &"Cooldown.Shared"
 const PROBE_TAG: StringName = &"Ability.Probe"
 const STARTING_MANA: float = 50.0
-const COST_AMOUNT: float = -20.0
+const COST_AMOUNT: float = 20.0
 const COOLDOWN_SECONDS: float = 5.0
 
 
-## An ASC that refuses to apply one designated effect, and behaves normally
-## otherwise.
+## An ASC that refuses whatever `refuses` answers true for, and behaves
+## normally otherwise.
 ##
-## The validated contract makes both application failures unreachable through
-## the engine: a cooldown carries no modifiers to fail on, and a cost nobody can
-## pay is refused by `can_afford_cost` before it is ever applied. The rollback
-## still has to be correct, so the refusal is injected at the seam the commit
-## actually calls rather than left as untested defensive code.
+## A predicate rather than an exact effect reference: the resolved cost effect
+## is built fresh by GameplayAbilityCostResolver on every commit, so its
+## identity cannot be known before the commit that builds it. Refusing by
+## shape - "the INSTANT one" - reaches it without needing to.
 class RefusingASC extends AbilitySystemComponent:
-	var refused: GameplayEffect = null
+	var refuses: Callable = func(_effect: GameplayEffect) -> bool: return false
 
 	func apply_gameplay_effect(
 		effect: GameplayEffect,
 		source_asc: AbilitySystemComponent = null,
 		effect_level: float = 1.0
 	) -> ActiveGameplayEffect:
-		if effect != null and effect == refused:
+		if effect != null and refuses.call(effect):
 			return null
 		return super(effect, source_asc, effect_level)
-
-
-## An execution that never runs, because a cost carrying one is refused before
-## anything is applied. It exists only so the executions array can be non-empty:
-## the base class is abstract and cannot be instantiated directly.
-class NeverRuns extends GameplayExecutionCalculation:
-	func execute(
-		_spec: GameplayEffectSpec, _target_asc: AbilitySystemComponent
-	) -> Dictionary[StringName, float]:
-		var nothing: Dictionary[StringName, float] = {}
-		return nothing
 
 
 var fixture: ASCFixture = null
@@ -82,8 +75,15 @@ func after_each() -> void:
 
 
 #region Builders
-func _cost(amount: float) -> GameplayEffect:
-	return Factory.instant([Factory.add(MANA, amount)])
+## A single absolute mana cost, for the many tests that only care about the
+## transaction shape and not the pricing model.
+func _cost(positive_amount: float) -> Array[GameplayAbilityCost]:
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.mode = GameplayAbilityCost.Mode.ABSOLUTE
+	cost.target_attribute = MANA
+	cost.amount = GameplayScalableFloat.new()
+	cost.amount.value = positive_amount
+	return [cost]
 
 
 func _cooldown(tag: StringName) -> GameplayEffect:
@@ -97,8 +97,9 @@ func _status() -> AbilityCommitResult.Status:
 	return ability.commit_ability().status
 
 
-## An ASC that will refuse `refused`, with an ability already granted on it.
-func _caster_refusing(refused: GameplayEffect) -> ProbeAbility:
+## An ASC that will refuse whatever `refuses` matches, with an ability already
+## granted on it.
+func _caster_refusing(refuses: Callable) -> ProbeAbility:
 	var host: Node = Node.new()
 	host.name = "Refuser"
 
@@ -106,7 +107,7 @@ func _caster_refusing(refused: GameplayEffect) -> ProbeAbility:
 	refusing.name = String(AbilitySystemLocator.ASC_CHILD_NAME)
 	refusing.attribute_sets = [AttributeSetScript.new()]
 	refusing.share_attributes = true
-	refusing.refused = refused
+	refusing.refuses = refuses
 	host.add_child(refusing)
 	add_child_autofree(host)
 
@@ -122,6 +123,7 @@ func test_an_ability_with_no_cost_and_no_cooldown_commits() -> void:
 	assert_true(result.is_ok(), "having nothing to pay is not a reason to refuse")
 	assert_eq(result.applied_cooldowns.size(), 0, "no cooldown was declared")
 	assert_null(result.applied_cost, "no cost was declared")
+	assert_null(result.resolved_cost.absolute_effect, "an empty cost list resolves to nothing")
 
 
 func test_an_ability_with_no_owner_reports_owner_missing() -> void:
@@ -135,82 +137,20 @@ func test_an_ability_with_no_owner_reports_owner_missing() -> void:
 
 
 func test_a_second_commit_in_one_activation_is_refused() -> void:
-	ability.cost_effect = _cost(COST_AMOUNT)
+	ability.costs = _cost(COST_AMOUNT)
 	assert_true(ability.commit_ability().is_ok(), "the first commit pays")
 
 	assert_eq(_status(), AbilityCommitResult.Status.ALREADY_COMMITTED, "one activation, one charge")
 	assert_almost_eq(
-		fixture.base_of(MANA), STARTING_MANA + COST_AMOUNT, TOLERANCE, "and it was taken once"
+		fixture.base_of(MANA), STARTING_MANA - COST_AMOUNT, TOLERANCE, "and it was taken once"
 	)
-#endregion
-
-
-#region What a cost may be
-func test_a_cost_that_is_not_instant_is_refused() -> void:
-	ability.cost_effect = Factory.duration([Factory.add(MANA, COST_AMOUNT)], COOLDOWN_SECONDS)
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "a cost is paid, not sustained")
-
-
-func test_a_cost_with_an_execution_is_refused() -> void:
-	var computed: GameplayEffect = _cost(COST_AMOUNT)
-	computed.executions = [NeverRuns.new()] as Array[GameplayExecutionCalculation]
-	ability.cost_effect = computed
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "an execution cannot be previewed")
-
-
-func test_a_cost_using_anything_but_add_is_refused() -> void:
-	ability.cost_effect = Factory.instant([Factory.multiply(MANA, 0.9)])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "multiply reads the value")
-
-	ability.cost_effect = Factory.instant([Factory.divide(MANA, 2.0)])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "divide reads the value")
-
-	ability.cost_effect = Factory.instant([Factory.override(MANA, 0.0)])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "override discards the value")
-
-
-func test_this_phase_has_no_way_to_write_a_percentage_cost() -> void:
-	# The operations that read the attribute are refused, so all that remains is
-	# ADD with a fixed magnitude. This proves what that leaves: the same charge
-	# whatever the pool holds. A percentage is not a cost this vocabulary can
-	# express, which is the point rather than an oversight.
-	ability.cost_effect = _cost(COST_AMOUNT)
-	ability.commits = true
-
-	var first: bool = await ability.try_activate()
-	assert_true(first, "a flat charge is the whole vocabulary")
-	var taken_from_full: float = STARTING_MANA - fixture.base_of(MANA)
-
-	var doubled: float = STARTING_MANA * 2.0
-	fixture.set_base(MANA, doubled)
-	var second: bool = await ability.try_activate()
-	assert_true(second, "the same cost against a larger pool")
-	var taken_from_double: float = doubled - fixture.base_of(MANA)
-
-	assert_almost_eq(taken_from_double, taken_from_full, TOLERANCE, "flat, never proportional")
-
-
-func test_a_cost_with_a_positive_magnitude_is_refused() -> void:
-	ability.cost_effect = _cost(10.0)
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "a cost that pays out is not one")
-
-
-func test_a_cost_that_announces_itself_is_refused() -> void:
-	ability.cost_effect = Factory.granting(_cost(COST_AMOUNT), [OWN_COOLDOWN])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "a cost grants nothing")
-
-	ability.cost_effect = Factory.with_events(_cost(COST_AMOUNT), [PROBE_TAG])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "a cost dispatches nothing")
-
-	ability.cost_effect = Factory.with_application_cues(_cost(COST_AMOUNT), [OWN_COOLDOWN])
-	assert_eq(_status(), AbilityCommitResult.Status.INVALID_COST_DEFINITION, "a cost plays nothing")
 #endregion
 
 
 #region What a cooldown may be
 func test_a_cooldown_that_moves_an_attribute_is_refused() -> void:
 	ability.cooldown_effect = Factory.granting(
-		Factory.duration([Factory.add(MANA, COST_AMOUNT)], COOLDOWN_SECONDS), [OWN_COOLDOWN]
+		Factory.duration([Factory.add(MANA, -COST_AMOUNT)], COOLDOWN_SECONDS), [OWN_COOLDOWN]
 	)
 	assert_eq(
 		_status(), AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION, "a cooldown is not a debuff"
@@ -239,7 +179,7 @@ func test_an_instant_cooldown_is_refused() -> void:
 #region The transaction
 func test_an_unaffordable_cost_starts_no_cooldown() -> void:
 	fixture.set_base(MANA, 5.0)
-	ability.cost_effect = _cost(COST_AMOUNT)
+	ability.costs = _cost(COST_AMOUNT)
 	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
 
 	assert_eq(_status(), AbilityCommitResult.Status.INSUFFICIENT_RESOURCES, "the owner cannot pay")
@@ -249,8 +189,10 @@ func test_an_unaffordable_cost_starts_no_cooldown() -> void:
 
 func test_a_cooldown_that_fails_to_apply_charges_nothing() -> void:
 	var cooldown: GameplayEffect = _cooldown(OWN_COOLDOWN)
-	var caster: ProbeAbility = _caster_refusing(cooldown)
-	caster.cost_effect = _cost(COST_AMOUNT)
+	var caster: ProbeAbility = _caster_refusing(
+		func(effect: GameplayEffect) -> bool: return effect == cooldown
+	)
+	caster.costs = _cost(COST_AMOUNT)
 	caster.cooldown_effect = cooldown
 
 	var before: float = caster.owner_asc.get_attribute_base(MANA)
@@ -266,9 +208,11 @@ func test_a_cooldown_that_fails_to_apply_charges_nothing() -> void:
 
 
 func test_a_cost_that_fails_to_apply_retires_the_cooldowns() -> void:
-	var cost: GameplayEffect = _cost(COST_AMOUNT)
-	var caster: ProbeAbility = _caster_refusing(cost)
-	caster.cost_effect = cost
+	var caster: ProbeAbility = _caster_refusing(
+		func(effect: GameplayEffect) -> bool:
+			return effect.policy == GameplayEffect.DurationPolicy.INSTANT
+	)
+	caster.costs = _cost(COST_AMOUNT)
 	caster.cooldown_effect = _cooldown(OWN_COOLDOWN)
 
 	var result: AbilityCommitResult = caster.commit_ability()
@@ -291,20 +235,20 @@ func test_a_cooldown_listed_twice_is_applied_once() -> void:
 
 
 func test_a_successful_commit_charges_exactly_once() -> void:
-	ability.cost_effect = _cost(COST_AMOUNT)
+	ability.costs = _cost(COST_AMOUNT)
 	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
 
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "affordable and well defined")
 	assert_almost_eq(
-		fixture.base_of(MANA), STARTING_MANA + COST_AMOUNT, TOLERANCE, "the charge landed once"
+		fixture.base_of(MANA), STARTING_MANA - COST_AMOUNT, TOLERANCE, "the charge landed once"
 	)
 	assert_true(asc.has_tag(OWN_COOLDOWN), "and the cooldown started")
 	assert_not_null(result.applied_cost, "and the charge handed back its handle")
 
 
 func test_a_new_activation_may_commit_again() -> void:
-	ability.cost_effect = _cost(COST_AMOUNT)
+	ability.costs = _cost(COST_AMOUNT)
 	ability.commits = true
 
 	var first: bool = await ability.try_activate()
@@ -315,10 +259,47 @@ func test_a_new_activation_may_commit_again() -> void:
 	assert_true(second, "and ending the first clears the way for the next")
 	assert_almost_eq(
 		fixture.base_of(MANA),
-		STARTING_MANA + COST_AMOUNT * 2.0,
+		STARTING_MANA - COST_AMOUNT * 2.0,
 		TOLERANCE,
 		"two activations, two charges"
 	)
+#endregion
+
+
+#region The second, post-cooldown affordability check
+## A synchronous listener on the cooldown's own tag can move the very
+## resources the charge is about to take. The percentage was already frozen at
+## resolve time and is never recalculated; only affordability is asked again.
+func test_a_cooldown_listener_that_drains_resources_rolls_back_and_reports_the_change() -> void:
+	fixture.set_base(MANA, COST_AMOUNT)
+	ability.costs = _cost(COST_AMOUNT)
+	ability.cooldown_effect = _cooldown(OWN_COOLDOWN)
+
+	asc.tag_added.connect(func(_tag: StringName) -> void: asc.set_attribute_base(MANA, 0.0))
+
+	var result: AbilityCommitResult = ability.commit_ability()
+	assert_eq(
+		result.status,
+		AbilityCommitResult.Status.RESOURCES_CHANGED_DURING_COMMIT,
+		"affordable a moment ago is not affordable now"
+	)
+	assert_false(asc.has_tag(OWN_COOLDOWN), "the cooldown the listener reacted to was rolled back")
+	assert_almost_eq(fixture.base_of(MANA), 0.0, TOLERANCE, "the listener's own write stands")
+	assert_null(result.applied_cost, "and nothing was charged")
+#endregion
+
+
+#region Activation shares the resolver
+func test_activation_error_and_commit_ability_agree_on_affordability() -> void:
+	fixture.set_base(MANA, 5.0)
+	ability.costs = _cost(COST_AMOUNT)
+
+	assert_eq(
+		asc.ability_runtime.activation_error(ability),
+		AbilityRuntime.ActivationError.INSUFFICIENT_RESOURCES,
+		"the gate refuses"
+	)
+	assert_eq(_status(), AbilityCommitResult.Status.INSUFFICIENT_RESOURCES, "and the commit agrees")
 #endregion
 
 

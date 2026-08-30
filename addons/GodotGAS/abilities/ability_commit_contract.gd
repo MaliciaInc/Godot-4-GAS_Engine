@@ -1,10 +1,10 @@
-## What a commit will accept as a cost and as a cooldown.
+## What a commit will accept as a resolved cost and as a cooldown.
 ##
 ## These are properties of an effect, not of an ability, and they are the reason
-## a commit can promise anything: a cost that can be previewed and reversed, and
-## a cooldown that leaves nothing behind when it is retired. Keeping them here
-## rather than on `GameplayAbility` also keeps them answerable without one - a
-## tool validating a resource can ask the same questions the runtime asks.
+## a commit can promise anything: a charge that can be previewed and reversed,
+## and a cooldown that leaves nothing behind when it is retired. Keeping them
+## here rather than on `GameplayAbility` also keeps them answerable without one
+## - a tool validating a resource can ask the same questions the runtime asks.
 ##
 ## Every function is static and reads only its arguments. There is no state to
 ## get out of step with the ability that consults it.
@@ -15,47 +15,48 @@ class_name AbilityCommitContract extends RefCounted
 
 
 #region Cost
-## Whether `effect` is a legal ability cost. Null is legal: abilities may be free.
+## Whether `effect` is still a reversible charge. Null is legal: an ability may
+## have no cost, or every declared cost may have resolved to nothing owed.
 ##
-## A cost must be an instant, purely additive charge that announces nothing. That
-## is the only shape `can_afford_cost` can preview honestly and the only one a
-## rollback could undo, which is why these are refusals and not warnings.
-static func is_legal_cost(effect: GameplayEffect, level: float) -> bool:
+## `effect` is never author-supplied here. `GameplayAbility` no longer accepts
+## a hand-authored cost effect at all - it declares a list of
+## `GameplayAbilityCost` entries, and `GameplayAbilityCostResolver` is the only
+## code that builds what this function checks. A violation here can therefore
+## only mean the resolver itself is broken, which is exactly why the check
+## stays: a broken resolver must fail loudly rather than commit a charge
+## nothing could have previewed honestly.
+static func is_reversible_charge(effect: GameplayEffect, level: float) -> bool:
 	if effect == null:
 		return true
 	if effect.policy != GameplayEffect.DurationPolicy.INSTANT:
 		return false
 	# An instant effect grants no tags in any case, so declaring one means the
-	# author expected something this cost can never deliver.
+	# author expected something this charge can never deliver.
 	if not effect.granted_tags.is_empty():
 		return false
 	if not effect.is_silent():
 		return false
-	return _is_pure_charge(effect, level)
+	return _is_add_only_non_positive(effect, level)
 
 
-## Every modifier subtracts, and at least one of them actually costs something.
+## Every modifier subtracts or does nothing at all; none of them reads the
+## value it changes.
 ##
 ## Only ADD is allowed. MULTIPLY, DIVIDE and OVERRIDE each depend on the value
-## they are charged against, so the amount previewed and the amount taken could
-## differ, and the charge could not be undone by adding a fixed amount back.
-## A consequence worth naming: this is why a percentage cost cannot be written
-## here. It is a different semantics, not a special case of this one.
-static func _is_pure_charge(effect: GameplayEffect, level: float) -> bool:
-	if effect.modifiers.is_empty():
-		return false
-	var charges_something: bool = false
+## they are charged against, so the amount previewed and the amount taken
+## could differ, and the charge could not be undone by adding a fixed amount
+## back. An empty modifier list is legal: a cost list that resolved to nothing
+## owed on every attribute is a real, declared cost that happens to be free,
+## not a missing one.
+static func _is_add_only_non_positive(effect: GameplayEffect, level: float) -> bool:
 	for modifier: GameplayEffectModifier in effect.modifiers:
 		if modifier == null:
 			return false
 		if modifier.operation != GameplayEffectModifier.Operation.ADD:
 			return false
-		var magnitude: float = modifier.calculate_magnitude(level)
-		if magnitude > 0.0:
+		if modifier.calculate_magnitude(level) > 0.0:
 			return false
-		if magnitude < 0.0:
-			charges_something = true
-	return charges_something
+	return true
 #endregion
 
 
