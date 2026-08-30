@@ -33,6 +33,10 @@ var channels: bool = false
 ## only cares about routing does not have to arrange resources.
 var commits: bool = false
 
+## What the last commit answered. Kept rather than discarded so a test can
+## see why a commit was refused, not merely that the ability did not pay.
+var last_commit: AbilityCommitResult = null
+
 
 static func build(tag: StringName) -> ProbeAbility:
 	var probe: ProbeAbility = ProbeAbility.new()
@@ -44,7 +48,7 @@ static func build(tag: StringName) -> ProbeAbility:
 func _activate_ability() -> bool:
 	activations += 1
 	if commits:
-		commit_ability()
+		last_commit = commit_ability()
 	if channels:
 		await channel_gate
 	return succeeds

@@ -46,7 +46,15 @@ func grant(ability: GameplayAbility) -> void:
 func remove(ability: GameplayAbility) -> void:
 	if ability == null:
 		return
+	# A removed ability must not outlive its own activation. Freeing the node
+	# mid-cast left `ability_ended` unfired, so anything waiting on it waited
+	# forever, and the commit that activation had made was never forgotten.
+	if ability.is_active:
+		ability.abort_ability()
 	_abilities.erase(ability)
+	# Cleared after the abort, not before: the abort still needs the owner it
+	# is ending against.
+	ability.owner_asc = null
 	ability.queue_free()
 
 

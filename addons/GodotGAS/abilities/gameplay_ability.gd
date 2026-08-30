@@ -52,6 +52,9 @@ var owner_asc: AbilitySystemComponent = null
 
 var is_active: bool = false
 
+## Whether this activation has already paid. One activation charges once.
+var _committed: bool = false
+
 
 #region Initialization
 func _ready() -> void:
@@ -91,20 +94,74 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 	return success
 
 
-## Pay the cost and start the cooldowns together.
+## Pay the cost and start the cooldowns as one transaction.
 ##
 ## Call this from `_activate_ability` the moment the ability is committed, so a
 ## cancelled cast has not already charged the player.
-func commit_ability() -> void:
+##
+## Either the whole price is taken or none of it is. A cooldown that fails to
+## apply retires the cooldowns already started; a cost that fails retires all of
+## them. Costs and cooldowns carry no cues and no events by contract, so a
+## rollback leaves nothing anyone could have observed.
+func commit_ability() -> AbilityCommitResult:
+	var result: AbilityCommitResult = AbilityCommitResult.new()
 	if owner_asc == null:
-		return
+		result.status = AbilityCommitResult.Status.OWNER_MISSING
+		return result
+	if _committed:
+		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
+		return result
+	if not _validate_cost_definition(cost_effect):
+		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
+		return result
+
+	var cooldowns: Array[GameplayEffect] = _unique_cooldown_effects()
+	for cooldown: GameplayEffect in cooldowns:
+		if not _validate_cooldown_definition(cooldown):
+			result.status = AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION
+			return result
+
+	# Asked before anything is applied, so an ability nobody can afford does
+	# not start a cooldown it never paid for.
+	if not owner_asc.can_afford_cost(cost_effect, ability_level):
+		result.status = AbilityCommitResult.Status.INSUFFICIENT_RESOURCES
+		return result
+
+	for cooldown: GameplayEffect in cooldowns:
+		var started: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
+			cooldown, owner_asc, ability_level
+		)
+		if started == null:
+			_roll_back(result)
+			result.status = AbilityCommitResult.Status.COOLDOWN_APPLICATION_FAILED
+			return result
+		result.applied_cooldowns.append(started)
+
+	# The charge goes last: it is the only step whose failure would otherwise
+	# leave the owner on cooldown for an ability that never went off.
 	if cost_effect != null:
-		owner_asc.apply_gameplay_effect(cost_effect, owner_asc, ability_level)
-	if cooldown_effect != null:
-		owner_asc.apply_gameplay_effect(cooldown_effect, owner_asc, ability_level)
-	for shared_effect: GameplayEffect in shared_cooldown_effects:
-		if shared_effect != null:
-			owner_asc.apply_gameplay_effect(shared_effect, owner_asc, ability_level)
+		var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
+			cost_effect, owner_asc, ability_level
+		)
+		if charged == null:
+			_roll_back(result)
+			result.status = AbilityCommitResult.Status.COST_APPLICATION_FAILED
+			return result
+		result.applied_cost = charged
+
+	_committed = true
+	result.status = AbilityCommitResult.Status.SUCCESS
+	return result
+
+
+## Undo the cooldowns a failed commit had already started.
+##
+## The list is emptied as well as retired: a result that failed reports nothing
+## applied, because after this nothing is.
+func _roll_back(result: AbilityCommitResult) -> void:
+	for started: ActiveGameplayEffect in result.applied_cooldowns:
+		owner_asc.remove_active_effect(started)
+	result.applied_cooldowns.clear()
 
 
 ## Override this. The default succeeds immediately.
@@ -121,7 +178,113 @@ func abort_ability() -> void:
 ## Close the ability. It stays granted: ending is not un-granting.
 func end_ability(was_cancelled: bool = false) -> void:
 	is_active = false
+	# The one place a commit is forgotten. `try_activate` deliberately does not
+	# clear it as well: an idle ability holds `_committed == false` as an
+	# invariant, and resetting at both ends gives one transition two owners.
+	_committed = false
 	ability_ended.emit(was_cancelled)
+#endregion
+
+
+#region Commit contract
+## Whether `effect` is a legal ability cost. Null is legal: abilities may be free.
+##
+## A cost must be an instant, purely additive charge that announces nothing. That
+## is the only shape `can_afford_cost` can preview honestly and the only one a
+## rollback could undo, which is why these are refusals and not warnings.
+func _validate_cost_definition(effect: GameplayEffect) -> bool:
+	if effect == null:
+		return true
+	if effect.policy != GameplayEffect.DurationPolicy.INSTANT:
+		return false
+	# An instant effect grants no tags in any case, so declaring one means the
+	# author expected something this cost can never deliver.
+	if not effect.granted_tags.is_empty():
+		return false
+	if not _is_quiet_transaction_effect(effect):
+		return false
+	return _modifiers_are_a_pure_charge(effect)
+
+
+## Every modifier subtracts, and at least one of them actually costs something.
+##
+## Only ADD is allowed. MULTIPLY, DIVIDE and OVERRIDE each depend on the value
+## they are charged against, so the amount previewed and the amount taken could
+## differ, and the charge could not be undone by adding a fixed amount back.
+## A consequence worth naming: this is why a percentage cost cannot be written
+## here. It is a different semantics, not a special case of this one.
+func _modifiers_are_a_pure_charge(effect: GameplayEffect) -> bool:
+	if effect.modifiers.is_empty():
+		return false
+	var charges_something: bool = false
+	for modifier: GameplayEffectModifier in effect.modifiers:
+		if modifier == null:
+			return false
+		if modifier.operation != GameplayEffectModifier.Operation.ADD:
+			return false
+		var magnitude: float = modifier.calculate_magnitude(ability_level)
+		if magnitude > 0.0:
+			return false
+		if magnitude < 0.0:
+			charges_something = true
+	return charges_something
+
+
+## Whether `effect` is a legal cooldown. Null is legal: an ability may have none.
+##
+## A cooldown is a tag that expires. It moves no attribute, because an attribute
+## it had moved would be reverted by the same rollback that retires it.
+func _validate_cooldown_definition(effect: GameplayEffect) -> bool:
+	if effect == null:
+		return true
+	if not effect.modifiers.is_empty():
+		return false
+	# The tag is the cooldown. Without one, nothing can be asked whether the
+	# ability is still on cooldown, and the effect expires unobserved.
+	if effect.granted_tags.is_empty():
+		return false
+	if not _is_quiet_transaction_effect(effect):
+		return false
+	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
+		return effect.duration > 0.0
+	if effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
+		return effect.duration_turns > 0
+	return false
+
+
+## The conditions a cost and a cooldown share: not periodic, and silent.
+##
+## Both are transaction bookkeeping rather than gameplay. An execution, a purge,
+## a cue or an event would be an observable side effect, and a commit that rolled
+## back could not take it back. Written once because the two validators have to
+## agree; two copies of the same eight conditions would eventually stop agreeing.
+func _is_quiet_transaction_effect(effect: GameplayEffect) -> bool:
+	return (
+		is_zero_approx(effect.period)
+		and effect.executions.is_empty()
+		and effect.remove_effects_with_tags.is_empty()
+		and effect.application_required_tags.is_empty()
+		and effect.application_ignore_tags.is_empty()
+		and effect.application_cue_tags.is_empty()
+		and effect.periodic_cue_tags.is_empty()
+		and effect.event_tags.is_empty()
+	)
+
+
+## Every cooldown this commit must start, once each.
+##
+## Its own first, then the shared ones in declaration order. A Resource listed in
+## both is one cooldown, not two: applying it twice would either refresh it -
+## hiding the second application - or stack it, and neither is what sharing a
+## cooldown means.
+func _unique_cooldown_effects() -> Array[GameplayEffect]:
+	var unique: Array[GameplayEffect] = []
+	if cooldown_effect != null:
+		unique.append(cooldown_effect)
+	for shared: GameplayEffect in shared_cooldown_effects:
+		if shared != null and not unique.has(shared):
+			unique.append(shared)
+	return unique
 #endregion
 
 
