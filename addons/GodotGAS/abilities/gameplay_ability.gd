@@ -170,14 +170,28 @@ func _activate_ability() -> bool:
 
 
 ## Interrupt mid-cast.
-func abort_ability() -> void:
+func abort_ability(
+	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
+) -> void:
 	if is_active:
-		end_ability(true)
+		end_ability(true, reason)
 
 
 ## Close the ability. It stays granted: ending is not un-granting.
-func end_ability(was_cancelled: bool = false) -> void:
+##
+## Idempotent, and the order below is load-bearing. `is_active` is cleared
+## first because cancelling a task can resume a coroutine that awaited it, and
+## that coroutine arriving here again would emit `ability_ended` a second time.
+## Finding the ability already closed, it returns instead.
+func end_ability(
+	was_cancelled: bool = false,
+	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ENDED
+) -> void:
+	if not is_active:
+		return
 	is_active = false
+	if owner_asc != null:
+		owner_asc.cancel_ability_tasks(self, reason)
 	# The one place a commit is forgotten. `try_activate` deliberately does not
 	# clear it as well: an idle ability holds `_committed == false` as an
 	# invariant, and resetting at both ends gives one transition two owners.

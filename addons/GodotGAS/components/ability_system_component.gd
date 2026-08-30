@@ -114,12 +114,14 @@ func _wire_runtimes() -> void:
 
 	ability_runtime.owner_asc = self
 	ability_runtime.tags = tags
+	ability_runtime.tasks.owner_asc = self
 
 	events.owner_asc = self
 
 
 func _process(delta: float) -> void:
 	scheduler.advance_time(delta)
+	ability_runtime.advance_time(delta)
 
 
 ## Advance turn-based effects. Called by an external turn manager; the frame
@@ -133,7 +135,7 @@ func advance_turn(turns: int = 1) -> void:
 func cleanup() -> void:
 	if _cleaned_up and effects.active_count() == 0:
 		return
-	ability_runtime.abort_all()
+	ability_runtime.abort_all(GameplayAbilityTask.CancelReason.ASC_CLEANUP)
 	effects.cleanup()
 	ability_runtime.clear()
 	tags.clear_all()
@@ -387,7 +389,7 @@ func get_tag_turns_remaining(tag: StringName) -> int:
 #endregion
 
 
-#region Abilities and input
+#region Abilities, input and events
 func grant_ability(ability: GameplayAbility) -> void:
 	ability_runtime.grant(ability)
 
@@ -426,10 +428,23 @@ func ability_local_input_pressed(input_id: int) -> void:
 
 func ability_local_input_released(input_id: int) -> void:
 	ability_runtime.input_released(input_id)
-#endregion
 
 
-#region Events
+func register_ability_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
+	return ability_runtime.register_task(task)
+
+
+func cancel_ability_tasks(ability: GameplayAbility, reason: GameplayAbilityTask.CancelReason) -> void:
+	ability_runtime.cancel_tasks_for_ability(ability, reason)
+
+
+func submit_ability_target_data(ability: GameplayAbility, data: GameplayAbilityTargetData) -> void:
+	ability_runtime.submit_target_data(ability, data)
+
+
 func send_gameplay_event(event: GameplayEventData) -> void:
+	# A task already waiting for this event hears it before it can wake a
+	# sleeping ability that would then wait for the same one.
+	ability_runtime.tasks.gameplay_event(event)
 	events.dispatch(event, ability_runtime.abilities())
 #endregion

@@ -23,6 +23,9 @@ enum ActivationError {
 var owner_asc: AbilitySystemComponent = null
 var tags: GameplayTagRuntime = null
 
+## Every task any granted ability is currently waiting on.
+var tasks: AbilityTaskRuntime = AbilityTaskRuntime.new()
+
 var _abilities: Array[GameplayAbility] = []
 var _held_inputs: Array[int] = []
 
@@ -50,7 +53,10 @@ func remove(ability: GameplayAbility) -> void:
 	# mid-cast left `ability_ended` unfired, so anything waiting on it waited
 	# forever, and the commit that activation had made was never forgotten.
 	if ability.is_active:
-		ability.abort_ability()
+		ability.abort_ability(GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
+	# Asked again even when the ability was not active: a task that outlived a
+	# closed activation is exactly the inconsistency removal has to clear.
+	tasks.cancel_for_ability(ability, GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
 	_abilities.erase(ability)
 	# Cleared after the abort, not before: the abort still needs the owner it
 	# is ending against.
@@ -60,10 +66,13 @@ func remove(ability: GameplayAbility) -> void:
 
 ## Abort every running ability without freeing anything. Used by cleanup, which
 ## must leave the ASC in a state a second cleanup can safely see.
-func abort_all() -> void:
-	for ability: GameplayAbility in _abilities:
+func abort_all(reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED) -> void:
+	for ability: GameplayAbility in _abilities.duplicate():
 		if is_instance_valid(ability) and ability.is_active:
-			ability.abort_ability()
+			ability.abort_ability(reason)
+	# Whatever is still running belonged to an activation that had already
+	# closed. Teardown has to leave nothing behind, so those go too.
+	tasks.cancel_all(reason)
 
 
 func clear() -> void:
@@ -107,7 +116,7 @@ func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
 			continue
 		for tag: StringName in cancel_tags:
 			if ability.ability_tag == tag or ability.activation_blocked_tags.has(tag):
-				ability.abort_ability()
+				ability.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
 				break
 #endregion
 
@@ -140,6 +149,10 @@ func held_inputs() -> Array[int]:
 func input_pressed(input_id: int) -> void:
 	if not _held_inputs.has(input_id):
 		_held_inputs.append(input_id)
+	# Formal tasks hear the transition before an active ability's ad hoc hooks.
+	# If a task ends the ability the hook below no longer runs, which is the
+	# point: one press must not both finish a cast and be re-read by it.
+	tasks.input_pressed(input_id)
 	# Snapshot: an ability that grants another one on press must not have its
 	# new sibling receive the same press.
 	for ability: GameplayAbility in _abilities.duplicate():
@@ -149,7 +162,28 @@ func input_pressed(input_id: int) -> void:
 
 func input_released(input_id: int) -> void:
 	_held_inputs.erase(input_id)
+	tasks.input_released(input_id)
 	for ability: GameplayAbility in _abilities.duplicate():
 		if is_instance_valid(ability) and ability.input_id == input_id:
 			ability._input_released(owner_asc)
+#endregion
+
+
+#region Ability tasks
+## Small pass-throughs. The task runtime owns the tasks; this only forwards,
+## so one place decides what still running means.
+func register_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
+	return tasks.register(task)
+
+
+func cancel_tasks_for_ability(ability: GameplayAbility, reason: GameplayAbilityTask.CancelReason) -> void:
+	tasks.cancel_for_ability(ability, reason)
+
+
+func submit_target_data(ability: GameplayAbility, data: GameplayAbilityTargetData) -> void:
+	tasks.target_data(ability, data)
+
+
+func advance_time(delta: float) -> void:
+	tasks.advance_time(delta)
 #endregion

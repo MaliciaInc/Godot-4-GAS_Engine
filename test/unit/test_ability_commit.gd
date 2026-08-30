@@ -175,13 +175,16 @@ func test_this_phase_has_no_way_to_write_a_percentage_cost() -> void:
 	# whatever the pool holds. A percentage is not a cost this vocabulary can
 	# express, which is the point rather than an oversight.
 	ability.cost_effect = _cost(COST_AMOUNT)
-	assert_true(ability.commit_ability().is_ok(), "a flat charge is the whole vocabulary")
+	ability.commits = true
+
+	var first: bool = await ability.try_activate()
+	assert_true(first, "a flat charge is the whole vocabulary")
 	var taken_from_full: float = STARTING_MANA - fixture.base_of(MANA)
 
-	ability.end_ability()
 	var doubled: float = STARTING_MANA * 2.0
 	fixture.set_base(MANA, doubled)
-	assert_true(ability.commit_ability().is_ok(), "the same cost against a larger pool")
+	var second: bool = await ability.try_activate()
+	assert_true(second, "the same cost against a larger pool")
 	var taken_from_double: float = doubled - fixture.base_of(MANA)
 
 	assert_almost_eq(taken_from_double, taken_from_full, TOLERANCE, "flat, never proportional")
@@ -302,10 +305,14 @@ func test_a_successful_commit_charges_exactly_once() -> void:
 
 func test_a_new_activation_may_commit_again() -> void:
 	ability.cost_effect = _cost(COST_AMOUNT)
-	assert_true(ability.commit_ability().is_ok(), "the first activation pays")
+	ability.commits = true
 
-	ability.end_ability()
-	assert_true(ability.commit_ability().is_ok(), "and ending it clears the way for the next")
+	var first: bool = await ability.try_activate()
+	assert_true(first, "the first activation pays")
+	assert_true(ability.last_commit.is_ok(), "and its commit was accepted")
+
+	var second: bool = await ability.try_activate()
+	assert_true(second, "and ending the first clears the way for the next")
 	assert_almost_eq(
 		fixture.base_of(MANA),
 		STARTING_MANA + COST_AMOUNT * 2.0,
