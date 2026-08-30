@@ -67,7 +67,52 @@ func _on_run_finished() -> void:
 	var pending: int = gut.get_pending_count()
 	@warning_ignore_restore("unsafe_method_access")
 
+	var collected: int = _collected_script_count()
+	var present: int = _test_files_on_disk()
+	if collected != present:
+		# A script that fails to parse is silently absent from the run, and the
+		# suite then reports PASS over tests it never loaded. That happened, and
+		# it is exactly the blind-gate failure this phase exists to prevent.
+		_report(
+			passes,
+			maxi(failures, 1),
+			pending,
+			"COLLECTION MISMATCH: " + str(collected) + " scripts ran but "
+			+ str(present) + " exist on disk; the missing ones failed to parse"
+		)
+		return
+
 	_report(passes, failures, pending, _failing_test_names())
+
+
+## How many test scripts GUT actually LOADED.
+##
+## Counting `scripts.size()` is not enough: GUT keeps an entry for a script
+## it failed to load, so the count matched while a broken file was silently
+## skipped and the suite reported PASS. Verified by breaking a file on
+## purpose - the first version of this guard did not notice. `is_loaded` is
+## the flag that does.
+func _collected_script_count() -> int:
+	var loaded: int = 0
+	@warning_ignore_start("unsafe_method_access", "unsafe_property_access")
+	var gut: Object = _runner.get_gut()
+	for script: Object in gut.get_test_collector().scripts:
+		if script.is_loaded and not script.tests.is_empty():
+			loaded += 1
+	@warning_ignore_restore("unsafe_method_access", "unsafe_property_access")
+	return loaded
+
+
+## How many test scripts are on disk, counted independently of GUT.
+##
+## Two authorities on purpose. Asking GUT how many it found and comparing
+## that with itself would answer nothing.
+func _test_files_on_disk() -> int:
+	var count: int = 0
+	for file_name: String in DirAccess.get_files_at(TEST_DIRECTORY):
+		if file_name.begins_with("test_") and file_name.ends_with(".gd"):
+			count += 1
+	return count
 
 
 ## The tests that did not pass, script by script.
@@ -107,7 +152,11 @@ func _write_receipt(verdict: String, line: String, note: String) -> void:
 	if file == null:
 		printerr("could not write the GUT receipt to " + RESULT_PATH)
 		return
+	# Stamped so a stale receipt is visible. A previous Godot process holding
+	# the session made two runs silently not happen, and the old receipt read
+	# as a fresh pass both times.
 	file.store_line("RESULT: " + verdict)
+	file.store_line("written: " + Time.get_datetime_string_from_system(true))
 	file.store_line(line)
 	file.store_line("detail: " + note)
 	file.close()
