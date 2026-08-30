@@ -12,7 +12,11 @@
 extends Control
 
 ## Addon project settings.
-const GodotGasProjectSettings: = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const ScriptWriter = preload("res://addons/GodotGAS/editor/attribute_set_script_writer.gd")
+
+## The draft key that marks a set as created rather than an attribute.
+const DRAFT_INITIALISED_KEY: String = "_initialized"
 
 ## Icon for Attribute Set categories.
 var _set_icon: Texture2D
@@ -631,131 +635,82 @@ func _execute_delete() -> void:
 
 
 #region Script Generation
-## Compiles the selected draft into a live GDScript resource.
+## Compile the selected draft into a GDScript file.
+##
+## The source itself is produced by AttributeSetScriptWriter, which is pure
+## text and therefore testable. This function only decides whether writing is
+## safe and reports what happened.
 func _on_generate_script_pressed() -> void:
-	if _current_set == "": 
+	if _current_set == "":
 		return
-	
-	var output_dir: = GodotGasProjectSettings.get_attributes_output_dir_path()
-	var file_name = _current_set.to_snake_case() + "_attribute_set.gd"
-	var file_path = output_dir.path_join(file_name)
-	
-	# SAFEGUARD: Check if the script is open in the Editor
-	var script_editor = EditorInterface.get_script_editor()
-	for script in script_editor.get_open_scripts():
-		if script.resource_path == file_path:
-			var warning = AcceptDialog.new()
-			warning.title = "Cannot Generate Script"
-			warning.dialog_text = "The script '" + file_name + "' is currently open in your Script workspace.\n\nPlease close the script tab before regenerating to prevent data corruption."
-			add_child(warning)
-			warning.popup_centered()
-			return
 
-	# Ensure directory exists
+	var file_name: String = ScriptWriter.file_name_for(_current_set)
+	var output_dir: String = GodotGasProjectSettings.get_attributes_output_dir_path()
+	var file_path: String = output_dir.path_join(file_name)
+
+	if _is_open_in_the_script_editor(file_path):
+		_show_dialog(
+			"Cannot Generate Script",
+			"'" + file_name + "' is open in the Script workspace. Close its tab before"
+			+ " regenerating, or the editor's copy will overwrite what is written here."
+		)
+		return
+
 	if not DirAccess.dir_exists_absolute(output_dir):
-		var err = DirAccess.make_dir_recursive_absolute(output_dir)
-		if err != OK:
-			push_error("GodotGAS: Failed to create output directory. Error: ", err)
+		if DirAccess.make_dir_recursive_absolute(output_dir) != OK:
+			_show_dialog("Write Error", "Could not create the output directory: " + output_dir)
 			return
 
-	# Build GDScript String
-	var script_text = "## An extended class for the attribute module: %s \n" %_current_set
-	script_text += "##\n"
-	script_text += "## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)\n"
-	script_text += "## @meta_author: YulRun (https://YulRun.Dev) & 'Your Name Here'\n"
-	script_text += "## @meta_license: MIT (Default)\n\n"
-	script_text += "@tool\nclass_name " + _current_set + "AttributeSet extends AttributeSet\n\n"
-	
-	var keys = _drafts.get_section_keys(_current_set)
-	var valid_attributes = []
-	
-	for key in keys:
-		if key == "_initialized": 
-			continue
-			
-		valid_attributes.append(key)
-		
-		# Safely extract ONLY the numerical value from the Drafts data
-		var raw_val = _drafts.get_value(_current_set, key)
-		var val: float = 0.0
-		if typeof(raw_val) == TYPE_DICTIONARY:
-			val = raw_val.get("value", 0.0)
-		else:
-			val = float(raw_val)
-			
-		script_text += "var %s: AttributeData = AttributeData.new(%s)\n" % [key, str(val)]
-	
-	script_text += "\n\n"
-	
-	# Boilerplate Pipeline Block (with max_ stat auto-matching)
-	script_text += "## The safety pipeline: Clamps stats before they are officially changed.\n"
-	script_text += "func pre_attribute_change(attribute_name: String, proposed_value: float) -> float:\n"
-	script_text += "\tmatch attribute_name:\n"
-	
-	var has_match = false
-	for key in valid_attributes:
-		# Auto-generate clamp boilerplate if a generic stat has a matching 'max_' equivalent
-		if not "max_" in key.to_lower() and not "min_" in key.to_lower():
-			var max_k = "max_" + key
-			if max_k in valid_attributes:
-				# Check for a matching min_ attribute, default to 0.0 if missing
-				var min_k = "min_" + key
-				var min_val = min_k + ".current_value" if min_k in valid_attributes else "0.0"
-				
-				script_text += "\t\t\"%s\":\n" % key
-				script_text += "\t\t\treturn clamp(proposed_value, %s, %s.current_value)\n" % [min_val, max_k]
-				has_match = true
-	
-	if not has_match:
-		script_text += "\t\t_:\n"
-		script_text += "\t\t\tpass\n"
-	
-	script_text += "\n\treturn proposed_value\n\n\n"
-	
-	# Post-Attribute Change Pipeline (Handles Moving Goalposts)
-	script_text += "## The reaction pipeline: Handles moving goalposts (e.g. MaxHealth dropping below Health).\n"
-	script_text += "func post_attribute_change(asc: Node, attribute_name: String, old_value: float, new_value: float) -> void:\n"
-	script_text += "\tmatch attribute_name:\n"
-	
-	var has_post_match = false
-	for key in valid_attributes:
-		# We look for base attributes (like 'health') to see if they have min/max pairs
-		if not "max_" in key.to_lower() and not "min_" in key.to_lower():
-			var max_k = "max_" + key
-			var min_k = "min_" + key
-			
-			if max_k in valid_attributes:
-				script_text += "\t\t\"%s\":\n" % max_k
-				script_text += "\t\t\tif %s.current_value > new_value:\n" % key
-				script_text += "\t\t\t\tasc._apply_attribute_change(\"%s\", new_value - %s.current_value)\n" % [key, key]
-				has_post_match = true
-				
-			if min_k in valid_attributes:
-				script_text += "\t\t\"%s\":\n" % min_k
-				script_text += "\t\t\tif %s.current_value < new_value:\n" % key
-				script_text += "\t\t\t\tasc._apply_attribute_change(\"%s\", new_value - %s.current_value)\n" % [key, key]
-				has_post_match = true
-				
-	if not has_post_match:
-		script_text += "\t\t_:\n"
-		script_text += "\t\t\tpass\n"
+	var source: String = ScriptWriter.write(_current_set, _drafted_attributes())
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		_show_dialog("Write Error", "Could not write the script at: " + file_path)
+		return
 
-	# Write to Disk
-	var file = FileAccess.open(file_path, FileAccess.WRITE)
-	if file:
-		file.store_string(script_text)
-		file.close()
-		EditorInterface.get_resource_filesystem().scan()
-		
-		var success = AcceptDialog.new()
-		success.title = "Success"
-		success.dialog_text = "%s was successfully generated at:\n\"%s\"" % [file_name, file_path]
-		add_child(success)
-		success.popup_centered()
-	else:
-		var err_dialog = AcceptDialog.new()
-		err_dialog.title = "Write Error"
-		err_dialog.dialog_text = "Failed to write script file at:\n" + file_path
-		add_child(err_dialog)
-		err_dialog.popup_centered()
+	file.store_string(source)
+	file.close()
+	EditorInterface.get_resource_filesystem().scan()
+	_show_dialog("Success", file_name + " was generated at:" + "
+" + file_path)
+
+
+## The current set's attributes, in draft order.
+func _drafted_attributes() -> Array[AttributeSetScriptWriter.Attribute]:
+	var attributes: Array[AttributeSetScriptWriter.Attribute] = []
+	for key: String in _drafts.get_section_keys(_current_set):
+		if key == DRAFT_INITIALISED_KEY:
+			continue
+		attributes.append(ScriptWriter.Attribute.of(key, _drafted_value(key)))
+	return attributes
+
+
+## The numeric default of one drafted attribute.
+##
+## A draft entry is either a bare number or a dictionary carrying the value
+## plus its icon, depending on when it was written. Both shapes are read here
+## rather than at each call site.
+func _drafted_value(key: String) -> float:
+	var raw: Variant = _drafts.get_value(_current_set, key)
+	if raw is Dictionary:
+		return float((raw as Dictionary).get("value", 0.0))
+	return float(raw)
+
+
+func _is_open_in_the_script_editor(file_path: String) -> bool:
+	for script: Script in EditorInterface.get_script_editor().get_open_scripts():
+		if script.resource_path == file_path:
+			return true
+	return false
+
+
+## One dialog helper instead of four hand-built AcceptDialogs. Each of those
+## was add_child()ed and never freed, so every message leaked a node.
+func _show_dialog(title: String, message: String) -> void:
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = title
+	dialog.dialog_text = message
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered()
 #endregion

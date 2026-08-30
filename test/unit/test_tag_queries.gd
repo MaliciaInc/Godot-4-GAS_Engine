@@ -1,0 +1,156 @@
+## Tag semantics: reference counting, exact matching and hierarchy.
+##
+## Two upstream contracts were wrong and both are pinned here:
+##
+##   has_all_tags([]) returned false, which made "no requirements" the strictest
+##   requirement an ability could have.
+##
+##   has_tag matched by bare prefix, so `Damage.Fire` matched `Damage.Firestorm`
+##   and `A` matched `AB`.
+##
+## @meta_license: MIT
+extends GutTest
+
+const Fixture = preload("res://test/fixtures/asc_fixture.gd")
+
+const STATUS: StringName = &"Status"
+const STUNNED: StringName = &"Status.Stunned"
+const BURNING: StringName = &"Status.Burning"
+const DAMAGE_FIRE: StringName = &"Damage.Fire"
+const DAMAGE_FIRESTORM: StringName = &"Damage.Firestorm"
+
+var fixture: ASCFixture = null
+var asc: AbilitySystemComponent = null
+
+
+func before_each() -> void:
+	fixture = Fixture.create("Tagged")
+	add_child_autofree(fixture.owner)
+	asc = fixture.asc
+
+
+func after_each() -> void:
+	fixture = null
+	asc = null
+
+
+#region has_all_tags
+func test_an_empty_requirement_is_satisfied() -> void:
+	var nothing: Array[StringName] = []
+	# Vacuously true: the set contains no tag that is missing. Returning false
+	# here meant an ability with no requirements could never activate.
+	assert_true(asc.has_all_tags(nothing), "no requirements means nothing to fail")
+
+
+func test_one_present_requirement_is_satisfied() -> void:
+	asc.add_tag(STUNNED)
+	assert_true(asc.has_all_tags([STUNNED] as Array[StringName]))
+
+
+func test_one_missing_requirement_is_not_satisfied() -> void:
+	assert_false(asc.has_all_tags([STUNNED] as Array[StringName]))
+
+
+func test_all_present_requirements_are_satisfied() -> void:
+	asc.add_tag(STUNNED)
+	asc.add_tag(BURNING)
+	assert_true(asc.has_all_tags([STUNNED, BURNING] as Array[StringName]))
+
+
+func test_one_missing_out_of_several_fails_the_whole_query() -> void:
+	asc.add_tag(STUNNED)
+	assert_false(asc.has_all_tags([STUNNED, BURNING] as Array[StringName]))
+#endregion
+
+
+#region has_any_tags
+func test_an_empty_alternative_set_matches_nothing() -> void:
+	asc.add_tag(STUNNED)
+	var nothing: Array[StringName] = []
+	# The mirror of has_all: an empty set contains nothing, so nothing matches.
+	assert_false(asc.has_any_tags(nothing), "no alternatives means nothing to match")
+
+
+func test_any_matches_when_one_is_present() -> void:
+	asc.add_tag(BURNING)
+	assert_true(asc.has_any_tags([STUNNED, BURNING] as Array[StringName]))
+#endregion
+
+
+#region Exact versus hierarchical
+func test_exact_matches_only_itself() -> void:
+	asc.add_tag(STUNNED)
+	assert_true(asc.has_tag_exact(STUNNED), "the tag itself")
+	assert_false(asc.has_tag_exact(STATUS), "not its parent")
+
+
+func test_hierarchical_matches_a_child() -> void:
+	asc.add_tag(STUNNED)
+	assert_true(asc.has_tag(STATUS), "Status is answered by Status.Stunned")
+
+
+func test_hierarchical_matches_the_tag_itself() -> void:
+	asc.add_tag(STUNNED)
+	assert_true(asc.has_tag(STUNNED))
+
+
+func test_a_deeper_query_is_not_answered_by_its_ancestor() -> void:
+	asc.add_tag(STATUS)
+	# Direction matters. Holding `Status` does not mean holding `Status.Stunned`.
+	assert_false(asc.has_tag(STUNNED), "an ancestor does not stand in for a child")
+
+
+func test_a_prefix_without_a_separator_does_not_match() -> void:
+	asc.add_tag(DAMAGE_FIRESTORM)
+	# The separator is part of the rule. A bare begins_with gets this wrong, and
+	# a fire resistance would silently apply to firestorms.
+	assert_false(asc.has_tag(DAMAGE_FIRE), "Damage.Firestorm is not under Damage.Fire")
+
+
+func test_a_short_tag_is_not_a_prefix_of_a_longer_word() -> void:
+	asc.add_tag(&"AB")
+	assert_false(asc.has_tag(&"A"), "AB is not under A")
+#endregion
+
+
+#region Reference counting
+func test_a_tag_applied_twice_survives_one_removal() -> void:
+	asc.add_tag(STUNNED)
+	asc.add_tag(STUNNED)
+	asc.remove_tag(STUNNED)
+	# Two effects granted it; one ended. The other still wants it.
+	assert_true(asc.has_tag_exact(STUNNED), "still held by the second grant")
+
+	asc.remove_tag(STUNNED)
+	assert_false(asc.has_tag_exact(STUNNED), "gone once both grants end")
+
+
+func test_clearing_drops_a_tag_whatever_its_count() -> void:
+	asc.add_tag(STUNNED)
+	asc.add_tag(STUNNED)
+	asc.clear_tag(STUNNED)
+	assert_false(asc.has_tag_exact(STUNNED), "a cleanse ignores the count")
+
+
+func test_removing_an_absent_tag_is_harmless() -> void:
+	watch_signals(asc)
+	asc.remove_tag(STUNNED)
+	assert_signal_not_emitted(asc, "tag_removed", "nothing to announce")
+#endregion
+
+
+#region Signals
+func test_the_first_grant_announces_the_tag() -> void:
+	watch_signals(asc)
+	asc.add_tag(STUNNED)
+	assert_signal_emitted(asc, "tag_added")
+	assert_signal_emitted_with_parameters(asc, "tag_count_changed", [STUNNED, 1])
+
+
+func test_a_second_grant_announces_only_the_count() -> void:
+	asc.add_tag(STUNNED)
+	watch_signals(asc)
+	asc.add_tag(STUNNED)
+	assert_signal_not_emitted(asc, "tag_added", "it was already present")
+	assert_signal_emitted_with_parameters(asc, "tag_count_changed", [STUNNED, 2])
+#endregion
