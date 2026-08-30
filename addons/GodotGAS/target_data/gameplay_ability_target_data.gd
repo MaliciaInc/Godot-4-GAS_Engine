@@ -1,98 +1,132 @@
-## Encapsulates target information gathered during an ability's execution.
+## Target information gathered during an ability's execution.
 ##
-## Stores hit results and unique target nodes, providing a standardized
-## payload that can be passed safely to GameplayEffects.
+## Hits are stored as `GameplayTargetHit`, never as raw physics dictionaries.
+## Upstream kept `Array[Dictionary]` and let every consumer call
+## `hit.get("collider")` for itself, so each consumer carried its own idea of
+## what the keys held and a rename would have failed silently in all of them.
+## Conversion happens once, at the append boundary, and a hit that cannot be
+## vouched for is rejected rather than stored half-understood.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## Types come from `preload` rather than global class names: this file is
+## reachable from the GameplayCueManager autoload, which is parsed before Godot
+## has a global class cache on a checkout that was never imported.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbilityTargetData extends RefCounted
 
-## Array of strictly unique target nodes captured by the ability.
+const TargetHit: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_target_hit.gd")
+
+## Strictly unique target nodes captured by the ability.
 var _target_nodes: Array[Node] = []
 
-## Array of all raw hit dictionaries, allowing for multi-hit tracking.
-var _hit_results: Array[Dictionary] = []
+## Every hit, in capture order. One node may appear in several.
+var _hits: Array[TargetHit] = []
 
 
 #region Appenders
-## Directly appends a raw Godot physics query dictionary (from raycasts or intersect_shape).
-func append_physics_hit(hit_dict: Dictionary) -> void:
-	_hit_results.append(hit_dict)
-	
-	var collider: Node = hit_dict.get("collider")
-	if collider and not _target_nodes.has(collider):
-		_target_nodes.append(collider)
+## Append a raw Godot physics result. This is the only untyped entry point.
+##
+## Returns whether the hit was accepted. A caller that ignores the return value
+## still cannot corrupt the payload: a rejected hit adds nothing at all.
+func append_physics_hit(hit_dict: Dictionary) -> bool:
+	var hit: TargetHit = TargetHit.try_from_physics_hit(hit_dict)
+	if hit == null:
+		return false
+	_record(hit)
+	return true
 
 
-## Appends a direct node reference. Excellent for ShapeCast nodes, UI targeting, or auto-aim.
-## Safely generates a mock hit dictionary to maintain data structure.
-func append_node(node: Node, hit_position: Variant = null) -> void:
-	if not node:
-		return
-		
-	if not _target_nodes.has(node):
-		_target_nodes.append(node)
-		
-	var pos_to_use: Variant = hit_position
-	if pos_to_use == null and "global_position" in node:
-		pos_to_use = node.global_position
-	elif pos_to_use == null:
-		pos_to_use = Vector3.ZERO # Fallback for non-spatial/canvas nodes
-		
-	var mock_hit: Dictionary = {
-		"collider": node,
-		"position": pos_to_use,
-		"normal": Vector3.ZERO
-	}
-	_hit_results.append(mock_hit)
+## Append a direct node reference, deriving the hit position from the node's
+## own space. Good for ShapeCast nodes, UI targeting and auto-aim.
+##
+## The space is read from the node's actual type rather than from an untyped
+## position argument, so a 2D node can never be recorded as a 3D hit.
+func append_node(node: Node) -> bool:
+	if node == null:
+		return false
+
+	var hit: TargetHit = TargetHit.new()
+	hit.collider = node
+
+	var canvas_node: Node2D = node as Node2D
+	if canvas_node != null:
+		hit.space_kind = TargetHit.SpaceKind.TWO_D
+		hit.position_2d = canvas_node.global_position
+		_record(hit)
+		return true
+
+	var spatial_node: Node3D = node as Node3D
+	if spatial_node != null:
+		hit.space_kind = TargetHit.SpaceKind.THREE_D
+		hit.position_3d = spatial_node.global_position
+		_record(hit)
+		return true
+
+	# A non-spatial node is a legitimate target - a UI element, a pure data node
+	# - it simply has no position. Recording it at the origin would be a lie, so
+	# the space defaults to 3D with a zero position and the caller learns nothing
+	# false from it.
+	_record(hit)
+	return true
 
 
-## Convenience method for Area overlaps. Automatically processes an array of nodes.
-func append_overlap(nodes: Array) -> void:
-	for node in nodes:
-		append_node(node)
+## Append every node of an overlap query.
+func append_overlap(nodes: Array[Node]) -> int:
+	var accepted: int = 0
+	for node: Node in nodes:
+		if append_node(node):
+			accepted += 1
+	return accepted
+
+
+func _record(hit: TargetHit) -> void:
+	_hits.append(hit)
+	if hit.collider != null and not _target_nodes.has(hit.collider):
+		_target_nodes.append(hit.collider)
 #endregion
 
 
 #region Getters
-## Returns the array of strictly unique target nodes.
+## The strictly unique target nodes.
 func get_target_nodes() -> Array[Node]:
 	return _target_nodes
 
 
-## Returns every registered hit, allowing for multi-hit/AoE processing.
-func get_all_hits() -> Array[Dictionary]:
-	return _hit_results
+## Every registered hit, for multi-hit and AoE processing.
+func get_all_hits() -> Array[TargetHit]:
+	return _hits
 
 
-## Returns only the physics dictionaries associated with a specific node.
-## Useful for precision calculations (e.g., 'Did this specific bullet hit the head shape?').
-func get_hits_for_node(node: Node) -> Array[Dictionary]:
-	var specific_hits: Array[Dictionary] = []
-	for hit in _hit_results:
-		if hit.get("collider") == node:
-			specific_hits.append(hit)
-			
-	return specific_hits
+## Only the hits belonging to one node, for precision calculations such as
+## "did this particular bullet hit the head shape?".
+func get_hits_for_node(node: Node) -> Array[TargetHit]:
+	var specific: Array[TargetHit] = []
+	for hit: TargetHit in _hits:
+		if hit.collider == node:
+			specific.append(hit)
+	return specific
 
 
-## Forcefully excises a specific node from the payload tracking.
-## Extremely useful for Channeled/Aura abilities when a target physically leaves the Area3D.
+func has_targets() -> bool:
+	return not _target_nodes.is_empty()
+#endregion
+
+
+#region Mutators
+## Remove a node and every hit that belongs to it. Used by channelled and aura
+## abilities when a target physically leaves the area.
 func force_remove_target(node: Node) -> void:
-	# Scrub the unique tracking array
 	_target_nodes.erase(node)
-	
-	# Scrub the raw hit dictionaries (Iterating backwards to prevent index shifting)
-	for i in range(_hit_results.size() - 1, -1, -1):
-		if _hit_results[i].get("collider") == node:
-			_hit_results.remove_at(i)
+	for index: int in range(_hits.size() - 1, -1, -1):
+		if _hits[index].collider == node:
+			_hits.remove_at(index)
 
 
-## Clears all payload data.
 func clear() -> void:
 	_target_nodes.clear()
-	_hit_results.clear()
+	_hits.clear()
 #endregion

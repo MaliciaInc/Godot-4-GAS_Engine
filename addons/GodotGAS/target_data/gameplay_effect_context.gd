@@ -1,42 +1,47 @@
-## A runtime payload containing information about an effect's origin and targets.
+## Where an effect came from and who it hit.
 ##
-## Wraps the instigator, causer, and TargetData into a single object 
-## to be passed safely through the execution pipeline.
+## Wraps instigator, causer and target data into one object that travels through
+## the execution pipeline, so no stage has to reassemble it from loose arguments.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## Types come from `preload` rather than global class names: this file is
+## reachable from the GameplayCueManager autoload, which Godot parses before a
+## global class cache exists on a checkout that was never imported.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayEffectContext extends RefCounted
 
-## The overarching entity that activated the ability (e.g., the Player Character).
-var instigator: Node
+const TargetData: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_ability_target_data.gd")
 
-## The physical entity that caused the effect (e.g., a Fireball projectile). 
-## Often defaults to the instigator if no secondary actor exists.
-var causer: Node
+## The entity that activated the ability, e.g. the player character.
+var instigator: Node = null
 
-## The payload containing who, what, and where the ability hit.
-var target_data: GameplayAbilityTargetData
+## The entity that physically caused the effect, e.g. a fireball projectile.
+## Defaults to the instigator when there is no secondary actor.
+var causer: Node = null
+
+## Who, what and where the ability hit.
+var target_data: TargetData = null
 
 
 #region Initialization
-## Initializes the context. Defaults the causer to the instigator if omitted.
-func _init(_instigator: Node, _causer: Node = null) -> void:
-	instigator = _instigator
-	causer = _causer if _causer else _instigator
-	target_data = GameplayAbilityTargetData.new()
+func _init(in_instigator: Node = null, in_causer: Node = null) -> void:
+	instigator = in_instigator
+	causer = in_causer if in_causer != null else in_instigator
+	target_data = TargetData.new()
 #endregion
 
 
 #region Payload Helpers
-## Helper to quickly check if this context successfully captured any targets.
 func has_targets() -> bool:
-	return target_data != null and not target_data.get_target_nodes().is_empty()
+	return target_data != null and target_data.has_targets()
 
 
-## Helper to quickly fetch the unique targets.
 func get_target_nodes() -> Array[Node]:
-	return target_data.get_target_nodes() if target_data else []
+	if target_data == null:
+		return []
+	return target_data.get_target_nodes()
 #endregion

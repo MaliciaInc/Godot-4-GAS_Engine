@@ -1,122 +1,153 @@
-## Global Autoload for managing and spawning visual/audio cues.
+## Global autoload that spawns and pools visual/audio cues.
 ##
-## Utilizes an object pooling system to efficiently reuse GameplayCueNotify 
-## nodes, preventing performance hitches during rapid cue instantiation.
+## Every type this file names comes from `preload`, never from a global
+## `class_name`. Godot instantiates autoloads before the global class cache is
+## available on a checkout that has never been imported by the editor, so
+## `var cue: GameplayCueNotify` here fails to parse with "Could not find type"
+## and takes the whole boot down with it. Upstream never sees this because its
+## EditorPlugin registers the autoload from inside the editor, where the cache
+## already exists. Step 1.8 requires a clean, cache-free checkout to work, so
+## the dependency is removed rather than worked around at the call site.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 extends Node
 
-## Addon project settings.
-const GodotGasProjectSettings: = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const GodotGasProjectSettings: GDScript = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const CueNotify: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
+const CueRegistry: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
+const CueEntry: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
+const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const PoolBucket: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd")
 
-## Internal dictionary holding the object pool. Format: { "tag": [GameplayCueNotify, ...] }
-var _pool: Dictionary = {}
+## Dormant instances, one bucket per cue tag.
+var _pool: Dictionary[StringName, PoolBucket] = {}
 
-## Internal dictionary holding the cached PackedScenes. Format: { "tag": PackedScene }
-var _cue_scenes: Dictionary = {}
+## Scenes to instantiate, one per cue tag.
+var _cue_scenes: Dictionary[StringName, PackedScene] = {}
 
 
 #region Initialization
-## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	_load_registry()
 
 
-## Loads the cue registry from disk and prepares the object pool.
+## Load the cue registry from disk and prepare one empty bucket per tag.
 func _load_registry() -> void:
-	var cue_registry_path: = GodotGasProjectSettings.get_registry_cue_path()
+	var cue_registry_path: String = GodotGasProjectSettings.get_registry_cue_path()
 	if not ResourceLoader.exists(cue_registry_path):
-		if not Engine.is_editor_hint() or EditorInterface.is_plugin_enabled("GodotGAS"):
-			push_warning("GodotGAS: No cue registry found at " + cue_registry_path)
+		_warn_missing_registry(cue_registry_path)
 		return
-		
-	var registry = load(cue_registry_path) as GameplayCueRegistry
-	if not registry:
+
+	var loaded: Resource = load(cue_registry_path)
+	if not is_instance_of(loaded, CueRegistry):
+		push_error("GodotGAS: resource at " + cue_registry_path + " is not a GameplayCueRegistry.")
 		return
-		
-	# Register everything found in the resource
-	for entry in registry.entries:
-		if entry.tag and entry.scene:
-			_cue_scenes[entry.tag] = entry.scene
-			_pool[entry.tag] = []
+
+	var registry: CueRegistry = loaded
+	for entry: CueEntry in registry.entries:
+		if entry == null or entry.tag == &"" or entry.scene == null:
+			continue
+		_cue_scenes[entry.tag] = entry.scene
+		_pool[entry.tag] = PoolBucket.new()
+
+
+## A missing registry is normal in a project that declares no cues, and noisy in
+## one that meant to. Only the second case warrants a warning.
+func _warn_missing_registry(cue_registry_path: String) -> void:
+	if Engine.is_editor_hint() and not EditorInterface.is_plugin_enabled("GodotGAS"):
+		return
+	push_warning("GodotGAS: No cue registry found at " + cue_registry_path)
 #endregion
 
 
 #region Cue Execution
-## The main public API called by the ASC to spawn an effect.
-func execute_cue(tag: StringName, target: Node, payload: Dictionary = {}) -> void:
-	if not _cue_scenes.has(tag):
+## Spawn a cue on its target. The ASC calls this with a typed parameter object;
+## an arbitrary Dictionary payload would let the caller and the cue disagree
+## about every key with nothing in between to notice.
+func execute_cue(params: CueParams) -> void:
+	if params == null or params.target == null:
 		return
-		
-	var cue_instance: GameplayCueNotify = _get_or_create_cue(tag)
-	
-	# Ensures the cue_instance was correctly loaded and bypasses nullpoint errors
-	if not cue_instance:
+	if not _cue_scenes.has(params.cue_tag):
 		return
-	
-	if cue_instance.get_parent():
-		cue_instance.get_parent().remove_child(cue_instance)
-		
-	target.add_child(cue_instance)
-	
-	cue_instance.execute_cue(target, payload)
+
+	var cue_instance: CueNotify = _get_or_create_cue(params.cue_tag)
+	if cue_instance == null:
+		return
+
+	var previous_parent: Node = cue_instance.get_parent()
+	if previous_parent != null:
+		previous_parent.remove_child(cue_instance)
+
+	params.target.add_child(cue_instance)
+	cue_instance.execute_cue(params)
 #endregion
 
 
 #region Object Pooling
-## Internal pooling logic to retrieve an inactive cue or instantiate a new one.
-func _get_or_create_cue(tag: StringName) -> GameplayCueNotify:
-	# 1. Try to grab an existing dormant cue from the pool
-	if _pool.has(tag) and _pool[tag].size() > 0:
-		var pooled_cue = _pool[tag].pop_back()
-		_set_cue_state(pooled_cue, true) # FIX: WAKE THE CUE UP!
-		return pooled_cue
-		
-	# 2. If the pool is empty, instance a brand new one
-	var raw_instance = _cue_scenes[tag].instantiate()
-	
-	# TYPE CHECK: Is this scene actually a GameplayCueNotify?
-	if not raw_instance is GameplayCueNotify:
-		push_error("GodotGAS: Failed to load cue '%s'. The root node of this scene must extend 'GameplayCueNotify'." % tag)
-		raw_instance.free() # Clean up the invalid node
+## Retrieve a dormant cue or instantiate a fresh one.
+func _get_or_create_cue(tag: StringName) -> CueNotify:
+	var bucket: PoolBucket = _bucket_for(tag)
+	var pooled: CueNotify = bucket.take()
+	if pooled != null:
+		_set_cue_state(pooled, true)
+		return pooled
+
+	var scene: PackedScene = _cue_scenes[tag]
+	var raw_instance: Node = scene.instantiate()
+	if not is_instance_of(raw_instance, CueNotify):
+		push_error(
+			"GodotGAS: Failed to load cue '" + String(tag)
+			+ "'. The root node of this scene must extend 'GameplayCueNotify'."
+		)
+		raw_instance.free()
 		return null
-	
-	var new_cue: GameplayCueNotify = raw_instance
+
+	var new_cue: CueNotify = raw_instance
 	new_cue.gameplay_cue_tag = tag
 	new_cue.cue_finished.connect(_on_cue_finished)
-	
-	_set_cue_state(new_cue, true) # Initialize as Active
+	_set_cue_state(new_cue, true)
 	return new_cue
 
 
-## Called automatically when a cue calls finish_cue().
-func _on_cue_finished(cue_node: GameplayCueNotify, tag: StringName) -> void:
-	if cue_node.get_parent():
-		cue_node.get_parent().remove_child(cue_node)
-	
-	_set_cue_state(cue_node, false) # Put to sleep
-	add_child(cue_node)
-	
+## The bucket for a tag, created on demand. Returning a bucket rather than a
+## nullable one keeps every caller from re-deciding what an absent tag means.
+func _bucket_for(tag: StringName) -> PoolBucket:
 	if not _pool.has(tag):
-		_pool[tag] = []
-		
-	_pool[tag].append(cue_node)
+		_pool[tag] = PoolBucket.new()
+	return _pool[tag]
 
 
-## Centralized lifecycle state manager.
-## Handles enabling/disabling logic and visual toggling for any node structure.
-func _set_cue_state(cue: GameplayCueNotify, active: bool) -> void:
-	# 1. Toggle Logic
+## Called when a cue reports itself finished.
+func _on_cue_finished(cue_node: CueNotify, tag: StringName) -> void:
+	var parent: Node = cue_node.get_parent()
+	if parent != null:
+		parent.remove_child(cue_node)
+
+	_set_cue_state(cue_node, false)
+	add_child(cue_node)
+	_bucket_for(tag).give(cue_node)
+
+
+## Centralised lifecycle state. Handles process mode and visual toggling for
+## any node structure, because visibility propagates to the whole subtree.
+func _set_cue_state(cue: CueNotify, active: bool) -> void:
 	cue.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
-	
-	# 2. Toggle Visuals
-	# We loop immediate children. If they are visual nodes, they are toggled.
-	# Because visibility propagates, hiding children effectively hides the whole subtree.
-	for child in cue.get_children():
-		if "visible" in child:
-			child.visible = active
+	for child: Node in cue.get_children():
+		var visual: CanvasItem = child as CanvasItem
+		if visual != null:
+			visual.visible = active
+			continue
+		var spatial: Node3D = child as Node3D
+		if spatial != null:
+			spatial.visible = active
+
+
+## How many dormant instances are pooled for a tag. Exists for tests and for the
+## dashboard; nothing in the runtime branches on it.
+func get_pooled_count(tag: StringName) -> int:
+	return _bucket_for(tag).size()
 #endregion

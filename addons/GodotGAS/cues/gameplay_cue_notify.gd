@@ -1,52 +1,75 @@
-## Base class for all visual and audio effects triggered by the ASC.
+## Base class for every visual and audio effect the ASC triggers.
 ##
-## Attach this script to the root of a scene containing your particles or 
-## AudioStreamPlayers to manage their lifecycle and object pooling.
+## Attach this to the root of a scene holding particles or AudioStreamPlayers.
+## The GameplayCueManager owns the lifecycle: this class only reports when it is
+## done and never frees itself, because a pooled node that queue_free()s itself
+## leaves the pool holding a freed reference.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayCueNotify extends Node
 
-## Emitted when the visual/audio effect is 100% complete so the manager can pool it.
+const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+
+## Emitted when the effect is complete so the manager can pool it again.
 signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)
 
 @export_category("Lifecycle")
-## If true, this node will automatically pool itself after playing.
-## (Set to false for looping effects like a glowing aura).
+## Whether this node pools itself after playing. False for looping effects such
+## as a persistent aura, which are ended explicitly instead.
 @export var auto_destroy: bool = true
-## How long to wait before pooling this node. 
-## Set this slightly longer than your longest particle/audio duration.
-@export var destroy_delay: float = 2.0
 
-## The specific gameplay tag assigned to this instantiated cue.
-var gameplay_cue_tag: StringName
+## How long to wait before pooling. Set slightly longer than the longest
+## particle or audio duration in the scene.
+@export_range(0.0, 600.0, 0.05, "or_greater") var destroy_delay: float = 2.0
+
+## The cue tag this instance was spawned for, assigned by the manager.
+var gameplay_cue_tag: StringName = &""
+
+## The parameters of the current playback. Null between playbacks.
+var current_params: CueParams = null
+
+## Guards the auto-destroy timer so a cue re-taken from the pool before its
+## previous timer fires cannot be finished twice.
+var _playback_id: int = 0
 
 
 #region Execution Lifecycle
-## Called by the Manager when pulled from the pool and added to the target.
-func execute_cue(target: Node, payload: Dictionary = {}) -> void:
-	# 1. Trigger the visual/audio logic
-	play_cue()
-	
-	# 2. Setup the automatic garbage collection (Pooling)
-	if auto_destroy:
-		# We use a safe Godot 4 timer connection to finish the cue instead of queue_free
-		get_tree().create_timer(destroy_delay).timeout.connect(finish_cue)
+## Called by the manager when this cue is pulled from the pool and parented.
+func execute_cue(params: CueParams) -> void:
+	current_params = params
+	_playback_id += 1
+	play_cue(params)
+
+	if not auto_destroy:
+		return
+
+	var scheduled_id: int = _playback_id
+	var timer: SceneTreeTimer = get_tree().create_timer(destroy_delay)
+	timer.timeout.connect(_on_auto_destroy_elapsed.bind(scheduled_id))
 
 
-## Call this from your inherited scripts when the visual/audio effect is 100% done.
-## (e.g., hook this up to the 'finished' signal of an AudioStreamPlayer or a Timer).
+## Only the playback that scheduled a timer may end it. Without this guard, a
+## cue reused within `destroy_delay` would be pooled by its predecessor's timer
+## while it is still playing.
+func _on_auto_destroy_elapsed(scheduled_id: int) -> void:
+	if scheduled_id != _playback_id:
+		return
+	finish_cue()
+
+
+## Call this from an inherited script when the effect is genuinely done, e.g.
+## from an AudioStreamPlayer `finished` signal.
 func finish_cue() -> void:
-	# Emits the signal so the Manager pulls it off the target and puts it back to sleep
+	current_params = null
 	cue_finished.emit(self, gameplay_cue_tag)
 
 
-## Virtual internal method. Override this in your specific effect scripts if you need custom logic.
-## (e.g., attaching to a specific bone on a 3D model, or playing a specific AnimationTree).
-func play_cue() -> void:
-	# By default, if you have an AnimationPlayer, you could auto-play an 'Activate' animation here.
+## Override this in a specific cue script. The default does nothing, so a cue
+## that forgets to override still pools correctly instead of hanging forever.
+func play_cue(_params: CueParams) -> void:
 	pass
 #endregion
