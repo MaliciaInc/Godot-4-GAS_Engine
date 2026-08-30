@@ -39,8 +39,14 @@ var normal_3d: Vector3 = Vector3.ZERO
 ## dictionary. A mixed-dimension hit - a Vector2 position with a Vector3 normal
 ## - is rejected rather than half-converted, because a partially populated hit
 ## reads as valid to every caller downstream.
+## The one physics key this addon reads by name. Declared here because this
+## is the type whose whole job is turning that dictionary into something
+## typed; anywhere else would be a second place to change when it moves.
+const COLLIDER_KEY: StringName = &"collider"
+
+
 static func try_from_physics_hit(hit: Dictionary) -> GameplayTargetHit:
-	var raw_collider: Variant = hit.get("collider")
+	var raw_collider: Variant = hit.get(COLLIDER_KEY)
 	var raw_position: Variant = hit.get("position")
 	var raw_normal: Variant = hit.get("normal")
 
