@@ -432,14 +432,6 @@ func _on_generate_script_pressed() -> void:
 	_show_dialog(outcome.title, outcome.message)
 
 
-## One dialog helper instead of hand-built AcceptDialogs at each site. Those
-## were add_child()ed and never freed, leaking a node per message.
 func _show_dialog(title: String, message: String) -> void:
-	var dialog: AcceptDialog = AcceptDialog.new()
-	dialog.title = title
-	dialog.dialog_text = message
-	add_child(dialog)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered()
+	DashboardDialogs.show_message(self, message, title)
 #endregion

@@ -179,13 +179,6 @@ func _execute_delete() -> void:
 	_refresh_tag_tree()
 
 
-## Freed on dismissal. Building an AcceptDialog per message and add_child()ing
-## it without freeing leaks a node every time.
 func _show_dialog(message: String) -> void:
-	var dialog: AcceptDialog = AcceptDialog.new()
-	dialog.dialog_text = message
-	add_child(dialog)
-	dialog.confirmed.connect(dialog.queue_free)
-	dialog.canceled.connect(dialog.queue_free)
-	dialog.popup_centered()
+	DashboardDialogs.show_message(self, message)
 #endregion

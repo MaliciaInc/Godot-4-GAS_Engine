@@ -211,6 +211,18 @@ func _override_beats(
 ##
 ## Returns what happened. The caller emits from the result; this never emits,
 ## so a query and a notification can never interleave.
+
+## The values a mutation started from, recorded before anything is written.
+##
+## Repeated verbatim in recompose() and commit_base_write(), which is three
+## lines today and a field one of them forgets tomorrow.
+func _snapshot(mutation: AttributeMutationResult, attribute: AttributeData) -> void:
+	mutation.old_base_value = attribute.base_value
+	mutation.new_base_value = attribute.base_value
+	mutation.old_current_value = attribute.current_value
+	mutation.new_current_value = attribute.current_value
+
+
 func recompose(attribute_name: StringName) -> AttributeMutationResult:
 	var mutation: AttributeMutationResult = AttributeMutationResult.new()
 	mutation.attribute_name = attribute_name
@@ -220,10 +232,7 @@ func recompose(attribute_name: StringName) -> AttributeMutationResult:
 		mutation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 		return mutation
 
-	mutation.old_base_value = attribute.base_value
-	mutation.new_base_value = attribute.base_value
-	mutation.old_current_value = attribute.current_value
-	mutation.new_current_value = attribute.current_value
+	_snapshot(mutation, attribute)
 
 	var evaluation: AttributeEvaluationResult = evaluate(attribute_name)
 	if not evaluation.is_ok():
@@ -331,16 +340,13 @@ func commit_base_write(staged: AttributeBaseMutation) -> AttributeMutationResult
 		mutation.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 		return mutation
 
-	mutation.old_base_value = attribute.base_value
+	_snapshot(mutation, attribute)
 	mutation.requested_base_value = staged.requested_base_value
-	mutation.old_current_value = attribute.current_value
-	mutation.new_current_value = attribute.current_value
 	mutation.was_clamped = not is_equal_approx(
 		staged.committed_base_value, staged.requested_base_value
 	)
 
 	if is_equal_approx(staged.committed_base_value, attribute.base_value):
-		mutation.new_base_value = attribute.base_value
 		return mutation
 
 	attribute.base_value = staged.committed_base_value
