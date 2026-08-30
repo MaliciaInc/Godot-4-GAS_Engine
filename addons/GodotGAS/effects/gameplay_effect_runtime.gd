@@ -133,6 +133,12 @@ func apply(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 		self, effect.remove_effects_with_tags
 	)
 
+	# A TARGET+SNAPSHOT capture reads this same post-purge state - what
+	# evaluation itself is about to see - never what stood before the purge.
+	if not spec.capture_target_attributes(owner_asc):
+		purge.rollback()
+		return null
+
 	var refreshed: ActiveGameplayEffect = _try_refresh(spec)
 	if refreshed != null:
 		purge.commit()
@@ -157,6 +163,7 @@ func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluation
 	request.owner_asc = owner_asc
 	request.application_order = order
 	request.mode = _mode_for(spec)
+	request.source_asc = spec.source_asc
 	return GameplayEffectEvaluator.evaluate(request)
 
 

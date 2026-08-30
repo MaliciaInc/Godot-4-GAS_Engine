@@ -277,16 +277,30 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 
 
 #region Effects
+## The one entry point every application reaches, self-application included:
+## `apply_gameplay_effect` and `apply_effect_spec_to_target` both fall through
+## to this. `self` is always the target here, so this is also where a
+## SOURCE that arrived unresolved gets one last chance - from `context.
+## instigator` - before a required SOURCE capture would otherwise refuse.
 func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	_cleaned_up = false
+	if spec != null and not spec.prepare_captures(find_source_asc(spec)):
+		return null
 	return effects.apply(spec)
 
 
 ## Apply an effect to another ASC, giving that target its own spec copy.
+##
+## Captures are prepared here, on the shared spec, before it is ever copied:
+## a SOURCE+SNAPSHOT taken later - inside the copy's own apply_effect_spec -
+## would be one AoE target's read, not the one snapshot every target is
+## meant to share.
 func apply_effect_spec_to_target(
 	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
 ) -> ActiveGameplayEffect:
 	if target_asc == null or spec == null:
+		return null
+	if not spec.prepare_captures(self):
 		return null
 	var applied: ActiveGameplayEffect = target_asc.apply_effect_spec(spec.create_application_copy())
 	if applied != null:
@@ -302,7 +316,9 @@ func apply_gameplay_effect(
 		return null
 	var instigator: Node = source_asc.get_effect_target() if source_asc != null else get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
-	return apply_effect_spec(GameplayEffectSpec.new(effect, context, effect_level))
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect, context, effect_level)
+	spec.source_asc = source_asc
+	return apply_effect_spec(spec)
 
 
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:
@@ -344,6 +360,7 @@ func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 	request.owner_asc = self
 	request.application_order = 0
 	request.mode = GameplayEffectEvaluator.Mode.BASE_MUTATION
+	request.source_asc = probe.source_asc
 
 	var evaluation: GameplayEffectEvaluationResult = GameplayEffectEvaluator.evaluate(request)
 	if not evaluation.is_ok():

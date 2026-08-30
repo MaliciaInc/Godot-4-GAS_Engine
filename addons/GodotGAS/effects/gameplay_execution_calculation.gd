@@ -45,4 +45,14 @@ func execute(
 		+ "Override it in your specific child script."
 	)
 	return {}
+
+
+## Every attribute this calculation needs captured before execute() runs.
+## `GameplayEffectSpec.prepare_captures()` registers and takes each one ahead
+## of time, so a SOURCE or TARGET SNAPSHOT is already frozen by the time
+## execute() asks `spec.resolve_capture()` for it - the default, empty, costs
+## nothing and every execution calculation written before this existed
+## still works.
+func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
+	return []
 #endregion

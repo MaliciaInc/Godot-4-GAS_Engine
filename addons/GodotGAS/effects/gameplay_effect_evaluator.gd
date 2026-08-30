@@ -39,6 +39,10 @@ class Request extends RefCounted:
 	var owner_asc: AbilitySystemComponent = null
 	var mode: Mode = Mode.CONTRIBUTION
 	var application_order: int = 0
+	## Populated from `spec.source_asc`. A magnitude or execution calculation
+	## that needs the instigator's ASC reads it from here rather than
+	## re-deriving it from a Node each has its own opinion about.
+	var source_asc: AbilitySystemComponent = null
 
 
 ## Evaluate a spec into staged base mutations and contributions.
