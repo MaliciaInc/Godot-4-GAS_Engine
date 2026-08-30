@@ -1,6 +1,6 @@
 # Arhalies GAS
 
-A Gameplay Ability System for Godot 4.7: attributes, effects, tags, abilities,
+A Gameplay Ability System for Godot 4.7.2: attributes, effects, tags, abilities,
 events and cues, with the arithmetic pinned down and tested.
 
 A fork of [GodotGAS](https://github.com/yulrun/godot-gas) (MIT, Matthew Janes /

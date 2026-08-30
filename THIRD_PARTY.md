@@ -5,6 +5,21 @@ commit — never a branch, never "latest" — and the pin is verified against th
 live remote before the files are copied. Evidence of that verification lives in
 [`artifacts/deps/pinned-dependency-verification.md`](artifacts/deps/pinned-dependency-verification.md).
 
+## Godot Engine
+
+| | |
+|---|---|
+| Version | `4.7.2.stable.steam` |
+| Build hash | `ed1daf0bf` |
+| Renderer | Forward+ |
+| Source | Steam |
+
+The exact patch version, not the `4.7` that `project.godot` records in
+`config/features`. Every receipt in `artifacts/` was produced by this build, and
+the GDScript warnings this project promotes to errors are the ones this version
+defines: a different patch release can add a warning and turn a green tree red
+without a line of this repository changing.
+
 ## GodotGAS
 
 | | |
