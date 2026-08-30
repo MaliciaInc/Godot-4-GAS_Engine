@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="GameplayCueRegistry" format=3]
+
+[ext_resource type="Script" path="res://addons/GodotGAS/cues/gameplay_cue_entry.gd" id="1_eumo4"]
+[ext_resource type="Script" path="res://addons/GodotGAS/cues/gameplay_cue_registry.gd" id="2_bcoe5"]
+
+[resource]
+script = ExtResource("2_bcoe5")

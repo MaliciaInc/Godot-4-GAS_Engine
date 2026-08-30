@@ -8,7 +8,10 @@
 ## @meta_license: MIT
 extends GutTest
 
-const GENERATED_DIR: String = "res://godot_gas"
+## Somewhere to write that nothing tracks. The project's own generated file
+## is a versioned artefact now, and a test that wrote there would either break
+## the sync check or quietly repair the drift that check exists to find.
+const SCRATCH_SCRIPT: String = "user://generated_tags_probe.gd"
 
 var registry: GameplayTagRegistry = null
 
@@ -116,6 +119,15 @@ func test_removing_an_absent_tag_changes_nothing() -> void:
 
 
 #region Generating the constants file
+## The renderer is pure, so what it would write can be asked without writing.
+func test_the_rendered_source_carries_the_constants_it_was_given() -> void:
+	var source: String = GameplayTagGenerator.render_tags_source(
+		[&"Status.Stunned"] as Array[StringName]
+	)
+	assert_true(source.contains("Status_Stunned"), "the identifier the tag becomes")
+	assert_true(source.contains("class_name GameplayTags"), "inside the generated class")
+
+
 ## Adding a tag must not report success when the constants file was not written.
 ##
 ## The output directory does not exist in a fresh checkout, so the generator
@@ -123,22 +135,40 @@ func test_removing_an_absent_tag_changes_nothing() -> void:
 ## handed back the formatted tag: the tag lived in memory, the constant a
 ## designer went there to create did not exist, and nothing said so.
 func test_generation_reports_whether_it_actually_wrote() -> void:
-	var wrote: bool = GameplayTagGenerator.generate_tags_file(
-		[&"Status.Stunned"] as Array[StringName]
+	var setting: String = (
+		GodotGasProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
 	)
-	assert_true(wrote, "the generator creates its output directory rather than giving up")
+	var previous: Variant = ProjectSettings.get_setting(setting)
+	ProjectSettings.set_setting(setting, SCRATCH_SCRIPT)
 
-	var path: String = GodotGasProjectSettings.get_generated_tag_script_path()
-	assert_true(FileAccess.file_exists(path), "and the file is really there")
+	var tags: Array[StringName] = [&"Status.Stunned"] as Array[StringName]
+	assert_true(GameplayTagGenerator.generate_tags_file(tags), "it reports having written")
+	assert_true(FileAccess.file_exists(SCRATCH_SCRIPT), "and the file is really there")
+	assert_eq(
+		FileAccess.get_file_as_string(SCRATCH_SCRIPT),
+		GameplayTagGenerator.render_tags_source(tags),
+		"carrying exactly what the renderer produced, with no second format"
+	)
 
-	var written: String = FileAccess.get_file_as_string(path)
-	assert_true(written.contains("Status_Stunned"), "carrying the constant it was asked for")
-
-	_remove_generated(path)
+	ProjectSettings.set_setting(setting, previous)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCRATCH_SCRIPT))
 
 
-## Leave no trace: this suite must not dirty the working tree it runs in.
-func _remove_generated(path: String) -> void:
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(GENERATED_DIR))
+## A registry nothing has saved is somebody's working copy, and it does not
+## speak for the project.
+##
+## Every test above mutates such a registry. If those mutations regenerated the
+## project's constants, one suite run would replace the whole project's tags
+## with whatever the last test happened to hold.
+func test_an_anonymous_registry_does_not_regenerate_the_project_file() -> void:
+	var generated_path: String = GodotGasProjectSettings.get_generated_tag_script_path()
+	var before: String = FileAccess.get_file_as_string(generated_path)
+
+	registry.add_tag("Scratch.Tag")
+
+	assert_eq(
+		FileAccess.get_file_as_string(generated_path),
+		before,
+		"the project's constants were left exactly as they were"
+	)
 #endregion

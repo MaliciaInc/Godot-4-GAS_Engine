@@ -23,6 +23,7 @@ const WRITE_FAILED: String = "GodotGAS: could not write the generated tag script
 const IDENTIFIER_PATTERN: String = "[^a-zA-Z0-9_]"
 
 const SEGMENT_SEPARATOR: String = "."
+const LINE_BREAK: String = "\n"
 const IDENTIFIER_SEPARATOR: String = "_"
 
 ## The header every generated file carries, so nobody edits one by hand.
@@ -41,6 +42,20 @@ const HEADER_LINES: Array[String] = [
 
 
 #region Code Generation
+## The whole generated file as text, from these tags and nothing else.
+##
+## Pure and deterministic: the same tags produce the same bytes. That is what
+## lets a test compare the tracked file against this without an editor, and it
+## is why the writer below produces nothing of its own - two places building
+## the same text would eventually build it differently.
+static func render_tags_source(tags: Array[StringName]) -> String:
+	var lines: Array[String] = []
+	lines.assign(HEADER_LINES)
+	for tag: StringName in tags:
+		lines.append(constant_line(tag))
+	return LINE_BREAK.join(lines) + LINE_BREAK
+
+
 ## Write the constants file for these tags.
 static func generate_tags_file(tags: Array[StringName]) -> bool:
 	var output_path: String = GodotGasProjectSettings.get_generated_tag_script_path()
@@ -55,12 +70,7 @@ static func generate_tags_file(tags: Array[StringName]) -> bool:
 		push_error(WRITE_FAILED % output_path)
 		return false
 
-	for line: String in HEADER_LINES:
-		file.store_line(line)
-
-	for tag: StringName in tags:
-		file.store_line(constant_line(tag))
-
+	file.store_string(render_tags_source(tags))
 	file.close()
 	print(GENERATED_REPORT % [output_path, tags.size()])
 	return true

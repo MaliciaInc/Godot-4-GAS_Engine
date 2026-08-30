@@ -98,12 +98,18 @@ func _compare_tags(left: StringName, right: StringName) -> bool:
 ## Returns whether both landed. The generator used to be called and its answer
 ## dropped, so a failed write left the tag in memory, no constant on disk, and
 ## the caller believing it had succeeded.
+## Save this registry, and keep the generated constants in step with it.
+##
+## A registry nothing has saved anywhere is somebody's working copy, and it
+## does not regenerate the project's constants: doing so would replace every
+## constant in the project with whatever that copy happened to hold. Only the
+## registry that lives on disk speaks for the project.
 func _persist() -> bool:
-	var saved: bool = true
-	if not resource_path.is_empty():
-		saved = ResourceSaver.save(self, resource_path) == OK
-		if not saved:
-			push_error(SAVE_FAILED % resource_path)
+	if resource_path.is_empty():
+		return true
+	var saved: bool = ResourceSaver.save(self, resource_path) == OK
+	if not saved:
+		push_error(SAVE_FAILED % resource_path)
 	return GameplayTagGenerator.generate_tags_file(tags) and saved
 
 

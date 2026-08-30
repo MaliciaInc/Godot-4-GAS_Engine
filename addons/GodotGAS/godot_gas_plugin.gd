@@ -46,6 +46,13 @@ const EXAMPLE_TAGS: Array[String] = [
 	"Example.State.Cooldown.Poison",
 ]
 
+## Whether this plugin is the one that added the cue manager autoload.
+##
+## Disabling GodotGAS must never remove an autoload the project declared for
+## itself. Upstream removed it unconditionally, so a project that had wired the
+## singleton by hand lost it simply by turning the plugin off.
+var _owns_cue_manager_autoload: bool = false
+
 var _dashboard_instance: Control = null
 var _tag_inspector: EditorInspectorPlugin = null
 
@@ -55,14 +62,26 @@ var _tag_inspector: EditorInspectorPlugin = null
 ##
 ## Upstream registered unconditionally, which produced a second authority over
 ## the same singleton for any project that had declared it itself.
+## Whether enabling this plugin would have to add the autoload.
+##
+## False when the project already declares it: the plugin then adds nothing,
+## owns nothing, and removes nothing when it is disabled. Exposed as its own
+## question so that decision can be asked without an editor to enable a plugin
+## in - which is the only place the enable path itself can run.
+static func would_add_cue_manager_autoload() -> bool:
+	return not ProjectSettings.has_setting(AUTOLOAD_SETTING_PREFIX + CUE_MANAGER_NAME)
+
+
 func _enable_plugin() -> void:
-	if ProjectSettings.has_setting(AUTOLOAD_SETTING_PREFIX + CUE_MANAGER_NAME):
+	if not would_add_cue_manager_autoload():
 		push_warning(
 			"GodotGAS: '" + CUE_MANAGER_NAME
 			+ "' is already declared in project.godot; leaving that declaration alone."
 		)
+		_owns_cue_manager_autoload = false
 		return
 	add_autoload_singleton(CUE_MANAGER_NAME, CUE_MANAGER_PATH)
+	_owns_cue_manager_autoload = true
 
 
 func _enter_tree() -> void:
@@ -78,8 +97,12 @@ func _enter_tree() -> void:
 	_make_visible(false)
 
 
+## Take back only what this plugin added.
 func _disable_plugin() -> void:
+	if not _owns_cue_manager_autoload:
+		return
 	remove_autoload_singleton(CUE_MANAGER_NAME)
+	_owns_cue_manager_autoload = false
 
 
 func _exit_tree() -> void:
