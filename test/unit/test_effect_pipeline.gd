@@ -37,25 +37,56 @@ func after_each() -> void:
 
 
 #region Application gates
-func test_an_ignored_tag_blocks_the_application() -> void:
-	asc.add_tag(IMMUNE)
+## One gate case: which tag decides, and whether holding it blocks or allows.
+class GateCase extends RefCounted:
+	var label: String = ""
+	var tag: StringName = &""
+	## True when holding the tag blocks the effect; false when it is required.
+	var holding_blocks: bool = false
+
+
+static func _gate_case(label: String, tag: StringName, holding_blocks: bool) -> GateCase:
+	var built: GateCase = GateCase.new()
+	built.label = label
+	built.tag = tag
+	built.holding_blocks = holding_blocks
+	return built
+
+
+func _gate_cases() -> Array[GateCase]:
+	return [
+		_gate_case("an immunity blocks the application", IMMUNE, true),
+		_gate_case("a missing requirement blocks the application", STUNNED, false),
+	] as Array[GateCase]
+
+
+## An application gate refuses while its condition is unmet and allows once met.
+##
+## Both directions are one procedure: set the ASC to the refusing state, assert
+## nothing applied, flip it, assert it did. Writing that twice was two places to
+## fix when the shape changed, which the duplication gate reported.
+func test_an_application_gate_refuses_then_allows(
+	scenario: GateCase = use_parameters(_gate_cases())
+) -> void:
 	fixture.set_base(ATTACK, 10.0)
-	var effect: GameplayEffect = Factory.blocked_by(
-		Factory.infinite([Factory.add(ATTACK, 5.0)]), [IMMUNE] as Array[StringName]
-	)
-	assert_null(Factory.apply(asc, effect), "refused")
+	var modifiers: Array[GameplayEffectModifier] = [Factory.add(ATTACK, 5.0)]
+	var gated: GameplayEffect = Factory.infinite(modifiers)
+	if scenario.holding_blocks:
+		gated = Factory.blocked_by(gated, [scenario.tag] as Array[StringName])
+		asc.add_tag(scenario.tag)
+	else:
+		gated = Factory.requiring(gated, [scenario.tag] as Array[StringName])
+
+	assert_null(Factory.apply(asc, gated), scenario.label)
 	assert_almost_eq(fixture.current_of(ATTACK), 10.0, TOLERANCE, "nothing applied")
 
+	# Flip the condition and the same effect now lands.
+	if scenario.holding_blocks:
+		asc.clear_tag(scenario.tag)
+	else:
+		asc.add_tag(scenario.tag)
 
-func test_a_missing_required_tag_blocks_the_application() -> void:
-	fixture.set_base(ATTACK, 10.0)
-	var effect: GameplayEffect = Factory.requiring(
-		Factory.infinite([Factory.add(ATTACK, 5.0)]), [STUNNED] as Array[StringName]
-	)
-	assert_null(Factory.apply(asc, effect), "refused")
-
-	asc.add_tag(STUNNED)
-	assert_not_null(Factory.apply(asc, effect), "allowed once the requirement holds")
+	assert_not_null(Factory.apply(asc, gated), "allowed once the condition holds")
 	assert_almost_eq(fixture.current_of(ATTACK), 15.0, TOLERANCE)
 #endregion
 

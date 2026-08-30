@@ -154,38 +154,33 @@ func entry(set_name: String, key: String) -> Entry:
 	if not has_attribute(set_name, key):
 		return Entry.new()
 
+	# A draft is a file a human can edit, so it may hold anything. Every value
+	# is checked before it is trusted, in one place, rather than through two
+	# guard helpers that were the same template written twice.
+	var decoded: Entry = Entry.new()
 	var raw: Variant = _config.get_value(set_name, key)
+
+	var carried: Variant = raw
 	if raw is Dictionary:
 		var stored: Dictionary = raw
-		return Entry.of(_as_float(stored.get(VALUE_KEY)), _as_icon(stored.get(ICON_KEY)))
+		carried = stored.get(VALUE_KEY)
+		var icon_value: Variant = stored.get(ICON_KEY)
+		if icon_value is String:
+			var icon_text: String = icon_value
+			decoded.icon = icon_text
 
-	var migrated: Entry = Entry.of(_as_float(raw))
-	put(set_name, key, migrated)
-	return migrated
+	if carried is float:
+		var decimal: float = carried
+		decoded.value = decimal
+	elif carried is int:
+		var whole: int = carried
+		decoded.value = float(whole)
 
-
-## Read a number out of a stored Variant, or zero when it is not one.
-##
-## A draft is a file a human can edit, so it may hold anything. Refusing to
-## guess keeps a hand-broken file from becoming a crash.
-static func _as_float(raw: Variant) -> float:
-	if raw is float:
-		var decimal: float = raw
-		return decimal
-	if raw is int:
-		var whole: int = raw
-		return float(whole)
-	return 0.0
-
-
-static func _as_icon(raw: Variant) -> String:
-	if raw is String:
-		var text: String = raw
-		return text
-	if raw is StringName:
-		var name: StringName = raw
-		return String(name)
-	return DEFAULT_ICON
+	if not raw is Dictionary:
+		# Written before icons existed. Migrated on read, so nothing downstream
+		# ever sees the old shape.
+		put(set_name, key, decoded)
+	return decoded
 
 
 func put(set_name: String, key: String, value: Entry) -> void:

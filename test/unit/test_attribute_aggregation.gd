@@ -104,56 +104,126 @@ func test_dividing_by_zero_refuses_the_whole_application() -> void:
 #endregion
 
 
-#region Override
-func test_last_override_wins_and_earlier_ones_survive_underneath() -> void:
-	fixture.set_base(ATTACK, 10.0)
-	var first: ActiveGameplayEffect = _apply(Factory.infinite([Factory.override(ATTACK, 50.0)]))
-	var second: ActiveGameplayEffect = _apply(Factory.infinite([Factory.override(ATTACK, 100.0)]))
-	assert_almost_eq(fixture.current_of(ATTACK), 100.0, TOLERANCE, "later override wins")
+#region Removing one of two contributions
+## One case of "apply two contributions, remove them in a stated order".
+##
+## Named fields rather than a positional array: `case[7]` told a reader nothing,
+## and an untyped array makes every value a Variant, which the strict typing
+## policy rejects outright. The policy pushed this towards being readable.
+class RemovalCase extends RefCounted:
+	var label: String = ""
+	var base: float = 0.0
+	var first_kind: String = ""
+	var first_magnitude: float = 0.0
+	var second_kind: String = ""
+	var second_magnitude: float = 0.0
+	var with_both: float = 0.0
+	## 0 removes the first-applied effect, 1 removes the second.
+	var remove_index: int = 0
+	var after_first_removal: float = 0.0
+	var after_both_removals: float = 0.0
 
-	fixture.asc.remove_active_effect(second)
-	# The first override was never destroyed, only outranked, so it becomes
-	# visible again rather than the attribute falling back to its base.
-	assert_almost_eq(fixture.current_of(ATTACK), 50.0, TOLERANCE, "earlier override returns")
 
-	fixture.asc.remove_active_effect(first)
-	assert_almost_eq(fixture.current_of(ATTACK), 10.0, TOLERANCE, "back to base")
+## Build one case. Six positional values would be worse than the array was.
+static func _case(label: String, base: float, with_both: float) -> RemovalCase:
+	var built: RemovalCase = RemovalCase.new()
+	built.label = label
+	built.base = base
+	built.with_both = with_both
+	return built
+
+
+func _removal_cases() -> Array[RemovalCase]:
+	var outranked: RemovalCase = _case("an override outranks, then yields", 10.0, 100.0)
+	outranked.first_kind = "override"
+	outranked.first_magnitude = 50.0
+	outranked.second_kind = "override"
+	outranked.second_magnitude = 100.0
+	outranked.remove_index = 1
+	outranked.after_first_removal = 50.0
+	outranked.after_both_removals = 10.0
+
+	var add_first: RemovalCase = _case("the add removed before the multiply", 100.0, 240.0)
+	add_first.first_kind = "add"
+	add_first.first_magnitude = 20.0
+	add_first.second_kind = "multiply"
+	add_first.second_magnitude = 2.0
+	add_first.remove_index = 0
+	add_first.after_first_removal = 200.0
+	add_first.after_both_removals = 100.0
+
+	var multiply_first: RemovalCase = _case("the multiply removed before the add", 100.0, 240.0)
+	multiply_first.first_kind = "add"
+	multiply_first.first_magnitude = 20.0
+	multiply_first.second_kind = "multiply"
+	multiply_first.second_magnitude = 2.0
+	multiply_first.remove_index = 1
+	multiply_first.after_first_removal = 120.0
+	multiply_first.after_both_removals = 100.0
+
+	return [outranked, add_first, multiply_first] as Array[RemovalCase]
+
+
+func _modifier(kind: String, magnitude: float) -> GameplayEffectModifier:
+	match kind:
+		"add":
+			return Factory.add(ATTACK, magnitude)
+		"multiply":
+			return Factory.multiply(ATTACK, magnitude)
+		"override":
+			return Factory.override(ATTACK, magnitude)
+	fail_test("unknown modifier kind: " + kind)
+	return null
+
+
+## Two contributions, removed in a stated order, land on stated values.
+##
+## The reverse-order case is what a delta model cannot do: a `+20` recorded at
+## application was worth 20 then and 40 once doubled, and reversing either
+## number is wrong. Recomposition keeps no history, so there is nothing to get
+## wrong. An outranked OVERRIDE is the same story: it was never destroyed, so it
+## becomes visible again rather than the attribute falling back to its base.
+##
+## One procedure, three cases. It was three near-identical tests, which the
+## duplication gate reported and was right to: the shape was the assertion, and
+## writing it three times meant three places to fix when the shape changed.
+func test_removing_either_contribution_recomposes_correctly(
+	scenario: RemovalCase = use_parameters(_removal_cases())
+) -> void:
+	fixture.set_base(ATTACK, scenario.base)
+
+	var first: ActiveGameplayEffect = _apply(
+		Factory.infinite([_modifier(scenario.first_kind, scenario.first_magnitude)])
+	)
+	var second: ActiveGameplayEffect = _apply(
+		Factory.infinite([_modifier(scenario.second_kind, scenario.second_magnitude)])
+	)
+	assert_almost_eq(
+		fixture.current_of(ATTACK), scenario.with_both, TOLERANCE, scenario.label + ": both active"
+	)
+
+	var applied: Array[ActiveGameplayEffect] = [first, second]
+	fixture.asc.remove_active_effect(applied[scenario.remove_index])
+	assert_almost_eq(
+		fixture.current_of(ATTACK),
+		scenario.after_first_removal,
+		TOLERANCE,
+		scenario.label + ": one removed"
+	)
+
+	fixture.asc.remove_active_effect(applied[1 - scenario.remove_index])
+	assert_almost_eq(
+		fixture.current_of(ATTACK),
+		scenario.after_both_removals,
+		TOLERANCE,
+		scenario.label + ": both removed"
+	)
 
 
 func test_within_one_effect_the_higher_modifier_index_wins() -> void:
 	fixture.set_base(ATTACK, 10.0)
 	_apply(Factory.infinite([Factory.override(ATTACK, 50.0), Factory.override(ATTACK, 100.0)]))
 	assert_almost_eq(fixture.current_of(ATTACK), 100.0, TOLERANCE, "index 1 beats index 0")
-#endregion
-
-
-#region Removal order independence
-func test_removing_the_add_first_leaves_the_multiplier_correct() -> void:
-	fixture.set_base(ATTACK, 100.0)
-	var adder: ActiveGameplayEffect = _apply(Factory.infinite([Factory.add(ATTACK, 20.0)]))
-	var doubler: ActiveGameplayEffect = _apply(Factory.infinite([Factory.multiply(ATTACK, 2.0)]))
-	assert_almost_eq(fixture.current_of(ATTACK), 240.0, TOLERANCE, "(100 + 20) * 2")
-
-	fixture.asc.remove_active_effect(adder)
-	assert_almost_eq(fixture.current_of(ATTACK), 200.0, TOLERANCE, "100 * 2")
-
-	fixture.asc.remove_active_effect(doubler)
-	assert_almost_eq(fixture.current_of(ATTACK), 100.0, TOLERANCE, "base")
-
-
-func test_removing_the_multiplier_first_ends_at_the_same_place() -> void:
-	fixture.set_base(ATTACK, 100.0)
-	var adder: ActiveGameplayEffect = _apply(Factory.infinite([Factory.add(ATTACK, 20.0)]))
-	var doubler: ActiveGameplayEffect = _apply(Factory.infinite([Factory.multiply(ATTACK, 2.0)]))
-
-	# The reverse order. A delta model cannot do this: the +20 it recorded was
-	# worth 20 when applied and 40 once doubled, and reversing either number is
-	# wrong. Recomposition has no such problem because it keeps no history.
-	fixture.asc.remove_active_effect(doubler)
-	assert_almost_eq(fixture.current_of(ATTACK), 120.0, TOLERANCE, "100 + 20")
-
-	fixture.asc.remove_active_effect(adder)
-	assert_almost_eq(fixture.current_of(ATTACK), 100.0, TOLERANCE, "base")
 #endregion
 
 
