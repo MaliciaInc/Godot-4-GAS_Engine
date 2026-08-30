@@ -29,7 +29,7 @@ static func is_legal_cost(effect: GameplayEffect, level: float) -> bool:
 	# author expected something this cost can never deliver.
 	if not effect.granted_tags.is_empty():
 		return false
-	if not _is_quiet(effect):
+	if not effect.is_silent():
 		return false
 	return _is_pure_charge(effect, level)
 
@@ -73,7 +73,7 @@ static func is_legal_cooldown(effect: GameplayEffect) -> bool:
 	# ability is still on cooldown, and the effect expires unobserved.
 	if effect.granted_tags.is_empty():
 		return false
-	if not _is_quiet(effect):
+	if not effect.is_silent():
 		return false
 	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
 		return effect.duration > 0.0
@@ -98,25 +98,4 @@ static func unique_cooldowns(
 		if effect != null and not unique.has(effect):
 			unique.append(effect)
 	return unique
-#endregion
-
-
-#region Shared
-## The conditions a cost and a cooldown share: not periodic, and silent.
-##
-## Both are transaction bookkeeping rather than gameplay. An execution, a purge,
-## a cue or an event would be an observable side effect, and a commit that rolled
-## back could not take it back. Written once because the two answers have to
-## agree; two copies of the same eight conditions would eventually stop agreeing.
-static func _is_quiet(effect: GameplayEffect) -> bool:
-	return (
-		is_zero_approx(effect.period)
-		and effect.executions.is_empty()
-		and effect.remove_effects_with_tags.is_empty()
-		and effect.application_required_tags.is_empty()
-		and effect.application_ignore_tags.is_empty()
-		and effect.application_cue_tags.is_empty()
-		and effect.periodic_cue_tags.is_empty()
-		and effect.event_tags.is_empty()
-	)
 #endregion

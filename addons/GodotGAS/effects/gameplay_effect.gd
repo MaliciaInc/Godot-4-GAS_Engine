@@ -77,3 +77,23 @@ enum StackingPolicy {
 ## Tags broadcasted directly to the target's ASC as Gameplay Events upon application (or periodic tick).
 ## Ideal for waking up reactive passive abilities (e.g., 'Event.Damage.Taken').
 @export var event_tags: Array[StringName] = []
+
+
+## Whether applying this can be noticed by anything except the attributes it
+## moves and the tags it grants.
+##
+## An execution, a purge, a cue or an event is an observable side effect that
+## undoing the application cannot take back. Anything that has to stay reversible
+## asks this first: a commit that may be refused partway through, and equipment
+## that may fail before it has finished being granted.
+func is_silent() -> bool:
+	return (
+		is_zero_approx(period)
+		and executions.is_empty()
+		and remove_effects_with_tags.is_empty()
+		and application_required_tags.is_empty()
+		and application_ignore_tags.is_empty()
+		and application_cue_tags.is_empty()
+		and periodic_cue_tags.is_empty()
+		and event_tags.is_empty()
+	)
