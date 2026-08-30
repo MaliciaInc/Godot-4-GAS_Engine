@@ -1,0 +1,21 @@
+## Whether a GameplayTagQuery is a legal definition, and why not when it is not.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_license: MIT
+class_name GameplayTagQueryValidationResult extends RefCounted
+
+enum Status {
+	OK,
+	CYCLIC_EXPRESSION,
+	EMPTY_TAG,
+	INVALID_TAG,
+}
+
+var status: Status = Status.OK
+
+## The offending tag, for INVALID_TAG. Empty otherwise.
+var invalid_tag: StringName = &""
+
+
+func is_ok() -> bool:
+	return status == Status.OK

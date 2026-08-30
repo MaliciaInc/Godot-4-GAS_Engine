@@ -83,8 +83,19 @@ func has_exact(tag: StringName) -> bool:
 func has(tag: StringName) -> bool:
 	if _counts.has(tag):
 		return true
-	for active: StringName in _counts.keys():
-		if is_descendant_of(active, tag):
+	return tag_set_has(_counts.keys(), tag)
+
+
+## Whether any tag in `active_tags` is `requested_tag` or a descendant of it.
+##
+## The one hierarchical matcher, so `has()` and GameplayTagQuery can never
+## disagree about what "holds a tag" means - each calls this instead of
+## keeping its own copy of the loop.
+static func tag_set_has(
+	active_tags: Array[StringName], requested_tag: StringName
+) -> bool:
+	for active: StringName in active_tags:
+		if is_descendant_of(active, requested_tag):
 			return true
 	return false
 
