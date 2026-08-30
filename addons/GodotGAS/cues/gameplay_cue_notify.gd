@@ -12,7 +12,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayCueNotify extends Node
 
-const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 ## Emitted when the effect is complete so the manager can pool it again.
 signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)

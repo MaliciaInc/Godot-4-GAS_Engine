@@ -13,9 +13,9 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbility extends Node
 
-const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
-const ContextScript: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
-const SpecScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const ContextScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const SpecScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
 
 signal ability_ended(was_cancelled: bool)
 

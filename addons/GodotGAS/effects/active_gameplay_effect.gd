@@ -71,7 +71,7 @@ func advance_clock(delta: float) -> int:
 		elapsed_time += delta
 		return 0
 	elapsed_time += delta
-	var due: int = int(floor(elapsed_time / spec.period))
+	var due: int = floori(elapsed_time / spec.period)
 	var owed: int = due - completed_ticks
 	return maxi(owed, 0)
 

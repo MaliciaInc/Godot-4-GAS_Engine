@@ -70,15 +70,16 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 #endregion
 
 
-const AttributeRuntimeScript: GDScript = preload("res://addons/GodotGAS/attributes/gameplay_attribute_runtime.gd")
-const TagRuntimeScript: GDScript = preload("res://addons/GodotGAS/components/gameplay_tag_runtime.gd")
-const EffectRuntimeScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_runtime.gd")
-const SchedulerScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_scheduler.gd")
-const AbilityRuntimeScript: GDScript = preload("res://addons/GodotGAS/components/ability_runtime.gd")
-const EventRuntimeScript: GDScript = preload("res://addons/GodotGAS/events/gameplay_event_runtime.gd")
-const EvaluatorScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
-const SpecScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
-const ContextScript: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const AttributeRuntimeScript = preload("res://addons/GodotGAS/attributes/gameplay_attribute_runtime.gd")
+const TagRuntimeScript = preload("res://addons/GodotGAS/components/gameplay_tag_runtime.gd")
+const EffectRuntimeScript = preload("res://addons/GodotGAS/effects/gameplay_effect_runtime.gd")
+const SchedulerScript = preload("res://addons/GodotGAS/effects/gameplay_effect_scheduler.gd")
+const AbilityRuntimeScript = preload("res://addons/GodotGAS/components/ability_runtime.gd")
+const EventRuntimeScript = preload("res://addons/GodotGAS/events/gameplay_event_runtime.gd")
+const EvaluatorScript = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
+const SpecScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
+const ContextScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const CueManagerScript = preload("res://addons/GodotGAS/managers/gameplay_cue_manager.gd")
 
 var attributes: GameplayAttributeRuntime = AttributeRuntimeScript.new()
 var tags: GameplayTagRuntime = TagRuntimeScript.new()
@@ -211,7 +212,9 @@ func execute_cue(params: GameplayCueParams) -> void:
 		return
 	if params.target == null:
 		params.target = get_effect_target()
-	var manager: Node = get_node_or_null("/root/GameplayCueManager")
+	# The autoload declares no class_name, so it is typed through its script.
+	# A bare Node here would make every call to it an unsafe method access.
+	var manager: CueManagerScript = get_node_or_null("/root/GameplayCueManager") as CueManagerScript
 	if manager == null:
 		return
 	manager.execute_cue(params)

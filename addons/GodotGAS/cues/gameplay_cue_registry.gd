@@ -14,7 +14,7 @@ class_name GameplayCueRegistry extends Resource
 ## The element type comes from preload, not the global `GameplayCueEntry`
 ## name. The GameplayCueManager autoload preloads this file, and Godot
 ## parses it before a global class cache exists on a never-imported checkout.
-const CueEntry: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
+const CueEntry = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
 
 ## The list of all registered gameplay cues.
 @export var entries: Array[CueEntry] = []

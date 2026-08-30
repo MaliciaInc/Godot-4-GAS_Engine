@@ -39,7 +39,7 @@ func calculate_magnitude(level: float = 1.0) -> float:
 		# Godot curves evaluate between X=0.0 and X=1.0 by default, but we can sample 
 		# beyond 1.0 if the curve domain is set up for it. 
 		# We sample the curve, then multiply it by the base magnitude.
-		var curve_value = scaling_curve.sample(level)
+		var curve_value: float = scaling_curve.sample(level)
 		return curve_value * magnitude
 		
 	# If no curve, just return the flat static number

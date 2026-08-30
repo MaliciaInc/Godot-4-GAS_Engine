@@ -23,11 +23,11 @@
 ## @meta_license: MIT
 class_name GameplayAttributeRuntime extends RefCounted
 
-const Status: GDScript = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const Contribution: GDScript = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
-const BaseMutation: GDScript = preload("res://addons/GodotGAS/attributes/attribute_base_mutation.gd")
-const MutationResult: GDScript = preload("res://addons/GodotGAS/attributes/attribute_mutation_result.gd")
-const EvaluationResult: GDScript = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
+const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
+const Contribution = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
+const BaseMutation = preload("res://addons/GodotGAS/attributes/attribute_base_mutation.gd")
+const MutationResult = preload("res://addons/GodotGAS/attributes/attribute_mutation_result.gd")
+const EvaluationResult = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
 
 ## The node handed to `post_attribute_change`, normally the ASC.
 var owner_node: Node = null

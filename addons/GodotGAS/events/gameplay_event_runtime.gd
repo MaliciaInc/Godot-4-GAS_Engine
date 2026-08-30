@@ -15,7 +15,7 @@
 ## @meta_license: MIT
 class_name GameplayEventRuntime extends RefCounted
 
-const EventData: GDScript = preload("res://addons/GodotGAS/events/gameplay_event_data.gd")
+const EventData = preload("res://addons/GodotGAS/events/gameplay_event_data.gd")
 
 var owner_asc: AbilitySystemComponent = null
 

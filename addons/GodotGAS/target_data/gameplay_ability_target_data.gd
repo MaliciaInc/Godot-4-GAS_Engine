@@ -18,7 +18,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbilityTargetData extends RefCounted
 
-const TargetHit: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_target_hit.gd")
+const TargetHit = preload("res://addons/GodotGAS/target_data/gameplay_target_hit.gd")
 
 ## Strictly unique target nodes captured by the ability.
 var _target_nodes: Array[Node] = []

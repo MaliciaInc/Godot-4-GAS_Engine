@@ -16,12 +16,12 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 extends Node
 
-const GodotGasProjectSettings: GDScript = preload("res://addons/GodotGAS/utilities/project_settings.gd")
-const CueNotify: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
-const CueRegistry: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
-const CueEntry: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
-const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
-const PoolBucket: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd")
+const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const CueNotify = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
+const CueRegistry = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
+const CueEntry = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const PoolBucket = preload("res://addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd")
 
 ## Dormant instances, one bucket per cue tag.
 var _pool: Dictionary[StringName, PoolBucket] = {}

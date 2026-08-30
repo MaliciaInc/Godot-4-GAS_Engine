@@ -16,7 +16,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayTagRegistry extends Resource
 
-const TagGenerator: GDScript = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd")
+const TagGenerator = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd")
 
 ## A tag is one or more dot-separated segments, each starting with an uppercase
 ## letter. Compiled once, lazily, rather than per call.

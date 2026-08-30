@@ -15,10 +15,10 @@
 ## @meta_license: MIT
 class_name GameplayEffectRuntime extends RefCounted
 
-const Evaluator: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
-const Status: GDScript = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const ActiveEffect: GDScript = preload("res://addons/GodotGAS/effects/active_gameplay_effect.gd")
-const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const Evaluator = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
+const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
+const ActiveEffect = preload("res://addons/GodotGAS/effects/active_gameplay_effect.gd")
+const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 ## The facade this runtime emits through. Signals belong to the ASC because it
 ## is the node other systems connect to.

@@ -14,7 +14,7 @@
 ## @meta_license: MIT
 class_name GameplayCuePoolBucket extends RefCounted
 
-const CueNotify: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
+const CueNotify = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
 
 var items: Array[CueNotify] = []
 

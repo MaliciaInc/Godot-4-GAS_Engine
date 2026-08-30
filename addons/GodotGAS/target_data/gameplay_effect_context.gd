@@ -14,7 +14,7 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayEffectContext extends RefCounted
 
-const TargetData: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_ability_target_data.gd")
+const TargetData = preload("res://addons/GodotGAS/target_data/gameplay_ability_target_data.gd")
 
 ## The entity that activated the ability, e.g. the player character.
 var instigator: Node = null

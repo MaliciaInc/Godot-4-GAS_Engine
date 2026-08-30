@@ -13,7 +13,7 @@
 ## @meta_license: MIT
 class_name GameplayCueParams extends RefCounted
 
-const EffectContext: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const EffectContext = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
 
 ## The cue tag being executed.
 var cue_tag: StringName = &""

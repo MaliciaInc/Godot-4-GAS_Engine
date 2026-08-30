@@ -19,9 +19,9 @@
 ## @meta_license: MIT
 class_name GameplayEffectEvaluator extends RefCounted
 
-const Status: GDScript = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const Contribution: GDScript = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
-const EvaluationResult: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluation_result.gd")
+const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
+const Contribution = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
+const EvaluationResult = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluation_result.gd")
 
 ## How this effect's standard modifiers are meant to land.
 ##
@@ -39,7 +39,7 @@ enum Mode { BASE_MUTATION, CONTRIBUTION }
 class Request extends RefCounted:
 	var spec: GameplayEffectSpec = null
 	var attributes: GameplayAttributeRuntime = null
-	var owner_asc: Node = null
+	var owner_asc: AbilitySystemComponent = null
 	var mode: Mode = Mode.CONTRIBUTION
 	var application_order: int = 0
 
