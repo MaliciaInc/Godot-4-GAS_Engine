@@ -83,6 +83,14 @@ func _message() -> Dictionary:
 	message[DialogicGasCommandParser.COMMAND_KEY] = "send_event"
 	message[DialogicGasCommandParser.TAG_KEY] = String(EVENT_TAG)
 	return message
+
+
+## The same message, aimed at the tag commands instead.
+func _tag_message(command: String) -> Dictionary:
+	var message: Dictionary = _message()
+	message[DialogicGasCommandParser.COMMAND_KEY] = command
+	message[DialogicGasCommandParser.TAG_KEY] = String(STATE_TAG)
+	return message
 #endregion
 
 
@@ -226,16 +234,15 @@ func test_an_event_from_a_dialogue_can_wake_a_listening_ability() -> void:
 	assert_eq(ability.activations, 1, "the more specific event woke the general listener")
 
 
+## Two timeline events, so two messages. Dialogic freezes what it emits, and
+## a test that edited one message and sent it twice was describing
+## something no timeline can do.
 func test_a_dialogue_can_add_and_remove_a_tag() -> void:
 	assert_true(_bound())
-	var message: Dictionary = _message()
-	message[DialogicGasCommandParser.COMMAND_KEY] = "add_tag"
-	message[DialogicGasCommandParser.TAG_KEY] = String(STATE_TAG)
-	dialogic.say(message)
+	dialogic.say(_tag_message("add_tag"))
 	assert_true(fixture.asc.has_tag(STATE_TAG), "the tag was granted")
 
-	message[DialogicGasCommandParser.COMMAND_KEY] = "remove_tag"
-	dialogic.say(message)
+	dialogic.say(_tag_message("remove_tag"))
 	assert_false(fixture.asc.has_tag(STATE_TAG), "and taken away again")
 #endregion
 

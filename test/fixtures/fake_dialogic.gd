@@ -24,5 +24,15 @@ static func build() -> FakeDialogic:
 
 
 ## Say something on the bus, the way a timeline event does.
+##
+## A dictionary goes out frozen, because that is what the real addon does:
+## DialogicSignalEvent calls `make_read_only()` before emitting. A double
+## that handed over a writable copy would let a bridge quietly mutate the
+## message and pass every test here, then fail against real Dialogic.
 func say(argument: Variant) -> void:
+	if argument is Dictionary:
+		var frozen: Dictionary = argument
+		frozen.make_read_only()
+		signal_event.emit(frozen)
+		return
 	signal_event.emit(argument)
