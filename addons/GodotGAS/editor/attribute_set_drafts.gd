@@ -23,6 +23,11 @@ const RESERVED_SECTION: String = "Settings"
 ## The key that marks a set as created rather than an attribute of it.
 const INITIALISED_KEY: String = "_initialized"
 
+## Said out loud, because a designer whose work did not reach disk has no
+## other way to find out.
+const SAVE_FAILED: String = "GodotGAS: could not save the attribute drafts to %s (%s)."
+const LOAD_FAILED: String = "GodotGAS: could not read the attribute drafts at %s (%s)."
+
 const VALUE_KEY: String = "value"
 const ICON_KEY: String = "icon"
 ## The icon catalogue owns this name; a second constant holding the same
@@ -49,14 +54,25 @@ var _config: ConfigFile = ConfigFile.new()
 
 
 #region Persistence
+## Read the drafts. A missing file is the normal first-run state, not an error.
 func load_from_disk() -> void:
-	_config.load(GodotGasProjectSettings.get_attributes_draft_config_path())
+	var path: String = GodotGasProjectSettings.get_attributes_draft_config_path()
+	var status: Error = _config.load(path)
+	if status != OK and status != ERR_FILE_NOT_FOUND:
+		push_error(LOAD_FAILED % [path, error_string(status)])
 
 
 ## Persist. Private because no caller should have to remember it: every mutation
 ## below calls it, and a mutation that did not would lose work silently.
+##
+## The directory does not exist until something writes there, and the error was
+## discarded, so a failed write was the very silent loss this exists to prevent.
 func _save() -> void:
-	_config.save(GodotGasProjectSettings.get_attributes_draft_config_path())
+	var path: String = GodotGasProjectSettings.get_attributes_draft_config_path()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
+	var status: Error = _config.save(path)
+	if status != OK:
+		push_error(SAVE_FAILED % [path, error_string(status)])
 #endregion
 
 
@@ -74,9 +90,15 @@ func has_set(set_name: String) -> bool:
 	return _config.has_section(set_name)
 
 
-## Create an empty set. Returns false when the name is taken or reserved.
+## Create an empty set. Returns false when the name is unusable, reserved or
+## taken.
+##
+## Unusable means GDScript could not accept it: the name is written into
+## `class_name <name>AttributeSet`, so `My Set` would generate a script that
+## does not parse. is_valid_identifier is Godot's own rule for what its parser
+## takes, and an empty name fails it too.
 func create_set(set_name: String) -> bool:
-	if set_name.is_empty() or set_name == RESERVED_SECTION or has_set(set_name):
+	if not set_name.is_valid_identifier() or set_name == RESERVED_SECTION or has_set(set_name):
 		return false
 	_config.set_value(set_name, INITIALISED_KEY, true)
 	_save()
@@ -84,9 +106,9 @@ func create_set(set_name: String) -> bool:
 
 
 ## Rename a set, carrying its attributes over. Returns false when the new name
-## is taken or reserved.
+## is unusable, reserved or taken. See `create_set` for what unusable means.
 func rename_set(old_name: String, new_name: String) -> bool:
-	if new_name.is_empty() or new_name == RESERVED_SECTION or has_set(new_name):
+	if not new_name.is_valid_identifier() or new_name == RESERVED_SECTION or has_set(new_name):
 		return false
 	if not has_set(old_name):
 		return false
@@ -189,17 +211,25 @@ func put(set_name: String, key: String, value: Entry) -> void:
 	_save()
 
 
-## Add a new attribute. Returns false when the name is taken.
+## Add a new attribute. Returns false when the name is unusable or taken.
+##
+## The name is written into `@export var <name>: AttributeData`, so it has to be
+## something GDScript will accept.
 func add_attribute(set_name: String, key: String, value: Entry) -> bool:
-	if key.is_empty() or has_attribute(set_name, key):
+	if not key.is_valid_identifier() or has_attribute(set_name, key):
 		return false
 	put(set_name, key, value)
 	return true
 
 
-## Rename an attribute, keeping its value and icon. Returns false when taken.
+## Rename an attribute, keeping its value and icon. Returns false when the new
+## name is unusable, reserved or taken.
 func rename_attribute(set_name: String, old_key: String, new_key: String) -> bool:
-	if new_key.is_empty() or new_key == INITIALISED_KEY or has_attribute(set_name, new_key):
+	if (
+		not new_key.is_valid_identifier()
+		or new_key == INITIALISED_KEY
+		or has_attribute(set_name, new_key)
+	):
 		return false
 	if not has_attribute(set_name, old_key):
 		return false

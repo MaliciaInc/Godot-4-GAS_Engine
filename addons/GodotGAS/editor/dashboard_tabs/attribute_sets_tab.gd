@@ -19,6 +19,13 @@ const ICON_EDIT: String = "res://addons/GodotGAS/icons/godot_gas_icon_edit.svg"
 const DELETE_SET: String = "set"
 const DELETE_ATTRIBUTE: String = "attribute"
 const ACTION_FAILED: String = "Action Failed"
+
+## Why a name can be refused. The drafts answer with a bare bool, so rather
+## than guess at which reason applied - and tell the user the wrong one - the
+## message names all of them.
+const NAME_REFUSED: String = (
+	"'%s' cannot be used. A name must be taken by nothing else and be a valid identifier: letters, digits and underscores, not starting with a digit. It is written straight into the generated script, so anything else produces a file that does not parse."
+)
 const DEFAULT_ICON_NAME: String = AttributeIcons.DEFAULT_NAME
 
 ## Icon for Attribute Set categories.
@@ -240,7 +247,7 @@ func _on_set_tree_item_edited() -> void:
 		return
 
 	if not _drafts.rename_set(old_name, new_name):
-		_show_dialog(ACTION_FAILED, "'" + new_name + "' is taken or reserved.")
+		_show_dialog(ACTION_FAILED, NAME_REFUSED % new_name)
 		item.set_text(0, old_name)
 		return
 
@@ -265,7 +272,7 @@ func _on_create_set_pressed() -> void:
 		return
 
 	if not _drafts.create_set(set_name):
-		_show_dialog(ACTION_FAILED, "'" + set_name + "' is taken or reserved.")
+		_show_dialog(ACTION_FAILED, NAME_REFUSED % set_name)
 		return
 
 	_new_set_input.text = ""
@@ -360,7 +367,7 @@ func _rename_edited_attribute(item: TreeItem) -> void:
 		return
 
 	if not _drafts.rename_attribute(_current_set, old_name, new_name):
-		_show_dialog(ACTION_FAILED, "'" + new_name + "' already exists in this set.")
+		_show_dialog(ACTION_FAILED, NAME_REFUSED % new_name)
 		item.set_text(0, old_name)
 		return
 
@@ -388,7 +395,7 @@ func _on_add_attribute_pressed() -> void:
 	)
 
 	if not _drafts.add_attribute(_current_set, attribute_name, entry):
-		_show_dialog(ACTION_FAILED, "'" + attribute_name + "' already exists in this set.")
+		_show_dialog(ACTION_FAILED, NAME_REFUSED % attribute_name)
 		return
 
 	_new_attribute_input.text = ""
