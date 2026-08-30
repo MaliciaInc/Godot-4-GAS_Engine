@@ -12,6 +12,7 @@
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
+const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 
 const STATUS: StringName = &"Status"
 const STUNNED: StringName = &"Status.Stunned"
@@ -136,6 +137,66 @@ func test_removing_an_absent_tag_is_harmless() -> void:
 	watch_signals(asc)
 	asc.remove_tag(STUNNED)
 	assert_signal_not_emitted(asc, "tag_removed", "nothing to announce")
+#endregion
+
+
+#region How much longer a tag lasts
+## A timed effect answers in seconds.
+func test_a_timed_tag_reports_the_seconds_it_has_left() -> void:
+	Factory.apply(asc, Factory.granting(Factory.duration([], 5.0), [STUNNED] as Array[StringName]))
+	assert_almost_eq(asc.get_tag_duration_remaining(STUNNED), 5.0, 0.0001)
+
+	asc.scheduler.advance_time(2.0)
+	assert_almost_eq(asc.get_tag_duration_remaining(STUNNED), 3.0, 0.0001, "and it counts down")
+
+
+func test_a_tag_nothing_grants_has_no_time_left() -> void:
+	assert_almost_eq(asc.get_tag_duration_remaining(STUNNED), 0.0, 0.0001)
+
+
+## A permanent tag lasts forever, and forever is not zero.
+##
+## time_remaining is only ever set for a DURATION effect, so an INFINITE one
+## granting the tag left it at 0.0 and this reported that a cooldown with no end
+## had already ended - the exact opposite of the truth, to the one caller the
+## function exists for.
+func test_a_permanent_tag_reports_that_it_never_ends() -> void:
+	Factory.apply(asc, Factory.granting(Factory.infinite([]), [STUNNED] as Array[StringName]))
+	assert_true(
+		is_inf(asc.get_tag_duration_remaining(STUNNED)),
+		"an infinite effect grants it, so there is no second at which it runs out"
+	)
+
+
+## The longest wins, and an endless one is longer than any number.
+func test_the_longest_grant_is_the_one_reported() -> void:
+	Factory.apply(asc, Factory.granting(Factory.duration([], 2.0), [STUNNED] as Array[StringName]))
+	Factory.apply(asc, Factory.granting(Factory.duration([], 9.0), [STUNNED] as Array[StringName]))
+	assert_almost_eq(asc.get_tag_duration_remaining(STUNNED), 9.0, 0.0001)
+
+	Factory.apply(asc, Factory.granting(Factory.infinite([]), [STUNNED] as Array[StringName]))
+	assert_true(is_inf(asc.get_tag_duration_remaining(STUNNED)), "endless outlasts nine seconds")
+
+
+## Turns are not seconds, and answering one with the other is how a UI shows
+## "0s" over an effect that has three turns to run.
+func test_a_turn_based_tag_is_counted_in_turns_not_seconds() -> void:
+	Factory.apply(
+		asc, Factory.granting(Factory.turn_based([], 3), [STUNNED] as Array[StringName])
+	)
+	assert_eq(asc.get_tag_turns_remaining(STUNNED), 3, "three turns")
+	assert_almost_eq(
+		asc.get_tag_duration_remaining(STUNNED), 0.0, 0.0001,
+		"and no seconds, because it does not run on a clock"
+	)
+
+	asc.advance_turn()
+	assert_eq(asc.get_tag_turns_remaining(STUNNED), 2, "and it counts down in turns")
+
+
+func test_a_timed_tag_has_no_turns() -> void:
+	Factory.apply(asc, Factory.granting(Factory.duration([], 5.0), [STUNNED] as Array[StringName]))
+	assert_eq(asc.get_tag_turns_remaining(STUNNED), 0)
 #endregion
 
 

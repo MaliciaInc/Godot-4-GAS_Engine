@@ -24,6 +24,13 @@ const CUES_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas_cues.svg"
 const NO_SCENE_SELECTED: String = "No Scene Selected"
 const SELECT_TAG_PROMPT: String = "Select Tag..."
 
+## Shown when the user acts on a registry the project does not have. A fresh
+## checkout has none, so this is reachable the first time the dashboard opens.
+const NO_REGISTRY_TITLE: String = "No Cue Registry"
+const NO_REGISTRY_MESSAGE: String = (
+	"This project has no cue registry yet, so there is nowhere to store the mapping. Create one before adding cues."
+)
+
 ## Colours and styleboxes, shared with the other dashboard tabs.
 var _theme: DashboardTheme = DashboardTheme.new()
 
@@ -299,6 +306,12 @@ func _on_tag_dialog_confirmed() -> void:
 #region CRUD Logic
 ## Commits the drafted mapping (tag + scene) into the cue registry.
 func _on_add_mapping_pressed() -> void:
+	if _registry == null:
+		# The form fills in without a registry, so this is the one path a user can
+		# reach with nothing to write to. Told in a dialog rather than the console,
+		# because they pressed a button and are waiting for an answer.
+		DashboardDialogs.show_message(self, NO_REGISTRY_MESSAGE, NO_REGISTRY_TITLE)
+		return
 	if _draft_tag == "" or _draft_scene == null:
 		push_warning("GodotGAS: Must select both a Tag and a Scene.")
 		return
@@ -328,6 +341,8 @@ func _on_add_mapping_pressed() -> void:
 
 ## Sets up the form fields to edit an existing cue mapping.
 func _on_edit_pressed(index: int) -> void:
+	if _registry == null:
+		return
 	_editing_index = index
 	var entry: GameplayCueEntry = _registry.entries[index]
 	
@@ -346,6 +361,8 @@ func _on_edit_pressed(index: int) -> void:
 
 ## Prepares the deletion confirmation dialog for a specific row.
 func _on_delete_pressed(index: int) -> void:
+	if _registry == null:
+		return
 	_delete_index = index
 	var entry: GameplayCueEntry = _registry.entries[index]
 	
@@ -356,6 +373,8 @@ func _on_delete_pressed(index: int) -> void:
 
 ## Global routing function that fires after the delete confirm dialog is accepted.
 func _execute_delete() -> void:
+	if _registry == null:
+		return
 	if _delete_index < 0 or _delete_index >= _registry.entries.size():
 		return
 		

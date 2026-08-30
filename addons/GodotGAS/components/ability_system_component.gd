@@ -375,8 +375,15 @@ func has_all_tags(query: Array[StringName]) -> bool:
 	return tags.has_all(query)
 
 
+## Seconds left on a tag, or INF when something grants it with no end.
 func get_tag_duration_remaining(tag: StringName) -> float:
 	return effects.tag_duration_remaining(tag)
+
+
+## Turns left on a tag. Seconds and turns are different units and get different
+## questions, so a UI cannot count a turn-based debuff down in seconds.
+func get_tag_turns_remaining(tag: StringName) -> int:
+	return effects.tag_turns_remaining(tag)
 #endregion
 
 

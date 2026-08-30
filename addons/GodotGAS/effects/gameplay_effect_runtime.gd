@@ -52,13 +52,42 @@ func active_count() -> int:
 	return _active.size()
 
 
-## The longest remaining duration among effects granting a tag, for a cooldown
-## sweep in the UI.
+## The longest remaining duration among effects granting a tag, in seconds, for
+## a cooldown sweep in the UI.
+##
+## INF when something grants it with no end. `time_remaining` is only ever set
+## for a DURATION effect, so an INFINITE one used to leave this at 0.0 and the
+## sweep read a cooldown that never expires as one that already had.
+##
+## Turn-based effects are not counted: their clock runs in turns, and answering
+## a question about seconds with a number of turns is worse than answering 0.
+## Ask `tag_turns_remaining` for those.
 func tag_duration_remaining(tag: StringName) -> float:
 	var longest: float = 0.0
 	for effect: ActiveGameplayEffect in _active:
-		if effect.granted_tags.has(tag) and effect.time_remaining > longest:
+		if not effect.granted_tags.has(tag):
+			continue
+		var policy: GameplayEffect.DurationPolicy = effect.get_effect_def().policy
+		if policy == GameplayEffect.DurationPolicy.INFINITE:
+			return INF
+		if policy == GameplayEffect.DurationPolicy.DURATION and effect.time_remaining > longest:
 			longest = effect.time_remaining
+	return longest
+
+
+## The most turns left among turn-based effects granting a tag.
+##
+## The counterpart to `tag_duration_remaining`, and separate from it because
+## turns and seconds are different units: a UI that mixed them would count down
+## a three-turn debuff in seconds.
+func tag_turns_remaining(tag: StringName) -> int:
+	var longest: int = 0
+	for effect: ActiveGameplayEffect in _active:
+		if not effect.granted_tags.has(tag) or effect.spec == null:
+			continue
+		if effect.get_effect_def().policy != GameplayEffect.DurationPolicy.TURN_BASED:
+			continue
+		longest = maxi(longest, effect.spec.remaining_turns)
 	return longest
 #endregion
 
