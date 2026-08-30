@@ -28,6 +28,11 @@ var succeeds: bool = true
 ## also how a real channelled ability works.
 var channels: bool = false
 
+## Set true to pay the cost and start the cooldowns, which is what a real
+## ability does the moment it is committed. Off by default so a test that
+## only cares about routing does not have to arrange resources.
+var commits: bool = false
+
 
 static func build(tag: StringName) -> ProbeAbility:
 	var probe: ProbeAbility = ProbeAbility.new()
@@ -38,6 +43,8 @@ static func build(tag: StringName) -> ProbeAbility:
 
 func _activate_ability() -> bool:
 	activations += 1
+	if commits:
+		commit_ability()
 	if channels:
 		await channel_gate
 	return succeeds
