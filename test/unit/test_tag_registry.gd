@@ -118,6 +118,47 @@ func test_removing_an_absent_tag_changes_nothing() -> void:
 #endregion
 
 
+#region One grammar, shared
+## The static validator and `add_tag` judge by the same grammar.
+##
+## They used to hold separate compiled expressions, which is how two parts of a
+## project end up disagreeing about what a tag is.
+func test_the_static_validator_agrees_with_what_add_tag_accepts() -> void:
+	assert_true(GameplayTagRegistry.is_valid_tag_string("Status.Stunned"), "a legal tag")
+	assert_false(
+		registry.add_tag("Status.Stunned").begins_with(GameplayTagRegistry.ERROR_PREFIX),
+		"and add_tag takes it"
+	)
+
+	assert_false(
+		GameplayTagRegistry.is_valid_tag_string("Status..Stunned"),
+		"a double dot is not"
+	)
+	assert_true(
+		registry.add_tag("Status..Stunned").begins_with(GameplayTagRegistry.ERROR_PREFIX),
+		"and add_tag refuses it too"
+	)
+
+
+## The validator judges what it was handed. It does not repair.
+##
+## `add_tag` formats first, so a designer who typed lowercase gets the tag they
+## meant. A message arriving from outside the project was not typed by a
+## designer, and repairing it would let the sender believe it had addressed a
+## tag it never actually named.
+func test_the_static_validator_does_not_repair_what_format_tag_would() -> void:
+	assert_eq(
+		registry.format_tag("status.stunned"),
+		"Status.Stunned",
+		"formatting would happily fix it"
+	)
+	assert_false(
+		GameplayTagRegistry.is_valid_tag_string("status.stunned"),
+		"but the validator refuses it exactly as written"
+	)
+#endregion
+
+
 #region Generating the constants file
 ## The renderer is pure, so what it would write can be asked without writing.
 func test_the_rendered_source_carries_the_constants_it_was_given() -> void:

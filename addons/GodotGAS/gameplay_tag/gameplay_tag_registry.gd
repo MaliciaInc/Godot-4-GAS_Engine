@@ -27,7 +27,13 @@ const SAVE_FAILED: String = "GodotGAS: could not save the tag registry to %s."
 
 @export var tags: Array[StringName] = []
 
-var _validator: RegEx = null
+## Compiled once for the whole class, not once per registry.
+##
+## The grammar has one owner, and everything that validates a tag - the
+## registry itself, and the Dialogic bridge parsing a message from outside -
+## asks the same compiled expression. A second copy of the pattern is how two
+## parts of a project end up disagreeing about what a tag is.
+static var _shared_validator: RegEx = null
 
 
 #region Tag Management
@@ -82,11 +88,26 @@ func format_tag(tag_string: String) -> String:
 	return SEGMENT_SEPARATOR.join(formatted_parts)
 
 
+static func _tag_validator() -> RegEx:
+	if _shared_validator == null:
+		_shared_validator = RegEx.new()
+		var compile_error: Error = _shared_validator.compile(TAG_PATTERN)
+		assert(compile_error == OK, "GameplayTagRegistry TAG_PATTERN must compile")
+	return _shared_validator
+
+
+## Whether this string is already a legal tag, exactly as written.
+##
+## Validates without repairing. `add_tag` formats first and then checks, which
+## is right for something a designer typed; a message arriving from outside the
+## project is not typed by a designer, and silently correcting it would let a
+## sender believe it addressed a tag it did not.
+static func is_valid_tag_string(candidate: String) -> bool:
+	return _tag_validator().search(candidate) != null
+
+
 func _matches_tag_grammar(candidate: String) -> bool:
-	if _validator == null:
-		_validator = RegEx.new()
-		_validator.compile(TAG_PATTERN)
-	return _validator.search(candidate) != null
+	return is_valid_tag_string(candidate)
 
 
 func _compare_tags(left: StringName, right: StringName) -> bool:
