@@ -1,0 +1,279 @@
+# Duplication Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 78
+- Blocking findings: 0
+- Scan issues: 0
+- Units scanned: 276
+- Units by language: gdscript 256, powershell 4, python 16
+- Findings: 250
+- Elapsed: 0.556s
+- Explicit default exclusions: tooling/gates/**
+- Shape-only pairs not counted: 0 (identifier overlap < 0.55 or fewer than 3 identifiers)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 194 (raise with --max-pairs)
+
+## Structural
+
+- None
+
+## Masked
+
+- None
+
+## Behavioral
+
+- 1.000 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 1.000 [executable]: `test/fixtures/test_effect_factory.gd:84-92:turn_based` <-> `test/unit/test_attribute_evaluation.gd:58-65:_request`
+- 1.000 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent`
+- 1.000 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_target_data.gd:210-217:test_mutating_what_was_handed_out_does_not_reach_the_collector`
+- 1.000 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source`
+- 1.000 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes`
+- 1.000 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing`
+- 1.000 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 1.000 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 1.000 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 1.000 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 1.000 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 0.950 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent`
+- 0.947 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks`
+- 0.947 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source`
+- 0.947 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.941 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff`
+- 0.941 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 0.941 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.941 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.941 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.938 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_periodic_effects.gd:168-176:test_a_turn_based_periodic_ticks_once_per_turn`
+- 0.935 [executable]: `addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:222-257:_build_body`
+- 0.929 [executable]: `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:226-248:recompose` <-> `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write`
+- 0.929 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation`
+- 0.929 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes`
+- 0.923 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent`
+- 0.923 [executable]: `test/unit/test_attribute_aggregation.gd:86-103:test_dividing_by_zero_refuses_the_whole_application` <-> `test/unit/test_effect_lifecycle.gd:157-176:test_refreshing_replaces_the_snapshot_and_keeps_one_instance`
+- 0.917 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator`
+- 0.900 [executable]: `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:126-146:evaluate` <-> `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write`
+- 0.900 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/fixtures/test_effect_factory.gd:84-92:turn_based`
+- 0.900 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/unit/test_attribute_evaluation.gd:58-65:_request`
+- 0.900 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
+- 0.900 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent`
+- 0.900 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_target_data.gd:193-203:test_removing_a_target_removes_its_hits_too`
+- 0.900 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:229-237:_on_select_tag_pressed` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init`
+- 0.897 [executable]: `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:126-146:evaluate` <-> `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:226-248:recompose`
+- 0.895 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts`
+- 0.895 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.889 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/fixtures/test_attribute_set.gd:33-40:_init`
+- 0.889 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/fixtures/test_effect_factory.gd:49-56:duration`
+- 0.889 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.889 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff`
+- 0.889 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 0.889 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.889 [fixture_data]: `test/fixtures/test_effect_factory.gd:14-21:modifier` <-> `test/fixtures/test_effect_factory.gd:49-56:duration`
+- 0.889 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original`
+- 0.889 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.889 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.889 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.889 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.889 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.889 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.889 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original`
+- 0.882 [executable]: `addons/GodotGAS/effects/gameplay_effect_runtime.gd:367-379:run_periodic_tick` <-> `addons/GodotGAS/godot_gas_plugin.gd:110-118:_seed_tag_registry`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_periodic_effects.gd:181-192:test_a_periodic_effect_contributes_nothing_to_the_aggregator`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 0.882 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs`
+- 0.882 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing`
+- 0.882 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 0.882 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.882 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_periodic_effects.gd:181-192:test_a_periodic_effect_contributes_nothing_to_the_aggregator`
+- 0.875 [executable]: `addons/GodotGAS/editor/dashboard_dialogs.gd:18-26:show_message` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:178-187:_sync_theme_colors`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied`
+- 0.875 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit`
+- 0.875 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work`
+- 0.875 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent`
+- 0.875 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_target_data.gd:210-217:test_mutating_what_was_handed_out_does_not_reach_the_collector`
+- 0.875 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit`
+- 0.875 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_gameplay_events.gd:130-142:test_a_listener_granted_during_dispatch_does_not_receive_this_event`
+- 0.875 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent`
+- 0.875 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_target_data.gd:210-217:test_mutating_what_was_handed_out_does_not_reach_the_collector`
+- 0.875 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work`
+- 0.870 [executable]: `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:139-154:_on_add_tag_pressed` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:346-361:_on_add_custom_tag`
+- 0.867 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals`
+- 0.867 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit`
+- 0.867 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_gameplay_events.gd:130-142:test_a_listener_granted_during_dispatch_does_not_receive_this_event`
+- 0.867 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_cost_preview.gd:46-54:test_a_temporary_buff_does_not_subsidise_a_durable_cost`
+- 0.867 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation`
+- 0.867 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes`
+- 0.867 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.857 [executable]: `addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes` <-> `test/fixtures/asc_fixture.gd:28-45:create`
+- 0.857 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_target_data.gd:193-203:test_removing_a_target_removes_its_hits_too`
+- 0.850 [executable]: `addons/GodotGAS/effects/gameplay_effect_evaluator.gd:123-131:_modifier_attribute_names` <-> `addons/GodotGAS/effects/gameplay_effect_runtime.gd:83-91:tag_turns_remaining`
+- 0.850 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.850 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts`
+- 0.850 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.846 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd:76-84:_matches_one` <-> `test/unit/test_attribute_aggregation.gd:167-176:_modifier`
+- 0.846 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound`
+- 0.846 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.846 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition`
+- 0.846 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_effect_pipeline.gd:168-180:test_a_refusal_reports_its_typed_reason`
+- 0.846 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_periodic_effects.gd:195-203:test_removing_a_periodic_effect_does_not_undo_its_ticks`
+- 0.846 [executable]: `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes` <-> `test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition`
+- 0.846 [executable]: `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes` <-> `test/unit/test_effect_pipeline.gd:168-180:test_a_refusal_reports_its_typed_reason`
+- 0.842 [executable]: `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:313-324:stage_base_write` <-> `addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base`
+- 0.842 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row`
+- 0.842 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.842 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.842 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.842 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:298-306:_refresh_attribute_tree` <-> `addons/GodotGAS/effects/gameplay_effect_runtime.gd:367-379:run_periodic_tick`
+- 0.842 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.842 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.842 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff`
+- 0.842 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back`
+- 0.842 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution`
+- 0.842 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator`
+- 0.842 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source`
+- 0.842 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source`
+- 0.842 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator`
+- 0.839 [executable]: `addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write` <-> `addons/GodotGAS/components/ability_system_component.gd:324-345:can_afford_cost`
+- 0.833 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue` <-> `addons/GodotGAS/editor/attribute_set_drafts.gd:243-252:duplicate_attribute`
+- 0.833 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone`
+- 0.833 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing`
+- 0.833 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 0.833 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:101-111:_ready` <-> `test/unit/test_target_data.gd:96-111:test_a_hit_without_a_collider_node_is_refused`
+- 0.833 [executable]: `addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate` <-> `test/fixtures/test_effect_factory.gd:84-92:turn_based`
+- 0.833 [executable]: `addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate` <-> `test/unit/test_attribute_evaluation.gd:58-65:_request`
+- 0.833 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init` <-> `test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said` <-> `test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said` <-> `test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said` <-> `test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said` <-> `test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal`
+- 0.833 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound`
+- 0.833 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.833 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.833 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.833 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.824 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:178-187:_sync_theme_colors`
+- 0.824 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release`
+- 0.824 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent`
+- 0.824 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_target_data.gd:210-217:test_mutating_what_was_handed_out_does_not_reach_the_collector`
+- 0.824 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:212-227:_on_set_tree_button_clicked` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:323-339:_on_attribute_tree_button_clicked`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another`
+- 0.824 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_gameplay_events.gd:98-109:test_the_payload_arrives_intact`
+- 0.824 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused`
+- 0.824 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied`
+- 0.824 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket`
+- 0.824 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another`
+- 0.818 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:229-237:_on_select_tag_pressed` <-> `test/unit/test_randomized_regression.gd:36-43:before_each`
+- 0.818 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init` <-> `test/unit/test_gameplay_cues.gd:119-127:test_a_finished_cue_forgets_its_parameters`
+- 0.818 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init` <-> `test/unit/test_gameplay_cues.gd:151-160:test_a_bucket_will_not_hold_the_same_cue_twice`
+- 0.818 [executable]: `test/fixtures/test_effect_factory.gd:84-92:turn_based` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
+- 0.818 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_effect_pipeline.gd:194-201:test_an_effect_that_changes_nothing_emits_no_attribute_signal`
+- 0.818 [executable]: `test/unit/test_attribute_evaluation.gd:58-65:_request` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
+- 0.816 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:129-170:_setup_ui` <-> `test/unit/test_effect_pipeline.gd:142-165:test_a_failed_multi_attribute_effect_changes_nothing_at_all`
+- 0.812 [executable]: `addons/GodotGAS/abilities/gameplay_ability.gd:181-189:get_cooldown_tags` <-> `addons/GodotGAS/editor/attribute_set_drafts.gd:158-165:attribute_names`
+- 0.812 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue` <-> `addons/GodotGAS/editor/dashboard_dialogs.gd:18-26:show_message`
+- 0.812 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:342-349:_on_icon_popup_id_pressed`
+- 0.812 [executable]: `addons/GodotGAS/editor/cue_row.gd:63-80:_label_column` <-> `test/fixtures/asc_fixture.gd:28-45:create`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another`
+- 0.812 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford`
+- 0.812 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals`
+- 0.812 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit`
+- 0.812 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_cost_preview.gd:46-54:test_a_temporary_buff_does_not_subsidise_a_durable_cost`
+- 0.812 [executable]: `test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford` <-> `test/unit/test_periodic_effects.gd:76-85:test_a_long_frame_pays_every_tick_it_owes`
+- 0.812 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition`
+- 0.812 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.812 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation`
+- 0.812 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes`
+- 0.812 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.812 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition`
+- 0.810 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator`
+- 0.800 [executable]: `addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes` <-> `addons/GodotGAS/editor/cue_row.gd:63-80:_label_column`
+- 0.800 [executable]: `addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target` <-> `test/fixtures/test_effect_factory.gd:14-21:modifier`
+- 0.800 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks`
+- 0.800 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source`
+- 0.800 [executable]: `addons/GodotGAS/editor/cue_row.gd:35-53:build` <-> `test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs`
+- 0.800 [executable]: `addons/GodotGAS/editor/cue_row.gd:63-80:_label_column` <-> `addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate`
+- 0.800 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.800 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.800 [executable]: `addons/GodotGAS/editor/theme/dashboard_theme.gd:220-242:recoloured_icon` <-> `addons/GodotGAS/effects/gameplay_effect_runtime.gd:207-241:_try_refresh`
+- 0.800 [executable]: `addons/GodotGAS/effects/gameplay_effect_evaluator.gd:94-117:_stage_execution_deltas` <-> `addons/GodotGAS/effects/gameplay_effect_evaluator.gd:186-207:_stage_modifier_base_mutations`
+- 0.800 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init` <-> `test/unit/test_gameplay_cues.gd:65-72:test_an_absent_location_is_distinguishable_from_the_origin`
+- 0.800 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press`
+- 0.800 [executable]: `test/fixtures/asc_fixture.gd:28-45:create` <-> `test/unit/test_ability_input.gd:100-111:_slot_cases`
+- 0.800 [fixture_data]: `test/fixtures/test_attribute_set.gd:33-40:_init` <-> `test/fixtures/test_effect_factory.gd:84-92:turn_based`
+- 0.800 [executable]: `test/fixtures/test_attribute_set.gd:33-40:_init` <-> `test/unit/test_attribute_evaluation.gd:58-65:_request`
+- 0.800 [executable]: `test/fixtures/test_attribute_set.gd:33-40:_init` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
+- 0.800 [fixture_data]: `test/fixtures/test_effect_factory.gd:49-56:duration` <-> `test/fixtures/test_effect_factory.gd:84-92:turn_based`
+- 0.800 [executable]: `test/fixtures/test_effect_factory.gd:49-56:duration` <-> `test/unit/test_attribute_evaluation.gd:58-65:_request`
+- 0.800 [executable]: `test/fixtures/test_effect_factory.gd:49-56:duration` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
+- 0.800 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.800 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.800 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs`
+- 0.800 [executable]: `test/unit/test_attribute_aggregation.gd:190-220:test_removing_either_contribution_recomposes_correctly` <-> `test/unit/test_effect_lifecycle.gd:157-176:test_refreshing_replaces_the_snapshot_and_keeps_one_instance`
+- 0.800 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent`
+- 0.800 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_target_data.gd:193-203:test_removing_a_target_removes_its_hits_too`
+- 0.800 [executable]: `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals` <-> `test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent`
+- 0.800 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent`
+- 0.800 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_target_data.gd:193-203:test_removing_a_target_removes_its_hits_too`
+- 0.794 [executable]: `addons/GodotGAS/components/ability_system_component.gd:324-345:can_afford_cost` <-> `addons/GodotGAS/effects/gameplay_effect_evaluator.gd:94-117:_stage_execution_deltas`
+- 0.793 [executable]: `test/unit/test_attribute_aggregation.gd:86-103:test_dividing_by_zero_refuses_the_whole_application` <-> `test/unit/test_attribute_aggregation.gd:190-220:test_removing_either_contribution_recomposes_correctly`
+- 0.792 [executable]: `addons/GodotGAS/editor/attribute_set_drafts.gd:110-119:rename_set` <-> `addons/GodotGAS/editor/attribute_set_drafts.gd:227-239:rename_attribute`
+- 0.792 [executable]: `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:97-114:_refresh_tag_tree` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:264-279:_refresh_tree`
+- 0.789 [executable]: `addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base` <-> `addons/GodotGAS/components/ability_system_component.gd:288-295:apply_gameplay_effect`
+- 0.789 [executable]: `addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base` <-> `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:292-302:_on_tag_dialog_confirmed`
+- 0.789 [executable]: `addons/GodotGAS/components/ability_system_component.gd:288-295:apply_gameplay_effect` <-> `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:292-302:_on_tag_dialog_confirmed`
+- 0.789 [executable]: `addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write` <-> `test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing`
+- 0.789 [executable]: `addons/GodotGAS/editor/cue_row.gd:35-53:build` <-> `test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals`
+- 0.789 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone`
+- 0.789 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing`
+- 0.789 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row` <-> `test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes`
+- 0.789 [executable]: `test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said` <-> `test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs`
+- 0.789 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.789 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.789 [executable]: `test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.789 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts`
+- 0.789 [executable]: `test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff` <-> `test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original`
+- 0.789 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts`
+- 0.789 [executable]: `test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back` <-> `test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original`
+- 0.789 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently`
+- 0.789 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it`
+- 0.789 [executable]: `test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing` <-> `test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable`
+- 0.786 [executable]: `addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes` <-> `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:392-402:_reset_form`
+- 0.786 [executable]: `addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes` <-> `test/unit/test_ability_input.gd:100-111:_slot_cases`
+- 0.786 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:392-402:_reset_form` <-> `addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate`
+- 0.786 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree` <-> `test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release` <-> `test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press` <-> `test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound` <-> `test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_effect_pipeline.gd:114-122:test_an_instant_effect_registers_nothing_and_grants_no_tag`
+- 0.786 [executable]: `test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused` <-> `test/unit/test_periodic_effects.gd:76-85:test_a_long_frame_pays_every_tick_it_owes`
+- 0.786 [executable]: `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes` <-> `test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work`
+- 0.786 [executable]: `test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes` <-> `test/unit/test_effect_pipeline.gd:114-122:test_an_instant_effect_registers_nothing_and_grants_no_tag`
+- 0.786 [executable]: `test/unit/test_attribute_evaluation.gd:89-96:test_a_staged_mutation_reports_requested_against_committed` <-> `test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator`
+- 0.783 [executable]: `addons/GodotGAS/editor/cue_row.gd:35-53:build` <-> `test/unit/test_spec_isolation.gd:99-116:test_mutating_one_target_runtime_state_leaves_the_other_alone`
+- 0.783 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:375-388:_execute_delete` <-> `addons/GodotGAS/editor/theme/dashboard_theme.gd:142-151:_classify`
+- 0.783 [executable]: `test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks` <-> `test/unit/test_spec_isolation.gd:99-116:test_mutating_one_target_runtime_state_leaves_the_other_alone`
+
+## Scan Issues
+
+- None

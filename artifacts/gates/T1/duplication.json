@@ -1,0 +1,1758 @@
+{
+  "units": 548,
+  "units_by_language": "gdscript 544, powershell 4",
+  "elapsed_seconds": 1.7989944000000833,
+  "scan_issues": [],
+  "shape_only_pairs": 1,
+  "suppressed": {
+    "structural": 0,
+    "masked": 0,
+    "behavioral": 0
+  },
+  "blocking": 19,
+  "findings": [
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:172-182:wait_until",
+      "right": "addons/gut/awaiter.gd:185-195:wait_while",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:124-182:_setup_ui",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:130-177:_on_button_pressed",
+      "score": 0.9782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/summary.gd:204-220:log_end_run",
+      "right": "addons/gut/utils.gd:245-257:create_script_from_source",
+      "score": 0.95,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file",
+      "right": "addons/gut/gui/ShortcutDialog.gd:106-119:load_shortcuts_from_file",
+      "score": 0.9473684210526315,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:1085-1096:assert_between",
+      "right": "addons/gut/test.gd:1113-1124:assert_not_between",
+      "score": 0.9459459459459459,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "right": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "score": 0.9375,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_config.gd:174-184:write_options",
+      "right": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "score": 0.9375,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_config.gd:174-184:write_options",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 0.9375,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:1946-1965:assert_called",
+      "right": "addons/gut/test.gd:1986-2005:assert_not_called",
+      "score": 0.9375,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/managers/gameplay_cue_manager.gd:97-107:_on_cue_finished",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir",
+      "score": 0.9333333333333333,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "score": 0.9333333333333333,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 0.9333333333333333,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.9333333333333333,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/junit_xml_export.gd:34-52:_export_tests",
+      "right": "addons/gut/junit_xml_export.gd:64-80:_export_scripts",
+      "score": 0.9310344827586207,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/diff_tool.gd:134-144:summarize",
+      "score": 0.9285714285714286,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls",
+      "right": "addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls",
+      "score": 0.9285714285714286,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:172-182:wait_until",
+      "right": "addons/gut/gui/RunAtCursor.gd:46-58:_ready",
+      "score": 0.9230769230769231,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:185-195:wait_while",
+      "right": "addons/gut/gui/RunAtCursor.gd:46-58:_ready",
+      "score": 0.9230769230769231,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/spy.gd:45-52:add_call",
+      "right": "addons/gut/stubs.gd:63-72:add_stub",
+      "score": 0.9230769230769231,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:224-271:_sync_theme_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:186-234:_sync_theme_colors",
+      "score": 0.9178082191780822,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings",
+      "right": "addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally",
+      "score": 0.9090909090909091,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:179-188:_create_script_no_warnings",
+      "right": "addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally",
+      "score": 0.9090909090909091,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally",
+      "right": "addons/gut/gut_plugin.gd:109-120:gut_as_panel",
+      "score": 0.9090909090909091,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>",
+      "right": "addons/gut/result_exporter.gd:77-100:get_results_dictionary",
+      "score": 0.90625,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:1809-1818:assert_typeof",
+      "right": "addons/gut/test.gd:1822-1831:assert_not_typeof",
+      "score": 0.9047619047619048,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/gut_logo.gd:37-45:GutEyeball._init",
+      "right": "addons/gut/gui/option_maker.gd:94-101:add_blurb",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:258-270:run_tests",
+      "right": "addons/gut/gui/GutRunner.gd:148-159:run_from_editor",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:241-257:_load_result_tree",
+      "right": "addons/gut/input_sender.gd:326-337:_on_queue_item_ready",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_config.gd:174-184:write_options",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/spy.gd:15-24:_find_parameters",
+      "right": "addons/gut/test_collector.gd:141-149:has_script",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/gut_config.gd:174-184:write_options",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/collected_script.gd:113-123:import_from",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:242-260:_apply_shortcuts",
+      "right": "addons/gut/gui/OutputText.gd:124-141:_ready",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/gut_config.gd:174-184:write_options",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:106-121:_test_running_setup",
+      "right": "addons/gut/gui/ShortcutDialog.gd:25-35:_debug_ready",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/input_sender.gd:209-219:_init",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:1880-1894:assert_string_starts_with",
+      "right": "addons/gut/test.gd:1909-1924:assert_string_ends_with",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:124-141:_ready",
+      "right": "addons/gut/utils.gd:245-257:create_script_from_source",
+      "score": 0.8695652173913043,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/collected_script.gd:113-123:import_from",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:637-645:parse",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/collected_script.gd:113-123:import_from",
+      "right": "addons/gut/input_sender.gd:209-219:_init",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/doubler.gd:81-92:_stub_to_call_super",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:60-67:_draw",
+      "right": "addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:318-378:_build_tag_tree",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:186-238:_refresh_tag_tree",
+      "score": 0.8625,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/GutScene.gd:38-47:_set_gut",
+      "right": "addons/gut/gui/gut_gui.gd:192-206:set_gut",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/gut.gd:273-283:_init",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/collected_script.gd:113-123:import_from",
+      "right": "addons/gut/gut.gd:273-283:_init",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:99-108:GpcString._init",
+      "right": "addons/gut/gut_to_move.gd:41-48:is_file_empty",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/junit_xml_export.gd:103-111:write_file",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "right": "addons/gut/gui/gut_gui.gd:39-55:_ready",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "right": "addons/gut/gui/gut_gui.gd:39-55:_ready",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file",
+      "right": "addons/gut/gui/check_for_update.gd:109-118:_on_update_detector_updated",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/orphan_counter.gd:38-50:GutOrphanage.process_orphans",
+      "right": "addons/gut/result_exporter.gd:37-55:_export_scripts",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:124-182:_setup_ui",
+      "right": "addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready",
+      "score": 0.8478260869565217,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:92-102:_ready",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd:69-76:remove_tag",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings",
+      "right": "addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/test.gd:290-297:_create_obj_from_type",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:69-84:_find_differences",
+      "right": "addons/gut/script_parser.gd:301-313:_get_instance_id",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item",
+      "right": "addons/gut/test_collector.gd:33-48:_populate_tests",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/RunAtCursor.gd:46-58:_ready",
+      "right": "addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init",
+      "right": "addons/gut/gut_plugin.gd:109-120:gut_as_panel",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init",
+      "right": "addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:273-283:_init",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:207-225:_print_gutconfigs",
+      "right": "addons/gut/signal_watcher.gd:207-218:print_signal_summary",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "right": "addons/gut/summary.gd:204-220:log_end_run",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:154-164:_reorder_dir_items",
+      "right": "addons/gut/orphan_counter.gd:171-191:log_all",
+      "score": 0.84,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:132-145:_init_project_settings_registry_cue",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings",
+      "right": "addons/gut/doubler.gd:179-188:_create_script_no_warnings",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings",
+      "right": "addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings",
+      "right": "addons/gut/gut_plugin.gd:109-120:gut_as_panel",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/change_project_warnings.gd:72-87:_apply_settings",
+      "right": "addons/gut/gui/GutControl.gd:60-67:_draw",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:179-188:_create_script_no_warnings",
+      "right": "addons/gut/gut_plugin.gd:109-120:gut_as_panel",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:134-144:_add_assert_item",
+      "right": "addons/gut/gut.gd:471-480:_end_run",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button",
+      "right": "addons/gut/gui/option_maker.gd:94-101:add_blurb",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShortcutDialog.gd:38-52:_ready",
+      "right": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:188-199:GpcSelect._init",
+      "right": "addons/gut/test.gd:720-735:run_x_times",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "right": "addons/gut/test_collector.gd:152-161:export_tests",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "right": "addons/gut/test_collector.gd:152-161:export_tests",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method",
+      "right": "addons/gut/test.gd:1579-1586:assert_signal_not_emitted",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:277-291:OptParseOptions.get_help_text",
+      "right": "addons/gut/error_tracker.gd:151-165:get_fail_text_for_errors",
+      "score": 0.8275862068965517,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:130-177:_on_button_pressed",
+      "right": "addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready",
+      "score": 0.8260869565217391,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:124-141:_ready",
+      "right": "addons/gut/summary.gd:204-220:log_end_run",
+      "score": 0.8260869565217391,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResizeHandle.gd:76-88:_handle_right_input",
+      "right": "addons/gut/gui/ResizeHandle.gd:91-107:_handle_left_input",
+      "score": 0.8260869565217391,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init",
+      "right": "addons/gut/gui/panel_controls.gd:386-409:GpcSaveLoad._init",
+      "score": 0.8260869565217391,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/GutScene.gd:16-29:_ready",
+      "right": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:284-295:_parse_script",
+      "right": "addons/gut/test.gd:1048-1056:assert_true",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:284-295:_parse_script",
+      "right": "addons/gut/test.gd:1061-1069:assert_false",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:284-295:_parse_script",
+      "right": "addons/gut/test.gd:1579-1586:assert_signal_not_emitted",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:95-130:_get_base_script_text",
+      "right": "addons/gut/doubler.gd:133-167:_get_singleton_text",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:258-270:run_tests",
+      "right": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:60-67:_draw",
+      "right": "addons/gut/signal_watcher.gd:57-66:_add_watched_signal",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:148-159:run_from_editor",
+      "right": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_to_move.gd:41-48:is_file_empty",
+      "right": "addons/gut/orphan_counter.gd:155-164:get_orphan_ids",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/stubs.gd:75-83:get_all_stubs",
+      "right": "addons/gut/test.gd:720-735:run_x_times",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/stubs.gd:75-83:get_all_stubs",
+      "right": "addons/gut/warnings_manager.gd:137-144:create_warnings_dictionary_from_project_settings",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:127-156:_process",
+      "right": "addons/GodotGAS/components/ability_system_component.gd:160-185:advance_turn",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/about.gd:72-81:_make_text",
+      "right": "addons/gut/update_detector.gd:311-318:get_summary_string",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/gut_logo.gd:37-45:GutEyeball._init",
+      "right": "addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:63-73:GutCliOptionResolver.to_s_verbose",
+      "right": "addons/gut/junit_xml_export.gd:64-80:_export_scripts",
+      "score": 0.8148148148148148,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:254-274:_double_scene_and_script",
+      "right": "addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item",
+      "score": 0.8148148148148148,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:653-665:get_current_test_orphans",
+      "right": "addons/gut/script_parser.gd:301-313:_get_instance_id",
+      "score": 0.8148148148148148,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:323-354:_on_set_tree_button_clicked",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:486-515:_on_attribute_tree_button_clicked",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>",
+      "right": "addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status",
+      "right": "addons/gut/test.gd:1048-1056:assert_true",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status",
+      "right": "addons/gut/test.gd:1061-1069:assert_false",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status",
+      "right": "addons/gut/test.gd:1579-1586:assert_signal_not_emitted",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:44-55:_enter_tree",
+      "right": "addons/gut/gui/OutputText.gd:106-121:_test_running_setup",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:44-55:_enter_tree",
+      "right": "addons/gut/gui/ShortcutDialog.gd:25-35:_debug_ready",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/doubler.gd:81-92:_stub_to_call_super",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:172-182:wait_until",
+      "right": "addons/gut/gui/panel_controls.gd:15-32:BaseGutPanelControl._init",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:172-182:wait_until",
+      "right": "addons/gut/gut.gd:451-465:_init_run",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:185-195:wait_while",
+      "right": "addons/gut/gui/panel_controls.gd:15-32:BaseGutPanelControl._init",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:185-195:wait_while",
+      "right": "addons/gut/gut.gd:451-465:_init_run",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:207-225:_print_gutconfigs",
+      "right": "addons/gut/input_sender.gd:407-418:clear",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:228-239:_run_tests",
+      "right": "addons/gut/gui/check_for_update.gd:71-82:check_for_update",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:637-645:parse",
+      "right": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/gut_config.gd:174-184:write_options",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:81-92:_stub_to_call_super",
+      "right": "addons/gut/gut.gd:319-328:_print_versions",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:187-195:_save_config",
+      "right": "addons/gut/gut_config.gd:174-184:write_options",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item",
+      "right": "addons/gut/signal_watcher.gd:57-66:_add_watched_signal",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "right": "addons/gut/gut_to_move.gd:41-48:is_file_empty",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "right": "addons/gut/input_sender.gd:209-219:_init",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "right": "addons/gut/gui/gut_gui.gd:192-206:set_gut",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init",
+      "right": "addons/gut/gut.gd:674-691:_call_before_all",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init",
+      "right": "addons/gut/gut.gd:700-716:_call_after_all",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:1111-1118:export_tests",
+      "right": "addons/gut/test.gd:1048-1056:assert_true",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:1111-1118:export_tests",
+      "right": "addons/gut/test.gd:1061-1069:assert_false",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/input_sender.gd:209-219:_init",
+      "right": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/input_sender.gd:209-219:_init",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/junit_xml_export.gd:103-111:write_file",
+      "right": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/junit_xml_export.gd:103-111:write_file",
+      "right": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:82-105:_setup_ui",
+      "right": "addons/gut/utils.gd:245-257:create_script_from_source",
+      "score": 0.8095238095238095,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:144-163:_add_other_ctrls",
+      "right": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "score": 0.8095238095238095,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShortcutDialog.gd:106-119:load_shortcuts_from_file",
+      "right": "addons/gut/gui/check_for_update.gd:109-118:_on_update_detector_updated",
+      "score": 0.8095238095238095,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item",
+      "right": "addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item",
+      "score": 0.8076923076923077,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:124-141:_ready",
+      "right": "addons/gut/script_parser.gd:301-313:_get_instance_id",
+      "score": 0.8076923076923077,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls",
+      "right": "addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init",
+      "score": 0.8076923076923077,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls",
+      "right": "addons/gut/gui/panel_controls.gd:386-409:GpcSaveLoad._init",
+      "score": 0.8076923076923077,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:30-37:execute_cue",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:110-118:_init_project_settings_attributes_draft_config_path",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:30-37:execute_cue",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:121-129:_init_project_settings_generated_tag_script_path",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/cli/optparse.gd:538-545:add_positional",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:228-239:_run_tests",
+      "right": "addons/gut/gui/GutBottomPanel.gd:187-195:_save_config",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/gut_cli.gd:228-239:_run_tests",
+      "right": "addons/gut/gui/RunExternally.gd:155-166:_end_non_blocking",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:538-545:add_positional",
+      "right": "addons/gut/junit_xml_export.gd:103-111:write_file",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/collected_script.gd:113-123:import_from",
+      "right": "addons/gut/diff_tool.gd:134-144:summarize",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/comparator.gd:103-110:compare",
+      "right": "addons/gut/gut_to_move.gd:41-48:is_file_empty",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_formatter.gd:23-33:make_it",
+      "right": "addons/gut/doubler.gd:284-295:_parse_script",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_formatter.gd:23-33:make_it",
+      "right": "addons/gut/test.gd:1538-1545:assert_signal_emitted",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:187-195:_save_config",
+      "right": "addons/gut/gut_plugin.gd:127-140:_exit_tree",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:210-218:quit",
+      "right": "addons/gut/gui/OutputText.gd:307-314:set_all_fonts",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "right": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/OutputText.gd:333-342:load_file",
+      "right": "addons/gut/gui/panel_controls.gd:99-108:GpcString._init",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "right": "addons/gut/utils.gd:245-257:create_script_from_source",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "right": "addons/gut/gut_menu.gd:54-74:make_menu",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/orphan_counter.gd:38-50:GutOrphanage.process_orphans",
+      "right": "addons/gut/test_collector.gd:152-161:export_tests",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:103-112:write_json_file",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/result_exporter.gd:116-125:write_summary_file",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:401-421:_on_create_set_pressed",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:586-608:_on_add_attribute_pressed",
+      "score": 0.7941176470588235,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:401-421:_on_create_set_pressed",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:244-265:_on_add_tag_pressed",
+      "score": 0.7931034482758621,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:254-274:_double_scene_and_script",
+      "right": "addons/gut/editor_caret_context_notifier.gd:135-150:_on_editor_script_changed",
+      "score": 0.7931034482758621,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:300-316:_on_add_custom_tag",
+      "right": "addons/GodotGAS/managers/gameplay_cue_manager.gd:51-66:execute_cue",
+      "score": 0.7916666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:399-418:clear_results",
+      "right": "addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init",
+      "score": 0.7916666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShellOutOptions.gd:99-116:_ready",
+      "right": "addons/gut/utils.gd:245-257:create_script_from_source",
+      "score": 0.7916666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:82-105:_setup_ui",
+      "right": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/managers/gameplay_cue_manager.gd:51-66:execute_cue",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:284-295:_parse_script",
+      "right": "addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/error_tracker.gd:129-138:should_test_fail_from_errors",
+      "right": "addons/gut/spy.gd:15-24:_find_parameters",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:258-270:run_tests",
+      "right": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:258-270:run_tests",
+      "right": "addons/gut/gut.gd:493-503:_export_junit_xml",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:148-159:run_from_editor",
+      "right": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:148-159:run_from_editor",
+      "right": "addons/gut/gut.gd:493-503:_export_junit_xml",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "right": "addons/gut/gui/GutRunner.gd:148-159:run_from_editor",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "right": "addons/gut/gut_config.gd:174-184:write_options",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel",
+      "right": "addons/gut/utils.gd:509-518:get_file_as_text",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "right": "addons/gut/gui/ShortcutDialog.gd:38-52:_ready",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:51-64:_ready",
+      "right": "addons/gut/orphan_counter.gd:141-152:end_test",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:91-103:_find_script_item_with_path",
+      "right": "addons/gut/utils.gd:606-615:find_method_meta",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "right": "addons/gut/gut.gd:674-691:_call_before_all",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShellOutOptions.gd:244-256:_show_help",
+      "right": "addons/gut/gut.gd:700-716:_call_after_all",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file",
+      "right": "addons/gut/gut_menu.gd:88-102:apply_gut_shortcuts",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/check_for_update.gd:24-35:_ready",
+      "right": "addons/gut/summary.gd:204-220:log_end_run",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_config.gd:174-184:write_options",
+      "right": "addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut_config.gd:174-184:write_options",
+      "right": "addons/gut/test_collector.gd:152-161:export_tests",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/script_parser.gd:157-165:GutParsedScript._get_native_methods",
+      "right": "addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:1579-1586:assert_signal_not_emitted",
+      "right": "addons/gut/test.gd:1705-1716:assert_signal_emit_count",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method",
+      "right": "addons/gut/test.gd:1538-1545:assert_signal_emitted",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:468-478:_reset_form",
+      "right": "addons/gut/gui/RunAtCursor.gd:46-58:_ready",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:468-478:_reset_form",
+      "right": "addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/UserFileViewer.gd:5-12:_get_file_as_text",
+      "right": "addons/gut/test.gd:290-297:_create_obj_from_type",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:172-182:wait_until",
+      "right": "addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/awaiter.gd:185-195:wait_while",
+      "right": "addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:538-545:add_positional",
+      "right": "addons/gut/gut.gd:273-283:_init",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:538-545:add_positional",
+      "right": "addons/gut/signal_watcher.gd:127-134:watch_signal",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/cli/optparse.gd:538-545:add_positional",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/gut.gd:273-283:_init",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:134-144:summarize",
+      "right": "addons/gut/update_detector.gd:205-215:fetch_remote_file",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/diff_tool.gd:87-104:_diff_array",
+      "right": "addons/gut/diff_tool.gd:107-131:_diff_dictionary",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/doubler.gd:254-274:_double_scene_and_script",
+      "right": "addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/editor_caret_context_notifier.gd:135-150:_on_editor_script_changed",
+      "right": "addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:187-195:_save_config",
+      "right": "addons/gut/signal_watcher.gd:127-134:watch_signal",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:399-418:clear_results",
+      "right": "addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item",
+      "right": "addons/gut/gut_loader.gd:31-45:_static_init",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item",
+      "right": "addons/gut/signal_watcher.gd:127-134:watch_signal",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutControl.gd:41-57:_ready",
+      "right": "addons/gut/gui/about.gd:72-81:_make_text",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/about.gd:72-81:_make_text",
+      "right": "addons/gut/junit_xml_export.gd:103-111:write_file",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/about.gd:72-81:_make_text",
+      "right": "addons/gut/test.gd:697-709:use_parameters",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:297-305:_ready",
+      "right": "addons/gut/gut_plugin.gd:127-140:_exit_tree",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/orphan_counter.gd:171-191:log_all",
+      "right": "addons/gut/test_collector.gd:33-48:_populate_tests",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gut.gd:721-748:_should_skip_script",
+      "right": "addons/gut/method_maker.gd:155-182:get_function_text",
+      "score": 0.7837837837837838,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/method_maker.gd:155-182:get_function_text",
+      "right": "addons/gut/script_parser.gd:316-338:parse",
+      "score": 0.7837837837837838,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/GutBottomPanel.gd:71-108:_ready",
+      "right": "addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/ResultsTree.gd:199-224:_add_script_to_tree",
+      "right": "addons/gut/update_detector.gd:281-308:get_update_string",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/gui/check_for_update.gd:85-92:_populate_text",
+      "right": "addons/gut/test.gd:1273-1288:assert_accessors",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/gut/logger.gd:79-91:_indent_text",
+      "right": "addons/gut/strutils.gd:160-175:indent_text",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/GodotGAS/utilities/project_settings.gd:110-118:_init_project_settings_attributes_draft_config_path",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:121-129:_init_project_settings_generated_tag_script_path",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/gut/version_numbers.gd:42-57:VerNumTools.is_version_gte",
+      "right": "addons/gut/version_numbers.gd:59-75:VerNumTools.is_version_lte",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/GodotGAS/utilities/project_settings.gd:132-145:_init_project_settings_registry_cue",
+      "right": "addons/GodotGAS/utilities/project_settings.gd:148-173:_init_project_settings_registry_tag",
+      "score": 0.9710144927536232,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:224-271:_sync_theme_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:109-152:_sync_theme_colors",
+      "score": 0.9541984732824428,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/gut/test.gd:1538-1545:assert_signal_emitted",
+      "right": "addons/gut/test.gd:1579-1586:assert_signal_not_emitted",
+      "score": 0.95,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/gut/test.gd:2643-2650:double",
+      "right": "addons/gut/test.gd:2655-2662:partial_double",
+      "score": 0.9245283018867925,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:186-234:_sync_theme_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:109-152:_sync_theme_colors",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:275-294:_apply_panel_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:238-257:_apply_panel_colors",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:275-294:_apply_panel_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:156-175:_apply_panel_colors",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:238-257:_apply_panel_colors",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:156-175:_apply_panel_colors",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/comparator.gd:72-82:shallow",
+      "right": "addons/gut/comparator.gd:85-96:deep",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/gut.gd:674-691:_call_before_all",
+      "right": "addons/gut/gut.gd:700-716:_call_after_all",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:1048-1056:assert_true",
+      "right": "addons/gut/test.gd:1061-1069:assert_false",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:1455-1474:assert_connected",
+      "right": "addons/gut/test.gd:1480-1499:assert_not_connected",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:2348-2355:assert_engine_error",
+      "right": "addons/gut/test.gd:2389-2396:assert_push_error",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:2469-2476:wait_physics_frames",
+      "right": "addons/gut/test.gd:2495-2502:wait_process_frames",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:2531-2541:wait_until",
+      "right": "addons/gut/test.gd:2567-2577:wait_while",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:2681-2688:double_singleton",
+      "right": "addons/gut/test.gd:2695-2703:partial_double_singleton",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/gut/test.gd:857-872:assert_eq",
+      "right": "addons/gut/test.gd:894-908:assert_ne",
+      "score": 1.0,
+      "category": "executable"
+    }
+  ]
+}

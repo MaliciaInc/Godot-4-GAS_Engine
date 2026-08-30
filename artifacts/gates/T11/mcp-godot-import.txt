@@ -1,0 +1,17 @@
+RESULT: PASS
+stage: godot-import-parse
+tool: mcp__godot__validate_scripts under tooling/strict_typing_pass.py
+files: 49 (every .gd under addons/GodotGAS)
+result: 0 files with errors
+note: all eight section 2.2 warnings promoted to errors (inference_on_variant
+note: was missing until this run and is now set; the tree was already clean
+note: of it, but the criterion asked for the setting, not for luck), applied to the engine
+note: tree because the pass sets gdscript/warnings/exclude_addons=false. The
+note: editor dashboard is no longer owing: cue_manager_tab.gd and
+note: gameplay_tag_editor_property.gd were retyped and now validate clean.
+note: The validator was proved live in the same session - the same call
+note: reported 56 errors for gameplay_tag_editor_property.gd before the
+note: rewrite and 0 after, so this PASS is not a scan of nothing.
+note: The ten scripts in the GameplayCueManager autoload's parse-time closure
+note: were re-validated after their preloads were restored; see
+note: artifacts/gates/T11/clean-checkout.md.

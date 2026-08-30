@@ -1,0 +1,1547 @@
+{
+  "files_scanned": 37,
+  "repeated_literals": [
+    [
+      "--fail-on",
+      [
+        {
+          "value": "--fail-on",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 359,
+          "kind": "literal"
+        },
+        {
+          "value": "--fail-on",
+          "path": "tooling/verify.ps1",
+          "line": 241,
+          "kind": "literal"
+        },
+        {
+          "value": "--fail-on",
+          "path": "tooling/verify.ps1",
+          "line": 243,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--include-tests",
+      [
+        {
+          "value": "--include-tests",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 391,
+          "kind": "literal"
+        },
+        {
+          "value": "--include-tests",
+          "path": "tooling/verify.ps1",
+          "line": 243,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--json-output",
+      [
+        {
+          "value": "--json-output",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 301,
+          "kind": "literal"
+        },
+        {
+          "value": "--json-output",
+          "path": "tooling/verify.ps1",
+          "line": 250,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--output",
+      [
+        {
+          "value": "--output",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 300,
+          "kind": "literal"
+        },
+        {
+          "value": "--output",
+          "path": "tooling/verify.ps1",
+          "line": 249,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--project-root",
+      [
+        {
+          "value": "--project-root",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 297,
+          "kind": "literal"
+        },
+        {
+          "value": "--project-root",
+          "path": "tooling/verify.ps1",
+          "line": 234,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "accent_color",
+      [
+        {
+          "value": "accent_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 229,
+          "kind": "literal"
+        },
+        {
+          "value": "accent_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 191,
+          "kind": "literal"
+        },
+        {
+          "value": "accent_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 114,
+          "kind": "literal"
+        },
+        {
+          "value": "accent_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 198,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "base",
+      [
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 283,
+          "kind": "literal"
+        },
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 286,
+          "kind": "literal"
+        },
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 246,
+          "kind": "literal"
+        },
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 249,
+          "kind": "literal"
+        },
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 164,
+          "kind": "literal"
+        },
+        {
+          "value": "base",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 167,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "base_color",
+      [
+        {
+          "value": "base_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 230,
+          "kind": "literal"
+        },
+        {
+          "value": "base_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 192,
+          "kind": "literal"
+        },
+        {
+          "value": "base_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 115,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Collapse Tree",
+      [
+        {
+          "value": "Collapse Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 172,
+          "kind": "literal"
+        },
+        {
+          "value": "Collapse Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 284,
+          "kind": "literal"
+        },
+        {
+          "value": "Collapse Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 314,
+          "kind": "literal"
+        },
+        {
+          "value": "Collapse Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 275,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "CollapseTree",
+      [
+        {
+          "value": "CollapseTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 171,
+          "kind": "literal"
+        },
+        {
+          "value": "CollapseTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 283,
+          "kind": "literal"
+        },
+        {
+          "value": "CollapseTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 313,
+          "kind": "literal"
+        },
+        {
+          "value": "CollapseTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 91,
+          "kind": "literal"
+        },
+        {
+          "value": "CollapseTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 281,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "dark",
+      [
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 281,
+          "kind": "literal"
+        },
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 288,
+          "kind": "literal"
+        },
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 244,
+          "kind": "literal"
+        },
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 251,
+          "kind": "literal"
+        },
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 162,
+          "kind": "literal"
+        },
+        {
+          "value": "dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 169,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "dark_color_1",
+      [
+        {
+          "value": "dark_color_1",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 231,
+          "kind": "literal"
+        },
+        {
+          "value": "dark_color_1",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 193,
+          "kind": "literal"
+        },
+        {
+          "value": "dark_color_1",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 116,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Edit",
+      [
+        {
+          "value": "Edit",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 314,
+          "kind": "literal"
+        },
+        {
+          "value": "Edit",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 543,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Editor",
+      [
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 229,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 230,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 231,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 191,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 192,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 193,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 329,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 527,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 114,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 115,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 116,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 198,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 324,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 326,
+          "kind": "literal"
+        },
+        {
+          "value": "Editor",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 218,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "editor_panel_flat_style",
+      [
+        {
+          "value": "editor_panel_flat_style",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 282,
+          "kind": "literal"
+        },
+        {
+          "value": "editor_panel_flat_style",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 245,
+          "kind": "literal"
+        },
+        {
+          "value": "editor_panel_flat_style",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 163,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "editor_panel_flat_style_dark",
+      [
+        {
+          "value": "editor_panel_flat_style_dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 280,
+          "kind": "literal"
+        },
+        {
+          "value": "editor_panel_flat_style_dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 243,
+          "kind": "literal"
+        },
+        {
+          "value": "editor_panel_flat_style_dark",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 161,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "EditorIcons",
+      [
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 314,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 315,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 316,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 481,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 482,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 131,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 171,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 283,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 310,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 313,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 436,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 477,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 543,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 547,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 91,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 196,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 279,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 281,
+          "kind": "literal"
+        },
+        {
+          "value": "EditorIcons",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 188,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Error:",
+      [
+        {
+          "value": "Error:",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 256,
+          "kind": "literal"
+        },
+        {
+          "value": "Error:",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 311,
+          "kind": "literal"
+        },
+        {
+          "value": "Error:",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 316,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Expand Tree",
+      [
+        {
+          "value": "Expand Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 311,
+          "kind": "literal"
+        },
+        {
+          "value": "Expand Tree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 275,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "ExpandTree",
+      [
+        {
+          "value": "ExpandTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 310,
+          "kind": "literal"
+        },
+        {
+          "value": "ExpandTree",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 279,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "FAIL",
+      [
+        {
+          "value": "FAIL",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 335,
+          "kind": "literal"
+        },
+        {
+          "value": "FAIL",
+          "path": "tooling/verify.ps1",
+          "line": 135,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "font_color",
+      [
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 527,
+          "kind": "literal"
+        },
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 324,
+          "kind": "literal"
+        },
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 326,
+          "kind": "literal"
+        },
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 218,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "git",
+      [
+        {
+          "value": "git",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 183,
+          "kind": "literal"
+        },
+        {
+          "value": "git",
+          "path": "tooling/verify.ps1",
+          "line": 290,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "GodotGAS",
+      [
+        {
+          "value": "GodotGAS",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 69,
+          "kind": "literal"
+        },
+        {
+          "value": "GodotGAS",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 84,
+          "kind": "literal"
+        },
+        {
+          "value": "GodotGAS",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 33,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "GodotGAS: Tag Registry not found at",
+      [
+        {
+          "value": "GodotGAS: Tag Registry not found at",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 324,
+          "kind": "literal"
+        },
+        {
+          "value": "GodotGAS: Tag Registry not found at",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 70,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "header",
+      [
+        {
+          "value": "header",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 290,
+          "kind": "literal"
+        },
+        {
+          "value": "header",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 253,
+          "kind": "literal"
+        },
+        {
+          "value": "header",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 171,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "loc",
+      [
+        {
+          "value": "loc",
+          "path": "tooling/gates/loc-gate.py",
+          "line": 146,
+          "kind": "literal"
+        },
+        {
+          "value": "loc",
+          "path": "tooling/verify.ps1",
+          "line": 236,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "name",
+      [
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 101,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 115,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 126,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 137,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 153,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 189,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 193,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 197,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "tooling/gates/lib/gdscript_regions.py",
+          "line": 30,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "normal",
+      [
+        {
+          "value": "normal",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 519,
+          "kind": "literal"
+        },
+        {
+          "value": "normal",
+          "path": "addons/GodotGAS/target_data/gameplay_ability_target_data.gd",
+          "line": 48,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "panel",
+      [
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 278,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 287,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 289,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 291,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 241,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 250,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 252,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 254,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 505,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 159,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 168,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 170,
+          "kind": "literal"
+        },
+        {
+          "value": "panel",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 172,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "panel_type",
+      [
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 277,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 281,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 283,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 285,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 286,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 288,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 290,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 240,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 244,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 246,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 248,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 249,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 251,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 253,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 158,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 162,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 164,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 166,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 167,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 169,
+          "kind": "literal"
+        },
+        {
+          "value": "panel_type",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 171,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "PASS",
+      [
+        {
+          "value": "PASS",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 336,
+          "kind": "literal"
+        },
+        {
+          "value": "PASS",
+          "path": "tooling/verify.ps1",
+          "line": 40,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "python",
+      [
+        {
+          "value": "python",
+          "path": "tooling/gates/lib/languages.py",
+          "line": 30,
+          "kind": "literal"
+        },
+        {
+          "value": "python",
+          "path": "tooling/verify.ps1",
+          "line": 35,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "Remove",
+      [
+        {
+          "value": "Remove",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 316,
+          "kind": "literal"
+        },
+        {
+          "value": "Remove",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 482,
+          "kind": "literal"
+        },
+        {
+          "value": "Remove",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 547,
+          "kind": "literal"
+        },
+        {
+          "value": "Remove",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 196,
+          "kind": "literal"
+        },
+        {
+          "value": "Remove",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 188,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+      [
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/abilities/gameplay_ability.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/attributes/attribute_data.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/attributes/attribute_set.gd",
+          "line": 10,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 9,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_entry.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "line": 10,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_registry.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/active_gameplay_effect.gd",
+          "line": 10,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 9,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect_modifier.gd",
+          "line": 9,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect_spec.gd",
+          "line": 8,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_execution_calculation.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 10,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/target_data/gameplay_ability_target_data.gd",
+          "line": 10,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/target_data/gameplay_effect_context.gd",
+          "line": 10,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+      [
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 148,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/utilities/project_settings.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 27,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 14,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "State Management",
+      [
+        {
+          "value": "State Management",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 47,
+          "kind": "literal"
+        },
+        {
+          "value": "State Management",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 67,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "tags",
+      [
+        {
+          "value": "tags",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 277,
+          "kind": "literal"
+        },
+        {
+          "value": "tags",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 285,
+          "kind": "literal"
+        },
+        {
+          "value": "tags",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 291,
+          "kind": "literal"
+        },
+        {
+          "value": "tags",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+          "line": 31,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "target",
+      [
+        {
+          "value": "target",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 138,
+          "kind": "literal"
+        },
+        {
+          "value": "target",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 171,
+          "kind": "literal"
+        },
+        {
+          "value": "target",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 502,
+          "kind": "literal"
+        },
+        {
+          "value": "target",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 547,
+          "kind": "literal"
+        },
+        {
+          "value": "target",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 568,
+          "kind": "literal"
+        },
+        {
+          "value": "target",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 47,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "test_*.py",
+      [
+        {
+          "value": "test_*.py",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 65,
+          "kind": "literal"
+        },
+        {
+          "value": "test_*.py",
+          "path": "tooling/verify.ps1",
+          "line": 265,
+          "kind": "literal"
+        }
+      ]
+    ]
+  ],
+  "repeated_templates": [],
+  "colors": [
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+      "line": 141,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+      "line": 176,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+      "line": 189,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+      "line": 209,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+      "line": 236,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+      "line": 200,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+      "line": 375,
+      "kind": "color"
+    },
+    {
+      "value": "Color(",
+      "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+      "line": 121,
+      "kind": "color"
+    },
+    {
+      "value": "#e0e0e0",
+      "path": "addons/GodotGAS/utilities/project_settings.gd",
+      "line": 220,
+      "kind": "color"
+    },
+    {
+      "value": "#E0E0E0",
+      "path": "addons/GodotGAS/utilities/project_settings.gd",
+      "line": 221,
+      "kind": "color"
+    },
+    {
+      "value": "#ffffff",
+      "path": "addons/GodotGAS/utilities/project_settings.gd",
+      "line": 222,
+      "kind": "color"
+    },
+    {
+      "value": "#FFFFFF",
+      "path": "addons/GodotGAS/utilities/project_settings.gd",
+      "line": 223,
+      "kind": "color"
+    }
+  ],
+  "scan_issues": [],
+  "blocking_count": 53
+}

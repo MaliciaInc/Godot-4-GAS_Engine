@@ -1,0 +1,19 @@
+# LOC and Structure Gate
+
+- Status: **FAIL**
+- Project: `<repo>`
+- Source files scanned: 44
+- Blocking findings: 5
+- Scan issues: 0
+
+## Violations
+
+- addons/GodotGAS/components/ability_system_component.gd: file LOC 939 > 450
+- addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd: file LOC 761 > 450
+- addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:635: _on_generate_script_pressed LOC 126 > 120 (lines 635-760)
+- addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd: file LOC 554 > 450
+- addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd:29: _parse_property params 7 > 5
+
+## Scan Issues
+
+- None

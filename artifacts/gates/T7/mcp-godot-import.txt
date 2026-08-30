@@ -1,0 +1,5 @@
+RESULT: PASS
+stage: godot-import-parse
+tool: mcp__godot__validate_scripts against the strict-typing pass
+note: every addons/GodotGAS source parses clean with the eight section 2.2
+note: warnings promoted to errors. See docs/toolchain-findings.md item 5.

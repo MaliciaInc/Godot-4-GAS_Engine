@@ -1,0 +1,1765 @@
+{
+  "units": 276,
+  "units_by_language": "gdscript 256, powershell 4, python 16",
+  "elapsed_seconds": 0.5743400999999722,
+  "scan_issues": [],
+  "shape_only_pairs": 0,
+  "suppressed": {
+    "structural": 0,
+    "masked": 0,
+    "behavioral": 194
+  },
+  "blocking": 0,
+  "findings": [
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_target_data.gd:209-216:test_mutating_what_was_handed_out_does_not_reach_the_collector",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent",
+      "score": 0.95,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "score": 0.9473684210526315,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source",
+      "score": 0.9473684210526315,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.9473684210526315,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "score": 0.9411764705882353,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 0.9411764705882353,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.9411764705882353,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.9411764705882353,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.9411764705882353,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_periodic_effects.gd:168-176:test_a_turn_based_periodic_ticks_once_per_turn",
+      "score": 0.9375,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:222-257:_build_body",
+      "score": 0.9354838709677419,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:226-248:recompose",
+      "right": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write",
+      "score": 0.9285714285714286,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation",
+      "score": 0.9285714285714286,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes",
+      "score": 0.9285714285714286,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent",
+      "score": 0.9230769230769231,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:86-103:test_dividing_by_zero_refuses_the_whole_application",
+      "right": "test/unit/test_effect_lifecycle.gd:157-176:test_refreshing_replaces_the_snapshot_and_keeps_one_instance",
+      "score": 0.9230769230769231,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator",
+      "score": 0.9166666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:126-146:evaluate",
+      "right": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/unit/test_target_data.gd:48-56:_space_cases",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_target_data.gd:192-202:test_removing_a_target_removes_its_hits_too",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:229-237:_on_select_tag_pressed",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:126-146:evaluate",
+      "right": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:226-248:recompose",
+      "score": 0.896551724137931,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts",
+      "score": 0.8947368421052632,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8947368421052632,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/fixtures/test_attribute_set.gd:33-40:_init",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/fixtures/test_effect_factory.gd:49-56:duration",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:14-21:modifier",
+      "right": "test/fixtures/test_effect_factory.gd:49-56:duration",
+      "score": 0.8888888888888888,
+      "category": "fixture_data"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original",
+      "score": 0.8888888888888888,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:367-379:run_periodic_tick",
+      "right": "addons/GodotGAS/godot_gas_plugin.gd:110-118:_seed_tag_registry",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_periodic_effects.gd:181-192:test_a_periodic_effect_contributes_nothing_to_the_aggregator",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_periodic_effects.gd:181-192:test_a_periodic_effect_contributes_nothing_to_the_aggregator",
+      "score": 0.8823529411764706,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_dialogs.gd:18-26:show_message",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:178-187:_sync_theme_colors",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_target_data.gd:209-216:test_mutating_what_was_handed_out_does_not_reach_the_collector",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_gameplay_events.gd:130-142:test_a_listener_granted_during_dispatch_does_not_receive_this_event",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_target_data.gd:209-216:test_mutating_what_was_handed_out_does_not_reach_the_collector",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:139-154:_on_add_tag_pressed",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:346-361:_on_add_custom_tag",
+      "score": 0.8695652173913043,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_gameplay_events.gd:130-142:test_a_listener_granted_during_dispatch_does_not_receive_this_event",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_cost_preview.gd:46-54:test_a_temporary_buff_does_not_subsidise_a_durable_cost",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8666666666666667,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes",
+      "right": "test/fixtures/asc_fixture.gd:28-45:create",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_target_data.gd:192-202:test_removing_a_target_removes_its_hits_too",
+      "score": 0.8571428571428571,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:123-131:_modifier_attribute_names",
+      "right": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:83-91:tag_turns_remaining",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.85,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd:78-86:_matches_one",
+      "right": "test/unit/test_attribute_aggregation.gd:167-176:_modifier",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_effect_pipeline.gd:168-180:test_a_refusal_reports_its_typed_reason",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_periodic_effects.gd:195-203:test_removing_a_periodic_effect_does_not_undo_its_ticks",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "right": "test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "right": "test/unit/test_effect_pipeline.gd:168-180:test_a_refusal_reports_its_typed_reason",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:313-324:stage_base_write",
+      "right": "addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:298-306:_refresh_attribute_tree",
+      "right": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:367-379:run_periodic_tick",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_effect_lifecycle.gd:68-77:test_a_base_change_preserves_an_active_contribution",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd:330-355:commit_base_write",
+      "right": "addons/GodotGAS/components/ability_system_component.gd:324-345:can_afford_cost",
+      "score": 0.8387096774193549,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue",
+      "right": "addons/GodotGAS/editor/attribute_set_drafts.gd:243-252:duplicate_attribute",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:101-111:_ready",
+      "right": "test/unit/test_target_data.gd:95-110:test_a_hit_without_a_collider_node_is_refused",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate",
+      "right": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate",
+      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init",
+      "right": "test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said",
+      "right": "test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said",
+      "right": "test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said",
+      "right": "test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said",
+      "right": "test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:178-187:_sync_theme_colors",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_effect_lifecycle.gd:132-143:test_cleanup_is_idempotent",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_target_data.gd:209-216:test_mutating_what_was_handed_out_does_not_reach_the_collector",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:212-227:_on_set_tree_button_clicked",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:323-339:_on_attribute_tree_button_clicked",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_spec_isolation.gd:133-143:test_removing_one_targets_effect_leaves_the_other_running",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_gameplay_events.gd:98-109:test_the_payload_arrives_intact",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:229-237:_on_select_tag_pressed",
+      "right": "test/unit/test_randomized_regression.gd:36-43:before_each",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init",
+      "right": "test/unit/test_gameplay_cues.gd:119-127:test_a_finished_cue_forgets_its_parameters",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init",
+      "right": "test/unit/test_gameplay_cues.gd:151-160:test_a_bucket_will_not_hold_the_same_cue_twice",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "right": "test/unit/test_target_data.gd:48-56:_space_cases",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_effect_pipeline.gd:194-201:test_an_effect_that_changes_nothing_emits_no_attribute_signal",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "right": "test/unit/test_target_data.gd:48-56:_space_cases",
+      "score": 0.8181818181818182,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:129-170:_setup_ui",
+      "right": "test/unit/test_effect_pipeline.gd:142-165:test_a_failed_multi_attribute_effect_changes_nothing_at_all",
+      "score": 0.8157894736842105,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/abilities/gameplay_ability.gd:181-189:get_cooldown_tags",
+      "right": "addons/GodotGAS/editor/attribute_set_drafts.gd:158-165:attribute_names",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue",
+      "right": "addons/GodotGAS/editor/dashboard_dialogs.gd:18-26:show_message",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_notify.gd:42-52:execute_cue",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:342-349:_on_icon_popup_id_pressed",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/cue_row.gd:63-80:_label_column",
+      "right": "test/fixtures/asc_fixture.gd:28-45:create",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_attribute_evaluation.gd:164-176:test_an_attribute_written_by_both_mechanisms_is_refused",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_attribute_evaluation.gd:190-198:test_an_ambiguous_effect_changes_nothing_when_applied",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_gameplay_cues.gd:137-148:test_a_finished_cue_returns_to_its_bucket",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_gameplay_events.gd:145-157:test_dispatch_survives_a_listener_removing_another",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_cost_preview.gd:68-75:test_the_preview_agrees_with_the_commit",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_cost_preview.gd:46-54:test_a_temporary_buff_does_not_subsidise_a_durable_cost",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:211-219:test_a_press_cannot_pay_a_cost_the_owner_cannot_afford",
+      "right": "test/unit/test_periodic_effects.gd:76-85:test_a_long_frame_pays_every_tick_it_owes",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_effect_lifecycle.gd:179-191:test_a_refresh_emits_neither_a_removal_nor_an_addition",
+      "score": 0.8125,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_tag_registry.gd:90-103:test_child_tags_are_the_ones_under_the_separator",
+      "score": 0.8095238095238095,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes",
+      "right": "addons/GodotGAS/editor/cue_row.gd:63-80:_label_column",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/cues/gameplay_cue_params.gd:49-57:for_target",
+      "right": "test/fixtures/test_effect_factory.gd:14-21:modifier",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_effect_pipeline.gd:269-279:test_effects_can_be_removed_by_their_source",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/cue_row.gd:35-53:build",
+      "right": "test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/cue_row.gd:63-80:_label_column",
+      "right": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/theme/dashboard_theme.gd:220-242:recoloured_icon",
+      "right": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:207-241:_try_refresh",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:94-117:_stage_execution_deltas",
+      "right": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:186-207:_stage_modifier_base_mutations",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:63-70:_init",
+      "right": "test/unit/test_gameplay_cues.gd:65-72:test_an_absent_location_is_distinguishable_from_the_origin",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/asc_fixture.gd:28-45:create",
+      "right": "test/unit/test_ability_input.gd:100-111:_slot_cases",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_attribute_set.gd:33-40:_init",
+      "right": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "score": 0.8,
+      "category": "fixture_data"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_attribute_set.gd:33-40:_init",
+      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_attribute_set.gd:33-40:_init",
+      "right": "test/unit/test_target_data.gd:48-56:_space_cases",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:49-56:duration",
+      "right": "test/fixtures/test_effect_factory.gd:84-92:turn_based",
+      "score": 0.8,
+      "category": "fixture_data"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:49-56:duration",
+      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/fixtures/test_effect_factory.gd:49-56:duration",
+      "right": "test/unit/test_target_data.gd:48-56:_space_cases",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_effect_lifecycle.gd:80-90:test_initialising_overrides_replaces_the_base_and_keeps_buffs",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:190-220:test_removing_either_contribution_recomposes_correctly",
+      "right": "test/unit/test_effect_lifecycle.gd:157-176:test_refreshing_replaces_the_snapshot_and_keeps_one_instance",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_target_data.gd:192-202:test_removing_a_target_removes_its_hits_too",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "right": "test/unit/test_gameplay_cues.gd:85-95:test_a_cue_receives_its_parameters_and_its_parent",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_effect_lifecycle.gd:205-217:test_free_stacking_keeps_instances_independent",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_target_data.gd:192-202:test_removing_a_target_removes_its_hits_too",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:324-345:can_afford_cost",
+      "right": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:94-117:_stage_execution_deltas",
+      "score": 0.7941176470588235,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:86-103:test_dividing_by_zero_refuses_the_whole_application",
+      "right": "test/unit/test_attribute_aggregation.gd:190-220:test_removing_either_contribution_recomposes_correctly",
+      "score": 0.7931034482758621,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_drafts.gd:110-119:rename_set",
+      "right": "addons/GodotGAS/editor/attribute_set_drafts.gd:227-239:rename_attribute",
+      "score": 0.7916666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:97-114:_refresh_tag_tree",
+      "right": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:264-279:_refresh_tree",
+      "score": 0.7916666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base",
+      "right": "addons/GodotGAS/components/ability_system_component.gd:288-295:apply_gameplay_effect",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:236-248:set_attribute_base",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:292-302:_on_tag_dialog_confirmed",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:288-295:apply_gameplay_effect",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:292-302:_on_tag_dialog_confirmed",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/attribute_set_script_writer.gd:44-51:write",
+      "right": "test/unit/test_cost_preview.gd:57-65:test_a_preview_mutates_nothing",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/cue_row.gd:35-53:build",
+      "right": "test/unit/test_attribute_aggregation.gd:269-282:test_a_stale_current_value_is_repaired_without_signals",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:309-320:_build_attribute_row",
+      "right": "test/unit/test_spec_isolation.gd:119-130:test_each_target_computes_against_its_own_attributes",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:118-128:test_two_abilities_on_one_slot_answer_as_the_binding_said",
+      "right": "test/unit/test_spec_isolation.gd:85-96:test_two_targets_receive_independent_specs",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:239-248:test_the_same_modifiers_as_active_leave_the_base_alone",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_aggregation.gd:253-264:test_raising_the_base_recomposes_instead_of_dropping_the_buff",
+      "right": "test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_periodic_effects.gd:119-129:test_a_duration_effect_expires_and_reverts",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_drafts.gd:102-111:test_a_mutation_reaches_disk_and_reads_back",
+      "right": "test/unit/test_spec_isolation.gd:68-80:test_mutating_a_copy_is_invisible_to_the_original",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_effect_lifecycle.gd:103-114:test_losing_the_buff_discards_the_excess_permanently",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_modifier_magnitudes.gd:109-122:test_an_invalid_index_refuses_the_application_instead_of_weakening_it",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:73-86:test_evaluation_stages_without_writing",
+      "right": "test/unit/test_spec_isolation.gd:45-58:test_a_copy_shares_the_definition_and_nothing_mutable",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes",
+      "right": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:392-402:_reset_form",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/components/ability_system_component.gd:105-118:_wire_runtimes",
+      "right": "test/unit/test_ability_input.gd:100-111:_slot_cases",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:392-402:_reset_form",
+      "right": "addons/GodotGAS/effects/gameplay_effect_runtime.gd:129-136:_evaluate",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/godot_gas_plugin.gd:68-78:_enter_tree",
+      "right": "test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:133-140:test_a_held_slot_is_reported_until_release",
+      "right": "test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:195-208:test_a_blocked_ability_does_not_activate_on_a_press",
+      "right": "test/unit/test_tag_queries.gd:118-126:test_a_tag_applied_twice_survives_one_removal",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_attribute_evaluation.gd:131-138:test_an_execution_calculation_stages_a_base_mutation",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:233-243:test_ending_an_ability_leaves_it_granted_and_bound",
+      "right": "test/unit/test_attribute_evaluation.gd:179-187:test_the_two_mechanisms_may_write_different_attributes",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_effect_pipeline.gd:114-122:test_an_instant_effect_registers_nothing_and_grants_no_tag",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:73-85:test_binding_an_ungranted_ability_is_refused",
+      "right": "test/unit/test_periodic_effects.gd:76-85:test_a_long_frame_pays_every_tick_it_owes",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "right": "test/unit/test_attribute_evaluation.gd:218-227:test_a_failed_evaluation_carries_no_staged_work",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:110-118:test_a_contribution_records_both_ordering_axes",
+      "right": "test/unit/test_effect_pipeline.gd:114-122:test_an_instant_effect_registers_nothing_and_grants_no_tag",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_attribute_evaluation.gd:89-96:test_a_staged_mutation_reports_requested_against_committed",
+      "right": "test/unit/test_effect_pipeline.gd:259-266:test_an_effect_applied_from_a_source_records_its_instigator",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/cue_row.gd:35-53:build",
+      "right": "test/unit/test_spec_isolation.gd:99-116:test_mutating_one_target_runtime_state_leaves_the_other_alone",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:375-388:_execute_delete",
+      "right": "addons/GodotGAS/editor/theme/dashboard_theme.gd:142-151:_classify",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "test/unit/test_ability_input.gd:162-181:test_input_while_channelling_reaches_the_active_hooks",
+      "right": "test/unit/test_spec_isolation.gd:99-116:test_mutating_one_target_runtime_state_leaves_the_other_alone",
+      "score": 0.782608695652174,
+      "category": "executable"
+    }
+  ]
+}

@@ -1,0 +1,867 @@
+{
+  "files_scanned": 62,
+  "repeated_literals": [
+    [
+      "## @meta_license: MIT",
+      [
+        {
+          "value": "## @meta_license: MIT",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 61,
+          "kind": "literal"
+        },
+        {
+          "value": "## @meta_license: MIT",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 30,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--exclude",
+      [
+        {
+          "value": "--exclude",
+          "path": "tooling/gates/duplication-gate.py",
+          "line": 298,
+          "kind": "literal"
+        },
+        {
+          "value": "--exclude",
+          "path": "tooling/gates/run_gate.py",
+          "line": 33,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "--list",
+      [
+        {
+          "value": "--list",
+          "path": "tooling/gates/run_gate.py",
+          "line": 105,
+          "kind": "literal"
+        },
+        {
+          "value": "--list",
+          "path": "tooling/verify.ps1",
+          "line": 239,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "@tool",
+      [
+        {
+          "value": "@tool",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 63,
+          "kind": "literal"
+        },
+        {
+          "value": "@tool",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 32,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "class_name",
+      [
+        {
+          "value": "class_name",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 64,
+          "kind": "literal"
+        },
+        {
+          "value": "class_name",
+          "path": "tooling/gates/lib/duplication_units.py",
+          "line": 76,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "const",
+      [
+        {
+          "value": "const",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 63,
+          "kind": "literal"
+        },
+        {
+          "value": "const",
+          "path": "tooling/gates/lib/languages.py",
+          "line": 153,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "FAIL",
+      [
+        {
+          "value": "FAIL",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 352,
+          "kind": "literal"
+        },
+        {
+          "value": "FAIL",
+          "path": "tooling/verify.ps1",
+          "line": 135,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "font_color",
+      [
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/editor/theme/dashboard_theme.gd",
+          "line": 24,
+          "kind": "literal"
+        },
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 324,
+          "kind": "literal"
+        },
+        {
+          "value": "font_color",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 326,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "git",
+      [
+        {
+          "value": "git",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 200,
+          "kind": "literal"
+        },
+        {
+          "value": "git",
+          "path": "tooling/verify.ps1",
+          "line": 285,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "line",
+      [
+        {
+          "value": "line",
+          "path": "tooling/gates/lib/duplication_units.py",
+          "line": 284,
+          "kind": "literal"
+        },
+        {
+          "value": "line",
+          "path": "tooling/strict_typing_pass.py",
+          "line": 59,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "loc",
+      [
+        {
+          "value": "loc",
+          "path": "tooling/gates/loc-gate.py",
+          "line": 118,
+          "kind": "literal"
+        },
+        {
+          "value": "loc",
+          "path": "tooling/gates/run_gate.py",
+          "line": 49,
+          "kind": "literal"
+        },
+        {
+          "value": "loc",
+          "path": "tooling/gates/run_gate.py",
+          "line": 49,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "name",
+      [
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/attributes/attribute_set.gd",
+          "line": 54,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "addons/GodotGAS/utilities/project_settings.gd",
+          "line": 59,
+          "kind": "literal"
+        },
+        {
+          "value": "name",
+          "path": "tooling/gates/lib/gdscript_regions.py",
+          "line": 30,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "normal",
+      [
+        {
+          "value": "normal",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 413,
+          "kind": "literal"
+        },
+        {
+          "value": "normal",
+          "path": "addons/GodotGAS/target_data/gameplay_target_hit.gd",
+          "line": 36,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "or_greater",
+      [
+        {
+          "value": "or_greater",
+          "path": "addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "line": 27,
+          "kind": "literal"
+        },
+        {
+          "value": "or_greater",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 34,
+          "kind": "literal"
+        },
+        {
+          "value": "or_greater",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 39,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "params",
+      [
+        {
+          "value": "params",
+          "path": "tooling/gates/lib/loc_regions.py",
+          "line": 163,
+          "kind": "literal"
+        },
+        {
+          "value": "params",
+          "path": "tooling/gates/loc-gate.py",
+          "line": 174,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "pass",
+      [
+        {
+          "value": "pass",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 126,
+          "kind": "literal"
+        },
+        {
+          "value": "pass",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 164,
+          "kind": "literal"
+        },
+        {
+          "value": "pass",
+          "path": "tooling/gates/lib/duplication_units.py",
+          "line": 76,
+          "kind": "literal"
+        },
+        {
+          "value": "pass",
+          "path": "tooling/gates/lib/duplication_units.py",
+          "line": 79,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "PASS",
+      [
+        {
+          "value": "PASS",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 353,
+          "kind": "literal"
+        },
+        {
+          "value": "PASS",
+          "path": "tooling/verify.ps1",
+          "line": 40,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "python",
+      [
+        {
+          "value": "python",
+          "path": "tooling/gates/lib/languages.py",
+          "line": 30,
+          "kind": "literal"
+        },
+        {
+          "value": "python",
+          "path": "tooling/verify.ps1",
+          "line": 35,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/attributes/attribute_evaluation_result.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_evaluation_result.gd",
+          "path": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd",
+          "line": 26,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_evaluation_result.gd",
+          "path": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd",
+          "line": 30,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_evaluation_result.gd",
+          "path": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd",
+          "line": 22,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_evaluation_result.gd",
+          "path": "addons/GodotGAS/effects/gameplay_effect_runtime.gd",
+          "line": 19,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd",
+          "path": "addons/GodotGAS/attributes/gameplay_attribute_runtime.gd",
+          "line": 27,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd",
+          "path": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd",
+          "line": 23,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/cues/gameplay_cue_entry.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_entry.gd",
+          "path": "addons/GodotGAS/cues/gameplay_cue_registry.gd",
+          "line": 17,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_entry.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 22,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/cues/gameplay_cue_notify.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "path": "addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd",
+          "line": 17,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 20,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+          "path": "addons/GodotGAS/abilities/gameplay_ability.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+          "path": "addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+          "path": "addons/GodotGAS/effects/gameplay_effect_runtime.gd",
+          "line": 21,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 23,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/cues/gameplay_cue_registry.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_registry.gd",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 31,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/cues/gameplay_cue_registry.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 21,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 79,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd",
+          "path": "addons/GodotGAS/effects/gameplay_effect_runtime.gd",
+          "line": 18,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/effects/gameplay_effect_spec.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/effects/gameplay_effect_spec.gd",
+          "path": "addons/GodotGAS/abilities/gameplay_ability.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/effects/gameplay_effect_spec.gd",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 80,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+      [
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/abilities/gameplay_ability.gd",
+          "line": 13,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/attributes/attribute_data.gd",
+          "line": 21,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/attributes/attribute_set.gd",
+          "line": 19,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_entry.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_notify.gd",
+          "line": 12,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/cues/gameplay_cue_registry.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/active_gameplay_effect.gd",
+          "line": 19,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 9,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect_modifier.gd",
+          "line": 9,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_effect_spec.gd",
+          "line": 22,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/effects/gameplay_execution_calculation.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 11,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 12,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 20,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/target_data/gameplay_ability_target_data.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+          "path": "addons/GodotGAS/target_data/gameplay_effect_context.gd",
+          "line": 14,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/icons/godot_gas_icon_star.svg",
+      [
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_icon_star.svg",
+          "path": "addons/GodotGAS/editor/attribute_icons.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_icon_star.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd",
+          "line": 15,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+      [
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 14,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/managers/gameplay_cue_manager.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 82,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 24,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+          "path": "addons/GodotGAS/abilities/gameplay_ability.gd",
+          "line": 17,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 81,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+          "path": "addons/GodotGAS/cues/gameplay_cue_params.gd",
+          "line": 16,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "res://addons/GodotGAS/utilities/project_settings.gd",
+      [
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/attribute_set_compiler.gd",
+          "line": 13,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/attribute_set_drafts.gd",
+          "line": 18,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd",
+          "line": 20,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/gameplay_tag_tree.gd",
+          "line": 17,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/editor/theme/dashboard_theme.gd",
+          "line": 16,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 15,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+          "line": 20,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/godot_gas_plugin.gd",
+          "line": 30,
+          "kind": "literal"
+        },
+        {
+          "value": "res://addons/GodotGAS/utilities/project_settings.gd",
+          "path": "addons/GodotGAS/managers/gameplay_cue_manager.gd",
+          "line": 19,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "return",
+      [
+        {
+          "value": "return",
+          "path": "addons/GodotGAS/editor/attribute_set_script_writer.gd",
+          "line": 129,
+          "kind": "literal"
+        },
+        {
+          "value": "return",
+          "path": "tooling/gates/lib/languages.py",
+          "line": 146,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "State Management",
+      [
+        {
+          "value": "State Management",
+          "path": "addons/GodotGAS/components/ability_system_component.gd",
+          "line": 64,
+          "kind": "literal"
+        },
+        {
+          "value": "State Management",
+          "path": "addons/GodotGAS/effects/gameplay_effect.gd",
+          "line": 67,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "test_*.py",
+      [
+        {
+          "value": "test_*.py",
+          "path": "tooling/gates/lib/gate_io.py",
+          "line": 82,
+          "kind": "literal"
+        },
+        {
+          "value": "test_*.py",
+          "path": "tooling/verify.ps1",
+          "line": 260,
+          "kind": "literal"
+        }
+      ]
+    ],
+    [
+      "with",
+      [
+        {
+          "value": "with",
+          "path": "addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd",
+          "line": 54,
+          "kind": "literal"
+        },
+        {
+          "value": "with",
+          "path": "tooling/gates/lib/loc_regions.py",
+          "line": 35,
+          "kind": "literal"
+        }
+      ]
+    ]
+  ],
+  "repeated_templates": [],
+  "colors": [],
+  "scan_issues": [],
+  "blocking_count": 36
+}

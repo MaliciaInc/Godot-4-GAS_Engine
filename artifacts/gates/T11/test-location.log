@@ -1,0 +1,28 @@
+RESULT: PASS
+stage:      test-location
+command:    python <repo>\tooling\gates\run_gate.py test-location <repo>\artifacts\gates\T11
+started:    2026-08-30T08:57:15.0505106Z
+ended:      2026-08-30T08:57:15.3906510Z
+duration_s: 0.340
+exit_code:  0
+
+--- stdout ---
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 99
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 30
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

@@ -1,0 +1,276 @@
+# Duplication Gate
+
+- Status: **FAIL**
+- Project: `<repo>`
+- Source files scanned: 112
+- Blocking findings: 19
+- Scan issues: 0
+- Units scanned: 548
+- Units by language: gdscript 544, powershell 4
+- Findings: 249
+- Elapsed: 1.799s
+- Explicit default exclusions: tooling/gates/**
+- Shape-only pairs not counted: 1 (identifier overlap < 0.55 or fewer than 3 identifiers)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 0 (raise with --max-pairs)
+
+## Structural
+
+- 1.000 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:275-294:_apply_panel_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:238-257:_apply_panel_colors`
+- 1.000 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:275-294:_apply_panel_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:156-175:_apply_panel_colors`
+- 1.000 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:238-257:_apply_panel_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:156-175:_apply_panel_colors`
+- 1.000 [executable]: `addons/gut/comparator.gd:72-82:shallow` <-> `addons/gut/comparator.gd:85-96:deep`
+- 1.000 [executable]: `addons/gut/gut.gd:674-691:_call_before_all` <-> `addons/gut/gut.gd:700-716:_call_after_all`
+- 1.000 [executable]: `addons/gut/test.gd:1048-1056:assert_true` <-> `addons/gut/test.gd:1061-1069:assert_false`
+- 1.000 [executable]: `addons/gut/test.gd:1455-1474:assert_connected` <-> `addons/gut/test.gd:1480-1499:assert_not_connected`
+- 1.000 [executable]: `addons/gut/test.gd:2348-2355:assert_engine_error` <-> `addons/gut/test.gd:2389-2396:assert_push_error`
+- 1.000 [executable]: `addons/gut/test.gd:2469-2476:wait_physics_frames` <-> `addons/gut/test.gd:2495-2502:wait_process_frames`
+- 1.000 [executable]: `addons/gut/test.gd:2531-2541:wait_until` <-> `addons/gut/test.gd:2567-2577:wait_while`
+- 1.000 [executable]: `addons/gut/test.gd:2681-2688:double_singleton` <-> `addons/gut/test.gd:2695-2703:partial_double_singleton`
+- 1.000 [executable]: `addons/gut/test.gd:857-872:assert_eq` <-> `addons/gut/test.gd:894-908:assert_ne`
+
+## Masked
+
+- 1.000 [executable]: `addons/GodotGAS/utilities/project_settings.gd:110-118:_init_project_settings_attributes_draft_config_path` <-> `addons/GodotGAS/utilities/project_settings.gd:121-129:_init_project_settings_generated_tag_script_path`
+- 1.000 [executable]: `addons/gut/version_numbers.gd:42-57:VerNumTools.is_version_gte` <-> `addons/gut/version_numbers.gd:59-75:VerNumTools.is_version_lte`
+- 0.971 [executable]: `addons/GodotGAS/utilities/project_settings.gd:132-145:_init_project_settings_registry_cue` <-> `addons/GodotGAS/utilities/project_settings.gd:148-173:_init_project_settings_registry_tag`
+- 0.954 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:224-271:_sync_theme_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:109-152:_sync_theme_colors`
+- 0.950 [executable]: `addons/gut/test.gd:1538-1545:assert_signal_emitted` <-> `addons/gut/test.gd:1579-1586:assert_signal_not_emitted`
+- 0.925 [executable]: `addons/gut/test.gd:2643-2650:double` <-> `addons/gut/test.gd:2655-2662:partial_double`
+- 0.867 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:186-234:_sync_theme_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:109-152:_sync_theme_colors`
+
+## Behavioral
+
+- 1.000 [executable]: `addons/gut/awaiter.gd:172-182:wait_until` <-> `addons/gut/awaiter.gd:185-195:wait_while`
+- 1.000 [executable]: `addons/gut/result_exporter.gd:103-112:write_json_file` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.978 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:124-182:_setup_ui` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:130-177:_on_button_pressed`
+- 0.950 [executable]: `addons/gut/summary.gd:204-220:log_end_run` <-> `addons/gut/utils.gd:245-257:create_script_from_source`
+- 0.947 [executable]: `addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file` <-> `addons/gut/gui/ShortcutDialog.gd:106-119:load_shortcuts_from_file`
+- 0.946 [executable]: `addons/gut/test.gd:1085-1096:assert_between` <-> `addons/gut/test.gd:1113-1124:assert_not_between`
+- 0.938 [executable]: `addons/gut/gui/ResultsTree.gd:51-64:_ready` <-> `addons/gut/gui/check_for_update.gd:24-35:_ready`
+- 0.938 [executable]: `addons/gut/gut_config.gd:174-184:write_options` <-> `addons/gut/result_exporter.gd:103-112:write_json_file`
+- 0.938 [executable]: `addons/gut/gut_config.gd:174-184:write_options` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.938 [executable]: `addons/gut/test.gd:1946-1965:assert_called` <-> `addons/gut/test.gd:1986-2005:assert_not_called`
+- 0.933 [executable]: `addons/GodotGAS/managers/gameplay_cue_manager.gd:97-107:_on_cue_finished` <-> `addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir`
+- 0.933 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/result_exporter.gd:103-112:write_json_file`
+- 0.933 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.933 [executable]: `addons/gut/gui/OutputText.gd:333-342:load_file` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.931 [executable]: `addons/gut/junit_xml_export.gd:34-52:_export_tests` <-> `addons/gut/junit_xml_export.gd:64-80:_export_scripts`
+- 0.929 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/diff_tool.gd:134-144:summarize`
+- 0.929 [executable]: `addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls` <-> `addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls`
+- 0.923 [executable]: `addons/gut/awaiter.gd:172-182:wait_until` <-> `addons/gut/gui/RunAtCursor.gd:46-58:_ready`
+- 0.923 [executable]: `addons/gut/awaiter.gd:185-195:wait_while` <-> `addons/gut/gui/RunAtCursor.gd:46-58:_ready`
+- 0.923 [executable]: `addons/gut/spy.gd:45-52:add_call` <-> `addons/gut/stubs.gd:63-72:add_stub`
+- 0.918 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:224-271:_sync_theme_colors` <-> `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:186-234:_sync_theme_colors`
+- 0.909 [executable]: `addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings` <-> `addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally`
+- 0.909 [executable]: `addons/gut/doubler.gd:179-188:_create_script_no_warnings` <-> `addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally`
+- 0.909 [executable]: `addons/gut/gui/GutBottomPanel.gd:198-205:_run_externally` <-> `addons/gut/gut_plugin.gd:109-120:gut_as_panel`
+- 0.906 [executable]: `addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>` <-> `addons/gut/result_exporter.gd:77-100:get_results_dictionary`
+- 0.905 [executable]: `addons/gut/test.gd:1809-1818:assert_typeof` <-> `addons/gut/test.gd:1822-1831:assert_not_typeof`
+- 0.900 [executable]: `addons/gut/gui/gut_logo.gd:37-45:GutEyeball._init` <-> `addons/gut/gui/option_maker.gd:94-101:add_blurb`
+- 0.882 [executable]: `addons/gut/gui/GutControl.gd:258-270:run_tests` <-> `addons/gut/gui/GutRunner.gd:148-159:run_from_editor`
+- 0.882 [executable]: `addons/gut/gui/ResultsTree.gd:241-257:_load_result_tree` <-> `addons/gut/input_sender.gd:326-337:_on_queue_item_ready`
+- 0.882 [executable]: `addons/gut/gut_config.gd:174-184:write_options` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.882 [executable]: `addons/gut/spy.gd:15-24:_find_parameters` <-> `addons/gut/test_collector.gd:141-149:has_script`
+- 0.875 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/gut_config.gd:174-184:write_options`
+- 0.875 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.875 [executable]: `addons/gut/collected_script.gd:113-123:import_from` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.875 [executable]: `addons/gut/gui/GutBottomPanel.gd:242-260:_apply_shortcuts` <-> `addons/gut/gui/OutputText.gd:124-141:_ready`
+- 0.875 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/gut_config.gd:174-184:write_options`
+- 0.875 [executable]: `addons/gut/gui/OutputText.gd:106-121:_test_running_setup` <-> `addons/gut/gui/ShortcutDialog.gd:25-35:_debug_ready`
+- 0.875 [executable]: `addons/gut/input_sender.gd:209-219:_init` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.875 [executable]: `addons/gut/test.gd:1880-1894:assert_string_starts_with` <-> `addons/gut/test.gd:1909-1924:assert_string_ends_with`
+- 0.870 [executable]: `addons/gut/gui/OutputText.gd:124-141:_ready` <-> `addons/gut/utils.gd:245-257:create_script_from_source`
+- 0.867 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/collected_script.gd:113-123:import_from`
+- 0.867 [executable]: `addons/gut/cli/optparse.gd:637-645:parse` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.867 [executable]: `addons/gut/collected_script.gd:113-123:import_from` <-> `addons/gut/input_sender.gd:209-219:_init`
+- 0.867 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/doubler.gd:81-92:_stub_to_call_super`
+- 0.867 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.867 [executable]: `addons/gut/gui/GutControl.gd:60-67:_draw` <-> `addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item`
+- 0.863 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:318-378:_build_tag_tree` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:186-238:_refresh_tag_tree`
+- 0.857 [executable]: `addons/gut/GutScene.gd:38-47:_set_gut` <-> `addons/gut/gui/gut_gui.gd:192-206:set_gut`
+- 0.857 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/gut.gd:273-283:_init`
+- 0.857 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.857 [executable]: `addons/gut/collected_script.gd:113-123:import_from` <-> `addons/gut/gut.gd:273-283:_init`
+- 0.857 [executable]: `addons/gut/gui/panel_controls.gd:99-108:GpcString._init` <-> `addons/gut/gut_to_move.gd:41-48:is_file_empty`
+- 0.857 [executable]: `addons/gut/junit_xml_export.gd:103-111:write_file` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.850 [executable]: `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel` <-> `addons/gut/gui/gut_gui.gd:39-55:_ready`
+- 0.850 [executable]: `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help` <-> `addons/gut/gui/gut_gui.gd:39-55:_ready`
+- 0.850 [executable]: `addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file` <-> `addons/gut/gui/check_for_update.gd:109-118:_on_update_detector_updated`
+- 0.850 [executable]: `addons/gut/orphan_counter.gd:38-50:GutOrphanage.process_orphans` <-> `addons/gut/result_exporter.gd:37-55:_export_scripts`
+- 0.848 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:124-182:_setup_ui` <-> `addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready`
+- 0.846 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:92-102:_ready` <-> `addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd:69-76:remove_tag`
+- 0.846 [executable]: `addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings` <-> `addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init`
+- 0.846 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/test.gd:290-297:_create_obj_from_type`
+- 0.846 [executable]: `addons/gut/diff_tool.gd:69-84:_find_differences` <-> `addons/gut/script_parser.gd:301-313:_get_instance_id`
+- 0.846 [executable]: `addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item` <-> `addons/gut/test_collector.gd:33-48:_populate_tests`
+- 0.846 [executable]: `addons/gut/gui/RunAtCursor.gd:46-58:_ready` <-> `addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button`
+- 0.846 [executable]: `addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init` <-> `addons/gut/gut_plugin.gd:109-120:gut_as_panel`
+- 0.846 [executable]: `addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init` <-> `addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init`
+- 0.846 [executable]: `addons/gut/gut.gd:273-283:_init` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.842 [executable]: `addons/gut/cli/gut_cli.gd:207-225:_print_gutconfigs` <-> `addons/gut/signal_watcher.gd:207-218:print_signal_summary`
+- 0.842 [executable]: `addons/gut/gui/ResultsTree.gd:51-64:_ready` <-> `addons/gut/summary.gd:204-220:log_end_run`
+- 0.840 [executable]: `addons/gut/gui/GutControl.gd:154-164:_reorder_dir_items` <-> `addons/gut/orphan_counter.gd:171-191:log_all`
+- 0.833 [executable]: `addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir` <-> `addons/GodotGAS/utilities/project_settings.gd:132-145:_init_project_settings_registry_cue`
+- 0.833 [executable]: `addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings` <-> `addons/gut/doubler.gd:179-188:_create_script_no_warnings`
+- 0.833 [executable]: `addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings` <-> `addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init`
+- 0.833 [executable]: `addons/gut/cli/change_project_warnings.gd:32-39:_setup_warning_settings` <-> `addons/gut/gut_plugin.gd:109-120:gut_as_panel`
+- 0.833 [executable]: `addons/gut/cli/change_project_warnings.gd:72-87:_apply_settings` <-> `addons/gut/gui/GutControl.gd:60-67:_draw`
+- 0.833 [executable]: `addons/gut/doubler.gd:179-188:_create_script_no_warnings` <-> `addons/gut/gut_plugin.gd:109-120:gut_as_panel`
+- 0.833 [executable]: `addons/gut/gui/ResultsTree.gd:134-144:_add_assert_item` <-> `addons/gut/gut.gd:471-480:_end_run`
+- 0.833 [executable]: `addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button` <-> `addons/gut/gui/option_maker.gd:94-101:add_blurb`
+- 0.833 [executable]: `addons/gut/gui/ShortcutDialog.gd:38-52:_ready` <-> `addons/gut/gui/check_for_update.gd:24-35:_ready`
+- 0.833 [executable]: `addons/gut/gui/panel_controls.gd:188-199:GpcSelect._init` <-> `addons/gut/test.gd:720-735:run_x_times`
+- 0.833 [executable]: `addons/gut/result_exporter.gd:103-112:write_json_file` <-> `addons/gut/test_collector.gd:152-161:export_tests`
+- 0.833 [executable]: `addons/gut/result_exporter.gd:116-125:write_summary_file` <-> `addons/gut/test_collector.gd:152-161:export_tests`
+- 0.833 [executable]: `addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method` <-> `addons/gut/test.gd:1579-1586:assert_signal_not_emitted`
+- 0.828 [executable]: `addons/gut/cli/optparse.gd:277-291:OptParseOptions.get_help_text` <-> `addons/gut/error_tracker.gd:151-165:get_fail_text_for_errors`
+- 0.826 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:130-177:_on_button_pressed` <-> `addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready`
+- 0.826 [executable]: `addons/gut/gui/OutputText.gd:124-141:_ready` <-> `addons/gut/summary.gd:204-220:log_end_run`
+- 0.826 [executable]: `addons/gut/gui/ResizeHandle.gd:76-88:_handle_right_input` <-> `addons/gut/gui/ResizeHandle.gd:91-107:_handle_left_input`
+- 0.826 [executable]: `addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init` <-> `addons/gut/gui/panel_controls.gd:386-409:GpcSaveLoad._init`
+- 0.824 [executable]: `addons/gut/GutScene.gd:16-29:_ready` <-> `addons/gut/gui/check_for_update.gd:24-35:_ready`
+- 0.824 [executable]: `addons/gut/doubler.gd:284-295:_parse_script` <-> `addons/gut/test.gd:1048-1056:assert_true`
+- 0.824 [executable]: `addons/gut/doubler.gd:284-295:_parse_script` <-> `addons/gut/test.gd:1061-1069:assert_false`
+- 0.824 [executable]: `addons/gut/doubler.gd:284-295:_parse_script` <-> `addons/gut/test.gd:1579-1586:assert_signal_not_emitted`
+- 0.824 [executable]: `addons/gut/doubler.gd:95-130:_get_base_script_text` <-> `addons/gut/doubler.gd:133-167:_get_singleton_text`
+- 0.824 [executable]: `addons/gut/gui/GutControl.gd:258-270:run_tests` <-> `addons/gut/gui/OutputText.gd:333-342:load_file`
+- 0.824 [executable]: `addons/gut/gui/GutControl.gd:60-67:_draw` <-> `addons/gut/signal_watcher.gd:57-66:_add_watched_signal`
+- 0.824 [executable]: `addons/gut/gui/GutRunner.gd:148-159:run_from_editor` <-> `addons/gut/gui/OutputText.gd:333-342:load_file`
+- 0.824 [executable]: `addons/gut/gui/OutputText.gd:333-342:load_file` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.824 [executable]: `addons/gut/gut_to_move.gd:41-48:is_file_empty` <-> `addons/gut/orphan_counter.gd:155-164:get_orphan_ids`
+- 0.824 [executable]: `addons/gut/result_exporter.gd:103-112:write_json_file` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.824 [executable]: `addons/gut/result_exporter.gd:116-125:write_summary_file` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.824 [executable]: `addons/gut/stubs.gd:75-83:get_all_stubs` <-> `addons/gut/test.gd:720-735:run_x_times`
+- 0.824 [executable]: `addons/gut/stubs.gd:75-83:get_all_stubs` <-> `addons/gut/warnings_manager.gd:137-144:create_warnings_dictionary_from_project_settings`
+- 0.818 [executable]: `addons/GodotGAS/components/ability_system_component.gd:127-156:_process` <-> `addons/GodotGAS/components/ability_system_component.gd:160-185:advance_turn`
+- 0.818 [executable]: `addons/gut/gui/about.gd:72-81:_make_text` <-> `addons/gut/update_detector.gd:311-318:get_summary_string`
+- 0.818 [executable]: `addons/gut/gui/gut_logo.gd:37-45:GutEyeball._init` <-> `addons/gut/gui/panel_controls.gd:60-69:GpcNumber._init`
+- 0.815 [executable]: `addons/gut/cli/gut_cli.gd:63-73:GutCliOptionResolver.to_s_verbose` <-> `addons/gut/junit_xml_export.gd:64-80:_export_scripts`
+- 0.815 [executable]: `addons/gut/doubler.gd:254-274:_double_scene_and_script` <-> `addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item`
+- 0.815 [executable]: `addons/gut/gut.gd:653-665:get_current_test_orphans` <-> `addons/gut/script_parser.gd:301-313:_get_instance_id`
+- 0.812 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:323-354:_on_set_tree_button_clicked` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:486-515:_on_attribute_tree_button_clicked`
+- 0.812 [executable]: `addons/GodotGAS/effects/gameplay_effect.gd:1-79:<file>` <-> `addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls`
+- 0.812 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status` <-> `addons/gut/test.gd:1048-1056:assert_true`
+- 0.812 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status` <-> `addons/gut/test.gd:1061-1069:assert_false`
+- 0.812 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:319-326:_set_status` <-> `addons/gut/test.gd:1579-1586:assert_signal_not_emitted`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:44-55:_enter_tree` <-> `addons/gut/gui/OutputText.gd:106-121:_test_running_setup`
+- 0.812 [executable]: `addons/GodotGAS/godot_gas_plugin.gd:44-55:_enter_tree` <-> `addons/gut/gui/ShortcutDialog.gd:25-35:_debug_ready`
+- 0.812 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/doubler.gd:81-92:_stub_to_call_super`
+- 0.812 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/result_exporter.gd:103-112:write_json_file`
+- 0.812 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.812 [executable]: `addons/gut/awaiter.gd:172-182:wait_until` <-> `addons/gut/gui/panel_controls.gd:15-32:BaseGutPanelControl._init`
+- 0.812 [executable]: `addons/gut/awaiter.gd:172-182:wait_until` <-> `addons/gut/gut.gd:451-465:_init_run`
+- 0.812 [executable]: `addons/gut/awaiter.gd:185-195:wait_while` <-> `addons/gut/gui/panel_controls.gd:15-32:BaseGutPanelControl._init`
+- 0.812 [executable]: `addons/gut/awaiter.gd:185-195:wait_while` <-> `addons/gut/gut.gd:451-465:_init_run`
+- 0.812 [executable]: `addons/gut/cli/gut_cli.gd:207-225:_print_gutconfigs` <-> `addons/gut/input_sender.gd:407-418:clear`
+- 0.812 [executable]: `addons/gut/cli/gut_cli.gd:228-239:_run_tests` <-> `addons/gut/gui/check_for_update.gd:71-82:check_for_update`
+- 0.812 [executable]: `addons/gut/cli/optparse.gd:637-645:parse` <-> `addons/gut/gui/OutputText.gd:333-342:load_file`
+- 0.812 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/gut_config.gd:174-184:write_options`
+- 0.812 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.812 [executable]: `addons/gut/doubler.gd:81-92:_stub_to_call_super` <-> `addons/gut/gut.gd:319-328:_print_versions`
+- 0.812 [executable]: `addons/gut/gui/GutBottomPanel.gd:187-195:_save_config` <-> `addons/gut/gut_config.gd:174-184:write_options`
+- 0.812 [executable]: `addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item` <-> `addons/gut/signal_watcher.gd:57-66:_add_watched_signal`
+- 0.812 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/gui/OutputText.gd:333-342:load_file`
+- 0.812 [executable]: `addons/gut/gui/OutputText.gd:333-342:load_file` <-> `addons/gut/gut_to_move.gd:41-48:is_file_empty`
+- 0.812 [executable]: `addons/gut/gui/OutputText.gd:333-342:load_file` <-> `addons/gut/input_sender.gd:209-219:_init`
+- 0.812 [executable]: `addons/gut/gui/check_for_update.gd:24-35:_ready` <-> `addons/gut/gui/gut_gui.gd:192-206:set_gut`
+- 0.812 [executable]: `addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init` <-> `addons/gut/gut.gd:674-691:_call_before_all`
+- 0.812 [executable]: `addons/gut/gui/panel_controls.gd:128-138:GpcMultiLineString._init` <-> `addons/gut/gut.gd:700-716:_call_after_all`
+- 0.812 [executable]: `addons/gut/gut.gd:1111-1118:export_tests` <-> `addons/gut/test.gd:1048-1056:assert_true`
+- 0.812 [executable]: `addons/gut/gut.gd:1111-1118:export_tests` <-> `addons/gut/test.gd:1061-1069:assert_false`
+- 0.812 [executable]: `addons/gut/input_sender.gd:209-219:_init` <-> `addons/gut/result_exporter.gd:103-112:write_json_file`
+- 0.812 [executable]: `addons/gut/input_sender.gd:209-219:_init` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.812 [executable]: `addons/gut/junit_xml_export.gd:103-111:write_file` <-> `addons/gut/result_exporter.gd:103-112:write_json_file`
+- 0.812 [executable]: `addons/gut/junit_xml_export.gd:103-111:write_file` <-> `addons/gut/result_exporter.gd:116-125:write_summary_file`
+- 0.812 [executable]: `addons/gut/result_exporter.gd:103-112:write_json_file` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.812 [executable]: `addons/gut/result_exporter.gd:116-125:write_summary_file` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.810 [executable]: `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:82-105:_setup_ui` <-> `addons/gut/utils.gd:245-257:create_script_from_source`
+- 0.810 [executable]: `addons/gut/gui/OutputText.gd:144-163:_add_other_ctrls` <-> `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help`
+- 0.810 [executable]: `addons/gut/gui/ShortcutDialog.gd:106-119:load_shortcuts_from_file` <-> `addons/gut/gui/check_for_update.gd:109-118:_on_update_detector_updated`
+- 0.808 [executable]: `addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item` <-> `addons/gut/gui/ResultsTree.gd:106-131:_add_script_tree_item`
+- 0.808 [executable]: `addons/gut/gui/OutputText.gd:124-141:_ready` <-> `addons/gut/script_parser.gd:301-313:_get_instance_id`
+- 0.808 [executable]: `addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls` <-> `addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init`
+- 0.808 [executable]: `addons/gut/gui/gut_gui.gd:70-85:_populate_ctrls` <-> `addons/gut/gui/panel_controls.gd:386-409:GpcSaveLoad._init`
+- 0.800 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:30-37:execute_cue` <-> `addons/GodotGAS/utilities/project_settings.gd:110-118:_init_project_settings_attributes_draft_config_path`
+- 0.800 [executable]: `addons/GodotGAS/cues/gameplay_cue_notify.gd:30-37:execute_cue` <-> `addons/GodotGAS/utilities/project_settings.gd:121-129:_init_project_settings_generated_tag_script_path`
+- 0.800 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/cli/optparse.gd:538-545:add_positional`
+- 0.800 [executable]: `addons/gut/cli/gut_cli.gd:228-239:_run_tests` <-> `addons/gut/gui/GutBottomPanel.gd:187-195:_save_config`
+- 0.800 [executable]: `addons/gut/cli/gut_cli.gd:228-239:_run_tests` <-> `addons/gut/gui/RunExternally.gd:155-166:_end_non_blocking`
+- 0.800 [executable]: `addons/gut/cli/optparse.gd:538-545:add_positional` <-> `addons/gut/junit_xml_export.gd:103-111:write_file`
+- 0.800 [executable]: `addons/gut/collected_script.gd:113-123:import_from` <-> `addons/gut/diff_tool.gd:134-144:summarize`
+- 0.800 [executable]: `addons/gut/comparator.gd:103-110:compare` <-> `addons/gut/gut_to_move.gd:41-48:is_file_empty`
+- 0.800 [executable]: `addons/gut/diff_formatter.gd:23-33:make_it` <-> `addons/gut/doubler.gd:284-295:_parse_script`
+- 0.800 [executable]: `addons/gut/diff_formatter.gd:23-33:make_it` <-> `addons/gut/test.gd:1538-1545:assert_signal_emitted`
+- 0.800 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/gui/GutControl.gd:41-57:_ready`
+- 0.800 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.800 [executable]: `addons/gut/gui/GutBottomPanel.gd:187-195:_save_config` <-> `addons/gut/gut_plugin.gd:127-140:_exit_tree`
+- 0.800 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item`
+- 0.800 [executable]: `addons/gut/gui/GutRunner.gd:210-218:quit` <-> `addons/gut/gui/OutputText.gd:307-314:set_all_fonts`
+- 0.800 [executable]: `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel` <-> `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help`
+- 0.800 [executable]: `addons/gut/gui/OutputText.gd:333-342:load_file` <-> `addons/gut/gui/panel_controls.gd:99-108:GpcString._init`
+- 0.800 [executable]: `addons/gut/gui/ResultsTree.gd:51-64:_ready` <-> `addons/gut/utils.gd:245-257:create_script_from_source`
+- 0.800 [executable]: `addons/gut/gui/check_for_update.gd:24-35:_ready` <-> `addons/gut/gut_menu.gd:54-74:make_menu`
+- 0.800 [executable]: `addons/gut/orphan_counter.gd:38-50:GutOrphanage.process_orphans` <-> `addons/gut/test_collector.gd:152-161:export_tests`
+- 0.800 [executable]: `addons/gut/result_exporter.gd:103-112:write_json_file` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.800 [executable]: `addons/gut/result_exporter.gd:116-125:write_summary_file` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.794 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:401-421:_on_create_set_pressed` <-> `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:586-608:_on_add_attribute_pressed`
+- 0.793 [executable]: `addons/GodotGAS/editor/dashboard_tabs/attribute_sets_tab.gd:401-421:_on_create_set_pressed` <-> `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:244-265:_on_add_tag_pressed`
+- 0.793 [executable]: `addons/gut/doubler.gd:254-274:_double_scene_and_script` <-> `addons/gut/editor_caret_context_notifier.gd:135-150:_on_editor_script_changed`
+- 0.792 [executable]: `addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd:300-316:_on_add_custom_tag` <-> `addons/GodotGAS/managers/gameplay_cue_manager.gd:51-66:execute_cue`
+- 0.792 [executable]: `addons/gut/gui/GutBottomPanel.gd:399-418:clear_results` <-> `addons/gut/gui/panel_controls.gd:242-266:GpcDirectory._init`
+- 0.792 [executable]: `addons/gut/gui/ShellOutOptions.gd:99-116:_ready` <-> `addons/gut/utils.gd:245-257:create_script_from_source`
+- 0.789 [executable]: `addons/GodotGAS/editor/dashboard_tabs/tag_manager_tab.gd:82-105:_setup_ui` <-> `addons/gut/gui/ResultsTree.gd:51-64:_ready`
+- 0.789 [executable]: `addons/GodotGAS/managers/gameplay_cue_manager.gd:51-66:execute_cue` <-> `addons/GodotGAS/utilities/project_settings.gd:96-107:_init_project_settings_attributes_output_dir`
+- 0.789 [executable]: `addons/gut/doubler.gd:284-295:_parse_script` <-> `addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method`
+- 0.789 [executable]: `addons/gut/error_tracker.gd:129-138:should_test_fail_from_errors` <-> `addons/gut/spy.gd:15-24:_find_parameters`
+- 0.789 [executable]: `addons/gut/gui/GutControl.gd:258-270:run_tests` <-> `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel`
+- 0.789 [executable]: `addons/gut/gui/GutControl.gd:258-270:run_tests` <-> `addons/gut/gut.gd:493-503:_export_junit_xml`
+- 0.789 [executable]: `addons/gut/gui/GutRunner.gd:148-159:run_from_editor` <-> `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help`
+- 0.789 [executable]: `addons/gut/gui/GutRunner.gd:148-159:run_from_editor` <-> `addons/gut/gut.gd:493-503:_export_junit_xml`
+- 0.789 [executable]: `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel` <-> `addons/gut/gui/GutRunner.gd:148-159:run_from_editor`
+- 0.789 [executable]: `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel` <-> `addons/gut/gut_config.gd:174-184:write_options`
+- 0.789 [executable]: `addons/gut/gui/GutRunner.gd:82-95:_write_results_for_gut_panel` <-> `addons/gut/utils.gd:509-518:get_file_as_text`
+- 0.789 [executable]: `addons/gut/gui/ResultsTree.gd:51-64:_ready` <-> `addons/gut/gui/ShortcutDialog.gd:38-52:_ready`
+- 0.789 [executable]: `addons/gut/gui/ResultsTree.gd:51-64:_ready` <-> `addons/gut/orphan_counter.gd:141-152:end_test`
+- 0.789 [executable]: `addons/gut/gui/ResultsTree.gd:91-103:_find_script_item_with_path` <-> `addons/gut/utils.gd:606-615:find_method_meta`
+- 0.789 [executable]: `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help` <-> `addons/gut/gut.gd:674-691:_call_before_all`
+- 0.789 [executable]: `addons/gut/gui/ShellOutOptions.gd:244-256:_show_help` <-> `addons/gut/gut.gd:700-716:_call_after_all`
+- 0.789 [executable]: `addons/gut/gui/ShortcutDialog.gd:89-99:save_shortcuts_to_file` <-> `addons/gut/gut_menu.gd:88-102:apply_gut_shortcuts`
+- 0.789 [executable]: `addons/gut/gui/check_for_update.gd:24-35:_ready` <-> `addons/gut/summary.gd:204-220:log_end_run`
+- 0.789 [executable]: `addons/gut/gut_config.gd:174-184:write_options` <-> `addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method`
+- 0.789 [executable]: `addons/gut/gut_config.gd:174-184:write_options` <-> `addons/gut/test_collector.gd:152-161:export_tests`
+- 0.789 [executable]: `addons/gut/script_parser.gd:157-165:GutParsedScript._get_native_methods` <-> `addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method`
+- 0.789 [executable]: `addons/gut/test.gd:1579-1586:assert_signal_not_emitted` <-> `addons/gut/test.gd:1705-1716:assert_signal_emit_count`
+- 0.789 [executable]: `addons/gut/test.gd:275-287:_fail_if_not_double_or_does_not_have_method` <-> `addons/gut/test.gd:1538-1545:assert_signal_emitted`
+- 0.786 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:468-478:_reset_form` <-> `addons/gut/gui/RunAtCursor.gd:46-58:_ready`
+- 0.786 [executable]: `addons/GodotGAS/editor/dashboard_tabs/cue_manager_tab.gd:468-478:_reset_form` <-> `addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button`
+- 0.786 [executable]: `addons/gut/UserFileViewer.gd:5-12:_get_file_as_text` <-> `addons/gut/test.gd:290-297:_create_obj_from_type`
+- 0.786 [executable]: `addons/gut/awaiter.gd:172-182:wait_until` <-> `addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button`
+- 0.786 [executable]: `addons/gut/awaiter.gd:185-195:wait_while` <-> `addons/gut/gui/ShellOutOptions.gd:151-160:_add_run_mode_button`
+- 0.786 [executable]: `addons/gut/cli/optparse.gd:538-545:add_positional` <-> `addons/gut/gut.gd:273-283:_init`
+- 0.786 [executable]: `addons/gut/cli/optparse.gd:538-545:add_positional` <-> `addons/gut/signal_watcher.gd:127-134:watch_signal`
+- 0.786 [executable]: `addons/gut/cli/optparse.gd:538-545:add_positional` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.786 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/gut.gd:273-283:_init`
+- 0.786 [executable]: `addons/gut/diff_tool.gd:134-144:summarize` <-> `addons/gut/update_detector.gd:205-215:fetch_remote_file`
+- 0.786 [executable]: `addons/gut/diff_tool.gd:87-104:_diff_array` <-> `addons/gut/diff_tool.gd:107-131:_diff_dictionary`
+- 0.786 [executable]: `addons/gut/doubler.gd:254-274:_double_scene_and_script` <-> `addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item`
+- 0.786 [executable]: `addons/gut/editor_caret_context_notifier.gd:135-150:_on_editor_script_changed` <-> `addons/gut/gui/GutControl.gd:111-134:_get_directory_tree_item`
+- 0.786 [executable]: `addons/gut/gui/GutBottomPanel.gd:187-195:_save_config` <-> `addons/gut/signal_watcher.gd:127-134:watch_signal`
+- 0.786 [executable]: `addons/gut/gui/GutBottomPanel.gd:399-418:clear_results` <-> `addons/gut/gui/panel_controls.gd:336-361:GpcFileDialogSuperPlus._init_controls`
+- 0.786 [executable]: `addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item` <-> `addons/gut/gut_loader.gd:31-45:_static_init`
+- 0.786 [executable]: `addons/gut/gui/GutControl.gd:100-108:_get_script_tree_item` <-> `addons/gut/signal_watcher.gd:127-134:watch_signal`
+- 0.786 [executable]: `addons/gut/gui/GutControl.gd:41-57:_ready` <-> `addons/gut/gui/about.gd:72-81:_make_text`
+- 0.786 [executable]: `addons/gut/gui/about.gd:72-81:_make_text` <-> `addons/gut/junit_xml_export.gd:103-111:write_file`
+- 0.786 [executable]: `addons/gut/gui/about.gd:72-81:_make_text` <-> `addons/gut/test.gd:697-709:use_parameters`
+- 0.786 [executable]: `addons/gut/gut.gd:297-305:_ready` <-> `addons/gut/gut_plugin.gd:127-140:_exit_tree`
+- 0.786 [executable]: `addons/gut/orphan_counter.gd:171-191:log_all` <-> `addons/gut/test_collector.gd:33-48:_populate_tests`
+- 0.784 [executable]: `addons/gut/gut.gd:721-748:_should_skip_script` <-> `addons/gut/method_maker.gd:155-182:get_function_text`
+- 0.784 [executable]: `addons/gut/method_maker.gd:155-182:get_function_text` <-> `addons/gut/script_parser.gd:316-338:parse`
+- 0.783 [executable]: `addons/gut/gui/GutBottomPanel.gd:71-108:_ready` <-> `addons/gut/gui/ShellOutOptions.gd:68-96:_debug_ready`
+- 0.783 [executable]: `addons/gut/gui/ResultsTree.gd:199-224:_add_script_to_tree` <-> `addons/gut/update_detector.gd:281-308:get_update_string`
+- 0.783 [executable]: `addons/gut/gui/check_for_update.gd:85-92:_populate_text` <-> `addons/gut/test.gd:1273-1288:assert_accessors`
+- 0.783 [executable]: `addons/gut/logger.gd:79-91:_indent_text` <-> `addons/gut/strutils.gd:160-175:indent_text`
+
+## Scan Issues
+
+- None

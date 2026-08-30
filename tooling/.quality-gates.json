@@ -1,0 +1,228 @@
+{
+  "loc": {
+    "max_file_lines": 450,
+    "max_function_lines": 120,
+    "include_extensions": [
+      ".gd",
+      ".py",
+      ".ps1"
+    ],
+    "exclude_globs": [
+      "addons/gut/**"
+    ],
+    "file_length_allowlist": [
+      {
+        "glob": "addons/GodotGAS/components/ability_system_component.gd",
+        "max_lines": 520,
+        "reason": "The facade is the single public surface over six runtimes: nine regions of one-line delegation, no branching, no state of its own. Its length tracks how much the engine can do rather than how tangled it is, and the file limit exists to catch the second. Splitting it would give callers two places to look for one component, which is the thing the facade was introduced to prevent. Raised to 520 rather than lifted, so it still cannot grow without being noticed, and because sitting exactly on 450 made a five-line bug fix require deleting comments that explained decisions."
+      }
+    ],
+    "function_parameter_allowlist": [
+      {
+        "glob": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+        "function": "_parse_property",
+        "reason": "Godot declares EditorInspectorPlugin._parse_property with seven parameters. Overriding it with fewer stops the override working, and the tag picker has no other entry point. The signature is the engine's, not this project's."
+      }
+    ]
+  },
+  "test_location": {
+    "include_extensions": [
+      ".gd",
+      ".py",
+      ".ps1"
+    ],
+    "allowed_directories": [
+      "test",
+      "tests",
+      "tooling/gates/tests"
+    ],
+    "test_file_globs": [
+      "test_*.gd",
+      "*_test.gd",
+      "test_*.py",
+      "*_test.py"
+    ],
+    "require_test_directory": true,
+    "exclude_globs": [
+      "addons/gut/**"
+    ]
+  },
+  "magic_strings": {
+    "include_extensions": [
+      ".gd",
+      ".py",
+      ".ps1"
+    ],
+    "minimum_length": 3,
+    "minimum_occurrences": 2,
+    "minimum_distinct_files": 2,
+    "fail_on": [
+      "repeated",
+      "templates",
+      "colors"
+    ],
+    "allow_literals": [
+      {
+        "literal": "__main__",
+        "reason": "Python's own entry-point guard, not a value this project chose."
+      },
+      {
+        "literal": "export",
+        "reason": "A GDScript keyword the emitters write and the gates' grammar tables list."
+      },
+      {
+        "literal": "function",
+        "reason": "A structural word in both the LOC gate's regions and its report vocabulary."
+      },
+      {
+        "literal": "test",
+        "reason": "Names the test category in the gates and the test directory in the policy."
+      },
+      {
+        "literal": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+        "reason": "@icon() annotation. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
+      },
+      {
+        "literal": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+        "reason": "preload() of an icon. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
+      },
+      {
+        "literal": "res://addons/GodotGAS/icons/godot_gas_icon_star.svg",
+        "reason": "preload() of an icon. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
+      },
+      {
+        "literal": "res://addons/GodotGAS/managers/gameplay_cue_manager.gd",
+        "reason": "The autoload's script: preload() in the ASC needs the type, and the plugin needs the same path to register the autoload. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
+      },
+      {
+        "literal": "or_greater",
+        "reason": "@export_range hint on three properties. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
+      },
+      {
+        "literal": "class_name",
+        "reason": "The addon emits GDScript and the Python gates describe GDScript's grammar, so both mention this keyword. Two languages cannot share one constant."
+      },
+      {
+        "literal": "const",
+        "reason": "The addon emits GDScript and the Python gates describe GDScript's grammar, so both mention this keyword. Two languages cannot share one constant."
+      },
+      {
+        "literal": "return",
+        "reason": "The addon emits GDScript and the Python gates describe GDScript's grammar, so both mention this keyword. Two languages cannot share one constant."
+      },
+      {
+        "literal": "pass",
+        "reason": "The addon emits GDScript and the Python gates describe GDScript's grammar, so both mention this keyword. Two languages cannot share one constant."
+      },
+      {
+        "literal": "--list",
+        "reason": "One contract spelled on both sides of a language boundary: the Python gates declare it and tooling/verify.ps1 consumes it. PowerShell cannot import a Python constant."
+      },
+      {
+        "literal": "PASS",
+        "reason": "One contract spelled on both sides of a language boundary: the Python gates declare it and tooling/verify.ps1 consumes it. PowerShell cannot import a Python constant."
+      },
+      {
+        "literal": "FAIL",
+        "reason": "One contract spelled on both sides of a language boundary: the Python gates declare it and tooling/verify.ps1 consumes it. PowerShell cannot import a Python constant."
+      },
+      {
+        "literal": "test_*.py",
+        "reason": "One contract spelled on both sides of a language boundary: the Python gates declare it and tooling/verify.ps1 consumes it. PowerShell cannot import a Python constant."
+      },
+      {
+        "literal": "python",
+        "reason": "Names the interpreter to launch in verify.ps1 and the language in the gates' catalog."
+      },
+      {
+        "literal": "git",
+        "reason": "The executable verify.ps1 runs and the discovery backend the gates name."
+      },
+      {
+        "literal": "line",
+        "reason": "A finding's line number in the duplication gate and a text line in the strict-typing pass; unrelated meanings."
+      },
+      {
+        "literal": "name",
+        "reason": "An attribute's name, a project setting's name, and a captured region's name in three unrelated modules."
+      },
+      {
+        "literal": "normal",
+        "reason": "A RichTextLabel theme slot in the dashboard theme and a raycast hit's surface normal; unrelated meanings."
+      },
+      {
+        "literal": "params",
+        "reason": "A parameter list in two halves of the LOC gate, split so the gate stays under its own file limit."
+      },
+      {
+        "literal": "loc",
+        "reason": "The gate's own name, in the gate and in the runner's roster of gates."
+      },
+      {
+        "literal": "State Management",
+        "reason": "An inspector category two unrelated resources legitimately share. Renaming one to satisfy the gate would make the editor read worse."
+      },
+      {
+        "literal": "gates",
+        "reason": "tooling/_gatelib.py must name the gates directory to put it on sys.path, and gate_io declares the same segment as a constant once inside it. A bootstrap cannot use the constant it bootstraps. Every other tooling spelling of this word was collapsed into that constant."
+      },
+      {
+        "literal": "res://addons/GodotGAS/cues/gameplay_cue_entry.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
+      },
+      {
+        "literal": "res://addons/GodotGAS/cues/gameplay_cue_notify.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
+      },
+      {
+        "literal": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
+      },
+      {
+        "literal": "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
+      },
+      {
+        "literal": "res://addons/GodotGAS/target_data/gameplay_target_hit.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
+      },
+      {
+        "literal": "duplication",
+        "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
+      }
+    ],
+    "allow_globs": [],
+    "theme_globs": [
+      "**/theme/**",
+      "**/themes/**",
+      "**/styles/**"
+    ],
+    "exclude_globs": [
+      "addons/gut/**"
+    ]
+  },
+  "duplication": {
+    "pair_allowlist": [
+      {
+        "left": "addons/GodotGAS/targeting/gameplay_*_request_*d.gd:<file>",
+        "right": "addons/GodotGAS/targeting/gameplay_*_request_*d.gd:<file>",
+        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3."
+      },
+      {
+        "left": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:raycast_2d",
+        "right": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:raycast_3d",
+        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. PhysicsRayQueryParameters2D and 3D share no ancestor."
+      },
+      {
+        "left": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:overlap_2d",
+        "right": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:overlap_3d",
+        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. CircleShape2D and SphereShape3D share no ancestor either."
+      },
+      {
+        "left": "test/unit/test_targeting_2d.gd:*",
+        "right": "test/unit/test_targeting_3d.gd:*",
+        "reason": "The two suites ask the same questions of the two physics servers, which is the point: the 2D suite passing says nothing about whether a sphere sweep reports what a circle sweep does. Only the cross-dimension pairing is declared here - duplication inside either file is still caught."
+      }
+    ]
+  }
+}
