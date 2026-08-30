@@ -15,7 +15,6 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
-McpInteractionServer="*res://mcp_interaction_server.gd"
 
 GameplayCueManager="*res://addons/GodotGAS/managers/gameplay_cue_manager.gd"
 

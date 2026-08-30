@@ -16,7 +16,6 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayTagRegistry extends Resource
 
-const TagGenerator = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_generator.gd")
 
 ## A tag is one or more dot-separated segments, each starting with an uppercase
 ## letter. Compiled once, lazily, rather than per call.
@@ -56,7 +55,7 @@ func add_tag(tag_string: String) -> String:
 	tags.sort_custom(_compare_tags)
 
 	emit_changed()
-	TagGenerator.generate_tags_file(tags)
+	GameplayTagGenerator.generate_tags_file(tags)
 	_save_if_backed_by_a_file()
 	return formatted_tag
 
@@ -97,7 +96,7 @@ func remove_tag(tag_name: StringName) -> void:
 		return
 	tags.erase(tag_name)
 	emit_changed()
-	TagGenerator.generate_tags_file(tags)
+	GameplayTagGenerator.generate_tags_file(tags)
 	_save_if_backed_by_a_file()
 #endregion
 

@@ -27,9 +27,6 @@ const PLUGIN_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas.svg"
 
 const DASHBOARD_SCENE: PackedScene = preload("res://addons/GodotGAS/editor/godot_gas_dashboard.tscn")
 const GameplayTagInspectorPlugin = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd")
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
-const CueRegistry = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
-const TagRegistry = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_registry.gd")
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
 const AUTOLOAD_SETTING_PREFIX: String = "autoload/"
@@ -105,7 +102,7 @@ func _seed_cue_registry() -> void:
 	var path: String = GodotGasProjectSettings.get_registry_cue_path()
 	if FileAccess.file_exists(path):
 		return
-	var registry: GameplayCueRegistry = CueRegistry.new()
+	var registry: GameplayCueRegistry = GameplayCueRegistry.new()
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	ResourceSaver.save(registry, path)
 
@@ -114,7 +111,7 @@ func _seed_tag_registry() -> void:
 	var path: String = GodotGasProjectSettings.get_registry_tag_path()
 	if FileAccess.file_exists(path):
 		return
-	var registry: GameplayTagRegistry = TagRegistry.new()
+	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
 	for tag: String in EXAMPLE_TAGS:
 		registry.add_tag(tag)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())

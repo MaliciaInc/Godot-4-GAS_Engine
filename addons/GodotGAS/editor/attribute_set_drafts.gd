@@ -15,7 +15,6 @@
 @tool
 class_name AttributeSetDrafts extends RefCounted
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## The section name a ConfigFile reserves for its own settings, so a set may not
 ## be called this.

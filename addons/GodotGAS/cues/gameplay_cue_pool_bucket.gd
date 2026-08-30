@@ -14,9 +14,8 @@
 ## @meta_license: MIT
 class_name GameplayCuePoolBucket extends RefCounted
 
-const CueNotify = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
 
-var items: Array[CueNotify] = []
+var items: Array[GameplayCueNotify] = []
 
 
 func is_empty() -> bool:
@@ -25,13 +24,13 @@ func is_empty() -> bool:
 
 ## Take a dormant cue, or null when the bucket is empty. The caller instantiates
 ## a fresh one in that case; this class never decides that for it.
-func take() -> CueNotify:
+func take() -> GameplayCueNotify:
 	if items.is_empty():
 		return null
 	return items.pop_back()
 
 
-func give(cue: CueNotify) -> void:
+func give(cue: GameplayCueNotify) -> void:
 	if cue != null and not items.has(cue):
 		items.append(cue)
 

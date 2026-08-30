@@ -14,16 +14,15 @@ class_name GameplayCueRegistry extends Resource
 ## The element type comes from preload, not the global `GameplayCueEntry`
 ## name. The GameplayCueManager autoload preloads this file, and Godot
 ## parses it before a global class cache exists on a never-imported checkout.
-const CueEntry = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
 
 ## The list of all registered gameplay cues.
-@export var entries: Array[CueEntry] = []
+@export var entries: Array[GameplayCueEntry] = []
 
 
 #region Registry Queries
 ## Helper to find a PackedScene by its mapped gameplay tag quickly.
 func get_scene_for_tag(tag: StringName) -> PackedScene:
-	for entry: CueEntry in entries:
+	for entry: GameplayCueEntry in entries:
 		if entry != null and entry.tag == tag:
 			return entry.scene
 	return null

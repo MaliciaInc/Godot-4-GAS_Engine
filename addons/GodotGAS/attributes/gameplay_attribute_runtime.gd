@@ -23,11 +23,6 @@
 ## @meta_license: MIT
 class_name GameplayAttributeRuntime extends RefCounted
 
-const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const Contribution = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
-const BaseMutation = preload("res://addons/GodotGAS/attributes/attribute_base_mutation.gd")
-const MutationResult = preload("res://addons/GodotGAS/attributes/attribute_mutation_result.gd")
-const EvaluationResult = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
 
 ## The node handed to `post_attribute_change`, normally the ASC.
 var owner_node: Node = null
@@ -129,11 +124,11 @@ func contributions_for(attribute_name: StringName) -> Array[AttributeModifierCon
 ##
 ## Pure: reads state, writes none. `recompose` is what turns this into a value.
 func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
-	var result: AttributeEvaluationResult = EvaluationResult.new()
+	var result: AttributeEvaluationResult = AttributeEvaluationResult.new()
 
 	var attribute_set: AttributeSet = find_set(attribute_name)
 	if attribute_set == null:
-		result.status = Status.Status.ATTRIBUTE_NOT_FOUND
+		result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 		return result
 
 	var attribute: AttributeData = attribute_set.get(String(attribute_name))
@@ -144,7 +139,7 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 	result.raw_value = composed
 	var clamped: float = attribute_set.pre_attribute_change(attribute_name, composed)
 	if not is_finite(clamped):
-		result.status = Status.Status.NON_FINITE_VALUE
+		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 		return result
 
 	result.final_value = clamped
@@ -173,14 +168,14 @@ func _compose(
 				# Ignoring it silently is how a designer ships a stat that is
 				# quietly wrong instead of loudly broken.
 				if is_zero_approx(contribution.magnitude):
-					result.status = Status.Status.DIVISION_BY_ZERO
+					result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
 					return 0.0
 				product_divide *= contribution.magnitude
 			GameplayEffectModifier.Operation.OVERRIDE:
 				if _override_beats(contribution, winner):
 					winner = contribution
 			_:
-				result.status = Status.Status.INVALID_OPERATION
+				result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
 				return 0.0
 
 	var composed: float = ((base + total_add) * product_multiply) / product_divide
@@ -191,7 +186,7 @@ func _compose(
 		result.winning_override_modifier_index = winner.modifier_index
 
 	if not is_finite(composed):
-		result.status = Status.Status.NON_FINITE_VALUE
+		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 		return 0.0
 
 	return composed
@@ -217,12 +212,12 @@ func _override_beats(
 ## Returns what happened. The caller emits from the result; this never emits,
 ## so a query and a notification can never interleave.
 func recompose(attribute_name: StringName) -> AttributeMutationResult:
-	var mutation: AttributeMutationResult = MutationResult.new()
+	var mutation: AttributeMutationResult = AttributeMutationResult.new()
 	mutation.attribute_name = attribute_name
 
 	var attribute: AttributeData = find(attribute_name)
 	if attribute == null:
-		mutation.status = Status.Status.ATTRIBUTE_NOT_FOUND
+		mutation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 		return mutation
 
 	mutation.old_base_value = attribute.base_value
@@ -312,7 +307,7 @@ func stage_base_write(attribute_name: StringName, requested: float) -> Attribute
 		return null
 
 	var attribute: AttributeData = attribute_set.get(String(attribute_name))
-	var staged: AttributeBaseMutation = BaseMutation.new()
+	var staged: AttributeBaseMutation = AttributeBaseMutation.new()
 	staged.attribute_name = attribute_name
 	staged.old_base_value = attribute.base_value
 	staged.requested_base_value = requested
@@ -324,16 +319,16 @@ func stage_base_write(attribute_name: StringName, requested: float) -> Attribute
 ## caller's next step, because it must happen once after the whole batch rather
 ## than once per attribute.
 func commit_base_write(staged: AttributeBaseMutation) -> AttributeMutationResult:
-	var mutation: AttributeMutationResult = MutationResult.new()
+	var mutation: AttributeMutationResult = AttributeMutationResult.new()
 	mutation.attribute_name = staged.attribute_name
 
 	var attribute: AttributeData = find(staged.attribute_name)
 	if attribute == null:
-		mutation.status = Status.Status.ATTRIBUTE_NOT_FOUND
+		mutation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 		return mutation
 
 	if not is_finite(staged.committed_base_value):
-		mutation.status = Status.Status.NON_FINITE_VALUE
+		mutation.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 		return mutation
 
 	mutation.old_base_value = attribute.base_value

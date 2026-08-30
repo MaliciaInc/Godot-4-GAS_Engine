@@ -14,7 +14,7 @@
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
-extends Object
+class_name GodotGasProjectSettings extends Object
 
 enum EditorTagsTagEditorPropertyMatchType {
 	PREFIX,

@@ -15,7 +15,6 @@
 ## @meta_license: MIT
 class_name GameplayEventRuntime extends RefCounted
 
-const EventData = preload("res://addons/GodotGAS/events/gameplay_event_data.gd")
 
 var owner_asc: AbilitySystemComponent = null
 
@@ -70,7 +69,7 @@ static func matches(event_tag: StringName, listener_tag: StringName) -> bool:
 ## Build the event an effect broadcasts, so the six fields are populated in one
 ## place rather than at each of the call sites that fire one.
 static func from_spec(event_tag: StringName, spec: GameplayEffectSpec, target: Node) -> GameplayEventData:
-	var event: GameplayEventData = EventData.new()
+	var event: GameplayEventData = GameplayEventData.new()
 	event.event_tag = event_tag
 	event.target = target
 	event.context = spec.context

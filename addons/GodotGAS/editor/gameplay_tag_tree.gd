@@ -14,10 +14,10 @@
 @tool
 class_name GameplayTagTree extends RefCounted
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 const SEPARATOR: String = "."
 const UNAVAILABLE_TOOLTIP: String = "Tag already mapped to a Cue"
+const REGISTRY_MISSING: String = "GodotGAS: tag registry not found at "
 
 
 ## How one tag should be drawn.
@@ -25,6 +25,20 @@ class Style extends RefCounted:
 	var leaf_icon: Texture2D = null
 	var leaf_color: Color = Color.WHITE
 	var unavailable_color: Color = Color.GRAY
+
+	## An optional per-leaf action, e.g. the tag manager's delete button.
+	## Only leaves get it, so a grouping node can never be deleted.
+	var leaf_button: Texture2D = null
+	var leaf_button_id: int = 0
+	var leaf_button_tooltip: String = ""
+
+	## Draw each leaf as a checkbox, ticked when it is in `checked`.
+	##
+	## The inspector property picks several tags at once rather than one, which
+	## is the only way its tree differs from the pickers'. It is a decoration,
+	## not a different hierarchy, so it does not justify a second walk.
+	var checkable: bool = false
+	var checked: Array[StringName] = []
 
 
 ## Populate `tree` from the tag registry.
@@ -69,12 +83,21 @@ class Run extends RefCounted:
 		return not needle.is_empty()
 
 
+## The tag registry, or null when the project has not created one.
+##
+## Silent in a project that has simply not declared any tags yet, and loud
+## in one where the addon is enabled and the registry should exist. Callers
+## used to each decide this, so the same absence was a warning in one tab
+## and an error in another.
 static func load_registry() -> GameplayTagRegistry:
 	var path: String = GodotGasProjectSettings.get_registry_tag_path()
-	if not ResourceLoader.exists(path):
-		push_error("GodotGAS: tag registry not found at " + path)
-		return null
-	return load(path)
+	if ResourceLoader.exists(path):
+		return load(path)
+	if Engine.is_editor_hint() and EditorInterface.is_plugin_enabled(
+		GodotGasProjectSettings.ADDON_NAME
+	):
+		push_warning(REGISTRY_MISSING + path)
+	return null
 
 
 ## Walk one tag's segments, reusing branches that already exist.
@@ -111,8 +134,17 @@ static func _decorate_leaf(
 		leaf.set_tooltip_text(0, UNAVAILABLE_TOOLTIP)
 		return
 
+	# Before the text is written: switching cell mode afterwards is what makes
+	# a checkable row come up blank.
+	if style.checkable:
+		leaf.set_cell_mode(0, TreeItem.CELL_MODE_CHECK)
+		leaf.set_checked(0, style.checked.has(tag))
+		leaf.set_editable(0, true)
+
 	leaf.set_icon(0, style.leaf_icon)
 	leaf.set_custom_color(0, style.leaf_color)
 	leaf.set_text(0, leaf.get_text(0) + " (" + String(tag) + ")")
 	# Only a leaf carries the tag, so a grouping node can never be picked.
 	leaf.set_metadata(0, tag)
+	if style.leaf_button != null:
+		leaf.add_button(0, style.leaf_button, style.leaf_button_id, false, style.leaf_button_tooltip)

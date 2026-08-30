@@ -70,23 +70,17 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 #endregion
 
 
-const AttributeRuntimeScript = preload("res://addons/GodotGAS/attributes/gameplay_attribute_runtime.gd")
-const TagRuntimeScript = preload("res://addons/GodotGAS/components/gameplay_tag_runtime.gd")
-const EffectRuntimeScript = preload("res://addons/GodotGAS/effects/gameplay_effect_runtime.gd")
-const SchedulerScript = preload("res://addons/GodotGAS/effects/gameplay_effect_scheduler.gd")
-const AbilityRuntimeScript = preload("res://addons/GodotGAS/components/ability_runtime.gd")
-const EventRuntimeScript = preload("res://addons/GodotGAS/events/gameplay_event_runtime.gd")
-const EvaluatorScript = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
-const SpecScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
-const ContextScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+# The cue manager is an autoload, so its script cannot also declare a
+# class_name: the singleton already owns that global name. The type still
+# has to come from somewhere, so this one alias stays.
 const CueManagerScript = preload("res://addons/GodotGAS/managers/gameplay_cue_manager.gd")
 
-var attributes: GameplayAttributeRuntime = AttributeRuntimeScript.new()
-var tags: GameplayTagRuntime = TagRuntimeScript.new()
-var effects: GameplayEffectRuntime = EffectRuntimeScript.new()
-var scheduler: GameplayEffectScheduler = SchedulerScript.new()
-var ability_runtime: AbilityRuntime = AbilityRuntimeScript.new()
-var events: GameplayEventRuntime = EventRuntimeScript.new()
+var attributes: GameplayAttributeRuntime = GameplayAttributeRuntime.new()
+var tags: GameplayTagRuntime = GameplayTagRuntime.new()
+var effects: GameplayEffectRuntime = GameplayEffectRuntime.new()
+var scheduler: GameplayEffectScheduler = GameplayEffectScheduler.new()
+var ability_runtime: AbilityRuntime = AbilityRuntime.new()
+var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
 var _cleaned_up: bool = false
 
@@ -297,8 +291,8 @@ func apply_gameplay_effect(
 	if effect == null:
 		return null
 	var instigator: Node = source_asc.get_effect_target() if source_asc != null else get_effect_target()
-	var context: GameplayEffectContext = ContextScript.new(instigator)
-	return apply_effect_spec(SpecScript.new(effect, context, effect_level))
+	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
+	return apply_effect_spec(GameplayEffectSpec.new(effect, context, effect_level))
 
 
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:
@@ -331,17 +325,17 @@ func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 	if effect == null:
 		return true
 
-	var context: GameplayEffectContext = ContextScript.new(get_effect_target())
-	var probe: GameplayEffectSpec = SpecScript.new(effect, context, effect_level)
+	var context: GameplayEffectContext = GameplayEffectContext.new(get_effect_target())
+	var probe: GameplayEffectSpec = GameplayEffectSpec.new(effect, context, effect_level)
 
-	var request: GameplayEffectEvaluator.Request = EvaluatorScript.Request.new()
+	var request: GameplayEffectEvaluator.Request = GameplayEffectEvaluator.Request.new()
 	request.spec = probe
 	request.attributes = attributes
 	request.owner_asc = self
 	request.application_order = 0
-	request.mode = EvaluatorScript.Mode.BASE_MUTATION
+	request.mode = GameplayEffectEvaluator.Mode.BASE_MUTATION
 
-	var evaluation: GameplayEffectEvaluationResult = EvaluatorScript.evaluate(request)
+	var evaluation: GameplayEffectEvaluationResult = GameplayEffectEvaluator.evaluate(request)
 	if not evaluation.is_ok():
 		return false
 

@@ -15,10 +15,6 @@
 ## @meta_license: MIT
 class_name GameplayEffectRuntime extends RefCounted
 
-const Evaluator = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
-const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const ActiveEffect = preload("res://addons/GodotGAS/effects/active_gameplay_effect.gd")
-const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 ## The facade this runtime emits through. Signals belong to the ASC because it
 ## is the node other systems connect to.
@@ -86,13 +82,13 @@ func apply(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 
 
 func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluationResult:
-	var request: GameplayEffectEvaluator.Request = Evaluator.Request.new()
+	var request: GameplayEffectEvaluator.Request = GameplayEffectEvaluator.Request.new()
 	request.spec = spec
 	request.attributes = attributes
 	request.owner_asc = owner_asc
 	request.application_order = order
 	request.mode = _mode_for(spec)
-	return Evaluator.evaluate(request)
+	return GameplayEffectEvaluator.evaluate(request)
 
 
 ## INSTANT and periodic effects transform the durable value once. DURATION and
@@ -100,10 +96,10 @@ func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluation
 ## because a periodic contributor would compound itself on every tick.
 static func _mode_for(spec: GameplayEffectSpec) -> GameplayEffectEvaluator.Mode:
 	if spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT:
-		return Evaluator.Mode.BASE_MUTATION
+		return GameplayEffectEvaluator.Mode.BASE_MUTATION
 	if spec.period > 0.0:
-		return Evaluator.Mode.BASE_MUTATION
-	return Evaluator.Mode.CONTRIBUTION
+		return GameplayEffectEvaluator.Mode.BASE_MUTATION
+	return GameplayEffectEvaluator.Mode.CONTRIBUTION
 
 
 func _report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
@@ -125,7 +121,7 @@ func _commit(
 		for staged: AttributeBaseMutation in evaluation.base_mutations:
 			attributes.commit_base_write(staged)
 
-	var active: ActiveGameplayEffect = ActiveEffect.new(spec, order)
+	var active: ActiveGameplayEffect = ActiveGameplayEffect.new(spec, order)
 	active.contributed_modifiers = evaluation.contributions
 	attributes.add_contributions(evaluation.contributions)
 
@@ -301,7 +297,7 @@ func _play_cues(cue_tags: Array[StringName], spec: GameplayEffectSpec) -> void:
 
 
 func _cue_params_for(cue_tag: StringName, spec: GameplayEffectSpec) -> GameplayCueParams:
-	var params: GameplayCueParams = CueParams.new()
+	var params: GameplayCueParams = GameplayCueParams.new()
 	params.cue_tag = cue_tag
 	params.instigator = spec.context.instigator if spec.context != null else null
 	params.target = owner_asc.get_effect_target()

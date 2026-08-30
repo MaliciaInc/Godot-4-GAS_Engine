@@ -17,7 +17,6 @@
 extends EditorInspectorPlugin
 
 const GameplayTagEditorProperty = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_editor_property.gd")
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## The property name the tag registry itself uses for its tag list.
 const REGISTRY_PROPERTY: String = "tags"

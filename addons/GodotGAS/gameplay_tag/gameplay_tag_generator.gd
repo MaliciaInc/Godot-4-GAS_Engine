@@ -12,7 +12,8 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayTagGenerator extends RefCounted
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+## The line printed once a generated file is written.
+const GENERATED_REPORT: String = "GodotGAS: generated %s with %d constants."
 
 ## Anything outside this set becomes an underscore in a generated identifier.
 const IDENTIFIER_PATTERN: String = "[^a-zA-Z0-9_]"
@@ -27,9 +28,9 @@ const HEADER_LINES: Array[String] = [
 	"## StringName references to the project's gameplay tags.",
 	"##",
 	"## @meta_addon: GodotGAS, Arhalies fork",
-	"## @meta_license: MIT",
+	GDScriptSource.LICENSE_DOC_LINE,
 	"",
-	"@tool",
+	GDScriptSource.TOOL_ANNOTATION,
 	"class_name GameplayTags",
 	"",
 ]
@@ -51,7 +52,7 @@ static func generate_tags_file(tags: Array[StringName]) -> void:
 		file.store_line(constant_line(tag))
 
 	file.close()
-	print("GodotGAS: generated " + output_path + " with " + str(tags.size()) + " constants.")
+	print(GENERATED_REPORT % [output_path, tags.size()])
 
 
 ## One `const NAME: StringName = &"Tag"` line.

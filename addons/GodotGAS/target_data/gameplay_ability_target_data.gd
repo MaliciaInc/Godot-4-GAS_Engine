@@ -18,13 +18,12 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbilityTargetData extends RefCounted
 
-const TargetHit = preload("res://addons/GodotGAS/target_data/gameplay_target_hit.gd")
 
 ## Strictly unique target nodes captured by the ability.
 var _target_nodes: Array[Node] = []
 
 ## Every hit, in capture order. One node may appear in several.
-var _hits: Array[TargetHit] = []
+var _hits: Array[GameplayTargetHit] = []
 
 
 #region Appenders
@@ -33,7 +32,7 @@ var _hits: Array[TargetHit] = []
 ## Returns whether the hit was accepted. A caller that ignores the return value
 ## still cannot corrupt the payload: a rejected hit adds nothing at all.
 func append_physics_hit(hit_dict: Dictionary) -> bool:
-	var hit: TargetHit = TargetHit.try_from_physics_hit(hit_dict)
+	var hit: GameplayTargetHit = GameplayTargetHit.try_from_physics_hit(hit_dict)
 	if hit == null:
 		return false
 	_record(hit)
@@ -49,19 +48,19 @@ func append_node(node: Node) -> bool:
 	if node == null:
 		return false
 
-	var hit: TargetHit = TargetHit.new()
+	var hit: GameplayTargetHit = GameplayTargetHit.new()
 	hit.collider = node
 
 	var canvas_node: Node2D = node as Node2D
 	if canvas_node != null:
-		hit.space_kind = TargetHit.SpaceKind.TWO_D
+		hit.space_kind = GameplayTargetHit.SpaceKind.TWO_D
 		hit.position_2d = canvas_node.global_position
 		_record(hit)
 		return true
 
 	var spatial_node: Node3D = node as Node3D
 	if spatial_node != null:
-		hit.space_kind = TargetHit.SpaceKind.THREE_D
+		hit.space_kind = GameplayTargetHit.SpaceKind.THREE_D
 		hit.position_3d = spatial_node.global_position
 		_record(hit)
 		return true
@@ -83,7 +82,7 @@ func append_overlap(nodes: Array[Node]) -> int:
 	return accepted
 
 
-func _record(hit: TargetHit) -> void:
+func _record(hit: GameplayTargetHit) -> void:
 	_hits.append(hit)
 	if hit.collider != null and not _target_nodes.has(hit.collider):
 		_target_nodes.append(hit.collider)
@@ -97,15 +96,15 @@ func get_target_nodes() -> Array[Node]:
 
 
 ## Every registered hit, for multi-hit and AoE processing.
-func get_all_hits() -> Array[TargetHit]:
+func get_all_hits() -> Array[GameplayTargetHit]:
 	return _hits
 
 
 ## Only the hits belonging to one node, for precision calculations such as
 ## "did this particular bullet hit the head shape?".
-func get_hits_for_node(node: Node) -> Array[TargetHit]:
-	var specific: Array[TargetHit] = []
-	for hit: TargetHit in _hits:
+func get_hits_for_node(node: Node) -> Array[GameplayTargetHit]:
+	var specific: Array[GameplayTargetHit] = []
+	for hit: GameplayTargetHit in _hits:
 		if hit.collider == node:
 			specific.append(hit)
 	return specific

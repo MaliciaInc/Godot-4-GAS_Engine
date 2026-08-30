@@ -13,7 +13,6 @@
 ## @meta_license: MIT
 class_name GameplayCueParams extends RefCounted
 
-const EffectContext = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
 
 ## The cue tag being executed.
 var cue_tag: StringName = &""
@@ -32,7 +31,7 @@ var location: Vector3 = Vector3.ZERO
 var has_location: bool = false
 
 ## The originating effect context, when the cue came from an effect.
-var context: EffectContext = null
+var context: GameplayEffectContext = null
 
 
 ## Build the common case in one call, so the ASC does not repeat six assignments

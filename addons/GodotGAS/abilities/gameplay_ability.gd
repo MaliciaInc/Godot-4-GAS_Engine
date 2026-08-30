@@ -13,9 +13,6 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbility extends Node
 
-const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
-const ContextScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
-const SpecScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
 
 signal ability_ended(was_cancelled: bool)
 
@@ -128,7 +125,7 @@ func end_ability(was_cancelled: bool = false) -> void:
 func execute_cue(tag: StringName) -> void:
 	if owner_asc == null:
 		return
-	var params: GameplayCueParams = CueParams.new()
+	var params: GameplayCueParams = GameplayCueParams.new()
 	params.cue_tag = tag
 	params.instigator = owner_asc.get_effect_target()
 	params.target = owner_asc.get_effect_target()
@@ -150,10 +147,10 @@ func apply_effect_to_targets(
 	# would name a transient node as the cause and leave a dangling reference
 	# once the ability ends.
 	var avatar: Node = owner_asc.get_effect_target()
-	var context: GameplayEffectContext = ContextScript.new(avatar, avatar)
+	var context: GameplayEffectContext = GameplayEffectContext.new(avatar, avatar)
 	context.target_data = target_data
 
-	var spec: GameplayEffectSpec = SpecScript.new(effect_res, context, ability_level)
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, ability_level)
 	for target: Node in target_data.get_target_nodes():
 		var target_asc: AbilitySystemComponent = find_asc_on(target)
 		if target_asc != null:

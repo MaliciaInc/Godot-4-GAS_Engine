@@ -19,9 +19,6 @@
 ## @meta_license: MIT
 class_name GameplayEffectEvaluator extends RefCounted
 
-const Status = preload("res://addons/GodotGAS/attributes/attribute_evaluation_result.gd")
-const Contribution = preload("res://addons/GodotGAS/attributes/attribute_modifier_contribution.gd")
-const EvaluationResult = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluation_result.gd")
 
 ## How this effect's standard modifiers are meant to land.
 ##
@@ -49,20 +46,20 @@ class Request extends RefCounted:
 ## Nothing here is applied. The caller commits, and only if `is_ok()`.
 static func evaluate(request: Request) -> GameplayEffectEvaluationResult:
 	if request == null or request.spec == null or request.spec.effect_def == null:
-		return EvaluationResult.failure(Status.Status.INVALID_SPEC, &"")
+		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.INVALID_SPEC, &"")
 
 	var spec: GameplayEffectSpec = request.spec
-	var result: GameplayEffectEvaluationResult = EvaluationResult.new()
+	var result: GameplayEffectEvaluationResult = GameplayEffectEvaluationResult.new()
 
 	var execution_deltas: Dictionary[StringName, float] = _run_executions(request)
 	if spec.had_invalid_magnitude_access():
-		return EvaluationResult.failure(Status.Status.INVALID_MODIFIER_INDEX, &"")
+		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.INVALID_MODIFIER_INDEX, &"")
 
 	var modifier_targets: Array[StringName] = _modifier_attribute_names(spec)
 
 	var ambiguous: StringName = _first_ambiguous_attribute(execution_deltas, modifier_targets)
 	if ambiguous != &"":
-		return EvaluationResult.failure(Status.Status.AMBIGUOUS_ATTRIBUTE_WRITE, ambiguous)
+		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.AMBIGUOUS_ATTRIBUTE_WRITE, ambiguous)
 
 	_stage_execution_deltas(request, execution_deltas, result)
 	if not result.is_ok():
@@ -101,20 +98,20 @@ static func _stage_execution_deltas(
 ) -> void:
 	for attribute_name: StringName in execution_deltas:
 		if not request.attributes.has(attribute_name):
-			result.status = Status.Status.ATTRIBUTE_NOT_FOUND
+			result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 			result.error_attribute_name = attribute_name
 			return
 
 		var delta: float = execution_deltas[attribute_name]
 		if not is_finite(delta):
-			result.status = Status.Status.NON_FINITE_VALUE
+			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
 			return
 
 		var requested: float = request.attributes.get_base_value(attribute_name) + delta
 		var staged: AttributeBaseMutation = request.attributes.stage_base_write(attribute_name, requested)
 		if staged == null or not is_finite(staged.committed_base_value):
-			result.status = Status.Status.NON_FINITE_VALUE
+			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
 			return
 		result.base_mutations.append(staged)
@@ -151,7 +148,7 @@ static func _build_contributions(
 	var spec: GameplayEffectSpec = request.spec
 	for attribute_name: StringName in modifier_targets:
 		if not request.attributes.has(attribute_name):
-			result.status = Status.Status.ATTRIBUTE_NOT_FOUND
+			result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 			result.error_attribute_name = attribute_name
 			result.contributions.clear()
 			return
@@ -163,18 +160,18 @@ static func _build_contributions(
 
 		var magnitude: float = spec.get_magnitude(index)
 		if not is_finite(magnitude):
-			result.status = Status.Status.NON_FINITE_VALUE
+			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = StringName(modifier.attribute_name)
 			result.contributions.clear()
 			return
 
 		if modifier.operation == GameplayEffectModifier.Operation.DIVIDE and is_zero_approx(magnitude):
-			result.status = Status.Status.DIVISION_BY_ZERO
+			result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
 			result.error_attribute_name = StringName(modifier.attribute_name)
 			result.contributions.clear()
 			return
 
-		var contribution: AttributeModifierContribution = Contribution.new()
+		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
 		contribution.attribute_name = StringName(modifier.attribute_name)
 		contribution.operation = modifier.operation
 		contribution.magnitude = magnitude
@@ -191,7 +188,7 @@ static func _stage_modifier_base_mutations(
 ) -> void:
 	for attribute_name: StringName in modifier_targets:
 		if not request.attributes.has(attribute_name):
-			result.status = Status.Status.ATTRIBUTE_NOT_FOUND
+			result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 			result.error_attribute_name = attribute_name
 			result.base_mutations.clear()
 			return
@@ -203,7 +200,7 @@ static func _stage_modifier_base_mutations(
 
 		var staged: AttributeBaseMutation = request.attributes.stage_base_write(attribute_name, composed)
 		if staged == null or not is_finite(staged.committed_base_value):
-			result.status = Status.Status.NON_FINITE_VALUE
+			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
 			result.base_mutations.clear()
 			return
@@ -233,7 +230,7 @@ static func _compose_for_attribute(
 
 		var magnitude: float = spec.get_magnitude(index)
 		if not is_finite(magnitude):
-			result.status = Status.Status.NON_FINITE_VALUE
+			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
 			return 0.0
 
@@ -244,7 +241,7 @@ static func _compose_for_attribute(
 				product_multiply *= magnitude
 			GameplayEffectModifier.Operation.DIVIDE:
 				if is_zero_approx(magnitude):
-					result.status = Status.Status.DIVISION_BY_ZERO
+					result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
 					result.error_attribute_name = attribute_name
 					return 0.0
 				product_divide *= magnitude
@@ -254,7 +251,7 @@ static func _compose_for_attribute(
 					winning_index = index
 					winning_magnitude = magnitude
 			_:
-				result.status = Status.Status.INVALID_OPERATION
+				result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
 				result.error_attribute_name = attribute_name
 				return 0.0
 
@@ -264,7 +261,7 @@ static func _compose_for_attribute(
 		composed = winning_magnitude
 
 	if not is_finite(composed):
-		result.status = Status.Status.NON_FINITE_VALUE
+		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 		result.error_attribute_name = attribute_name
 		return 0.0
 

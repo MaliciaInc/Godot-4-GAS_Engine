@@ -12,7 +12,6 @@
 extends Control
 
 ## Addon project settings.
-const GodotGasProjectSettings: = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## Icon used to represent gameplay tags.
 const TAG_ICON: Texture2D = preload("res://addons/GodotGAS/icons/godot_gas_tags.svg")
@@ -21,14 +20,18 @@ const TAG_ICON: Texture2D = preload("res://addons/GodotGAS/icons/godot_gas_tags.
 const SCENE_ICON: Texture2D = preload("res://addons/GodotGAS/icons/godot_gas_cues.svg")
 const CUES_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas_cues.svg"
 
+## Placeholders shown on the edit form while a mapping is half-built.
+const NO_SCENE_SELECTED: String = "No Scene Selected"
+const SELECT_TAG_PROMPT: String = "Select Tag..."
+
 ## Colours and styleboxes, shared with the other dashboard tabs.
 var _theme: DashboardTheme = DashboardTheme.new()
 
 ## Reference to the active global cue registry resource.
-var _registry: GameplayCueRegistry
+var _registry: GameplayCueRegistry = null
 
 ## Temporary storage for the tag currently being mapped.
-var _draft_tag: StringName = ""
+var _draft_tag: StringName = &""
 
 ## Temporary storage for the scene currently being mapped.
 var _draft_scene: PackedScene = null
@@ -40,25 +43,25 @@ var _editing_index: int = -1
 var _delete_index: int = -1
 
 ## Dialog used to select a PackedScene file.
-var _scene_dialog: EditorFileDialog
+var _scene_dialog: EditorFileDialog = null
 
 ## Dialog used to select a GameplayTag from the registry.
-var _tag_dialog: ConfirmationDialog
+var _tag_dialog: ConfirmationDialog = null
 
 ## Container for the tag selection tree interface.
-var _tag_tree_vbox: VBoxContainer
+var _tag_tree_vbox: VBoxContainer = null
 
 ## Input field for filtering the tag selection tree.
-var _tag_search_bar: LineEdit
+var _tag_search_bar: LineEdit = null
 
 ## Button to toggle the expand/collapse state of the tag tree.
-var _btn_tag_expand_collapse: Button
+var _btn_tag_expand_collapse: Button = null
 
 ## Tree node displaying available gameplay tags.
-var _tag_tree: Tree
+var _tag_tree: Tree = null
 
 ## Dialog used to confirm the deletion of a cue mapping.
-var _delete_confirm_dialog: ConfirmationDialog
+var _delete_confirm_dialog: ConfirmationDialog = null
 
 ## The generated system accent color for active UI elements.
 
@@ -103,7 +106,7 @@ func _ready() -> void:
 
 ## Loads the cue registry from disk.
 func _load_registry() -> void:
-	var cue_registry_path: = GodotGasProjectSettings.get_registry_cue_path()
+	var cue_registry_path: String = GodotGasProjectSettings.get_registry_cue_path()
 	if ResourceLoader.exists(cue_registry_path):
 		_registry = load(cue_registry_path) as GameplayCueRegistry
 	else:
@@ -115,8 +118,7 @@ func _notification(what: int) -> void:
 	if what == Control.NOTIFICATION_THEME_CHANGED:
 		if Engine.is_editor_hint() and is_node_ready():
 			_sync_theme_colors()
-			var filter_text = _search_bar.text if _search_bar else ""
-			_refresh_cue_list(filter_text)
+			_refresh_cue_list(_current_filter())
 
 
 ## Wires up signals and instantiates the dynamic UI dialogs.
@@ -156,7 +158,7 @@ func _setup_ui() -> void:
 	_tag_tree_vbox.custom_minimum_size = Vector2(800, 600)
 	
 	# Create HBox for Search Bar + Expand/Collapse Button
-	var search_hbox = HBoxContainer.new()
+	var search_hbox: HBoxContainer = HBoxContainer.new()
 	_tag_tree_vbox.add_child(search_hbox)
 	
 	_tag_search_bar = LineEdit.new()
@@ -190,6 +192,13 @@ func _sync_theme_colors() -> void:
 
 
 #endregion
+
+
+## The text currently in the search bar, or nothing when there is no bar.
+##
+## Four call sites re-read it inline, and each spelled the null check itself.
+func _current_filter() -> String:
+	return _search_bar.text if _search_bar != null else ""
 
 
 #region Button Handlers & Search
@@ -228,15 +237,15 @@ func _on_tag_search_changed(new_text: String) -> void:
 
 ## Toggles the expand/collapse state of all top-level tag tree items.
 func _on_tag_expand_collapse_pressed() -> void:
-	var root = _tag_tree.get_root()
+	var root: TreeItem = _tag_tree.get_root()
 	if not root or not root.get_first_child(): 
 		return
 	
 	# Determine the new state based on the first child folder
-	var new_collapsed_state = !root.get_first_child().collapsed
+	var new_collapsed_state: bool = not root.get_first_child().collapsed
 	
 	# Apply to all top-level children
-	for child in root.get_children():
+	for child: TreeItem in root.get_children():
 		child.collapsed = new_collapsed_state
 		
 	# Update Button UI
@@ -274,13 +283,16 @@ func _mapped_tags() -> Array[StringName]:
 
 ## Validates and stores the tag selected from the picker dialog.
 func _on_tag_dialog_confirmed() -> void:
-	var selected = _tag_tree.get_selected()
-	if selected:
-		# If it's a folder, metadata is null. If it's a leaf, we get the tag string.
-		var tag_val = selected.get_metadata(0)
-		if tag_val != null:
-			_draft_tag = tag_val
-			_btn_select_tag.text = str(_draft_tag)
+	var selected: TreeItem = _tag_tree.get_selected()
+	if selected == null:
+		return
+	# A grouping node carries no metadata; only a leaf carries a tag. Testing
+	# the type rather than null also rejects a leaf built with the wrong one.
+	var chosen: Variant = selected.get_metadata(0)
+	if not chosen is StringName:
+		return
+	_draft_tag = chosen
+	_btn_select_tag.text = String(_draft_tag)
 #endregion
 
 
@@ -292,17 +304,17 @@ func _on_add_mapping_pressed() -> void:
 		return
 		
 	# DUPLICATE CHECK: Prevent 1 tag having multiple scenes
-	for i in range(_registry.entries.size()):
+	for i: int in _registry.entries.size():
 		if i != _editing_index and _registry.entries[i].tag == _draft_tag:
 			push_error("GodotGAS: A cue is already mapped to '%s'. Only 1 Scene per Tag is allowed." % str(_draft_tag))
 			return
 		
 	if _editing_index >= 0:
-		var entry = _registry.entries[_editing_index]
+		var entry: GameplayCueEntry = _registry.entries[_editing_index]
 		entry.tag = _draft_tag
 		entry.scene = _draft_scene
 	else:
-		var new_entry = GameplayCueEntry.new()
+		var new_entry: GameplayCueEntry = GameplayCueEntry.new()
 		new_entry.tag = _draft_tag
 		new_entry.scene = _draft_scene
 		_registry.entries.append(new_entry)
@@ -310,21 +322,22 @@ func _on_add_mapping_pressed() -> void:
 	ResourceSaver.save(_registry, GodotGasProjectSettings.get_registry_cue_path())
 	_reset_form()
 	
-	# Refresh using the current search bar text so the list doesn't visually reset
-	var filter_text = _search_bar.text if _search_bar else ""
-	_refresh_cue_list(filter_text)
+	# Refresh with the current filter so the list does not visually reset.
+	_refresh_cue_list(_current_filter())
 
 
 ## Sets up the form fields to edit an existing cue mapping.
 func _on_edit_pressed(index: int) -> void:
 	_editing_index = index
-	var entry = _registry.entries[index]
+	var entry: GameplayCueEntry = _registry.entries[index]
 	
 	_draft_tag = entry.tag
 	_draft_scene = entry.scene
 	
-	_btn_select_tag.text = str(entry.tag) if entry.tag else "Select Tag..."
-	_lbl_selected_scene.text = entry.scene.resource_path.get_file() if entry.scene else "No Scene Selected"
+	_btn_select_tag.text = String(entry.tag) if entry.tag != &"" else SELECT_TAG_PROMPT
+	_lbl_selected_scene.text = (
+		entry.scene.resource_path.get_file() if entry.scene != null else NO_SCENE_SELECTED
+	)
 	
 	_btn_add_mapping.text = "Save Changes"
 	_btn_add_mapping.icon = get_theme_icon("Save", DashboardTheme.EDITOR_ICON_THEME)
@@ -334,7 +347,7 @@ func _on_edit_pressed(index: int) -> void:
 ## Prepares the deletion confirmation dialog for a specific row.
 func _on_delete_pressed(index: int) -> void:
 	_delete_index = index
-	var entry = _registry.entries[index]
+	var entry: GameplayCueEntry = _registry.entries[index]
 	
 	# Contextual popup showing what is being deleted
 	_delete_confirm_dialog.dialog_text = "Delete Mapping?\nTag: %s\nScene: %s" % [str(entry.tag), entry.scene.resource_path.get_file() if entry.scene else "None"]
@@ -353,9 +366,7 @@ func _execute_delete() -> void:
 		_reset_form()
 		
 	_delete_index = -1
-	
-	var filter_text = _search_bar.text if _search_bar else ""
-	_refresh_cue_list(filter_text)
+	_refresh_cue_list(_current_filter())
 
 
 ## Resets the data entry form back to its default state.
@@ -364,8 +375,8 @@ func _reset_form() -> void:
 	_draft_tag = ""
 	_draft_scene = null
 	
-	_btn_select_tag.text = "Select Tag..."
-	_lbl_selected_scene.text = "No Scene Selected"
+	_btn_select_tag.text = SELECT_TAG_PROMPT
+	_lbl_selected_scene.text = NO_SCENE_SELECTED
 	
 	_btn_add_mapping.text = "Add Mapping"
 	_btn_add_mapping.icon = get_theme_icon("Add", DashboardTheme.EDITOR_ICON_THEME)
@@ -374,75 +385,22 @@ func _reset_form() -> void:
 
 ## Rebuilds the visual list of configured cue mappings.
 func _refresh_cue_list(filter: String = "") -> void:
-	for child in _cue_list_vbox.get_children():
+	for child: Node in _cue_list_vbox.get_children():
 		child.queue_free()
-
-	if not _registry: 
+	if _registry == null:
 		return
 
-	# 1. Gather all entries that match the search filter
-	var entries_to_show = []
-	for entry in _registry.entries:
-		var tag_str = str(entry.tag) if entry.tag else "No Tag Assigned"
-		if filter == "" or filter.to_lower() in tag_str.to_lower():
-			entries_to_show.append(entry)
+	var needle: String = filter.to_lower()
+	for entry: GameplayCueEntry in _registry.entries:
+		var tag_str: String = String(entry.tag) if entry.tag != &"" else CueRow.UNASSIGNED_TAG
+		if not needle.is_empty() and not tag_str.to_lower().contains(needle):
+			continue
 
-	# 2. Build rows only for the filtered entries
-	for i in range(entries_to_show.size()):
-		var entry = entries_to_show[i]
-		
-		# Grab the original index so Edit/Delete affect the actual array, not the filtered position
-		var original_index = _registry.entries.find(entry)
-		
-		# --- NEW: Beautiful Card Background ---
-		var card = PanelContainer.new()
-		card.add_theme_stylebox_override(DashboardTheme.PANEL_STYLEBOX, _theme.list_item)
-		
-		var row = HBoxContainer.new()
-		card.add_child(row)
-		
-		# --- NEW: VBox Wrapper to force perfect vertical centering ---
-		var lbl_vbox = VBoxContainer.new()
-		lbl_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lbl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		
-		var lbl = RichTextLabel.new()
-		lbl.bbcode_enabled = true
-		lbl.fit_content = true
-		lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
-		lbl.add_theme_stylebox_override("normal", StyleBoxEmpty.new()) # Destroys the faint editor background
-		
-		var tag_name = entry.tag if entry.tag else "No Tag Assigned"
-		var scene_name = entry.scene.resource_path.get_file() if entry.scene else "No Scene Assigned"
-		var scene_path = entry.scene.resource_path if entry.scene else "No Scene Assigned"
-		
-		# Fetch the exact hex string of Godot's native font color
-		var editor_theme = EditorInterface.get_editor_theme()
-		var icon_color_hex = editor_theme.get_color(DashboardTheme.FONT_COLOR, DashboardTheme.EDITOR_THEME_TYPE).to_html(false)
-		
-		# Multiply Godot's standard 16px icon size by the user's monitor UI scale
-		var icon_size = int(16 * EditorInterface.get_editor_scale())
-		
-		# Use the strict Godot 4 BBCode syntax (width=X height=Y color=#HEX)
-		var tag_icon: String = "[img width=%d height=%d color=#%s]%s[/img]" % [icon_size, icon_size, icon_color_hex, TAG_ICON.resource_path]
-		var scene_icon: String = "[img width=%d height=%d color=#%s]%s[/img]" % [icon_size, icon_size, icon_color_hex, SCENE_ICON.resource_path]
-		
-		lbl.text = tag_icon + " [color=" + _theme.accent_html + "][b]" + str(tag_name) + "[/b][/color] [i]executes [b]→[/b][/i] " + scene_icon + " [color=" + _theme.accent_html + "][b]" + scene_name + "[/b][/color] [i](" + scene_path + ")[/i]"
-		
-		# Parent everything up
-		lbl_vbox.add_child(lbl)
-		row.add_child(lbl_vbox)
-		
-		var edit_btn = Button.new()
-		edit_btn.icon = get_theme_icon(DashboardTheme.ICON_EDIT, DashboardTheme.EDITOR_ICON_THEME)
-		edit_btn.pressed.connect(_on_edit_pressed.bind(original_index))
-		
-		var del_btn = Button.new()
-		del_btn.icon = get_theme_icon(DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME)
-		del_btn.pressed.connect(_on_delete_pressed.bind(original_index))
-		
-		row.add_child(edit_btn)
-		row.add_child(del_btn)
-		
-		_cue_list_vbox.add_child(card)
+		# The entry's index in the registry, not its position in the filtered
+		# list: Edit and Delete address the registry.
+		var index: int = _registry.entries.find(entry)
+		var row: CueRow.Built = CueRow.build(entry, _theme, TAG_ICON, SCENE_ICON)
+		row.edit_button.pressed.connect(_on_edit_pressed.bind(index))
+		row.delete_button.pressed.connect(_on_delete_pressed.bind(index))
+		_cue_list_vbox.add_child(row.card)
 #endregion

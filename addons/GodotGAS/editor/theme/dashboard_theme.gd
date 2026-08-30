@@ -13,7 +13,6 @@
 @tool
 class_name DashboardTheme extends RefCounted
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## Meta key marking which palette slot a PanelContainer belongs to.
 #: Godot's own theme vocabulary. Named here so the tabs ask the theme layer
@@ -23,7 +22,11 @@ const EDITOR_ICON_THEME: String = "EditorIcons"
 const ACCENT_COLOR: String = "accent_color"
 const FONT_COLOR: String = "font_color"
 const DISABLED_FONT_COLOR: String = "disabled_font_color"
+const SUCCESS_COLOR: String = "success_color"
+const ERROR_COLOR: String = "error_color"
 const PANEL_STYLEBOX: String = "panel"
+## The RichTextLabel slot whose stylebox paints its background.
+const RICH_TEXT_STYLEBOX: String = "normal"
 
 ## Icon names Godot ships that the dashboards reuse.
 const ICON_EDIT: String = "Edit"

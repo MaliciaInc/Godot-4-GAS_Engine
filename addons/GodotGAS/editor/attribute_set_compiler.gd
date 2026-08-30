@@ -10,9 +10,6 @@
 @tool
 class_name AttributeSetCompiler extends RefCounted
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
-const ScriptWriter = preload("res://addons/GodotGAS/editor/attribute_set_script_writer.gd")
-
 
 ## What happened, and what to tell the user about it.
 class Outcome extends RefCounted:
@@ -43,7 +40,7 @@ static func compile(drafts: AttributeSetDrafts, set_name: String) -> Outcome:
 	if set_name.is_empty():
 		return Outcome.failure(TITLE_BLOCKED, "No attribute set is selected.")
 
-	var file_name: String = ScriptWriter.file_name_for(set_name)
+	var file_name: String = AttributeSetScriptWriter.file_name_for(set_name)
 	var output_dir: String = GodotGasProjectSettings.get_attributes_output_dir_path()
 	var file_path: String = output_dir.path_join(file_name)
 
@@ -65,7 +62,7 @@ static func compile(drafts: AttributeSetDrafts, set_name: String) -> Outcome:
 	if file == null:
 		return Outcome.failure(TITLE_WRITE_ERROR, "Could not write: " + file_path)
 
-	file.store_string(ScriptWriter.write(set_name, attributes_of(drafts, set_name)))
+	file.store_string(AttributeSetScriptWriter.write(set_name, attributes_of(drafts, set_name)))
 	file.close()
 	EditorInterface.get_resource_filesystem().scan()
 	return Outcome.success(file_name + " was generated at:" + "\n" + file_path)
@@ -77,7 +74,7 @@ static func attributes_of(
 ) -> Array[AttributeSetScriptWriter.Attribute]:
 	var attributes: Array[AttributeSetScriptWriter.Attribute] = []
 	for key: String in drafts.attribute_names(set_name):
-		attributes.append(ScriptWriter.Attribute.of(key, drafts.entry(set_name, key).value))
+		attributes.append(AttributeSetScriptWriter.Attribute.of(key, drafts.entry(set_name, key).value))
 	return attributes
 
 
