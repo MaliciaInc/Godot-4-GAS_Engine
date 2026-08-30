@@ -25,6 +25,23 @@ func before_each() -> void:
 
 func after_each() -> void:
 	fixture = null
+	restore_error_reporting()
+
+
+## Declare that the engine is expected to report an error in this test.
+##
+## The engine refuses invalid input loudly, which is right: a caller passing a
+## bad modifier index or a negative delta has a bug. GUT counts any push_error
+## during a test as a failure, so a test that deliberately provokes one says so
+## here. Lowering the engine's own severity to keep the suite quiet would trade
+## a real diagnostic for a green tick.
+func expect_engine_error() -> void:
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.NOTHING
+
+
+## Restore the default so the next test still fails on an unexpected error.
+func restore_error_reporting() -> void:
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.FAILURE
 
 
 func _spec(effect: GameplayEffect) -> GameplayEffectSpec:
@@ -92,6 +109,7 @@ func test_an_invalid_index_is_recorded_rather_than_answered_with_zero() -> void:
 func test_an_invalid_index_refuses_the_application_instead_of_weakening_it() -> void:
 	var before: float = fixture.current_of(ATTACK)
 	var spec: GameplayEffectSpec = _spec(Factory.infinite([Factory.add(ATTACK, 3.0)]))
+	expect_engine_error()
 	spec.set_magnitude(9, 100.0)
 
 	watch_signals(fixture.asc)

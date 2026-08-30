@@ -70,17 +70,23 @@ func _on_run_finished() -> void:
 	_report(passes, failures, pending, _failing_test_names())
 
 
-## The names of the tests that failed, so the receipt says what broke rather
-## than only how many things did.
+## The tests that did not pass, script by script.
+##
+## A receipt that says only "13 failed" sends the reader back to the console
+## they may no longer have. Naming them is the difference between a receipt
+## and a scoreboard.
 func _failing_test_names() -> String:
+	var names: Array[String] = []
 	@warning_ignore_start("unsafe_method_access", "unsafe_property_access")
 	var gut: Object = _runner.get_gut()
-	var logger: Object = gut.get_logger()
-	var names: Array[String] = []
-	for failure: Variant in logger.get_errors():
-		names.append(str(failure))
+	for script: Object in gut.get_test_collector().scripts:
+		for test: Object in script.tests:
+			if test.was_run and not test.is_passing():
+				names.append(str(script.get_full_name()) + "::" + str(test.name))
 	@warning_ignore_restore("unsafe_method_access", "unsafe_property_access")
-	return ", ".join(names) if not names.is_empty() else "none"
+	if names.is_empty():
+		return "none"
+	return (", ").join(names)
 
 
 func _report(passes: int, failures: int, pending: int, note: String) -> void:

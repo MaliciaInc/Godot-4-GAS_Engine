@@ -44,6 +44,9 @@ var elapsed_time: float = 0.0
 ## How many periodic ticks have already been paid.
 var completed_ticks: int = 0
 
+## Tolerance used when deciding whether a tick is due. See advance_clock.
+const TICK_EPSILON_SECONDS: float = 1e-9
+
 
 #region Initialization
 func _init(in_spec: GameplayEffectSpec = null, in_application_order: int = -1) -> void:
@@ -71,7 +74,13 @@ func advance_clock(delta: float) -> int:
 		elapsed_time += delta
 		return 0
 	elapsed_time += delta
-	var due: int = floori(elapsed_time / spec.period)
+	# Nudged by an epsilon before flooring. Accumulated time is a sum of floats:
+	# a hundred additions of 0.1 total 9.99999999999998, so a tick due at t=10
+	# would be judged not yet owed and arrive a frame late. The epsilon is
+	# nine orders of magnitude larger than the accumulated error and nine
+	# orders smaller than any period a game would use, so it can only ever
+	# decide a boundary case that was meant to be exact.
+	var due: int = floori((elapsed_time + TICK_EPSILON_SECONDS) / spec.period)
 	var owed: int = due - completed_ticks
 	return maxi(owed, 0)
 

@@ -117,8 +117,13 @@ func _report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
 func _commit(
 	spec: GameplayEffectSpec, evaluation: GameplayEffectEvaluationResult, order: int
 ) -> ActiveGameplayEffect:
-	for staged: AttributeBaseMutation in evaluation.base_mutations:
-		attributes.commit_base_write(staged)
+	# A periodic effect writes nothing on application. Its modifiers are tick
+	# mutations, and committing them here would pay a tick at t=0 that the
+	# clock never owed - every DoT would deal one extra instance of damage.
+	# The evaluation still ran, so a broken periodic effect is still refused.
+	if spec.period <= 0.0:
+		for staged: AttributeBaseMutation in evaluation.base_mutations:
+			attributes.commit_base_write(staged)
 
 	var active: ActiveGameplayEffect = ActiveEffect.new(spec, order)
 	active.contributed_modifiers = evaluation.contributions
