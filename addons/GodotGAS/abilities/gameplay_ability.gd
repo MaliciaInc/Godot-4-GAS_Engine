@@ -215,16 +215,21 @@ func execute_cue(tag: StringName) -> void:
 	owner_asc.execute_cue(params)
 
 
-## Build a spec from an effect and fire it at every target.
+## Build a spec from an effect and fire it at every target, and say what came
+## of it.
 ##
 ## Each target receives its own spec copy, made by
 ## `apply_effect_spec_to_target`. Sharing one spec across an AoE let target A's
 ## evaluation change what target B received.
+##
+## A result comes back even for arguments that were never usable, so a caller
+## never has to distinguish null from nothing-happened.
 func apply_effect_to_targets(
 	effect_res: GameplayEffect, target_data: GameplayAbilityTargetData
-) -> void:
+) -> GameplayTargetApplicationResult:
+	var result: GameplayTargetApplicationResult = GameplayTargetApplicationResult.new()
 	if effect_res == null or target_data == null or owner_asc == null:
-		return
+		return result
 
 	# The instigator and causer are both the persistent avatar. Passing `self`
 	# would name a transient node as the cause and leave a dangling reference
@@ -234,24 +239,44 @@ func apply_effect_to_targets(
 	context.target_data = target_data
 
 	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, ability_level)
+	var reached: Array[int] = []
+	var unreachable: Array[int] = []
 	for target: Node in target_data.get_target_nodes():
+		if target == null:
+			continue
+		result.attempted_targets += 1
+
 		var target_asc: AbilitySystemComponent = find_asc_on(target)
-		if target_asc != null:
-			owner_asc.apply_effect_spec_to_target(spec, target_asc)
+		if target_asc == null:
+			if not unreachable.has(target.get_instance_id()):
+				unreachable.append(target.get_instance_id())
+				result.missing_asc_targets.append(target)
+			continue
+
+		# Two colliders on one actor are one target. Applying twice would
+		# double an AoE for anything that happens to have two hitboxes.
+		if reached.has(target_asc.get_instance_id()):
+			continue
+		reached.append(target_asc.get_instance_id())
+
+		var applied: ActiveGameplayEffect = owner_asc.apply_effect_spec_to_target(
+			spec, target_asc
+		)
+		if applied == null:
+			result.rejected_targets.append(target_asc)
+			continue
+		result.applied_targets.append(target_asc)
+		result.applied_effects.append(applied)
+	return result
 
 
-## The ASC on a node or one of its immediate children.
+## The ability system a node belongs to.
+##
+## Kept as a public method because callers use it, but it owns no algorithm:
+## the search lives in one place so a change to how an ASC is found cannot
+## apply here and not there.
 static func find_asc_on(node: Node) -> AbilitySystemComponent:
-	if node == null:
-		return null
-	var direct: AbilitySystemComponent = node as AbilitySystemComponent
-	if direct != null:
-		return direct
-	for child: Node in node.get_children():
-		var child_asc: AbilitySystemComponent = child as AbilitySystemComponent
-		if child_asc != null:
-			return child_asc
-	return null
+	return AbilitySystemLocator.find_for_node(node)
 
 
 ## Every tag that represents a cooldown for this ability: its own, those of the

@@ -185,11 +185,11 @@ func get_effect_target() -> Node:
 	return parent if parent != null else self
 
 
-## The ASC of whoever caused a spec, when there is one.
+## The ASC of whoever caused a spec. The search lives in AbilitySystemLocator.
 func find_source_asc(spec: GameplayEffectSpec) -> AbilitySystemComponent:
-	if spec == null or spec.context == null or spec.context.instigator == null:
+	if spec == null or spec.context == null:
 		return null
-	return spec.context.instigator.get_node_or_null("AbilitySystemComponent")
+	return AbilitySystemLocator.find_for_node(spec.context.instigator)
 
 
 ## Broadcast an effect's static and injected event tags.

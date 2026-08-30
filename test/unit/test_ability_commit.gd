@@ -103,7 +103,7 @@ func _caster_refusing(refused: GameplayEffect) -> ProbeAbility:
 	host.name = "Refuser"
 
 	var refusing: RefusingASC = RefusingASC.new()
-	refusing.name = "AbilitySystemComponent"
+	refusing.name = String(AbilitySystemLocator.ASC_CHILD_NAME)
 	refusing.attribute_sets = [AttributeSetScript.new()]
 	refusing.share_attributes = true
 	refusing.refused = refused

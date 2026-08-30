@@ -34,7 +34,7 @@ static func create(entity_name: String = "Entity") -> ASCFixture:
 	fixture.attributes = AttributeSetScript.new()
 
 	fixture.asc = AbilitySystemComponent.new()
-	fixture.asc.name = "AbilitySystemComponent"
+	fixture.asc.name = String(AbilitySystemLocator.ASC_CHILD_NAME)
 	fixture.asc.attribute_sets = [fixture.attributes]
 	# Sharing is off by default, and the ASC would deep-copy the set on ready,
 	# leaving `fixture.attributes` pointing at a copy nothing else uses. The
