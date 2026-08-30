@@ -1,85 +1,171 @@
-## A runtime payload that combines a static GameplayEffect definition
-## with the specific context (instigator, targets, level) of its application.
+## One application of a GameplayEffect: the immutable definition plus all the
+## runtime state that belongs to this application and no other.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## Two upstream defects are fixed here.
+##
+## **Runtime magnitudes were keyed by attribute name.** An effect with
+## `Attack ADD +10` and `Attack MULTIPLY 2` had one slot for both, so the second
+## modifier overwrote the first and the effect silently did half its job. The
+## key is the modifier's index inside `effect_def.modifiers`, which is stable
+## for the life of the spec and distinguishes two modifiers that write the same
+## attribute.
+##
+## **One spec was handed to several targets.** A spec is RefCounted and holds
+## mutable state, so an AoE let target A's evaluation change what target B
+## received. `create_application_copy()` gives each target its own, sharing only
+## the immutable definition.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayEffectSpec extends RefCounted
 
-## The static data definition (your existing Resource).
-var effect_def: GameplayEffect
+## The immutable definition. Shared between copies on purpose: it is a designer
+## asset and nothing may write to it at runtime.
+var effect_def: GameplayEffect = null
 
-## The runtime payload containing the instigator, causer, and target data.
-var context: GameplayEffectContext
+## The runtime context. Never shared between applications - it is mutable.
+var context: GameplayEffectContext = null
 
-## The level of the ability/effect, used later to scale mathematical modifiers.
+## The ability or effect level these magnitudes were snapshotted at.
 var level: float = 1.0
 
-## The exact time this effect was applied (useful for durations).
+## When this application happened, in seconds.
 var application_time: float = 0.0
 
-## Tags injected dynamically at runtime by ExecCalcs or Abilities
+## Tags injected at runtime by an execution calculation or an ability.
 var dynamic_tags: Array[StringName] = []
 
-## A dictionary populated by the ASC after modifiers are applied, storing the EXACT final clamped changes (e.g., {"Health": -50.0})
-var calculated_deltas: Dictionary = {}
-
-# ==========================================
-# MUTABLE STATE (The Source of Truth)
-# ==========================================
-## The runtime duration of the effect. Mutated by ExecCalcs before application.
+## Runtime duration, mutable by an execution calculation before application.
 var duration: float = 0.0
 
-## The runtime duration in turns of the effect. Mutated by ExecCalcs before application.
+## Runtime turn count, mutable the same way.
 var remaining_turns: int = 0
 
-## The runtime period of the effect. Mutated by ExecCalcs before application.
+## Runtime period, mutable the same way.
 var period: float = 0.0
 
-## Dictionary tracking the runtime magnitude of each modifier.
-## Key: Attribute Name (String), Value: Magnitude (float)
-var mutated_magnitudes: Dictionary = {}
-# ==========================================
+## Runtime magnitude per modifier index. Private and generic on purpose: the
+## public contract is get_magnitude/set_magnitude, so the storage shape can
+## change without every execution calculation in the game changing with it.
+var _magnitudes: Dictionary[int, float] = {}
+
+## Set when anything asked for a modifier index this effect does not have.
+## The evaluator turns this into INVALID_MODIFIER_INDEX and fails the whole
+## application. Returning 0.0 and carrying on would let a typo in an execution
+## calculation ship as a silently weaker ability.
+var _invalid_magnitude_access: bool = false
 
 
 #region Initialization
-## Initializes the live effect instance and snapshots the mutable state.
-func _init(in_effect: GameplayEffect, in_context: GameplayEffectContext, in_level: float = 1.0) -> void:
+func _init(
+	in_effect: GameplayEffect = null, in_context: GameplayEffectContext = null, in_level: float = 1.0
+) -> void:
 	effect_def = in_effect
 	context = in_context
 	level = in_level
 	application_time = Time.get_ticks_msec() / 1000.0
-	
-	# Snapshot the base resource data into our mutable variables
+	if in_effect == null:
+		return
+
 	duration = in_effect.duration
 	period = in_effect.period
 	remaining_turns = in_effect.duration_turns
-	
-	# Pre-calculate and snapshot the base magnitudes so ExecCalcs can mutate them
-	for mod in in_effect.modifiers:
-		if mod and mod.attribute_name != "":
-			mutated_magnitudes[mod.attribute_name] = mod.calculate_magnitude(level)
+	_snapshot_magnitudes()
+
+
+## Snapshot every modifier's magnitude at this level, by index.
+##
+## Section 3.10: standard magnitudes are snapshotted per application. A later
+## change to the source's stats does not retroactively alter an active buff.
+func _snapshot_magnitudes() -> void:
+	for index: int in effect_def.modifiers.size():
+		var modifier: GameplayEffectModifier = effect_def.modifiers[index]
+		if modifier == null:
+			continue
+		_magnitudes[index] = modifier.calculate_magnitude(level)
+#endregion
+
+
+#region Runtime magnitudes
+func modifier_count() -> int:
+	return effect_def.modifiers.size() if effect_def != null else 0
+
+
+func _is_valid_index(modifier_index: int) -> bool:
+	return modifier_index >= 0 and modifier_index < modifier_count()
+
+
+## The runtime magnitude of one modifier.
+##
+## An out-of-range index flags the spec rather than returning a quiet zero, and
+## the evaluator refuses the whole application. The policy lives here, not at
+## each call site.
+func get_magnitude(modifier_index: int) -> float:
+	if not _is_valid_index(modifier_index):
+		_invalid_magnitude_access = true
+		return 0.0
+	return _magnitudes.get(modifier_index, 0.0)
+
+
+func set_magnitude(modifier_index: int, value: float) -> void:
+	if not _is_valid_index(modifier_index):
+		_invalid_magnitude_access = true
+		push_error(
+			"GodotGAS: modifier index " + str(modifier_index)
+			+ " is out of range for this effect; the application will be refused."
+		)
+		return
+	_magnitudes[modifier_index] = value
+
+
+func had_invalid_magnitude_access() -> bool:
+	return _invalid_magnitude_access
+#endregion
+
+
+#region Application copy
+## A spec for one more target, sharing only what is immutable.
+##
+## Section 4.3's contract: the definition is shared, the context is a separate
+## runtime instance, dynamic tags and magnitudes are duplicated, and anything
+## accumulated for the previous target starts clean. Nothing mutable is shared,
+## so writing to this copy cannot be observed through the original.
+func create_application_copy() -> GameplayEffectSpec:
+	var copy: GameplayEffectSpec = GameplayEffectSpec.new()
+	copy.effect_def = effect_def
+	copy.level = level
+	copy.application_time = application_time
+	copy.duration = duration
+	copy.remaining_turns = remaining_turns
+	copy.period = period
+	copy.context = context.create_application_copy() if context != null else null
+	copy.dynamic_tags = dynamic_tags.duplicate()
+	copy._magnitudes = _magnitudes.duplicate()
+	# Deliberately NOT copied: the invalid-access flag belongs to the evaluation
+	# that raised it, not to a fresh application of the same effect.
+	return copy
 #endregion
 
 
 #region Context Helpers
-## Helper to quickly grab the unique target nodes from the attached context.
 func get_target_nodes() -> Array[Node]:
-	if context and context.target_data:
-		return context.target_data.get_target_nodes()
-		
-	return []
+	if context == null:
+		return []
+	return context.get_target_nodes()
 
-## QoL Helper: Checks if the spec has a tag natively OR dynamically
+
+## Whether the spec carries a tag, natively or injected at runtime.
 func has_tag(tag: StringName) -> bool:
-	# Assuming your base effect has an array of identifier tags like 'asset_tags' or 'granted_tags'
-	if effect_def.granted_tags.has(tag):
+	if effect_def != null and effect_def.granted_tags.has(tag):
 		return true
 	return dynamic_tags.has(tag)
 
-## QoL Helper: Injects a tag into our Dynamic Tag Array (Useful for applying 'Critical' 'Dodge' etc. During Exec. Calculations
+
+## Inject a tag, for an execution calculation marking a hit as Critical, Dodged
+## and so on.
 func inject_tag(tag: StringName) -> void:
 	if not dynamic_tags.has(tag):
 		dynamic_tags.append(tag)

@@ -1,35 +1,36 @@
-## A resource container for a single gameplay attribute.
+## One gameplay attribute: a durable base value and the effective value derived
+## from it.
 ##
-## Holds both the permanent base value and the temporary current value of an 
-## attribute, automatically syncing the current value when the base is updated.
+## `base_value` is NOT "the level stat that never changes". It is the durable
+## underlying value after permanent and instant changes, with no active
+## contributions applied. `current_value` is what the base becomes once the
+## active contribution stack and the effective clamp are applied.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## Upstream's `base_value` setter assigned `current_value = new_value`, which
+## made current a second source of truth: setting the base while a buff was
+## active silently discarded the buff, and nothing ever recomputed it. Both
+## fields are plain storage here. `GameplayAttributeRuntime` is the only thing
+## allowed to derive one from the other, and it recomposes from scratch rather
+## than replaying deltas.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
 @tool
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name AttributeData extends Resource
 
-## The permanent, unbuffed stat (e.g., your naked Max Health).
-@export var base_value: float = 0.0 : set = _set_base_value
-## The temporary, buffed/debuffed stat used for actual gameplay math.
+## The durable underlying value. Instant effects and execution calculations
+## write here; active modifiers never do.
+@export var base_value: float = 0.0
+
+## The effective value: the base plus every active contribution, clamped.
+## Derived. Writing it directly bypasses the aggregator and the next
+## recomposition will overwrite it.
 @export var current_value: float = 0.0
 
 
-#region Initialization
 func _init(initial_value: float = 0.0) -> void:
 	base_value = initial_value
 	current_value = initial_value
-#endregion
-
-
-#region Setters & Math
-func _set_base_value(new_value: float) -> void:
-	base_value = new_value
-	
-	# For now, if the base value changes (like leveling up), 
-	# we just sync the current value to it. 
-	# Later, we will add logic here to re-apply GameplayEffects.
-	current_value = new_value
-#endregion

@@ -1,223 +1,216 @@
-## Base class for all gameplay abilities in the GodotGAS framework.
+## One granted ability: its activation rules, its cost and cooldown, and the
+## logic a subclass overrides.
 ##
-## Defines the core execution logic, input routing, and effect application 
-## pipelines for an ability. Intended to be extended by specific ability scripts.
+## The event payload is a typed GameplayEffectContext. Upstream stored a
+## `Variant` documented as "a GameplayEffectSpec, a Dictionary, or a Node", so
+## every subclass had to guess which, and a wrong guess read as null rather than
+## failing.
 ##
-## @meta_addon: GodotGAS Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
 ## @meta_license: MIT
 
-@abstract
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayAbility extends Node
 
-## Fired when the ability finishes.
-## UI or Animation systems can listen to this to know if the cast succeeded or got interrupted.
+const CueParams: GDScript = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const ContextScript: GDScript = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const SpecScript: GDScript = preload("res://addons/GodotGAS/effects/gameplay_effect_spec.gd")
+
 signal ability_ended(was_cancelled: bool)
 
 @export_category("Ability Rules")
-## The simple name to be used for logging or UI
 @export var ability_name: String = ""
-## The tag that uniquely identifies this ability.
-@export var ability_tag: StringName = "Ability.None"
-## The current level of this ability, used for scaling math and effects.
+
+## Identifies this ability, e.g. Ability.Fireball.
+@export var ability_tag: StringName = &"Ability.None"
+
 @export var ability_level: float = 1.0
-## Tags that, if present on the ASC, will prevent this ability from activating.
+
+## The ASC must have none of these for the ability to activate.
 @export var activation_blocked_tags: Array[StringName] = []
-## Tags that, if not present on the ASC, will prevent this ability from activating.
+
+## The ASC must have all of these for the ability to activate.
 @export var activation_required_tags: Array[StringName] = []
 
 @export_category("Ability Mechanics")
-## The gameplay effect applied to the owner to deduct resources upon committing.
 @export var cost_effect: GameplayEffect
-## The gameplay effect applied to the owner to trigger a cooldown upon committing.
 @export var cooldown_effect: GameplayEffect
-## Any additional shared effects (like a Global Cooldown) that should be applied when cast.
 @export var shared_cooldown_effects: Array[GameplayEffect] = []
-## Explicitly list any shared cooldowns (like GCDs) this ability should respect.
 @export var shared_cooldown_tags: Array[StringName] = []
 
 @export_category("Ability Triggers")
-## If set, the ASC will automatically try to activate this ability when it receives this exact event tag.
-@export var trigger_event_tag: StringName = ""
+## The event tag that wakes this ability. Hierarchical: a listener on
+## `Event.Damage` also receives `Event.Damage.Critical`.
+@export var trigger_event_tag: StringName = &""
 
 @export_category("Input Routing")
-## The integer ID this ability is currently bound to. -1 means unbound.
-## Usually handled automatically by UI Action Bars calling ASC.bind_ability_to_input().
+## The input slot this ability answers, or -1 when unbound.
 @export var input_id: int = -1
 
-## Temporarily holds the payload if this ability was activated via an event.
-## This can be a GameplayEffectSpec, a Dictionary, or a Godot Node!
-var current_event_payload: Variant
+## The context of the activation currently running. Null when idle.
+var current_context: GameplayEffectContext = null
 
-## A reference to the AbilitySystemComponent that owns this ability.
-var owner_asc: AbilitySystemComponent
+var owner_asc: AbilitySystemComponent = null
 
-## Tracks whether this ability is currently executing.
 var is_active: bool = false
 
 
 #region Initialization
-## Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	if not owner_asc:
-		var parent = get_parent()
-		if parent is AbilitySystemComponent:
-			parent.grant_ability(self)
+	if owner_asc != null:
+		return
+	var parent: Node = get_parent()
+	var parent_asc: AbilitySystemComponent = parent as AbilitySystemComponent
+	if parent_asc != null:
+		parent_asc.grant_ability(self)
 #endregion
 
 
-#region Execution & State
-## The public entry point. Accepts an optional payload if triggered by an event.
-func try_activate(event_payload: Variant = null) -> bool:
-	if is_active or not owner_asc:
+#region Execution
+## Try to run this ability. Returns whether it actually ran.
+func try_activate(context: GameplayEffectContext = null) -> bool:
+	if is_active or owner_asc == null:
 		return false
-	
-	# Gatekeeper check
 	if not owner_asc.can_activate_ability(self, true):
 		return false
-		
+
 	is_active = true
-	current_event_payload = event_payload # Store the payload for the logic to use
-	
-	# Logic execution
-	var success = await _activate_ability()
-	
-	# Guaranteed Cleanup
+	current_context = context
+
+	var success: bool = await _activate_ability()
+
+	# The subclass may already have ended the ability; only close it if it did
+	# not, so `ability_ended` fires exactly once.
 	if is_active:
 		end_ability(not success)
-		
-	current_event_payload = null # Clear it out to prevent memory leaks
+
+	current_context = null
 	return success
 
 
-## A standard helper to safely deduct resources and apply cooldowns at the EXACT same time.
-## Developers should call this manually inside _activate_ability() as soon as the ability is committed.
+## Pay the cost and start the cooldowns together.
+##
+## Call this from `_activate_ability` the moment the ability is committed, so a
+## cancelled cast has not already charged the player.
 func commit_ability() -> void:
-	if cost_effect:
+	if owner_asc == null:
+		return
+	if cost_effect != null:
 		owner_asc.apply_gameplay_effect(cost_effect, owner_asc, ability_level)
-	
-	if cooldown_effect:
+	if cooldown_effect != null:
 		owner_asc.apply_gameplay_effect(cooldown_effect, owner_asc, ability_level)
-	
-	for shared_effect in shared_cooldown_effects:
-		if shared_effect:
+	for shared_effect: GameplayEffect in shared_cooldown_effects:
+		if shared_effect != null:
 			owner_asc.apply_gameplay_effect(shared_effect, owner_asc, ability_level)
 
 
-## Virtual internal method. Override this in your specific ability scripts.
+## Override this. The default succeeds immediately.
 func _activate_ability() -> bool:
-	# Example flow:
-	# commit_ability()
-	# await play_animation()
-	# apply_effect_to_targets(...)
-	return true 
+	return true
 
 
-## Forcefully interrupts the ability mid-cast.
+## Interrupt mid-cast.
 func abort_ability() -> void:
 	if is_active:
-		print("GAS: Ability %s was forcefully aborted." % ability_tag)
 		end_ability(true)
 
 
-## Cleans up the state of the ability.
+## Close the ability. It stays granted: ending is not un-granting.
 func end_ability(was_cancelled: bool = false) -> void:
 	is_active = false
-	# We intentionally DO NOT remove the ability from the ASC here, 
-	# otherwise it gets permanently un-granted.
-	
 	ability_ended.emit(was_cancelled)
 #endregion
 
 
-#region Helper Methods
-## Triggers multiple visual/audio cues through the ASC.
+#region Helpers
+## Play a cue on the owning entity.
 func execute_cue(tag: StringName) -> void:
-	if owner_asc:
-		owner_asc.execute_cue(tag)
-
-
-## A massive QoL helper. Takes target data, builds the Context, wraps the Effect in a Spec, 
-## and shoots it at every target's ASC.
-func apply_effect_to_targets(effect_res: GameplayEffect, target_data: GameplayAbilityTargetData) -> void:
-	if not effect_res or not target_data:
+	if owner_asc == null:
 		return
-		
-	# The instigator and the causer both default to the persistent parent entity (e.g., the Player).
-	# Do NOT pass `self` (the transient ability) as the causer.
-	var persistent_avatar = owner_asc.get_parent()
-	var context = GameplayEffectContext.new(persistent_avatar, persistent_avatar)
-	
+	var params: GameplayCueParams = CueParams.new()
+	params.cue_tag = tag
+	params.instigator = owner_asc.get_effect_target()
+	params.target = owner_asc.get_effect_target()
+	owner_asc.execute_cue(params)
+
+
+## Build a spec from an effect and fire it at every target.
+##
+## Each target receives its own spec copy, made by
+## `apply_effect_spec_to_target`. Sharing one spec across an AoE let target A's
+## evaluation change what target B received.
+func apply_effect_to_targets(
+	effect_res: GameplayEffect, target_data: GameplayAbilityTargetData
+) -> void:
+	if effect_res == null or target_data == null or owner_asc == null:
+		return
+
+	# The instigator and causer are both the persistent avatar. Passing `self`
+	# would name a transient node as the cause and leave a dangling reference
+	# once the ability ends.
+	var avatar: Node = owner_asc.get_effect_target()
+	var context: GameplayEffectContext = ContextScript.new(avatar, avatar)
 	context.target_data = target_data
-	var spec = GameplayEffectSpec.new(effect_res, context, ability_level)
-	
-	var targets = target_data.get_target_nodes()
-	for target in targets:
-		var target_asc = _find_asc_on_node(target)
-		if target_asc:
+
+	var spec: GameplayEffectSpec = SpecScript.new(effect_res, context, ability_level)
+	for target: Node in target_data.get_target_nodes():
+		var target_asc: AbilitySystemComponent = find_asc_on(target)
+		if target_asc != null:
 			owner_asc.apply_effect_spec_to_target(spec, target_asc)
 
 
-## Internal helper to search for an ASC on a given node or its immediate children.
-func _find_asc_on_node(node: Node) -> AbilitySystemComponent:
-	if node is AbilitySystemComponent: 
-		return node
-		
-	for child in node.get_children():
-		if child is AbilitySystemComponent: 
-			return child
-			
+## The ASC on a node or one of its immediate children.
+static func find_asc_on(node: Node) -> AbilitySystemComponent:
+	if node == null:
+		return null
+	var direct: AbilitySystemComponent = node as AbilitySystemComponent
+	if direct != null:
+		return direct
+	for child: Node in node.get_children():
+		var child_asc: AbilitySystemComponent = child as AbilitySystemComponent
+		if child_asc != null:
+			return child_asc
 	return null
 
 
-## Returns ALL tags that represent a cooldown for this ability 
-## (Personal + Shared explicitly assigned by the designer).
+## Every tag that represents a cooldown for this ability: its own, those of the
+## shared cooldown effects, and any declared explicitly.
 func get_cooldown_tags() -> Array[StringName]:
 	var cooldown_tags: Array[StringName] = []
-	
-	# 1. Pull granted tags directly from the assigned Cooldown Resource
 	if cooldown_effect != null:
 		cooldown_tags.append_array(cooldown_effect.granted_tags)
-	
-	# 2. Automatically pull tags from the applied shared effects (like the GCD)
-	for effect in shared_cooldown_effects:
+	for effect: GameplayEffect in shared_cooldown_effects:
 		if effect != null:
 			cooldown_tags.append_array(effect.granted_tags)
-	
-	# 3. Pull explicit shared cooldown tags
 	cooldown_tags.append_array(shared_cooldown_tags)
-	
 	return cooldown_tags
 #endregion
 
 
 #region Input Routing
-## Virtual function triggered by the ASC when the assigned input_id is PRESSED.
+## The bound input was pressed.
 func _input_pressed(asc: AbilitySystemComponent) -> void:
 	if is_active:
-		# If already casting/channeling, route to the active override
 		_active_input_pressed(asc)
 		return
-		
-	# Kick off the robust activation pipeline (try_activate handles gatekeeping, state, and cleanup)
 	try_activate()
 
 
-## Virtual function triggered by the ASC when the assigned input_id is RELEASED.
+## The bound input was released.
 func _input_released(asc: AbilitySystemComponent) -> void:
 	if is_active:
 		_active_input_released(asc)
 
 
-## Triggered when the ability's input is PRESSED, but the ability is ALREADY active.
-## Override this for mechanics like 'Press again to cancel' or 'Press again to detonate'.
-func _active_input_pressed(asc: AbilitySystemComponent) -> void:
+## Pressed while already running. Override for "press again to cancel" or
+## "press again to detonate".
+func _active_input_pressed(_asc: AbilitySystemComponent) -> void:
 	pass
 
 
-## Triggered when the ability's input is RELEASED, but the ability is ALREADY active.
-## Override this for 'Hold to charge, Release to fire' mechanics.
-func _active_input_released(asc: AbilitySystemComponent) -> void:
+## Released while already running. Override for "hold to charge, release to
+## fire".
+func _active_input_released(_asc: AbilitySystemComponent) -> void:
 	pass
 #endregion

@@ -13,10 +13,27 @@ class_name GameplayExecutionCalculation extends Resource
 
 
 #region Execution
-## Takes in the live Effect Spec and the Target's ASC.
-## Returns a dictionary of exact flat numerical changes to be applied to the target's attributes.
-## Expected return format: { "attribute_name": flat_delta_amount }
-func execute(spec: GameplayEffectSpec, target_asc: AbilitySystemComponent) -> Dictionary:
-	push_error("GodotGAS: execute() called on base GameplayExecutionCalculation. You must override this in your specific child script.")
+## Compute flat deltas against the target's underlying base state.
+##
+## Section 3.7: an execution calculation is an instant mutation of the durable
+## value, never a temporary contribution. A Fireball may read Attack, Defense,
+## tags and level and return a change to Health; a +20% Attack buff is a
+## standard modifier instead, so that it lives and dies with its effect.
+##
+## The returned Dictionary is typed and is an extension boundary: user scripts
+## outside this addon produce it, and GameplayEffectEvaluator converts it into
+## staged AttributeBaseMutations before it reaches anything else. It is never
+## carried through the runtime as a payload.
+##
+## An attribute this returns a delta for must NOT also be written by a standard
+## modifier of the same effect. That combination has no defined order and the
+## evaluator refuses the whole application with AMBIGUOUS_ATTRIBUTE_WRITE.
+func execute(
+	_spec: GameplayEffectSpec, _target_asc: AbilitySystemComponent
+) -> Dictionary[StringName, float]:
+	push_error(
+		"GodotGAS: execute() called on the base GameplayExecutionCalculation. "
+		+ "Override it in your specific child script."
+	)
 	return {}
 #endregion

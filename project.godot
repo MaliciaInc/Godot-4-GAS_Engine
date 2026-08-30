@@ -1,9 +1,10 @@
 ; Engine configuration file.
-; Values here are pinned by docs/Fases/Arhalies_GAS_Fase_1_Fundacion_Testeada_y_Motor_Matematico.md
-; step 1.1. The GodotGAS EditorPlugin is deliberately NOT enabled this phase:
-; upstream registers the same autoload from _enable_plugin(), which would create
-; a second authority over GameplayCueManager. The autoload is declared directly
-; below instead, so a clean checkout reaches tests without opening the editor.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -16,17 +17,16 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 GameplayCueManager="*res://addons/GodotGAS/managers/gameplay_cue_manager.gd"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/gut/plugin.cfg")
-
 [debug]
 
 gdscript/warnings/untyped_declaration=2
 gdscript/warnings/inferred_declaration=2
-gdscript/warnings/inference_on_variant=2
-gdscript/warnings/unsafe_call_argument=2
-gdscript/warnings/unsafe_cast=2
-gdscript/warnings/unsafe_method_access=2
 gdscript/warnings/unsafe_property_access=2
+gdscript/warnings/unsafe_method_access=2
+gdscript/warnings/unsafe_cast=2
+gdscript/warnings/unsafe_call_argument=2
 gdscript/warnings/unsafe_void_return=2
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")

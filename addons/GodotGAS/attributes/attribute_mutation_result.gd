@@ -12,6 +12,10 @@
 ## @meta_license: MIT
 class_name AttributeMutationResult extends RefCounted
 
+## Which attribute this result is about. Carried on the result so a caller
+## emitting a signal does not have to remember what it asked about.
+var attribute_name: StringName = &""
+
 var status: AttributeEvaluationResult.Status = AttributeEvaluationResult.Status.OK
 
 var old_base_value: float = 0.0

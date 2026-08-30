@@ -35,6 +35,18 @@ func _init(in_instigator: Node = null, in_causer: Node = null) -> void:
 #endregion
 
 
+#region Application copy
+## A context for one more target.
+##
+## The logical origin - who cast this, and with what - is preserved. The target
+## payload is NOT: each application resolves its own targets, and sharing the
+## payload is how an AoE ends up applying target A's hits to target B.
+func create_application_copy() -> GameplayEffectContext:
+	var copy: GameplayEffectContext = GameplayEffectContext.new(instigator, causer)
+	return copy
+#endregion
+
+
 #region Payload Helpers
 func has_targets() -> bool:
 	return target_data != null and target_data.has_targets()
