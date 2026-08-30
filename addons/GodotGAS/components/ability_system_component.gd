@@ -115,6 +115,8 @@ func _wire_runtimes() -> void:
 	ability_runtime.owner_asc = self
 	ability_runtime.tags = tags
 	ability_runtime.tasks.owner_asc = self
+	ability_runtime.instancing.owner_asc = self
+	ability_runtime.instancing.ability_runtime = ability_runtime
 
 	events.owner_asc = self
 	events.ability_runtime = ability_runtime

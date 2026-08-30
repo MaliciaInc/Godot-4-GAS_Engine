@@ -2,9 +2,8 @@
 ##
 ## What was granted and what is running are different things: the registry
 ## holds `GameplayAbilitySpec`s, each identified by a `GameplayAbilityHandle`
-## rather than by the Node instance underneath it. A handle from another ASC
-## can never resolve here by coincidence of a locally-reused id - every lookup
-## checks the handle's owner first.
+## rather than by the Node instance underneath it - a handle from another ASC
+## can never resolve here by coincidence of a locally-reused id.
 ##
 ## Granting itself is a two-step transaction: `prepare_ability_grant`
 ## instantiates the scene and validates it exactly once, and either
@@ -33,6 +32,9 @@ var tags: GameplayTagRuntime = null
 
 ## Every task any granted ability is currently waiting on.
 var tasks: AbilityTaskRuntime = AbilityTaskRuntime.new()
+
+## How a spec's instancing policy turns into a running Node.
+var instancing: AbilityInstancingRuntime = AbilityInstancingRuntime.new()
 
 var _specs: Array[GameplayAbilitySpec] = []
 var _specs_by_id: Dictionary[int, GameplayAbilitySpec] = {}
@@ -95,12 +97,17 @@ func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHan
 	spec.source = prepared.source
 
 	var probe: GameplayAbility = prepared.probe
-	probe.current_spec = spec
-	probe.owner_asc = owner_asc
-	spec.per_actor_instance = probe
-
-	if owner_asc != null:
-		owner_asc.add_child(probe)
+	if prepared.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_ACTOR:
+		probe.current_spec = spec
+		probe.owner_asc = owner_asc
+		spec.per_actor_instance = probe
+		if owner_asc != null:
+			owner_asc.add_child(probe)
+	else:
+		# PER_EXECUTION keeps no persistent instance between activations: the
+		# probe served only to validate the scene and capture the definition
+		# snapshot above, both already done, and it was never added to a tree.
+		probe.free()
 
 	_specs.append(spec)
 	_specs_by_id[handle.id] = spec
@@ -185,12 +192,21 @@ func _retire(spec: GameplayAbilitySpec) -> void:
 		instance.owner_asc = null
 		instance.current_spec = null
 		instance.queue_free()
+	# Every PER_EXECUTION instance still running retires the same way, from a
+	# snapshot: aborting one erases it from this array as it goes.
+	for execution: GameplayAbility in spec.active_instances.duplicate():
+		if is_instance_valid(execution) and execution.is_active:
+			execution.abort_ability(GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
+		tasks.cancel_for_ability(execution, GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
+	spec.active_instances.clear()
 	_specs.erase(spec)
 	_specs_by_id.erase(spec.handle.id)
 
 
-## Abort every running ability without freeing anything. Used by cleanup,
-## which must leave the ASC in a state a second cleanup can safely see.
+## Abort every running ability. Used by cleanup, which must leave the ASC in a
+## state a second cleanup can safely see: a PER_ACTOR instance stays idle
+## afterward, but a PER_EXECUTION one has no idle state to return to, so
+## aborting it frees it too, through the same `ability_ended` path an end uses.
 func abort_all(
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
 ) -> void:
@@ -198,6 +214,9 @@ func abort_all(
 		var instance: GameplayAbility = spec.per_actor_instance
 		if instance != null and is_instance_valid(instance) and instance.is_active:
 			instance.abort_ability(reason)
+		for execution: GameplayAbility in spec.active_instances.duplicate():
+			if is_instance_valid(execution) and execution.is_active:
+				execution.abort_ability(reason)
 	tasks.cancel_all(reason)
 
 
@@ -217,6 +236,8 @@ func clear() -> void:
 func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	if spec == null or spec.definition == null:
 		return ActivationError.INTERNAL_ERROR
+	# PER_ACTOR's one instance blocks a second cast while it runs; PER_EXECUTION
+	# keeps per_actor_instance null by construction, so this never refuses it.
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and instance.is_active:
 		return ActivationError.ALREADY_ACTIVE
@@ -244,19 +265,30 @@ func can_activate(spec: GameplayAbilitySpec) -> bool:
 
 
 ## Abort any running ability whose spec carries one of these tags, or that
-## these tags would block.
+## these tags would block - every running instance of it, PER_ACTOR's one or
+## PER_EXECUTION's several alike.
 func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
 	for spec: GameplayAbilitySpec in _specs:
-		var instance: GameplayAbility = spec.per_actor_instance
-		if instance == null or not is_instance_valid(instance) or not instance.is_active:
+		if spec.definition == null or not _spec_matches_cancel_tags(spec, cancel_tags):
 			continue
-		for tag: StringName in cancel_tags:
-			if (
-				spec.definition.legacy_ability_tag == tag
-				or spec.definition.legacy_activation_blocked_tags.has(tag)
-			):
-				instance.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
-				break
+		var instance: GameplayAbility = spec.per_actor_instance
+		if instance != null and is_instance_valid(instance) and instance.is_active:
+			instance.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
+		for execution: GameplayAbility in spec.active_instances.duplicate():
+			if is_instance_valid(execution) and execution.is_active:
+				execution.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
+
+
+static func _spec_matches_cancel_tags(
+	spec: GameplayAbilitySpec, cancel_tags: Array[StringName]
+) -> bool:
+	for tag: StringName in cancel_tags:
+		if (
+			spec.definition.legacy_ability_tag == tag
+			or spec.definition.legacy_activation_blocked_tags.has(tag)
+		):
+			return true
+	return false
 #endregion
 
 
@@ -349,18 +381,52 @@ func input_pressed(input_id: int) -> void:
 	# Snapshot: an ability that grants another one on press must not have its
 	# new sibling receive the same press.
 	for spec: GameplayAbilitySpec in _specs.duplicate():
-		var instance: GameplayAbility = spec.per_actor_instance
-		if instance != null and is_instance_valid(instance) and spec.input_id == input_id:
-			instance._input_pressed(owner_asc)
+		if spec.input_id != input_id:
+			continue
+		_deliver_input(
+			spec,
+			func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
+			func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
+		)
+		# PER_ACTOR's instance already decided above whether the press
+		# started or continued it. PER_EXECUTION has none to ask, so the
+		# spec may start one more of its own too - a press never stops
+		# meaning "start" just because an earlier one is still running.
+		if (
+			spec.definition != null
+			and spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION
+		):
+			instancing.activate_spec(spec)
 
 
 func input_released(input_id: int) -> void:
 	_held_inputs.erase(input_id)
 	tasks.input_released(input_id)
 	for spec: GameplayAbilitySpec in _specs.duplicate():
+		if spec.input_id == input_id:
+			_deliver_input(
+				spec,
+				func(a: GameplayAbility) -> void: a._input_released(owner_asc),
+				func(a: GameplayAbility) -> void: a._active_input_released(owner_asc)
+			)
+
+
+## Deliver an input transition to whatever should hear it now: PER_ACTOR's one
+## instance, or a snapshot of every PER_EXECUTION instance already running -
+## never a fresh one, since a transition does not itself start anything.
+func _deliver_input(
+	spec: GameplayAbilitySpec, per_actor: Callable, per_execution: Callable
+) -> void:
+	if spec.definition == null:
+		return
+	if spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_ACTOR:
 		var instance: GameplayAbility = spec.per_actor_instance
-		if instance != null and is_instance_valid(instance) and spec.input_id == input_id:
-			instance._input_released(owner_asc)
+		if instance != null and is_instance_valid(instance):
+			per_actor.call(instance)
+		return
+	for execution: GameplayAbility in spec.active_instances.duplicate():
+		if is_instance_valid(execution) and execution.is_active:
+			per_execution.call(execution)
 #endregion
 
 

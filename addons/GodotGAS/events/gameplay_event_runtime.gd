@@ -46,11 +46,19 @@ func dispatch(event: GameplayEventData, specs: Array[GameplayAbilitySpec]) -> vo
 		_activate(spec, event.context)
 
 
-## PER_ACTOR's only route to activation this phase: ask by spec, not by
-## reaching into per_actor_instance directly. A future instancing policy
-## that resolves "the instance for this activation" differently changes
-## only this function.
+## Asks by spec, not by reaching into per_actor_instance directly, so a
+## PER_EXECUTION listener - which keeps no persistent instance to reach into -
+## activates the same way a PER_ACTOR one does. PER_EXECUTION is routed
+## through AbilityRuntime.activate_spec(), the same gate-then-instantiate path
+## input routing uses, so a trigger tag wakes it without a per-actor template
+## ever existing.
 func _activate(spec: GameplayAbilitySpec, context: GameplayEffectContext) -> void:
+	if spec.definition == null:
+		return
+	if spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION:
+		if ability_runtime != null:
+			ability_runtime.instancing.activate_spec(spec, context)
+		return
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and is_instance_valid(instance):
 		instance.try_activate(context)

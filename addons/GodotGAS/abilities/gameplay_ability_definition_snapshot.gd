@@ -15,6 +15,7 @@ class_name GameplayAbilityDefinitionSnapshot extends RefCounted
 
 var ability_scene: PackedScene = null
 var ability_name: String = ""
+var instancing_policy: GameplayAbility.InstancingPolicy = GameplayAbility.InstancingPolicy.PER_ACTOR
 
 ## Fields the ability model has not yet formalised past Phase 2. Named
 ## `legacy_*` so a later task's real replacement is unambiguous about which
@@ -36,6 +37,7 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	var snapshot: GameplayAbilityDefinitionSnapshot = GameplayAbilityDefinitionSnapshot.new()
 	snapshot.ability_scene = scene
 	snapshot.ability_name = probe.ability_name
+	snapshot.instancing_policy = probe.instancing_policy
 	snapshot.legacy_ability_tag = probe.ability_tag
 	snapshot.legacy_activation_blocked_tags = probe.activation_blocked_tags.duplicate()
 	snapshot.legacy_activation_required_tags = probe.activation_required_tags.duplicate()

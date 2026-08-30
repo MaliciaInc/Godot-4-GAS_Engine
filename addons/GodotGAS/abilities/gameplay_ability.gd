@@ -14,6 +14,17 @@
 class_name GameplayAbility extends Node
 
 
+## PER_ACTOR: one instance lives for as long as the grant does, and a second
+## activation while it is running is refused. PER_EXECUTION: every activation
+## gets its own instance, so several casts of the same ability can run at
+## once. Unreal's NonInstanced is not implemented here: it depends on sharing
+## a CDO, which has no Godot equivalent and buys no demonstrated advantage
+## over the risk of accidental global state.
+enum InstancingPolicy {
+	PER_ACTOR,
+	PER_EXECUTION,
+}
+
 signal ability_ended(was_cancelled: bool)
 
 @export_category("Ability Rules")
@@ -21,6 +32,11 @@ signal ability_ended(was_cancelled: bool)
 
 ## Identifies this ability, e.g. Ability.Fireball.
 @export var ability_tag: StringName = &"Ability.None"
+
+## How AbilityRuntime creates the instance that actually runs this ability.
+## Read once at grant time into the spec's frozen definition - changing it on
+## a Node after that grant changes nothing already running.
+@export var instancing_policy: InstancingPolicy = InstancingPolicy.PER_ACTOR
 
 @export var ability_level: float = 1.0
 
@@ -91,6 +107,8 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 		return false
 
 	is_active = true
+	if current_spec != null:
+		current_spec.active_count += 1
 	current_context = context
 
 	# `await` on a coroutine hands the value back untyped, and the declared
@@ -240,6 +258,8 @@ func end_ability(
 	if not is_active:
 		return
 	is_active = false
+	if current_spec != null:
+		current_spec.active_count = maxi(current_spec.active_count - 1, 0)
 	if owner_asc != null:
 		owner_asc.cancel_ability_tasks(self, reason)
 	# The one place a commit is forgotten. `try_activate` deliberately does not
