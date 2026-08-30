@@ -12,6 +12,15 @@
 ## @meta_license: MIT
 class_name GameplayTargetHit extends RefCounted
 
+## This script's own type, preloaded rather than named.
+##
+## This file is in the GameplayCueManager autoload's parse-time closure, and
+## Godot parses autoloads before it has scanned the project for class_name
+## declarations. A global name - even this file's own - does not resolve
+## there. tooling/project_invariants.py enforces the rule.
+const Hit = preload("res://addons/GodotGAS/target_data/gameplay_target_hit.gd")
+
+
 enum SpaceKind { TWO_D, THREE_D }
 
 var collider: Node = null
@@ -38,7 +47,7 @@ static func try_from_physics_hit(hit: Dictionary) -> GameplayTargetHit:
 	if not raw_collider is Node:
 		return null
 
-	var result: GameplayTargetHit = GameplayTargetHit.new()
+	var result: GameplayTargetHit = Hit.new()
 	result.collider = raw_collider
 
 	if raw_position is Vector2 and raw_normal is Vector2:

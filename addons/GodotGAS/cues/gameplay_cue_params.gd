@@ -13,6 +13,15 @@
 ## @meta_license: MIT
 class_name GameplayCueParams extends RefCounted
 
+## This script's own type, preloaded rather than named.
+##
+## This file is in the GameplayCueManager autoload's parse-time closure, and
+## Godot parses autoloads before it has scanned the project for class_name
+## declarations. A global name - even this file's own - does not resolve
+## there. tooling/project_invariants.py enforces the rule.
+const Params = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+
+
 const EffectContext = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
 
 ## The cue tag being executed.
@@ -40,7 +49,7 @@ var context: EffectContext = null
 static func for_target(
 	tag: StringName, instigator_node: Node, target_node: Node, cue_magnitude: float
 ) -> GameplayCueParams:
-	var params: GameplayCueParams = GameplayCueParams.new()
+	var params: GameplayCueParams = Params.new()
 	params.cue_tag = tag
 	params.instigator = instigator_node
 	params.target = target_node

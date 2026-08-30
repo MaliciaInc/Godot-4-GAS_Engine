@@ -20,3 +20,8 @@ mcp_interaction_server.gd
 mcp_interaction_server.gd.uid
 mcp_bridge.gd
 mcp_bridge.gd.uid
+
+# Per-run console capture. The .md and .json reports beside them are the
+# receipts; a .log is one run stdout, and committing it makes the log of a
+# failed run part of the tree the next run checks.
+artifacts/**/*.log

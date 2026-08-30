@@ -14,6 +14,15 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name GameplayEffectContext extends RefCounted
 
+## This script's own type, preloaded rather than named.
+##
+## This file is in the GameplayCueManager autoload's parse-time closure, and
+## Godot parses autoloads before it has scanned the project for class_name
+## declarations. A global name - even this file's own - does not resolve
+## there. tooling/project_invariants.py enforces the rule.
+const Context = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+
+
 const TargetData = preload("res://addons/GodotGAS/target_data/gameplay_ability_target_data.gd")
 
 ## The entity that activated the ability, e.g. the player character.
@@ -42,7 +51,7 @@ func _init(in_instigator: Node = null, in_causer: Node = null) -> void:
 ## payload is NOT: each application resolves its own targets, and sharing the
 ## payload is how an AoE ends up applying target A's hits to target B.
 func create_application_copy() -> GameplayEffectContext:
-	var copy: GameplayEffectContext = GameplayEffectContext.new(instigator, causer)
+	var copy: GameplayEffectContext = Context.new(instigator, causer)
 	return copy
 #endregion
 
