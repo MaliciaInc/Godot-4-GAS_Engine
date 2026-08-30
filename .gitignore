@@ -7,3 +7,7 @@
 # phase is sealed, and running the gate self-tests produces these on every run.
 __pycache__/
 *.py[cod]
+
+# Volatile GUT scratch receipt. The durable one is copied into
+# artifacts/gates/<TaskId>/ by the task that ran it.
+artifacts/gut/
