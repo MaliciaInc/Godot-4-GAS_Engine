@@ -15,6 +15,10 @@ class_name GameplayTagGenerator extends RefCounted
 ## The line printed once a generated file is written.
 const GENERATED_REPORT: String = "GodotGAS: generated %s with %d constants."
 
+## Said out loud rather than printed: a designer who added a tag and got no
+## constant needs to know, and stderr scrolls past.
+const WRITE_FAILED: String = "GodotGAS: could not write the generated tag script to %s."
+
 ## Anything outside this set becomes an underscore in a generated identifier.
 const IDENTIFIER_PATTERN: String = "[^a-zA-Z0-9_]"
 
@@ -38,12 +42,18 @@ const HEADER_LINES: Array[String] = [
 
 #region Code Generation
 ## Write the constants file for these tags.
-static func generate_tags_file(tags: Array[StringName]) -> void:
+static func generate_tags_file(tags: Array[StringName]) -> bool:
 	var output_path: String = GodotGasProjectSettings.get_generated_tag_script_path()
+	# The directory does not exist in a fresh checkout. Creating it is the
+	# difference between generating the constants and reporting that it could
+	# not open a path nobody asked it to invent.
+	DirAccess.make_dir_recursive_absolute(
+		ProjectSettings.globalize_path(output_path.get_base_dir())
+	)
 	var file: FileAccess = FileAccess.open(output_path, FileAccess.WRITE)
 	if file == null:
-		printerr("GodotGAS: could not open the tag output path: " + output_path)
-		return
+		push_error(WRITE_FAILED % output_path)
+		return false
 
 	for line: String in HEADER_LINES:
 		file.store_line(line)
@@ -53,6 +63,7 @@ static func generate_tags_file(tags: Array[StringName]) -> void:
 
 	file.close()
 	print(GENERATED_REPORT % [output_path, tags.size()])
+	return true
 
 
 ## One `const NAME: StringName = &"Tag"` line.

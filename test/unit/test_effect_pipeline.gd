@@ -224,6 +224,37 @@ func test_removing_an_effect_twice_announces_it_once() -> void:
 #endregion
 
 
+#region The list of active effects, once handed out
+## Removing effects while looping over what the ASC handed back must remove all
+## of them.
+##
+## This is the most natural loop a caller writes, and it used to skip every
+## other effect: get_active_effects returned the runtime's own array, so erasing
+## from it shifted the elements the loop had not reached yet. The scheduler gets
+## away with holding that array because it iterates backwards on purpose. A
+## caller has no reason to know that, so the facade hands back a copy.
+func test_removing_every_effect_while_iterating_the_handed_out_list_removes_them_all() -> void:
+	for magnitude: float in [1.0, 2.0, 3.0, 4.0]:
+		Factory.apply(asc, Factory.infinite([Factory.add(ATTACK, magnitude)]))
+	assert_eq(asc.get_active_effects().size(), 4, "four to remove")
+
+	for active: ActiveGameplayEffect in asc.get_active_effects():
+		asc.remove_active_effect(active)
+
+	assert_eq(asc.get_active_effects().size(), 0, "every one of them, not every other one")
+
+
+## And a caller cannot corrupt the ASC by mutating what it was handed.
+func test_mutating_the_handed_out_list_does_not_touch_the_ASC() -> void:
+	Factory.apply(asc, Factory.infinite([Factory.add(ATTACK, 5.0)]))
+
+	var handed: Array[ActiveGameplayEffect] = asc.get_active_effects()
+	handed.clear()
+
+	assert_eq(asc.get_active_effects().size(), 1, "the ASC still has its effect")
+#endregion
+
+
 #region Source and target
 func test_an_effect_applied_from_a_source_records_its_instigator() -> void:
 	var source: ASCFixture = Fixture.create("Caster")

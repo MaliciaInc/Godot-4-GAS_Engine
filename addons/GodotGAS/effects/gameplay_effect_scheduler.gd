@@ -39,7 +39,9 @@ func advance_time(delta: float) -> void:
 	if effects == null:
 		return
 
-	var active: Array[ActiveGameplayEffect] = effects.active_effects()
+	# The live array on purpose: walking it backwards is what makes an effect
+	# removing itself mid-walk safe, and this runs every frame.
+	var active: Array[ActiveGameplayEffect] = effects.live_active_effects()
 	for index: int in range(active.size() - 1, -1, -1):
 		if index >= active.size():
 			continue
@@ -112,7 +114,7 @@ func advance_turn(turns: int = 1) -> void:
 
 
 func _advance_single_turn() -> void:
-	var active: Array[ActiveGameplayEffect] = effects.active_effects()
+	var active: Array[ActiveGameplayEffect] = effects.live_active_effects()
 	for index: int in range(active.size() - 1, -1, -1):
 		if index >= active.size():
 			continue

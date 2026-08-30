@@ -28,8 +28,9 @@ var _held_inputs: Array[int] = []
 
 
 #region Registry
+## Every granted ability, as a copy, for the same reason the effects are.
 func abilities() -> Array[GameplayAbility]:
-	return _abilities
+	return _abilities.duplicate()
 
 
 func grant(ability: GameplayAbility) -> void:
@@ -122,8 +123,10 @@ func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool 
 	return true
 
 
+## The slots currently held down, as a copy: a caller clearing this would
+## leave the runtime believing nothing is pressed.
 func held_inputs() -> Array[int]:
-	return _held_inputs
+	return _held_inputs.duplicate()
 
 
 func input_pressed(input_id: int) -> void:

@@ -28,7 +28,23 @@ var _next_application_order: int = 0
 
 
 #region Queries
+## Every active effect, as a copy.
+##
+## A copy because a caller that loops over this while removing is writing
+## the most ordinary code there is, and handing back the live array made
+## that loop skip every other effect.
 func active_effects() -> Array[ActiveGameplayEffect]:
+	return _active.duplicate()
+
+
+## The live array, for the scheduler alone.
+##
+## It walks backwards with a bounds guard precisely so an effect removing
+## itself or another during the walk cannot skip one, and it runs every
+## frame, so a copy per update would be an allocation for nothing. Nobody
+## else should hold this: the guarantee comes from how it is iterated, not
+## from the array.
+func live_active_effects() -> Array[ActiveGameplayEffect]:
 	return _active
 
 

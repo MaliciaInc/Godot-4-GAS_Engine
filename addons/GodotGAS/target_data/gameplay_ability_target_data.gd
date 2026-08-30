@@ -91,14 +91,18 @@ func _record(hit: TargetHit) -> void:
 
 
 #region Getters
-## The strictly unique target nodes.
+## The strictly unique target nodes, as a copy.
+##
+## This class validates every hit at the append boundary so nothing
+## half-understood is stored. Handing out the array it stores them in let
+## a caller append straight past that.
 func get_target_nodes() -> Array[Node]:
-	return _target_nodes
+	return _target_nodes.duplicate()
 
 
-## Every registered hit, for multi-hit and AoE processing.
+## Every registered hit, as a copy, for multi-hit and AoE processing.
 func get_all_hits() -> Array[TargetHit]:
-	return _hits
+	return _hits.duplicate()
 
 
 ## Only the hits belonging to one node, for precision calculations such as

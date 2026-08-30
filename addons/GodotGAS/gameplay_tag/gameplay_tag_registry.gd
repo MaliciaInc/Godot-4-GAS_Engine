@@ -23,6 +23,7 @@ const TAG_PATTERN: String = "^([A-Z][a-zA-Z0-9]*)(\\.[A-Z][a-zA-Z0-9]*)*$"
 
 const SEGMENT_SEPARATOR: String = "."
 const ERROR_PREFIX: String = "Error: "
+const SAVE_FAILED: String = "GodotGAS: could not save the tag registry to %s."
 
 @export var tags: Array[StringName] = []
 
@@ -55,22 +56,29 @@ func add_tag(tag_string: String) -> String:
 	tags.sort_custom(_compare_tags)
 
 	emit_changed()
-	GameplayTagGenerator.generate_tags_file(tags)
-	_save_if_backed_by_a_file()
+	_persist()
 	return formatted_tag
 
 
-## Normalise casing: every segment becomes Capitalised, so `test.tesTest`
-## becomes `Test.Testest`. Empty segments are preserved so the grammar check
-## rejects a double dot rather than silently repairing it.
+## Capitalise the first letter of every segment and leave the rest alone.
+##
+## Only the first letter, because the grammar above accepts `[A-Z][a-zA-Z0-9]*`
+## and a capital inside a segment is therefore legal. This used to lower the
+## whole segment first, so `Cue.NeverUsed` - a tag this repository already uses -
+## came back as `Cue.Neverused`: the registry silently held a different tag from
+## the one the code referred to, and the query that should have matched simply
+## returned nothing. The formatter and the grammar have to agree, and the
+## grammar is the declared contract.
+##
+## Empty segments are preserved so the grammar rejects a double dot rather than
+## the formatter quietly repairing it.
 func format_tag(tag_string: String) -> String:
 	var formatted_parts: Array[String] = []
 	for part: String in tag_string.split(SEGMENT_SEPARATOR):
 		if part.is_empty():
 			formatted_parts.append("")
 			continue
-		var lowered: String = part.to_lower()
-		formatted_parts.append(lowered.substr(0, 1).to_upper() + lowered.substr(1))
+		formatted_parts.append(part.substr(0, 1).to_upper() + part.substr(1))
 	return SEGMENT_SEPARATOR.join(formatted_parts)
 
 
@@ -85,9 +93,18 @@ func _compare_tags(left: StringName, right: StringName) -> bool:
 	return String(left) < String(right)
 
 
-func _save_if_backed_by_a_file() -> void:
+## Write the registry and the constants it generates, in that order.
+##
+## Returns whether both landed. The generator used to be called and its answer
+## dropped, so a failed write left the tag in memory, no constant on disk, and
+## the caller believing it had succeeded.
+func _persist() -> bool:
+	var saved: bool = true
 	if not resource_path.is_empty():
-		ResourceSaver.save(self, resource_path)
+		saved = ResourceSaver.save(self, resource_path) == OK
+		if not saved:
+			push_error(SAVE_FAILED % resource_path)
+	return GameplayTagGenerator.generate_tags_file(tags) and saved
 
 
 ## Remove an exact tag.
@@ -96,8 +113,7 @@ func remove_tag(tag_name: StringName) -> void:
 		return
 	tags.erase(tag_name)
 	emit_changed()
-	GameplayTagGenerator.generate_tags_file(tags)
-	_save_if_backed_by_a_file()
+	_persist()
 #endregion
 
 
