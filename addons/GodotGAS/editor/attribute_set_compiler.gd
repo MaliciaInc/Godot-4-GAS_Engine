@@ -63,7 +63,18 @@ static func compile(drafts: AttributeSetDrafts, set_name: String) -> Outcome:
 		return Outcome.failure(TITLE_WRITE_ERROR, "Could not write: " + file_path)
 
 	file.store_string(AttributeSetScriptWriter.write(set_name, attributes_of(drafts, set_name)))
+	# Asked before closing, because that is while the handle still knows.
+	# Opening a file is not writing it, and this function's contract is to
+	# report every failure rather than end in a Success dialog over a file
+	# that is not there.
+	var written: Error = file.get_error()
 	file.close()
+	if written != OK:
+		return Outcome.failure(
+			TITLE_WRITE_ERROR,
+			"Could not finish writing " + file_path + " (" + error_string(written) + ")."
+		)
+
 	EditorInterface.get_resource_filesystem().scan()
 	return Outcome.success(file_name + " was generated at:" + "\n" + file_path)
 
