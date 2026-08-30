@@ -1,12 +1,10 @@
 ## Replaces the default inspector UI of tag-shaped properties with a tag picker.
 ##
-## KNOWN GATE CONFLICT: `_parse_property` below declares seven parameters and
-## the LOC gate allows five. The signature is Godot's, not ours - overriding it
-## with fewer parameters simply stops the override working - and the gate's
-## `function_length_allowlist` covers line counts only, so there is no way to
-## declare an engine virtual as exempt. This cannot be fixed in the source and
-## the gate is sealed by Task 0, so it is recorded in docs/toolchain-findings.md
-## for the administrator rather than worked around.
+## `_parse_property` below takes seven parameters, past the five this project
+## holds itself to. The signature is Godot's, not ours: overriding it with
+## fewer simply stops the override working, and the tag picker has no other
+## entry point. It is exempted by name, with that reason written down, rather
+## than the limit being raised for everything.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork

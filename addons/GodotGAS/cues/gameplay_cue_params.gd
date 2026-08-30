@@ -18,7 +18,7 @@ class_name GameplayCueParams extends RefCounted
 ## This file is in the GameplayCueManager autoload's parse-time closure, and
 ## Godot parses autoloads before it has scanned the project for class_name
 ## declarations. A global name - even this file's own - does not resolve
-## there. tooling/project_invariants.py enforces the rule.
+## there, so the reference is a preload and the type is its alias.
 const Params = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 

@@ -78,8 +78,9 @@ wrong.
 - **Networking is removed.** The behaviour of this phase is local.
 - **GDScript strict typing is mandatory**: no `:=`, no `Variant` or `Dictionary`
   as a domain contract, and eight warnings promoted to errors.
-- **The quality gates understand GDScript**, and hold this repository to the
-  same limits as anything else.
+- **Hard structural limits, enforced rather than intended**: 450 lines per
+  file, 120 per function, no repeated literal that could have been named,
+  no duplicated logic.
 
 ## Layout
 
@@ -96,7 +97,6 @@ addons/GodotGAS/
   editor/        the dashboard; not enabled this phase
 addons/gut/      GUT v9.7.1, vendored and immutable
 test/            fixtures, the unit suite, the headless runner
-tooling/         the four quality gates, the seal, and the verification runner
 ```
 
 The `AbilitySystemComponent` is a facade. Tags, attributes, effects, timing and
@@ -122,8 +122,6 @@ refuses two greens the assertions cannot see: a suite where fewer scripts loaded
 than exist on disk, and a run that leaves orphan nodes behind. Its receipt is
 timestamped, so a stale one cannot be read as a fresh pass.
 
-`tooling/gates/run_gate.py` owns the canonical invocation of each gate.
-
 ## The autoload constraint
 
 Godot initialises autoloads before it has scanned the project for `class_name`
@@ -141,41 +139,39 @@ an alias and construct through it.
 
 None of this shows on a machine that has opened the project before, because
 `.godot/global_script_class_cache.cfg` already exists there. It shows on a fresh
-clone, and nowhere else. `tooling/project_invariants.py` computes each
-autoload's closure and enforces the rule, so the next person to reach for a
-global name there is told before the clone is.
+clone, and nowhere else, which is why it is written down here rather than
+left to be rediscovered.
 
 Everywhere outside that closure, global class names are the right thing to use.
 
-## Verification
+## How this is verified
 
-```bash
-pwsh -File tooling/verify.ps1 -TaskId T11
-```
+Every change goes through a chain that stops at the first failure: four quality
+gates over the whole tree, a strict-typing pass across every engine script, and
+the full suite. The gates and the runner are development tooling and are not
+part of this repository, so what they guarantee is written here instead, where
+it can be checked against the code:
 
-In order: the policy seal, the gates' own tests, the project-file invariants,
-the four gates, the engine evidence written by the MCP stages, and
-`git diff --check`. Any of them failing stops the run.
+- no file over 450 lines and no function over 120, gates included;
+- no repeated literal that could have been named, and no duplicated logic;
+- every script under `addons/GodotGAS/` parses with the eight warnings above
+  promoted to errors;
+- the suite passes with zero failures and zero orphan nodes;
+- a checkout containing only the tracked files imports and runs that suite.
 
-`tooling/seal_policy.py` owns the seal. It checks that every sealed file is
-unchanged *and* that every file the sealed globs reach is in the seal, so a new
-gate module cannot sit outside it while every hash still matches.
+The suite is here and is the part you can run yourself.
 
 ## Strict typing
 
 `project.godot` promotes eight GDScript warnings to errors. Godot excludes
-`addons/` from warnings by default, which would exempt the entire engine, and
-setting `exclude_addons=false` permanently is impossible because the vendored
-GUT is not strictly typed and fails to parse under it. So the project runs
-permissive and is verified strict:
+`addons/` from warnings by default, which would exempt the entire engine - the
+engine lives in `addons/GodotGAS/` - and setting `exclude_addons=false`
+permanently is impossible, because the vendored GUT is not strictly typed and
+fails to parse under it, taking the suite with it.
 
-```bash
-python tooling/strict_typing_pass.py enter
-# validate addons/GodotGAS/** through the Godot MCP
-python tooling/strict_typing_pass.py leave
-```
-
-Neither mode weakens a warning. Only the trees they apply to differ.
+So the project ships permissive and is verified strict: the flag is flipped,
+every engine script is validated, and it is flipped back. Neither mode weakens a
+warning. Only the trees they apply to differ.
 
 ## Licence and attribution
 

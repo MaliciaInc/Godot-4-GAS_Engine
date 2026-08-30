@@ -7,7 +7,7 @@
 ## The verdict is written to a file rather than only printed. A process that
 ## quits when the suite ends takes its own stdout with it, so a caller polling
 ## for output races the exit and reads nothing - which looks exactly like a
-## suite that never ran. The file is the receipt `tooling/verify.ps1` reads.
+## suite that never ran. The file is the receipt the verification chain reads.
 ##
 ## GUT is a vendored dependency pinned byte-identical by step 11.6 and is not
 ## strictly typed, so every call across its boundary is an unsafe access under

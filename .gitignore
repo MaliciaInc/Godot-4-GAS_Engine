@@ -25,3 +25,11 @@ mcp_bridge.gd.uid
 # receipts; a .log is one run stdout, and committing it makes the log of a
 # failed run part of the tree the next run checks.
 artifacts/**/*.log
+
+# Internal development material. This repository is public and is the addon,
+# not the process that built it: the phase plans, the quality gates and the
+# receipts they produce stay on the maintainer's machine.
+artifacts/
+docs/
+tooling/
+.quality-gates.json

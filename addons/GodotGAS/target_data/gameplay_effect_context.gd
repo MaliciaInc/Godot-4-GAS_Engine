@@ -19,7 +19,7 @@ class_name GameplayEffectContext extends RefCounted
 ## This file is in the GameplayCueManager autoload's parse-time closure, and
 ## Godot parses autoloads before it has scanned the project for class_name
 ## declarations. A global name - even this file's own - does not resolve
-## there. tooling/project_invariants.py enforces the rule.
+## there, so the reference is a preload and the type is its alias.
 const Context = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
 
 

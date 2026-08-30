@@ -1,9 +1,8 @@
 # Third-party dependencies
 
 Step 1.6 of the Phase 1 plan. Every vendored dependency is pinned to an exact
-commit — never a branch, never "latest" — and the pin is verified against the
-live remote before the files are copied. Evidence of that verification lives in
-[`artifacts/deps/pinned-dependency-verification.md`](artifacts/deps/pinned-dependency-verification.md).
+commit — never a branch, never "latest" — and the pin was verified against the
+live remote before the files were copied.
 
 ## Godot Engine
 
@@ -15,10 +14,9 @@ live remote before the files are copied. Evidence of that verification lives in
 | Source | Steam |
 
 The exact patch version, not the `4.7` that `project.godot` records in
-`config/features`. Every receipt in `artifacts/` was produced by this build, and
-the GDScript warnings this project promotes to errors are the ones this version
-defines: a different patch release can add a warning and turn a green tree red
-without a line of this repository changing.
+`config/features`. The GDScript warnings this project promotes to errors are the
+ones this version defines: a different patch release can add a warning and turn
+a green tree red without a line of this repository changing.
 
 ## GodotGAS
 
