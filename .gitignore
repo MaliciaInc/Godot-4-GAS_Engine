@@ -11,3 +11,12 @@ __pycache__/
 # Volatile GUT scratch receipt. The durable one is copied into
 # artifacts/gates/<TaskId>/ by the task that ran it.
 artifacts/gut/
+
+# Injected by the Godot MCP servers at runtime and removed again on a clean
+# exit. A crashed run leaves it behind, where it is neither ours to fix nor
+# ours to hold to our limits - it was reported by the LOC gate as a 4874-line
+# file with a 250-line function.
+mcp_interaction_server.gd
+mcp_interaction_server.gd.uid
+mcp_bridge.gd
+mcp_bridge.gd.uid

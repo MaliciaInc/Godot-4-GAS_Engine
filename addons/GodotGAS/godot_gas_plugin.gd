@@ -25,7 +25,7 @@ const CUE_MANAGER_PATH: String = "res://addons/GodotGAS/managers/gameplay_cue_ma
 const PLUGIN_DISPLAY_NAME: String = "GodotGAS"
 const PLUGIN_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas.svg"
 
-const DASHBOARD_SCENE = preload("res://addons/GodotGAS/editor/godot_gas_dashboard.tscn")
+const DASHBOARD_SCENE: PackedScene = preload("res://addons/GodotGAS/editor/godot_gas_dashboard.tscn")
 const GameplayTagInspectorPlugin = preload("res://addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd")
 const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 const CueRegistry = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
@@ -132,7 +132,7 @@ func _get_plugin_name() -> String:
 
 
 func _get_plugin_icon() -> Texture2D:
-	return GodotGasProjectSettings.get_svg_icon(PLUGIN_ICON_PATH)
+	return DashboardTheme.icon(PLUGIN_ICON_PATH)
 
 
 func _make_visible(next_visible: bool) -> void:

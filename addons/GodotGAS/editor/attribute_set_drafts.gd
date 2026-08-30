@@ -1,0 +1,233 @@
+## The uncompiled attribute-set drafts, as a typed model over a ConfigFile.
+##
+## The dashboard tab reached into the ConfigFile at forty-two places, each with
+## its own explicit save and its own handling of the two shapes an entry can
+## take. That is four decisions repeated forty-two times, and a forgotten save
+## loses a designer's work silently.
+##
+## Every mutation here persists. Every read returns a typed Entry, so the
+## legacy shape - a bare float, from before icons existed - is decoded once,
+## here, rather than at each call site.
+##
+## @meta_addon: GodotGAS, Arhalies fork
+## @meta_license: MIT
+
+@tool
+class_name AttributeSetDrafts extends RefCounted
+
+const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+
+## The section name a ConfigFile reserves for its own settings, so a set may not
+## be called this.
+const RESERVED_SECTION: String = "Settings"
+
+## The key that marks a set as created rather than an attribute of it.
+const INITIALISED_KEY: String = "_initialized"
+
+const VALUE_KEY: String = "value"
+const ICON_KEY: String = "icon"
+const DEFAULT_ICON: String = "Attribute"
+
+
+## One drafted attribute: its starting value and the icon it shows.
+class Entry extends RefCounted:
+	var value: float = 0.0
+	var icon: String = DEFAULT_ICON
+
+	static func of(entry_value: float, entry_icon: String = DEFAULT_ICON) -> Entry:
+		var entry: Entry = Entry.new()
+		entry.value = entry_value
+		entry.icon = entry_icon
+		return entry
+
+	func to_dictionary() -> Dictionary:
+		return {VALUE_KEY: value, ICON_KEY: icon}
+
+
+var _config: ConfigFile = ConfigFile.new()
+
+
+#region Persistence
+func load_from_disk() -> void:
+	_config.load(GodotGasProjectSettings.get_attributes_draft_config_path())
+
+
+## Persist. Private because no caller should have to remember it: every mutation
+## below calls it, and a mutation that did not would lose work silently.
+func _save() -> void:
+	_config.save(GodotGasProjectSettings.get_attributes_draft_config_path())
+#endregion
+
+
+#region Sets
+## Every drafted set, excluding the ConfigFile's reserved section.
+func set_names() -> Array[String]:
+	var names: Array[String] = []
+	for section: String in _config.get_sections():
+		if section != RESERVED_SECTION:
+			names.append(section)
+	return names
+
+
+func has_set(set_name: String) -> bool:
+	return _config.has_section(set_name)
+
+
+## Create an empty set. Returns false when the name is taken or reserved.
+func create_set(set_name: String) -> bool:
+	if set_name.is_empty() or set_name == RESERVED_SECTION or has_set(set_name):
+		return false
+	_config.set_value(set_name, INITIALISED_KEY, true)
+	_save()
+	return true
+
+
+## Rename a set, carrying its attributes over. Returns false when the new name
+## is taken or reserved.
+func rename_set(old_name: String, new_name: String) -> bool:
+	if new_name.is_empty() or new_name == RESERVED_SECTION or has_set(new_name):
+		return false
+	if not has_set(old_name):
+		return false
+	for key: String in _config.get_section_keys(old_name):
+		_config.set_value(new_name, key, _config.get_value(old_name, key))
+	_config.erase_section(old_name)
+	_save()
+	return true
+
+
+## Copy a set under a free name, and return that name.
+##
+## Dictionaries are deep-copied. A shallow copy would leave the two sets sharing
+## every entry, so editing one would silently edit the other.
+func duplicate_set(set_name: String) -> String:
+	if not has_set(set_name):
+		return ""
+	var copy_name: String = _free_name(set_name + "Copy")
+	for key: String in _config.get_section_keys(set_name):
+		var raw: Variant = _config.get_value(set_name, key)
+		if raw is Dictionary:
+			var stored: Dictionary = raw
+			raw = stored.duplicate(true)
+		_config.set_value(copy_name, key, raw)
+	_save()
+	return copy_name
+
+
+func delete_set(set_name: String) -> void:
+	if has_set(set_name):
+		_config.erase_section(set_name)
+		_save()
+
+
+func _free_name(preferred: String) -> String:
+	if not has_set(preferred):
+		return preferred
+	var counter: int = 2
+	while has_set(preferred + str(counter)):
+		counter += 1
+	return preferred + str(counter)
+#endregion
+
+
+#region Attributes
+## The attributes of a set, in draft order, without the initialisation marker.
+func attribute_names(set_name: String) -> Array[String]:
+	var names: Array[String] = []
+	if not has_set(set_name):
+		return names
+	for key: String in _config.get_section_keys(set_name):
+		if key != INITIALISED_KEY:
+			names.append(key)
+	return names
+
+
+func has_attribute(set_name: String, key: String) -> bool:
+	return _config.has_section_key(set_name, key)
+
+
+## Read one attribute, decoding whichever shape it was stored in.
+##
+## Entries written before icons existed are bare floats. They are migrated on
+## read so the rest of the code never sees the old shape.
+func entry(set_name: String, key: String) -> Entry:
+	if not has_attribute(set_name, key):
+		return Entry.new()
+
+	var raw: Variant = _config.get_value(set_name, key)
+	if raw is Dictionary:
+		var stored: Dictionary = raw
+		return Entry.of(_as_float(stored.get(VALUE_KEY)), _as_icon(stored.get(ICON_KEY)))
+
+	var migrated: Entry = Entry.of(_as_float(raw))
+	put(set_name, key, migrated)
+	return migrated
+
+
+## Read a number out of a stored Variant, or zero when it is not one.
+##
+## A draft is a file a human can edit, so it may hold anything. Refusing to
+## guess keeps a hand-broken file from becoming a crash.
+static func _as_float(raw: Variant) -> float:
+	if raw is float:
+		var decimal: float = raw
+		return decimal
+	if raw is int:
+		var whole: int = raw
+		return float(whole)
+	return 0.0
+
+
+static func _as_icon(raw: Variant) -> String:
+	if raw is String:
+		var text: String = raw
+		return text
+	if raw is StringName:
+		var name: StringName = raw
+		return String(name)
+	return DEFAULT_ICON
+
+
+func put(set_name: String, key: String, value: Entry) -> void:
+	_config.set_value(set_name, key, value.to_dictionary())
+	_save()
+
+
+## Add a new attribute. Returns false when the name is taken.
+func add_attribute(set_name: String, key: String, value: Entry) -> bool:
+	if key.is_empty() or has_attribute(set_name, key):
+		return false
+	put(set_name, key, value)
+	return true
+
+
+## Rename an attribute, keeping its value and icon. Returns false when taken.
+func rename_attribute(set_name: String, old_key: String, new_key: String) -> bool:
+	if new_key.is_empty() or new_key == INITIALISED_KEY or has_attribute(set_name, new_key):
+		return false
+	if not has_attribute(set_name, old_key):
+		return false
+	var carried: Entry = entry(set_name, old_key)
+	_config.erase_section_key(set_name, old_key)
+	put(set_name, new_key, carried)
+	return true
+
+
+## Copy an attribute under a free name, and return that name.
+func duplicate_attribute(set_name: String, key: String) -> String:
+	if not has_attribute(set_name, key):
+		return ""
+	var copy_key: String = key
+	var counter: int = 2
+	while has_attribute(set_name, copy_key):
+		copy_key = key + str(counter)
+		counter += 1
+	put(set_name, copy_key, entry(set_name, key))
+	return copy_key
+
+
+func delete_attribute(set_name: String, key: String) -> void:
+	if has_attribute(set_name, key):
+		_config.erase_section_key(set_name, key)
+		_save()
+#endregion

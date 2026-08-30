@@ -58,24 +58,6 @@ const INFO_TYPE: String = "type"
 const INFO_HINT: String = "hint"
 const INFO_HINT_STRING: String = "hint_string"
 
-## The example tags a fresh tag registry is seeded with.
-const EXAMPLE_TAGS: Array[StringName] = [
-	&"Example.Ability.Arrow.Impact",
-	&"Example.Ability.Arrow.Shoot",
-	&"Example.Ability.Heal.Triggered",
-	&"Example.Ability.Poison.Applied",
-	&"Example.Ability.Poison.Cast",
-	&"Example.Event.Damage.Critical",
-	&"Example.Event.Damage.Missed",
-	&"Example.Event.Damage.Normal",
-	&"Example.Event.Defend.Hit",
-	&"Example.State.Cooldown.Arrow",
-	&"Example.State.Cooldown.Poison",
-]
-
-## Greys the editor icons are recoloured from. Declared rather than repeated so
-## the set is auditable and the magic-string gate has nothing to find.
-const ICON_NEUTRAL_GREYS: Array[String] = ["#e0e0e0", "#E0E0E0", "#ffffff", "#FFFFFF"]
 
 
 #region Registration
@@ -226,35 +208,4 @@ static func _init_editor_tag_property_editor() -> void:
 			INFO_HINT_STRING: "Prefix,Suffix,Anywhere",
 		}
 	)
-#endregion
-
-
-#region Editor Icons
-## Recolour an SVG in memory to the editor's font colour and rasterise it at the
-## user's UI scale, so icons stay legible on a 4K monitor and under both themes.
-##
-## Returns the plain resource outside the editor, where none of this applies.
-static func get_svg_icon(path: String) -> Texture2D:
-	if not Engine.is_editor_hint():
-		return load(path)
-
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return load(path)
-
-	var svg_text: String = file.get_as_text()
-	file.close()
-
-	var editor_theme: Theme = EditorInterface.get_editor_theme()
-	var font_color: String = "#" + editor_theme.get_color("font_color", "Editor").to_html(false)
-	for grey: String in ICON_NEUTRAL_GREYS:
-		svg_text = svg_text.replace(grey, font_color)
-
-	var image: Image = Image.new()
-	var editor_scale: float = EditorInterface.get_editor_scale()
-	var err: int = image.load_svg_from_string(svg_text, editor_scale)
-	if err == OK:
-		return ImageTexture.create_from_image(image)
-
-	return load(path)
 #endregion

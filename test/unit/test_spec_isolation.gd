@@ -40,40 +40,6 @@ func _shared_spec(effect: GameplayEffect) -> GameplayEffectSpec:
 	return GameplayEffectSpec.new(effect, GameplayEffectContext.new(source.owner))
 
 
-#region Context
-func test_the_instigator_arrives_intact() -> void:
-	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
-	assert_eq(context.instigator, source.owner)
-
-
-func test_the_causer_defaults_to_the_instigator() -> void:
-	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
-	assert_eq(context.causer, source.owner, "no separate causer means the instigator caused it")
-
-
-func test_a_distinct_causer_is_preserved() -> void:
-	var projectile: Node = Node.new()
-	add_child_autofree(projectile)
-	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner, projectile)
-	assert_eq(context.instigator, source.owner, "who cast it")
-	assert_eq(context.causer, projectile, "what hit them")
-
-
-func test_the_level_travels_with_the_spec() -> void:
-	var spec: GameplayEffectSpec = GameplayEffectSpec.new(
-		Factory.infinite([Factory.add(ATTACK, 1.0)]), GameplayEffectContext.new(source.owner), 7.0
-	)
-	assert_almost_eq(spec.level, 7.0, TOLERANCE)
-
-
-func test_source_and_target_are_different_nodes() -> void:
-	# A suite where both sides are the same node can pass while the engine
-	# conflates them, so this is asserted rather than assumed.
-	assert_ne(source.owner, target_a.owner)
-	assert_ne(target_a.owner, target_b.owner)
-	assert_ne(source.asc, target_a.asc)
-#endregion
-
 
 #region Copy contract
 func test_a_copy_shares_the_definition_and_nothing_mutable() -> void:

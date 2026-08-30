@@ -11,6 +11,11 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 extends Control
 
+const TAGS_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas_tags.svg"
+
+## Colours and styleboxes, shared with the other dashboard tabs.
+var _theme: DashboardTheme = DashboardTheme.new()
+
 ## Addon project settings.
 const GodotGasProjectSettings: = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
@@ -27,12 +32,8 @@ var _delete_confirm_dialog: ConfirmationDialog
 var _tag_to_delete: StringName = ""
 
 ## The generated system accent color for active UI elements.
-var _sys_accent: String
 
 ## In-memory styles used to override panels natively to prevent dirtying .tres files
-var _base_panel_style: StyleBoxFlat
-var _dark_panel_style: StyleBoxFlat
-var _header_panel_style: StyleBoxFlat
 
 ## Reference to the search filter input field.
 @onready var _search_bar: LineEdit = %SearchTagFilter
@@ -105,74 +106,16 @@ func _setup_ui() -> void:
 	add_child(_delete_confirm_dialog)
 
 
-## Synchronizes internal color variables and generates dynamic StyleBoxes to match the Editor Theme.
+## Refresh colours from the editor theme and repaint this tab.
+##
+## The derivation lives in DashboardTheme, shared with the other tabs. This
+## file held the third private copy of it.
 func _sync_theme_colors() -> void:
-	if not Engine.is_editor_hint(): return
-	var editor_theme = EditorInterface.get_editor_theme()
-	if not editor_theme: return
-	
-	var editor_accent = editor_theme.get_color("accent_color", "Editor")
-	var base_color = editor_theme.get_color("base_color", "Editor")
-	var dark_color = editor_theme.get_color("dark_color_1", "Editor")
-	var is_dark_theme = base_color.get_luminance() < 0.5
-	var header_color = base_color.lightened(0.08) if is_dark_theme else base_color.darkened(0.08)
-	
-	# Fallback safeguard in case theme is completely unloaded during a hot-reload
-	if base_color == Color(0, 0, 0, 1) and dark_color == Color(0, 0, 0, 1):
+	if not _theme.sync_from_editor():
 		return
-		
-	_sys_accent = editor_accent.to_html(false)
-	
-	if not _base_panel_style:
-		_base_panel_style = StyleBoxFlat.new()
-		_base_panel_style.set_content_margin_all(5)
-		_base_panel_style.set_corner_radius_all(5)
-		
-	if not _dark_panel_style:
-		_dark_panel_style = StyleBoxFlat.new()
-		_dark_panel_style.set_content_margin_all(5)
-		_dark_panel_style.set_corner_radius_all(5)
-		
-	if not _header_panel_style:
-		_header_panel_style = StyleBoxFlat.new()
-		_header_panel_style.set_content_margin_all(5)
-		_header_panel_style.set_corner_radius_all(8)
-		
-	_base_panel_style.bg_color = base_color
-	_dark_panel_style.bg_color = dark_color
-	_header_panel_style.bg_color = header_color
-	
-	_apply_panel_colors(self)
-	
-	# Fetch dynamic icon
-	_tag_icon = GodotGasProjectSettings.get_svg_icon("res://addons/GodotGAS/icons/godot_gas_tags.svg")
-	
-	# Safely apply to the parent TabContainer (Delayed by 1 frame so parent can initialize)
-	if get_parent() is TabContainer:
-		get_parent().set_tab_icon.call_deferred(get_index(), _tag_icon)
-
-
-## Traverses the UI tree to identify PanelContainers by their .tres assignment and applies the local StyleBox override.
-func _apply_panel_colors(node: Node) -> void:
-	if node is PanelContainer:
-		if not node.has_meta("panel_type"):
-			var style = node.get_theme_stylebox("panel")
-			if style and style.resource_path != "":
-				if "editor_panel_flat_style_dark" in style.resource_path:
-					node.set_meta("panel_type", "dark")
-				elif "editor_panel_flat_style" in style.resource_path:
-					node.set_meta("panel_type", "base")
-					
-		if node.has_meta("panel_type"):
-			if node.get_meta("panel_type") == "base":
-				node.add_theme_stylebox_override("panel", _base_panel_style)
-			elif node.get_meta("panel_type") == "dark":
-				node.add_theme_stylebox_override("panel", _dark_panel_style)
-			elif node.get_meta("panel_type") == "header":
-				node.add_theme_stylebox_override("panel", _header_panel_style)
-				
-	for child in node.get_children():
-		_apply_panel_colors(child)
+	_theme.apply_panels(self)
+	_tag_icon = DashboardTheme.icon(TAGS_ICON_PATH)
+	_theme.apply_tab_icon(self, _tag_icon)
 #endregion
 
 

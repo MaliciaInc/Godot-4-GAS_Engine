@@ -15,10 +15,14 @@ extends Control
 const GodotGasProjectSettings: = preload("res://addons/GodotGAS/utilities/project_settings.gd")
 
 ## Icon used to represent gameplay tags.
-const TAG_ICON = preload("res://addons/GodotGAS/icons/godot_gas_tags.svg")
+const TAG_ICON: Texture2D = preload("res://addons/GodotGAS/icons/godot_gas_tags.svg")
 
 ## Icon used to represent packed scenes (cues).
-const SCENE_ICON = preload("res://addons/GodotGAS/icons/godot_gas_cues.svg")
+const SCENE_ICON: Texture2D = preload("res://addons/GodotGAS/icons/godot_gas_cues.svg")
+const CUES_ICON_PATH: String = "res://addons/GodotGAS/icons/godot_gas_cues.svg"
+
+## Colours and styleboxes, shared with the other dashboard tabs.
+var _theme: DashboardTheme = DashboardTheme.new()
 
 ## Reference to the active global cue registry resource.
 var _registry: GameplayCueRegistry
@@ -57,13 +61,8 @@ var _tag_tree: Tree
 var _delete_confirm_dialog: ConfirmationDialog
 
 ## The generated system accent color for active UI elements.
-var _sys_accent: String
 
 ## In-memory styles used to override panels natively to prevent dirtying .tres files
-var _base_panel_style: StyleBoxFlat
-var _dark_panel_style: StyleBoxFlat
-var _header_panel_style: StyleBoxFlat
-var _list_item_style: StyleBoxFlat
 
 ## Reference to the search filter input field.
 @onready var _search_bar: LineEdit = %SearchFilter
@@ -184,77 +183,12 @@ func _setup_ui() -> void:
 
 ## Synchronizes internal color variables and generates dynamic StyleBoxes to match the Editor Theme.
 func _sync_theme_colors() -> void:
-	if not Engine.is_editor_hint(): return
-	var editor_theme = EditorInterface.get_editor_theme()
-	if not editor_theme: return
-	
-	var editor_accent = editor_theme.get_color("accent_color", "Editor")
-	var base_color = editor_theme.get_color("base_color", "Editor")
-	var dark_color = editor_theme.get_color("dark_color_1", "Editor")
-	
-	var is_dark_theme = base_color.get_luminance() < 0.5
-	var header_color = base_color.lightened(0.08) if is_dark_theme else base_color.darkened(0.08)
-	var list_item_color = dark_color.lightened(0.05) if is_dark_theme else dark_color.darkened(0.05)
-	
-	# Fallback safeguard in case theme is completely unloaded during a hot-reload
-	if base_color == Color(0, 0, 0, 1) and dark_color == Color(0, 0, 0, 1):
+	if not _theme.sync_from_editor():
 		return
-		
-	_sys_accent = editor_accent.to_html(false)
-	
-	if not _base_panel_style:
-		_base_panel_style = StyleBoxFlat.new()
-		_base_panel_style.set_content_margin_all(5)
-		_base_panel_style.set_corner_radius_all(5)
-		
-	if not _dark_panel_style:
-		_dark_panel_style = StyleBoxFlat.new()
-		_dark_panel_style.set_content_margin_all(5)
-		_dark_panel_style.set_corner_radius_all(5)
-		
-	if not _header_panel_style:
-		_header_panel_style = StyleBoxFlat.new()
-		_header_panel_style.set_content_margin_all(5)
-		_header_panel_style.set_corner_radius_all(8)
-
-	if not _list_item_style:
-		_list_item_style = StyleBoxFlat.new()
-		_list_item_style.set_content_margin_all(8)
-		_list_item_style.set_corner_radius_all(8)
-		
-	_base_panel_style.bg_color = base_color
-	_dark_panel_style.bg_color = dark_color
-	_header_panel_style.bg_color = header_color
-	_list_item_style.bg_color = list_item_color
-	
-	_apply_panel_colors(self)
-	
-	# Safely apply to the parent TabContainer (Delayed by 1 frame so parent can initialize)
-	if get_parent() is TabContainer:
-		get_parent().set_tab_icon.call_deferred(get_index(), GodotGasProjectSettings.get_svg_icon("res://addons/GodotGAS/icons/godot_gas_cues.svg"))
+	_theme.apply_panels(self)
+	_theme.apply_tab_icon(self, DashboardTheme.icon(CUES_ICON_PATH))
 
 
-## Traverses the UI tree to identify PanelContainers by their .tres assignment and applies the local StyleBox override.
-func _apply_panel_colors(node: Node) -> void:
-	if node is PanelContainer:
-		if not node.has_meta("panel_type"):
-			var style = node.get_theme_stylebox("panel")
-			if style and style.resource_path != "":
-				if "editor_panel_flat_style_dark" in style.resource_path:
-					node.set_meta("panel_type", "dark")
-				elif "editor_panel_flat_style" in style.resource_path:
-					node.set_meta("panel_type", "base")
-					
-		if node.has_meta("panel_type"):
-			if node.get_meta("panel_type") == "base":
-				node.add_theme_stylebox_override("panel", _base_panel_style)
-			elif node.get_meta("panel_type") == "dark":
-				node.add_theme_stylebox_override("panel", _dark_panel_style)
-			elif node.get_meta("panel_type") == "header":
-				node.add_theme_stylebox_override("panel", _header_panel_style)
-				
-	for child in node.get_children():
-		_apply_panel_colors(child)
 #endregion
 
 
@@ -314,68 +248,28 @@ func _on_tag_expand_collapse_pressed() -> void:
 		_btn_tag_expand_collapse.tooltip_text = "Collapse Tree"
 
 
-## Constructs the tag tree representation from the global tag registry.
+## Rebuild the tag picker, greying out tags this registry already maps.
+##
+## The tree itself is built by GameplayTagTree, shared so the picker is one
+## implementation rather than one per dashboard tab.
 func _build_tag_tree(filter: String = "") -> void:
-	_tag_tree.clear()
-	var root = _tag_tree.create_item()
-	
-	var tag_registry_path: = GodotGasProjectSettings.get_registry_tag_path()
-	if not ResourceLoader.exists(tag_registry_path):
-		push_error("GodotGAS: Tag Registry not found at " + tag_registry_path)
-		return
-		
-	var tag_registry = load(tag_registry_path)
-	var editor_theme = EditorInterface.get_editor_theme()
-	var disabled_color = editor_theme.get_color("disabled_font_color", "Editor")
-	
-	# Create a list of currently mapped tags to grey them out
-	var taken_tags = []
-	if _registry:
-		for entry in _registry.entries:
-			taken_tags.append(entry.tag)
+	var style: GameplayTagTree.Style = GameplayTagTree.Style.new()
+	style.leaf_icon = TAG_ICON
+	style.leaf_color = _theme.text_accent
+	style.unavailable_color = EditorInterface.get_editor_theme().get_color(
+		"disabled_font_color", "Editor"
+	)
+	GameplayTagTree.build(_tag_tree, filter, _mapped_tags(), style)
 
-	# Build Tree from your Tag Registry data
-	for tag_name in tag_registry.tags:
-		var tag_str = String(tag_name)
-		
-		# Skip building this branch entirely if it doesn't match the filter
-		if filter != "" and not filter.to_lower() in tag_str.to_lower():
-			continue
-			
-		var parts = tag_str.split(".")
-		var current = root
-		
-		for part in parts:
-			var found_item: TreeItem = null
-			var children: Array[TreeItem] = current.get_children()
-			
-			# Look for an existing folder/node
-			for child in children:
-				if child.get_text(0) == part:
-					found_item = child
-					break
-			
-			if found_item:
-				current = found_item
-			else:
-				current = _tag_tree.create_item(current)
-				current.set_text(0, part)
-				# Auto-expand folders if the user is actively searching
-				if filter != "":
-					current.collapsed = false
-		
-		# Now 'current' is the leaf node. Disable it if already mapped.
-		if tag_name in taken_tags:
-			current.set_selectable(0, false)
-			current.set_custom_color(0, disabled_color)
-			current.set_tooltip_text(0, "Tag already mapped to a Cue")
-		else:
-			# Store the full tag string so we can retrieve it easily
-			current.set_icon(0, TAG_ICON)
-			current.set_custom_color(0, Color(_sys_accent))
-			var part: String = current.get_text(0)
-			current.set_text(0, part + " (" + tag_name + ")")
-			current.set_metadata(0, tag_name)
+
+## The tags this registry has already bound to a cue.
+func _mapped_tags() -> Array[StringName]:
+	var taken: Array[StringName] = []
+	if _registry == null:
+		return taken
+	for entry: GameplayCueEntry in _registry.entries:
+		taken.append(entry.tag)
+	return taken
 
 
 ## Validates and stores the tag selected from the picker dialog.
@@ -502,7 +396,7 @@ func _refresh_cue_list(filter: String = "") -> void:
 		
 		# --- NEW: Beautiful Card Background ---
 		var card = PanelContainer.new()
-		card.add_theme_stylebox_override("panel", _list_item_style)
+		card.add_theme_stylebox_override("panel", _theme.list_item)
 		
 		var row = HBoxContainer.new()
 		card.add_child(row)
@@ -533,7 +427,7 @@ func _refresh_cue_list(filter: String = "") -> void:
 		var tag_icon: String = "[img width=%d height=%d color=#%s]%s[/img]" % [icon_size, icon_size, icon_color_hex, TAG_ICON.resource_path]
 		var scene_icon: String = "[img width=%d height=%d color=#%s]%s[/img]" % [icon_size, icon_size, icon_color_hex, SCENE_ICON.resource_path]
 		
-		lbl.text = tag_icon + " [color=" + _sys_accent + "][b]" + str(tag_name) + "[/b][/color] [i]executes [b]→[/b][/i] " + scene_icon + " [color=" + _sys_accent + "][b]" + scene_name + "[/b][/color] [i](" + scene_path + ")[/i]"
+		lbl.text = tag_icon + " [color=" + _theme.accent_html + "][b]" + str(tag_name) + "[/b][/color] [i]executes [b]→[/b][/i] " + scene_icon + " [color=" + _theme.accent_html + "][b]" + scene_name + "[/b][/color] [i](" + scene_path + ")[/i]"
 		
 		# Parent everything up
 		lbl_vbox.add_child(lbl)
