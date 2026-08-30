@@ -265,6 +265,44 @@ func get_cooldown_tags() -> Array[StringName]:
 			cooldown_tags.append_array(effect.granted_tags)
 	cooldown_tags.append_array(shared_cooldown_tags)
 	return cooldown_tags
+
+
+## Everything a UI needs to draw this ability's cooldown, read fresh.
+##
+## Derived from the tags the cooldown effects grant, never from a clock of its
+## own. A parallel timer would be a second authority on when the ability is
+## ready again, and the two would part company the first time an effect was
+## refreshed, removed early, or expired on a turn instead of a second.
+func get_cooldown_state() -> AbilityCooldownState:
+	var state: AbilityCooldownState = AbilityCooldownState.new()
+	if owner_asc == null:
+		return state
+
+	for tag: StringName in get_cooldown_tags():
+		# A tag shared between the ability's own cooldown and a shared one is
+		# one wait, not two, and must not be counted twice.
+		if state.tags.has(tag):
+			continue
+		state.tags.append(tag)
+
+		var seconds: float = owner_asc.get_tag_duration_remaining(tag)
+		if is_inf(seconds):
+			state.infinite = true
+		elif seconds > state.seconds_remaining:
+			state.seconds_remaining = seconds
+
+		var turns: int = owner_asc.get_tag_turns_remaining(tag)
+		if turns > state.turns_remaining:
+			state.turns_remaining = turns
+
+		if owner_asc.has_tag(tag):
+			state.active = true
+
+	# A clock with time left means the ability is on cooldown even if the tag
+	# accounting were somehow out of step with it.
+	if state.infinite or state.seconds_remaining > 0.0 or state.turns_remaining > 0:
+		state.active = true
+	return state
 #endregion
 
 
