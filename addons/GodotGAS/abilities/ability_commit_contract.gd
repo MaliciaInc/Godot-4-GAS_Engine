@@ -30,9 +30,12 @@ static func is_reversible_charge(effect: GameplayEffect, level: float) -> bool:
 		return true
 	if effect.policy != GameplayEffect.DurationPolicy.INSTANT:
 		return false
-	# An instant effect grants no tags in any case, so declaring one means the
-	# author expected something this charge can never deliver.
-	if not effect.granted_tags.is_empty():
+	# A resolved cost is built once, internally, by GameplayAbilityCostResolver
+	# alone, and it never attaches a component - not TargetTags (an instant
+	# effect grants no tags in any case), not anything else that would concede
+	# state. A component here can only mean the resolver stopped being the
+	# only thing that builds this effect.
+	if not effect.components.is_empty():
 		return false
 	if not effect.is_silent():
 		return false
@@ -81,7 +84,9 @@ static func is_legal_cooldown(effect: GameplayEffect) -> bool:
 		return false
 	# The tag is the cooldown. Without one, nothing can be asked whether the
 	# ability is still on cooldown, and the effect expires unobserved.
-	if effect.granted_tags.is_empty():
+	if effect.get_granted_tags().is_empty():
+		return false
+	if not _cooldown_components_are_legal(effect):
 		return false
 	if not effect.is_silent():
 		return false
@@ -90,6 +95,20 @@ static func is_legal_cooldown(effect: GameplayEffect) -> bool:
 	if effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
 		return effect.duration_turns > 0
 	return false
+
+
+## A cooldown may carry exactly the TargetTags it needs plus descriptive
+## UIData - never Chance, Custom, RemoveOtherEffects, AdditionalEffects,
+## GrantAbilities or Block/Cancel, none of which is_silent() alone would
+## catch for something like AssetTags. A new component kind not yet named
+## here is refused by default rather than silently allowed.
+static func _cooldown_components_are_legal(effect: GameplayEffect) -> bool:
+	for component: GameplayEffectComponent in effect.components:
+		if component == null:
+			continue
+		if not (component is GameplayEffectTargetTagsComponent or component is GameplayEffectUIDataComponent):
+			return false
+	return true
 
 
 ## Every cooldown a commit must start, once each.

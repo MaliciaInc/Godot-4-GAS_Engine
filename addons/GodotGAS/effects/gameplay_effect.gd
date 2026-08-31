@@ -44,14 +44,6 @@ enum StackingPolicy {
 ## If true, periodic effects (period > 0) trigger their math and cues when the turn advances.
 @export var tick_on_turn_start: bool = true
 
-@export_category("Application Requirements")
-## The target MUST have all of these tags for this effect to apply.
-## (e.g., Must have 'Status.Burning' for an 'Explode' effect to work).
-@export var application_required_tags: Array[StringName] = []
-## The target must NOT have any of these tags. If they do, the effect is blocked.
-## (e.g., Target has 'Status.Immune.Poison', so block poison effects).
-@export var application_ignore_tags: Array[StringName] = []
-
 @export_category("Cue Management")
 ## Cues that play exactly once when the effect is first applied to a target.
 @export var application_cue_tags: Array[StringName] = []
@@ -68,15 +60,40 @@ enum StackingPolicy {
 ## If this effect is successfully applied, it will immediately purge any active effects on the target that grant these tags.
 ## (e.g., A 'Cure' potion would list 'Status.Poison' here).
 @export var remove_effects_with_tags: Array[StringName] = []
-## Tags granted to the target ASC for as long as this effect is active.
-## Not used for events, but state ie: 'Status.Stunned'
-## NOTE: Instant effects do not grant tags.
-@export var granted_tags: Array[StringName] = []
 
 @export_category("Event Management")
 ## Tags broadcasted directly to the target's ASC as Gameplay Events upon application (or periodic tick).
 ## Ideal for waking up reactive passive abilities (e.g., 'Event.Damage.Taken').
 @export var event_tags: Array[StringName] = []
+
+@export_category("Components")
+## Orthogonal, reusable pieces of this effect's behaviour: asset tags, target
+## tags, application tag requirements, chance to apply, a custom can-apply
+## requirement, UI data. Each component is immutable authored data; none of
+## it may hold per-application state. See GameplayEffectComponent.
+@export var components: Array[GameplayEffectComponent] = []
+
+
+## Every asset tag declared by this effect's GameplayEffectAssetTagsComponent
+## entries. Descriptive metadata, never granted to a target.
+func get_asset_tags() -> Array[StringName]:
+	var tags: Array[StringName] = []
+	for component: GameplayEffectComponent in components:
+		var asset_component: GameplayEffectAssetTagsComponent = component as GameplayEffectAssetTagsComponent
+		if asset_component != null:
+			tags.append_array(asset_component.asset_tags)
+	return tags
+
+
+## Every tag this effect grants to its target, declared by its
+## GameplayEffectTargetTagsComponent entries.
+func get_granted_tags() -> Array[StringName]:
+	var tags: Array[StringName] = []
+	for component: GameplayEffectComponent in components:
+		var target_component: GameplayEffectTargetTagsComponent = component as GameplayEffectTargetTagsComponent
+		if target_component != null:
+			tags.append_array(target_component.granted_tags)
+	return tags
 
 
 ## Whether applying this can be noticed by anything except the attributes it
@@ -87,13 +104,28 @@ enum StackingPolicy {
 ## asks this first: a commit that may be refused partway through, and equipment
 ## that may fail before it has finished being granted.
 func is_silent() -> bool:
-	return (
+	if not (
 		is_zero_approx(period)
 		and executions.is_empty()
 		and remove_effects_with_tags.is_empty()
-		and application_required_tags.is_empty()
-		and application_ignore_tags.is_empty()
 		and application_cue_tags.is_empty()
 		and periodic_cue_tags.is_empty()
 		and event_tags.is_empty()
-	)
+	):
+		return false
+	return not _has_observable_component()
+
+
+## AssetTags, TargetTags (their refcount is reversible), and UIData never
+## make an application observable beyond the attributes it moves and the
+## tags it grants - the same ground is_silent() already covers. Anything that
+## can refuse, roll, or otherwise decide during application can.
+func _has_observable_component() -> bool:
+	for component: GameplayEffectComponent in components:
+		if (
+			component is GameplayEffectTargetTagRequirementsComponent
+			or component is GameplayEffectChanceToApplyComponent
+			or component is GameplayEffectCustomCanApplyComponent
+		):
+			return true
+	return false

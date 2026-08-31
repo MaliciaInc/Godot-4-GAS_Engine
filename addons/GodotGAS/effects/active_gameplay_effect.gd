@@ -34,6 +34,11 @@ var contributed_modifiers: Array[AttributeModifierContribution] = []
 ## Tags this effect granted, so removal drops exactly what it added.
 var granted_tags: Array[StringName] = []
 
+## Prepared state for each of this application's components, indexed the
+## same as spec.effect_def.components - null where a component prepared
+## nothing. Empty for INSTANT and periodic effects, which never persist.
+var component_states: Array[GameplayEffectComponentState] = []
+
 ## Seconds left, for a DURATION effect.
 var time_remaining: float = 0.0
 

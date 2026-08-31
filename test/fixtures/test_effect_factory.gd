@@ -107,7 +107,9 @@ static func turn_based(
 
 #region Decorators
 static func granting(effect: GameplayEffect, tags: Array[StringName]) -> GameplayEffect:
-	effect.granted_tags = tags
+	var component: GameplayEffectTargetTagsComponent = GameplayEffectTargetTagsComponent.new()
+	component.granted_tags = tags
+	effect.components.append(component)
 	return effect
 
 
@@ -116,14 +118,40 @@ static func refreshing(effect: GameplayEffect) -> GameplayEffect:
 	return effect
 
 
+## `requiring()`/`blocked_by()` share one GameplayEffectTargetTagRequirementsComponent
+## per effect: an ALL root with one ALL child per requiring() call and one
+## NONE child per blocked_by() call, so calling both on the same effect - in
+## either order - reconstructs F2's exact "must have all of these, must have
+## none of those" semantics as one query.
 static func requiring(effect: GameplayEffect, tags: Array[StringName]) -> GameplayEffect:
-	effect.application_required_tags = tags
+	var required: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	required.operator = GameplayTagQueryExpression.Operator.ALL
+	required.tags = tags
+	_requirements_root(effect).expressions.append(required)
 	return effect
 
 
 static func blocked_by(effect: GameplayEffect, tags: Array[StringName]) -> GameplayEffect:
-	effect.application_ignore_tags = tags
+	var blocked: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	blocked.operator = GameplayTagQueryExpression.Operator.NONE
+	blocked.tags = tags
+	_requirements_root(effect).expressions.append(blocked)
 	return effect
+
+
+static func _requirements_root(effect: GameplayEffect) -> GameplayTagQueryExpression:
+	for component: GameplayEffectComponent in effect.components:
+		var existing: GameplayEffectTargetTagRequirementsComponent = (
+			component as GameplayEffectTargetTagRequirementsComponent
+		)
+		if existing != null:
+			return existing.application_query.root
+	var created: GameplayEffectTargetTagRequirementsComponent = GameplayEffectTargetTagRequirementsComponent.new()
+	created.application_query = GameplayTagQuery.new()
+	created.application_query.root = GameplayTagQueryExpression.new()
+	created.application_query.root.operator = GameplayTagQueryExpression.Operator.ALL
+	effect.components.append(created)
+	return created.application_query.root
 
 
 static func with_events(effect: GameplayEffect, tags: Array[StringName]) -> GameplayEffect:

@@ -27,6 +27,11 @@ var missing_asc_targets: Array[Node] = []
 
 var applied_effects: Array[ActiveGameplayEffect] = []
 
+## One typed result per target actually reached, in the same order as
+## applied_targets/rejected_targets - Task 8's richer answer to why a target
+## was rejected, alongside the legacy arrays this class already kept.
+var applications: Array[GameplayEffectApplicationResult] = []
+
 
 func applied_count() -> int:
 	return applied_effects.size()

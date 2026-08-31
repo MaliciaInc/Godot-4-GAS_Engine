@@ -302,10 +302,10 @@ static func get_cooldown_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
 	if spec == null or spec.definition == null:
 		return cooldown_tags
 	if spec.definition.cooldown_effect != null:
-		cooldown_tags.append_array(spec.definition.cooldown_effect.granted_tags)
+		cooldown_tags.append_array(spec.definition.cooldown_effect.get_granted_tags())
 	for effect: GameplayEffect in spec.definition.shared_cooldown_effects:
 		if effect != null:
-			cooldown_tags.append_array(effect.granted_tags)
+			cooldown_tags.append_array(effect.get_granted_tags())
 	cooldown_tags.append_array(spec.definition.shared_cooldown_tags)
 	return cooldown_tags
 

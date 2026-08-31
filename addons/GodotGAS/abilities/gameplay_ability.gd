@@ -299,9 +299,8 @@ func apply_effect_to_targets(
 	if effect_res == null or target_data == null or owner_asc == null:
 		return result
 
-	# The instigator and causer are both the persistent avatar. Passing `self`
-	# would name a transient node as the cause and leave a dangling reference
-	# once the ability ends.
+	# Instigator and causer are both the persistent avatar - `self` would
+	# name a transient node and dangle once the ability ends.
 	var avatar: Node = owner_asc.get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(avatar, avatar)
 	context.target_data = target_data
@@ -327,14 +326,15 @@ func apply_effect_to_targets(
 			continue
 		reached.append(target_asc.get_instance_id())
 
-		var applied: ActiveGameplayEffect = owner_asc.apply_effect_spec_to_target(
-			spec, target_asc
+		var applied: GameplayEffectApplicationResult = (
+			owner_asc.apply_effect_spec_to_target_result(spec, target_asc)
 		)
-		if applied == null:
+		result.applications.append(applied)
+		if not applied.is_ok():
 			result.rejected_targets.append(target_asc)
 			continue
 		result.applied_targets.append(target_asc)
-		result.applied_effects.append(applied)
+		result.applied_effects.append(applied.active_effect)
 	return result
 
 

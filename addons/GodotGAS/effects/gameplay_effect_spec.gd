@@ -271,18 +271,48 @@ func get_target_nodes() -> Array[Node]:
 	return context.get_target_nodes()
 
 
-## Whether the spec carries a tag, natively or injected at runtime.
+## Whether the spec carries a tag: granted, static asset, or dynamic asset.
+## New code should ask the specific getter instead - get_granted_tags() or
+## get_asset_tags() - this is an ambiguous union kept for old F2 call sites.
 func has_tag(tag: StringName) -> bool:
-	if effect_def != null and effect_def.granted_tags.has(tag):
-		return true
-	return dynamic_tags.has(tag)
+	return get_granted_tags().has(tag) or get_asset_tags().has(tag)
 
 
 ## Inject a tag, for an execution calculation marking a hit as Critical, Dodged
-## and so on.
+## and so on. Documented as a dynamic ASSET tag: it describes this
+## application, the same as a static GameplayEffectAssetTagsComponent entry,
+## so SetByCaller/event injections do not create a third, ownerless category.
 func inject_tag(tag: StringName) -> void:
 	if not dynamic_tags.has(tag):
 		dynamic_tags.append(tag)
+
+
+## Every asset tag this application carries: the effect's own static asset
+## tags plus whatever was injected at runtime.
+func get_asset_tags() -> Array[StringName]:
+	var tags: Array[StringName] = effect_def.get_asset_tags() if effect_def != null else []
+	tags.append_array(dynamic_tags)
+	return tags
+
+
+## Every tag this application grants to its target.
+func get_granted_tags() -> Array[StringName]:
+	return effect_def.get_granted_tags() if effect_def != null else []
+#endregion
+
+
+#region Component states
+## Prepared component state for the application currently in flight, indexed
+## the same as effect_def.components. Temporary: GameplayEffectRuntime clears
+## it once the application commits (states moved to the ActiveGameplayEffect)
+## or is refused (each component already told to discard_prepared()).
+var _prepared_component_states: Array[GameplayEffectComponentState] = []
+
+func set_prepared_component_states(states: Array[GameplayEffectComponentState]) -> void:
+	_prepared_component_states = states
+
+func prepared_component_states() -> Array[GameplayEffectComponentState]:
+	return _prepared_component_states
 #endregion
 
 

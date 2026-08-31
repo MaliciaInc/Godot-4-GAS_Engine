@@ -39,10 +39,15 @@ signal effect_applied_to_target(target_asc: AbilitySystemComponent, spec: Gamepl
 signal effect_received(source_asc: AbilitySystemComponent, spec: GameplayEffectSpec)
 
 ## An application was refused. Carries the typed reason and, when the reason
-## names one, the attribute it was about.
+## names one, the attribute it was about. Kept for evaluator failures - a
+## component's own refusal reason lives on gameplay_effect_application_finished.
 signal effect_application_refused(
 	status: AttributeEvaluationResult.Status, attribute_name: StringName
 )
+
+## Every apply_*_result() call emits this once, success or failure - every
+## reason a legacy refusal signal could carry, plus every component reason.
+signal gameplay_effect_application_finished(result: GameplayEffectApplicationResult)
 
 ## A gameplay event reached this ASC.
 signal gameplay_event_received(event: GameplayEventData)
@@ -284,48 +289,64 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 
 
 #region Effects
-## The one entry point every application reaches, self-application included:
-## `apply_gameplay_effect` and `apply_effect_spec_to_target` both fall through
-## to this. `self` is always the target here, so this is also where a
-## SOURCE that arrived unresolved gets one last chance - from `context.
-## instigator` - before a required SOURCE capture would otherwise refuse.
-func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
+## The one entry point every application reaches, self-application included -
+## `apply_gameplay_effect_result`/`apply_effect_spec_to_target_result` both
+## fall through here. `self` is always the target, so an unresolved SOURCE
+## gets one last chance - `context.instigator` - before a required capture refuses.
+func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	_cleaned_up = false
-	if spec != null and not spec.prepare_captures(find_source_asc(spec)):
-		return null
-	return effects.apply(spec)
+	var result: GameplayEffectApplicationResult
+	if spec == null:
+		result = GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
+	elif not spec.prepare_captures(find_source_asc(spec)):
+		result = GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
+	else:
+		result = effects.apply(spec)
+	gameplay_effect_application_finished.emit(result)
+	return result
 
+## F2 wrapper: the active effect a successful application produced, or null.
+func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
+	return apply_effect_spec_result(spec).active_effect
 
 ## Apply an effect to another ASC, giving that target its own spec copy.
-##
-## Captures are prepared here, on the shared spec, before it is ever copied:
-## a SOURCE+SNAPSHOT taken later - inside the copy's own apply_effect_spec -
-## would be one AoE target's read, not the one snapshot every target is
-## meant to share.
+## Captures are prepared here, on the shared spec, before it is copied - taken
+## later, inside the copy's own apply, a SOURCE+SNAPSHOT would be one target's
+## read, not the shared one every target needs.
+func apply_effect_spec_to_target_result(
+	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
+) -> GameplayEffectApplicationResult:
+	if target_asc == null or spec == null:
+		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
+	if not spec.prepare_captures(self):
+		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
+	var result: GameplayEffectApplicationResult = target_asc.apply_effect_spec_result(
+		spec.create_application_copy()
+	)
+	if result.is_ok():
+		effect_applied_to_target.emit(target_asc, spec)
+	return result
+
 func apply_effect_spec_to_target(
 	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
 ) -> ActiveGameplayEffect:
-	if target_asc == null or spec == null:
-		return null
-	if not spec.prepare_captures(self):
-		return null
-	var applied: ActiveGameplayEffect = target_asc.apply_effect_spec(spec.create_application_copy())
-	if applied != null:
-		effect_applied_to_target.emit(target_asc, spec)
-	return applied
+	return apply_effect_spec_to_target_result(spec, target_asc).active_effect
 
-
-## Wrap a raw effect into a spec and apply it here.
-func apply_gameplay_effect(
+func apply_gameplay_effect_result(
 	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
-) -> ActiveGameplayEffect:
+) -> GameplayEffectApplicationResult:
 	if effect == null:
-		return null
+		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_DEFINITION, null)
 	var instigator: Node = source_asc.get_effect_target() if source_asc != null else get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
 	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect, context, effect_level)
 	spec.source_asc = source_asc
-	return apply_effect_spec(spec)
+	return apply_effect_spec_result(spec)
+
+func apply_gameplay_effect(
+	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
+) -> ActiveGameplayEffect:
+	return apply_gameplay_effect_result(effect, source_asc, effect_level).active_effect
 
 
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:

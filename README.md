@@ -45,6 +45,16 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   persistent contribution then updates on its own as the captured attribute
   moves, with a direct self-reference refused outright and an indirect
   reaction cycle bounded so it cannot hang a frame.
+- **Effects are composed from components, not a growing bag of flags.**
+  `GameplayEffectComponent` is immutable authored data - target tags,
+  application tag requirements, chance to apply, a custom can-apply
+  requirement, UI data - never per-application state. Preflight
+  (`validate` → every `can_apply`) refuses before anything observable
+  happens; preparation is ephemeral and reversible; a rejection at either
+  stage discards everything already prepared, in reverse order.
+  `apply_effect_spec_result()`/`apply_gameplay_effect_result()` return one
+  typed `GameplayEffectApplicationResult`, with the F2 `ActiveGameplayEffect`
+  getters kept as thin wrappers over it.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -136,6 +146,7 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
+  effects/components/ GameplayEffectComponent and the six concrete kinds
   magnitudes/      typed modifier magnitudes: scalable, attribute-based,
                    SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch
