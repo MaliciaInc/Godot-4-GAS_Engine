@@ -55,4 +55,13 @@ func execute(
 ## still works.
 func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
 	return []
+
+
+## Which attributes execute() may write, for GameplayEffectQuery.modified_attribute
+## and editor/debugger tooling - advisory metadata, never a second condition
+## the evaluator enforces. The default, empty, costs nothing and every
+## execution calculation written before this existed still works; a query
+## asking about an attribute nobody declared simply never matches through it.
+func declared_output_attributes() -> Array[StringName]:
+	return []
 #endregion

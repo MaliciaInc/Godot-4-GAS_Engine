@@ -22,6 +22,9 @@ enum Status {
 var status: Status = Status.SUCCESS
 var spec: GameplayEffectSpec = null
 var active_effect: ActiveGameplayEffect = null
+## Null for a refusal and for an INSTANT success - the durable public
+## identity only a persistent (DURATION/INFINITE/TURN_BASED) effect has.
+var active_handle: GameplayEffectHandle = null
 var evaluation_status: AttributeEvaluationResult.Status = AttributeEvaluationResult.Status.OK
 var error_attribute_name: StringName = &""
 
@@ -34,6 +37,7 @@ static func ok(spec: GameplayEffectSpec, active_effect: ActiveGameplayEffect) ->
 	var result: GameplayEffectApplicationResult = GameplayEffectApplicationResult.new()
 	result.spec = spec
 	result.active_effect = active_effect
+	result.active_handle = active_effect.handle if active_effect != null else null
 	return result
 
 

@@ -50,21 +50,23 @@ var _resolved: bool = false
 
 
 #region Begin
-## Detach every active effect granting any of `purge_tags`, silently: no
-## signal fires until commit() says the incoming effect actually happened.
+## Detach every active effect `query` matches, silently: no signal fires
+## until commit() says the incoming effect actually happened. A snapshot of
+## what matched at this moment - an effect applied after this runs, even by
+## the same incoming application, is never touched by it.
 static func begin(
-	runtime: GameplayEffectRuntime, purge_tags: Array[StringName]
+	runtime: GameplayEffectRuntime, query: GameplayEffectQuery
 ) -> GameplayEffectPurgeTransaction:
 	var transaction: GameplayEffectPurgeTransaction = GameplayEffectPurgeTransaction.new()
 	transaction._runtime = runtime
-	if purge_tags.is_empty():
+	if query == null or query.is_empty():
 		transaction._resolved = true
 		return transaction
 
 	var live: Array[ActiveGameplayEffect] = runtime.live_active_effects()
 	for index: int in range(live.size() - 1, -1, -1):
 		var active: ActiveGameplayEffect = live[index]
-		if not _grants_any(active, purge_tags):
+		if not query.matches(active, runtime.owner_asc):
 			continue
 		transaction._removed.append(active)
 		transaction._removed_at.append(index)
@@ -72,6 +74,7 @@ static func begin(
 			transaction._tag_removals.append(_remove_one_tag(runtime, tag))
 		runtime.attributes.remove_contributions_of(active.application_order)
 		runtime.extract_active(active)
+		runtime.handles.forget(active)
 
 	if transaction._removed.is_empty():
 		transaction._resolved = true
@@ -91,13 +94,6 @@ static func _remove_one_tag(runtime: GameplayEffectRuntime, tag: StringName) -> 
 	removal.change = runtime.tags.remove(tag)
 	removal.count_after = runtime.tags.count(tag)
 	return removal
-
-
-static func _grants_any(active: ActiveGameplayEffect, purge_tags: Array[StringName]) -> bool:
-	for tag: StringName in purge_tags:
-		if active.granted_tags.has(tag):
-			return true
-	return false
 #endregion
 
 
@@ -140,6 +136,7 @@ func rollback() -> void:
 		var active: ActiveGameplayEffect = _removed[i]
 		_runtime.attributes.add_contributions(active.contributed_modifiers)
 		_runtime.restore_active(active, _removed_at[i])
+		_runtime.handles.register(active)
 	if not _removed.is_empty():
 		_runtime.attributes.recompose_all()
 #endregion

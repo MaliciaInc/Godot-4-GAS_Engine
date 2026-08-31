@@ -4,16 +4,14 @@
 ## Two upstream defects are fixed here.
 ##
 ## **Runtime magnitudes were keyed by attribute name.** An effect with
-## `Attack ADD +10` and `Attack MULTIPLY 2` had one slot for both, so the second
-## modifier overwrote the first and the effect silently did half its job. The
-## key is the modifier's index inside `effect_def.modifiers`, which is stable
-## for the life of the spec and distinguishes two modifiers that write the same
-## attribute.
+## `Attack ADD +10` and `Attack MULTIPLY 2` had one slot for both, so the
+## second modifier overwrote the first. The key is the modifier's index
+## inside `effect_def.modifiers`, stable for the spec's life.
 ##
 ## **One spec was handed to several targets.** A spec is RefCounted and holds
 ## mutable state, so an AoE let target A's evaluation change what target B
-## received. `create_application_copy()` gives each target its own, sharing only
-## the immutable definition.
+## received. `create_application_copy()` gives each target its own, sharing
+## only the immutable definition.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -43,6 +41,11 @@ var application_time: float = 0.0
 
 ## Tags injected at runtime by an execution calculation or an ability.
 var dynamic_tags: Array[StringName] = []
+
+## The source's tags when source_asc was resolved, for
+## GameplayEffectQuery.source_tags - "what did the caster have when cast"
+## must not drift as the caster changes afterward.
+var source_tags_snapshot: Array[StringName] = []
 
 ## Runtime duration, mutable by an execution calculation before application.
 var duration: float = 0.0
@@ -179,10 +182,9 @@ func had_invalid_magnitude_access() -> bool:
 
 
 #region Evaluation cache
-## Begin one evaluation. The authored-magnitude cache starts empty - the
-## evaluator rebuilds it fresh, so a LIVE magnitude read this time can never
-## come from an earlier evaluation - and this spec is sealed against further
-## `set_set_by_caller()` calls from here on.
+## Begin one evaluation. The authored-magnitude cache starts empty, rebuilt
+## fresh so a LIVE magnitude never reads an earlier evaluation, and this
+## spec seals against further `set_set_by_caller()` calls.
 func _begin_evaluation_cache() -> void:
 	_evaluation_magnitude_cache.clear()
 	_evaluation_active = true
@@ -199,10 +201,8 @@ func _cache_evaluation_magnitude(modifier_index: int, value: float) -> void:
 
 
 #region SetByCaller
-## Supply a caster-chosen value for a GameplaySetByCallerMagnitude tagged
-## `tag`. Refused once this spec has begun evaluating, once for a bad tag or
-## a non-finite value - the same "reject rather than store garbage" policy
-## `set_magnitude` already has for an out-of-range index.
+## Supply a caster value for a GameplaySetByCallerMagnitude tagged `tag`.
+## Refused once evaluation has begun, for a bad tag, or a non-finite value.
 func set_set_by_caller(tag: StringName, value: float) -> bool:
 	if _sealed or tag == &"" or not is_finite(value):
 		return false
@@ -238,18 +238,16 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.period = period
 	copy.context = context.create_application_copy() if context != null else null
 	copy.dynamic_tags = dynamic_tags.duplicate()
+	copy.source_tags_snapshot = source_tags_snapshot.duplicate()
 	copy._runtime_magnitude_overrides = _runtime_magnitude_overrides.duplicate()
-	# SetByCaller values are pre-application input a whole AoE is meant to
-	# share, the same as a SOURCE capture snapshot - duplicated so a later
-	# `set_set_by_caller()` on one copy (before its own evaluation seals it)
-	# cannot be observed through another. copy._sealed starts false: each
-	# copy seals on its own evaluation, not the moment this one was taken.
+	# SetByCaller is pre-application input an AoE shares, duplicated so a
+	# later set_set_by_caller() on one copy is never observed through
+	# another. copy._sealed starts false: each copy seals on its own
+	# evaluation, not the moment this one was taken.
 	copy._set_by_caller = _set_by_caller.duplicate()
-	# Stable across every copy of one spec: who caused it does not change
-	# per target. A SOURCE snapshot already taken travels with it too, so a
-	# capture common to an AoE reads identically on every target; a TARGET
-	# snapshot does not exist yet on a fresh copy and each target takes its
-	# own, immediately before that target's own evaluation.
+	# Stable per target: a SOURCE snapshot travels with it so an AoE capture
+	# reads identically everywhere; a TARGET snapshot does not exist yet and
+	# each target takes its own before its own evaluation.
 	copy.source_asc = source_asc
 	for definition: GameplayAttributeCaptureDefinition in _captures:
 		var original: GameplayCapturedAttribute = _captures[definition]
@@ -339,6 +337,8 @@ func register_capture(definition: GameplayAttributeCaptureDefinition) -> bool:
 func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 	if source_asc == null:
 		source_asc = resolved_source_asc
+		if source_asc != null:
+			source_tags_snapshot = source_asc.tags.active_tags()
 	if effect_def != null:
 		for execution: GameplayExecutionCalculation in effect_def.executions:
 			if execution == null:

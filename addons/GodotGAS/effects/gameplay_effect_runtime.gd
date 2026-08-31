@@ -2,13 +2,12 @@
 ##
 ## This is the only place that commits what the evaluator staged. Nothing is
 ## written until the whole transaction is OK, so an effect whose second
-## attribute divides by zero changes no attribute, registers no active effect,
-## grants no tag, plays no cue and dispatches no event.
+## attribute divides by zero changes no attribute, registers no active
+## effect, grants no tag, plays no cue and dispatches no event.
 ##
 ## Removal drops contributions and recomposes rather than reversing a stored
 ## delta, which cannot express removing `+20` from a stack still holding
-## `x1.5` and `x2`. Timing lives in GameplayEffectScheduler; this file owns
-## state, not clocks.
+## `x1.5` and `x2`. Timing lives in GameplayEffectScheduler, state here.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_license: MIT
@@ -22,13 +21,17 @@ var attributes: GameplayAttributeRuntime = null
 var tags: GameplayTagRuntime = null
 
 ## Keeps a persistent contribution's LIVE-captured magnitude current. Wired
-## to `self` and `owner_asc` alongside everything else in
-## AbilitySystemComponent._wire_runtimes().
+## alongside everything else in AbilitySystemComponent._wire_runtimes().
 var live_magnitudes: GameplayLiveMagnitudeRegistry = GameplayLiveMagnitudeRegistry.new()
 
 ## Orchestrates a spec's GameplayEffectComponent hooks: preflight, prepare,
 ## the applied/executed/removed notifications.
 var components: GameplayEffectComponentRuntime = GameplayEffectComponentRuntime.new()
+
+## Issues/resolves GameplayEffectHandle identities and answers
+## GameplayEffectQuery lookups. Wired alongside everything else in
+## AbilitySystemComponent._wire_runtimes().
+var handles: GameplayEffectHandleRegistry = GameplayEffectHandleRegistry.new()
 
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
@@ -119,13 +122,11 @@ func tag_turns_remaining(tag: StringName) -> int:
 
 
 #region Application
-## Apply one spec to this ASC.
-##
-## Preflight (validate, then every component's can_apply) runs first, before
-## purge/evaluation/any observable write; preparation follows, ephemeral and
-## reversible; only then does the purge - itself reversible until this
-## application's own outcome is known - and the evaluator run. A refusal at
-## any stage is total: nothing observable happened.
+## Apply one spec to this ASC. Preflight (validate, then every component's
+## can_apply) runs first, before purge/evaluation/any observable write;
+## preparation follows, ephemeral and reversible; only then does the purge -
+## itself reversible until this application's own outcome is known - and the
+## evaluator run. A refusal at any stage is total: nothing observable happened.
 func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if spec == null or spec.effect_def == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
@@ -144,10 +145,10 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	spec.set_prepared_component_states(prepared_states)
 
 	# The cleanser runs before evaluation so the new math sees the state it
-	# will actually land in. It stays reversible until the incoming effect's
-	# own outcome is known: "a refusal is total" applies to the purge too.
+	# will land in, reversible until the incoming effect's own outcome is
+	# known: "a refusal is total" applies to the purge too.
 	var purge: GameplayEffectPurgeTransaction = GameplayEffectPurgeTransaction.begin(
-		self, effect.remove_effects_with_tags
+		self, effect.get_remove_other_effects_query()
 	)
 
 	# A TARGET+SNAPSHOT capture reads this same post-purge state - what
@@ -212,10 +213,9 @@ func _report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
 func _commit(
 	spec: GameplayEffectSpec, evaluation: GameplayEffectEvaluationResult, order: int
 ) -> ActiveGameplayEffect:
-	# A periodic effect writes nothing on application. Its modifiers are tick
-	# mutations, and committing them here would pay a tick at t=0 that the
-	# clock never owed - every DoT would deal one extra instance of damage.
-	# The evaluation still ran, so a broken periodic effect is still refused.
+	# A periodic effect writes nothing here - its modifiers are tick mutations,
+	# and committing now would double-deal a DoT's first tick. The evaluation
+	# still ran, so a broken periodic effect is still refused.
 	if spec.period <= 0.0:
 		for staged: AttributeBaseMutation in evaluation.base_mutations:
 			attributes.commit_base_write(staged)
@@ -226,6 +226,8 @@ func _commit(
 
 	var is_instant: bool = spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT
 	if not is_instant:
+		active.handle = handles.new_handle()
+		handles.register(active)
 		active.component_states = spec.prepared_component_states()
 		# Instant effects grant no tags: they leave nothing behind to hold one.
 		for tag: StringName in spec.get_granted_tags():
@@ -255,13 +257,11 @@ func _grant_tag(active: ActiveGameplayEffect, tag: StringName) -> void:
 
 
 #region Refresh
-## Reapply an effect whose stacking policy is REFRESH_DURATION.
-##
-## The logical instance survives: its contributions and snapshot are replaced by
-## the new application's, and its clock restarts. It emits `active_effect_refreshed`
-## once and does NOT emit a remove/add pair, because a UI that sees one would
-## tear down and rebuild an icon that never actually went away. The granted tag
-## refcount stays at one for the same reason.
+## Reapply an effect whose stacking policy is REFRESH_DURATION. The logical
+## instance survives: contributions/snapshot are replaced and its clock
+## restarts. Emits `active_effect_refreshed` once, never a remove/add pair -
+## a UI that saw one would tear down and rebuild an icon that never actually
+## went away. The granted tag refcount stays at one for the same reason.
 func _try_refresh(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	var effect: GameplayEffect = spec.effect_def
 	if effect.stacking_policy != GameplayEffect.StackingPolicy.REFRESH_DURATION:
@@ -334,13 +334,13 @@ func remove(active: ActiveGameplayEffect) -> void:
 		owner_asc.active_effect_removed.emit(active)
 
 
-## Drop an effect's tags and contributions without recomposing.
-##
-## Separated so a bulk removal can detach everything first and recompose once.
-## Recomposing per effect while the others are still registered is how a cleanup
-## ends up emitting a cascade of intermediate values nobody ever had.
+## Drop an effect's tags and contributions without recomposing. Separated so
+## a bulk removal can detach everything first and recompose once - per-effect
+## recomposition while others are still registered emits a cascade of
+## intermediate values nobody ever had.
 func _detach(active: ActiveGameplayEffect) -> void:
 	components.notify_removed(active.spec, active, owner_asc)
+	handles.forget(active)
 	for tag: StringName in active.granted_tags:
 		var change: GameplayTagRuntime.Change = tags.remove(tag)
 		if owner_asc != null:

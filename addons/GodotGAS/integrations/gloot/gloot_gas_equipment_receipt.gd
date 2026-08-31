@@ -14,7 +14,7 @@ class_name GlootGasEquipmentReceipt extends RefCounted
 var prototype_id: StringName = &""
 
 var granted_abilities: Array[GameplayAbilityHandle] = []
-var applied_effects: Array[ActiveGameplayEffect] = []
+var applied_effects: Array[GameplayEffectHandle] = []
 
 ## Recorded one entry per grant, not as a set: the ASC counts tag references, so
 ## removing exactly as many as were added leaves whatever anyone else added.

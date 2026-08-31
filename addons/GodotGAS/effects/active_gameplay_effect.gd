@@ -22,6 +22,10 @@ class_name ActiveGameplayEffect extends RefCounted
 ## This application's own spec. Never shared with another target.
 var spec: GameplayEffectSpec = null
 
+## The stable public identity a caller keeps instead of this object itself.
+## Null for INSTANT - it never persists to be referenced later.
+var handle: GameplayEffectHandle = null
+
 ## Monotonic order in which this effect was applied to its ASC. Identifies this
 ## application's contributions inside the aggregator and decides which OVERRIDE
 ## wins.

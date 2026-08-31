@@ -55,6 +55,15 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   `apply_effect_spec_result()`/`apply_gameplay_effect_result()` return one
   typed `GameplayEffectApplicationResult`, with the F2 `ActiveGameplayEffect`
   getters kept as thin wrappers over it.
+- **Active effects are addressed by handle, not by reference.**
+  `GameplayEffectHandle` identity is `(owner ASC, monotonic id)` - never
+  reused, never resolving on a different ASC even when the numeric id
+  matches. `GameplayEffectQuery` is a declarative, AND-combined filter (asset,
+  effect definition, granted/source/target tags, source actor, modified
+  attribute) used to find, count or remove active effects; target tags are
+  read live from the target ASC, source tags are a snapshot taken once at
+  application. `GameplayEffectRemoveOtherEffectsComponent` replaces the old
+  flat tag array with a query, resolved before the new effect is evaluated.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -146,7 +155,7 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
-  effects/components/ GameplayEffectComponent and the six concrete kinds
+  effects/components/ GameplayEffectComponent and the seven concrete kinds
   magnitudes/      typed modifier magnitudes: scalable, attribute-based,
                    SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch

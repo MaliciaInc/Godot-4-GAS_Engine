@@ -69,8 +69,9 @@ func test_a_cleanser_whose_incoming_effect_fails_is_rolled_back() -> void:
 	)
 	assert_almost_eq(fixture.current_of(ATTACK), 15.0, TOLERANCE, "buffed")
 
-	var broken: GameplayEffect = Factory.instant([Factory.divide(HEALTH, 0.0)])
-	broken.remove_effects_with_tags = [BUFF_TAG]
+	var broken: GameplayEffect = Factory.removing_effects_with_tags(
+		Factory.instant([Factory.divide(HEALTH, 0.0)]), [BUFF_TAG]
+	)
 
 	watch_signals(asc)
 	var result: ActiveGameplayEffect = Factory.apply(asc, broken)
@@ -96,8 +97,7 @@ func test_a_cleanser_that_succeeds_evaluates_against_the_post_purge_state() -> v
 	Factory.apply(asc, Factory.granting(Factory.infinite([Factory.add(ATTACK, 10.0)]), [BUFF_TAG]))
 	assert_almost_eq(fixture.current_of(ATTACK), 20.0, TOLERANCE, "buffed to 20")
 
-	var incoming: GameplayEffect = Factory.instant([])
-	incoming.remove_effects_with_tags = [BUFF_TAG]
+	var incoming: GameplayEffect = Factory.removing_effects_with_tags(Factory.instant([]), [BUFF_TAG])
 	incoming.executions = [ReadsCurrentAttack.new()] as Array[GameplayExecutionCalculation]
 
 	var result: ActiveGameplayEffect = Factory.apply(asc, incoming)

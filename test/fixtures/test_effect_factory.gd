@@ -118,6 +118,23 @@ static func refreshing(effect: GameplayEffect) -> GameplayEffect:
 	return effect
 
 
+## On a successful application, purge every active effect granting ANY of
+## `tags` - the exact F2 semantics of the removed remove_effects_with_tags
+## field, now expressed as a GameplayEffectRemoveOtherEffectsComponent query.
+static func removing_effects_with_tags(effect: GameplayEffect, tags: Array[StringName]) -> GameplayEffect:
+	var any_of: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	any_of.operator = GameplayTagQueryExpression.Operator.ANY
+	any_of.tags = tags
+	var query: GameplayTagQuery = GameplayTagQuery.new()
+	query.root = any_of
+
+	var remover: GameplayEffectRemoveOtherEffectsComponent = GameplayEffectRemoveOtherEffectsComponent.new()
+	remover.query = GameplayEffectQuery.new()
+	remover.query.granted_tags = query
+	effect.components.append(remover)
+	return effect
+
+
 ## `requiring()`/`blocked_by()` share one GameplayEffectTargetTagRequirementsComponent
 ## per effect: an ALL root with one ALL child per requiring() call and one
 ## NONE child per blocked_by() call, so calling both on the same effect - in

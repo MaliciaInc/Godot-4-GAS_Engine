@@ -56,11 +56,6 @@ enum StackingPolicy {
 ## A list of simple mathematical changes this effect applies to the target's AttributeSets.
 @export var modifiers: Array[GameplayEffectModifier] = []
 
-@export_category("State Management")
-## If this effect is successfully applied, it will immediately purge any active effects on the target that grant these tags.
-## (e.g., A 'Cure' potion would list 'Status.Poison' here).
-@export var remove_effects_with_tags: Array[StringName] = []
-
 @export_category("Event Management")
 ## Tags broadcasted directly to the target's ASC as Gameplay Events upon application (or periodic tick).
 ## Ideal for waking up reactive passive abilities (e.g., 'Event.Damage.Taken').
@@ -96,6 +91,18 @@ func get_granted_tags() -> Array[StringName]:
 	return tags
 
 
+## The query this effect's GameplayEffectRemoveOtherEffectsComponent purges
+## by, or null if it has none. At most one is expected; the first found wins.
+func get_remove_other_effects_query() -> GameplayEffectQuery:
+	for component: GameplayEffectComponent in components:
+		var remover: GameplayEffectRemoveOtherEffectsComponent = (
+			component as GameplayEffectRemoveOtherEffectsComponent
+		)
+		if remover != null:
+			return remover.query
+	return null
+
+
 ## Whether applying this can be noticed by anything except the attributes it
 ## moves and the tags it grants.
 ##
@@ -107,7 +114,6 @@ func is_silent() -> bool:
 	if not (
 		is_zero_approx(period)
 		and executions.is_empty()
-		and remove_effects_with_tags.is_empty()
 		and application_cue_tags.is_empty()
 		and periodic_cue_tags.is_empty()
 		and event_tags.is_empty()
@@ -119,13 +125,14 @@ func is_silent() -> bool:
 ## AssetTags, TargetTags (their refcount is reversible), and UIData never
 ## make an application observable beyond the attributes it moves and the
 ## tags it grants - the same ground is_silent() already covers. Anything that
-## can refuse, roll, or otherwise decide during application can.
+## can refuse, roll, purge, or otherwise decide during application can.
 func _has_observable_component() -> bool:
 	for component: GameplayEffectComponent in components:
 		if (
 			component is GameplayEffectTargetTagRequirementsComponent
 			or component is GameplayEffectChanceToApplyComponent
 			or component is GameplayEffectCustomCanApplyComponent
+			or component is GameplayEffectRemoveOtherEffectsComponent
 		):
 			return true
 	return false

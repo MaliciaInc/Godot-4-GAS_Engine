@@ -121,6 +121,8 @@ func _wire_runtimes() -> void:
 	effects.tags = tags
 	effects.live_magnitudes.owner_asc = self
 	effects.live_magnitudes.effects = effects
+	effects.handles.owner_asc = self
+	effects.handles.runtime = effects
 
 	scheduler.effects = effects
 
@@ -352,14 +354,35 @@ func apply_gameplay_effect(
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:
 	effects.remove(active_effect)
 
+func get_active_effect(handle: GameplayEffectHandle) -> ActiveGameplayEffect:
+	return effects.handles.resolve(handle)
+
+func find_active_effects(query: GameplayEffectQuery) -> Array[ActiveGameplayEffect]:
+	return effects.handles.find(query)
+
+func find_active_effect_handles(query: GameplayEffectQuery) -> Array[GameplayEffectHandle]:
+	return effects.handles.find_handles(query)
+
+func count_active_effects(query: GameplayEffectQuery) -> int:
+	return effects.handles.count(query)
+
+func remove_active_effects(query: GameplayEffectQuery) -> int:
+	return effects.handles.remove_matching(query)
+
+func remove_active_effect_by_handle(handle: GameplayEffectHandle) -> bool:
+	return effects.handles.remove_by_handle(handle)
+
+func get_effect_duration_remaining(handle: GameplayEffectHandle) -> float:
+	return effects.handles.duration_remaining(handle)
+
+func get_effect_turns_remaining(handle: GameplayEffectHandle) -> int:
+	return effects.handles.turns_remaining(handle)
 
 func remove_effects_with_tag(tag: StringName) -> void:
 	effects.remove_effects_with_tag(tag)
 
-
 func remove_effects_from_source(source_node: Node) -> void:
 	effects.remove_effects_from_source(source_node)
-
 
 func get_active_effects() -> Array[ActiveGameplayEffect]:
 	return effects.active_effects()

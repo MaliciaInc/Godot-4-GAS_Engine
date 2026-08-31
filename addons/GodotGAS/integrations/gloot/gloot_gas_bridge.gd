@@ -172,12 +172,12 @@ func _apply(grant: GlootGasEquipmentGrant) -> void:
 		receipt.granted_abilities.append(runtime.commit_prepared_grant(one))
 
 	for effect: GameplayEffect in grant.passive_effects:
-		var applied: ActiveGameplayEffect = target_asc.apply_gameplay_effect(effect, target_asc)
-		if applied == null:
+		var applied: GameplayEffectApplicationResult = target_asc.apply_gameplay_effect_result(effect, target_asc)
+		if not applied.is_ok():
 			_take_back(receipt)
 			equipment_rejected.emit(grant.prototype_id)
 			return
-		receipt.applied_effects.append(applied)
+		receipt.applied_effects.append(applied.active_handle)
 
 	for tag: StringName in grant.direct_tags:
 		target_asc.add_tag(tag)
@@ -191,8 +191,8 @@ func _apply(grant: GlootGasEquipmentGrant) -> void:
 func _take_back(receipt: GlootGasEquipmentReceipt) -> void:
 	for tag: StringName in receipt.added_tags:
 		target_asc.remove_tag(tag)
-	for applied: ActiveGameplayEffect in receipt.applied_effects:
-		target_asc.remove_active_effect(applied)
+	for handle: GameplayEffectHandle in receipt.applied_effects:
+		target_asc.remove_active_effect_by_handle(handle)
 	for handle: GameplayAbilityHandle in receipt.granted_abilities:
 		target_asc.ability_runtime.remove_ability(handle)
 

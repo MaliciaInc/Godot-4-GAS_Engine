@@ -100,8 +100,9 @@ func test_an_effect_can_purge_effects_granting_a_tag() -> void:
 	)
 	assert_almost_eq(fixture.current_of(ATTACK), 5.0, TOLERANCE, "poisoned")
 
-	var cure: GameplayEffect = Factory.instant([])
-	cure.remove_effects_with_tags = [POISON] as Array[StringName]
+	var cure: GameplayEffect = Factory.removing_effects_with_tags(
+		Factory.instant([]), [POISON] as Array[StringName]
+	)
 	Factory.apply(asc, cure)
 
 	assert_eq(asc.get_active_effects().size(), 0, "the poison is gone")
