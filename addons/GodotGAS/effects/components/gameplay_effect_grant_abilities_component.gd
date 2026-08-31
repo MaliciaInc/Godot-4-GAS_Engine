@@ -142,6 +142,6 @@ func on_effect_removed(context: GameplayEffectComponentRemovalContext) -> void:
 			GameplayEffectAbilityGrant.RemovalPolicy.CANCEL_AND_REMOVE_ON_EFFECT_END:
 				runtime.remove_ability(handle)
 			GameplayEffectAbilityGrant.RemovalPolicy.REMOVE_ON_ACTIVE_END:
-				runtime.mark_pending_removal(handle)
+				runtime.remove_ability_on_end(handle)
 			GameplayEffectAbilityGrant.RemovalPolicy.KEEP_AFTER_EFFECT_END:
 				pass

@@ -3,7 +3,6 @@
 ## The registry holds `GameplayAbilitySpec`s, each identified by a
 ## `GameplayAbilityHandle` rather than the Node underneath it - a handle from
 ## another ASC can never resolve here by coincidence of a reused id.
-##
 ## Granting is a two-step transaction: `prepare_ability_grant` instantiates
 ## and validates once, `commit_prepared_grant`/`discard_prepared_grant`
 ## register or free it. `give_ability` does both; nothing else validates.
@@ -21,10 +20,16 @@ enum ActivationError {
 	MISSING_TAG,
 	INSUFFICIENT_RESOURCES,
 	INTERNAL_ERROR,
-	## Marked for REMOVE_ON_ACTIVE_END removal - see mark_pending_removal().
+	## Marked for AFTER_ACTIVE_END removal.
 	PENDING_REMOVAL,
 	## Refused by another spec's block_abilities_query, or a block effect.
 	BLOCKED_BY_ACTIVE_ABILITY,
+}
+
+## remove_ability()'s timing: right away, or once nothing is still running.
+enum AbilityRemovalPolicy {
+	CANCEL_IMMEDIATELY,
+	AFTER_ACTIVE_END,
 }
 
 var owner_asc: AbilitySystemComponent = null
@@ -39,6 +44,11 @@ var tag_semantics: AbilityTagSemanticsRuntime = AbilityTagSemanticsRuntime.new()
 
 ## ON_GRANTED's one attempt, PASSIVE's continuous reevaluation.
 var policies: AbilityActivationPolicyRuntime = AbilityActivationPolicyRuntime.new()
+
+## The canonical try_activate()/give_and_activate_once() entry points.
+var lifecycle: AbilityLifecycleRuntime = AbilityLifecycleRuntime.new()
+
+var cooldowns: AbilityCooldownRuntime = AbilityCooldownRuntime.new()
 
 var _specs: Array[GameplayAbilitySpec] = []
 var _specs_by_id: Dictionary[int, GameplayAbilitySpec] = {}
@@ -88,8 +98,7 @@ func prepare_ability_grant(
 	return prepared
 
 
-## Register a validated preparation as a real grant. Refuses a null,
-## already-consumed, or invalid one - without freeing anything.
+## Registers a validated preparation. Refuses a null/consumed/invalid one, without freeing anything.
 func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHandle:
 	if prepared == null or prepared.consumed or not prepared.validation.is_ok():
 		return GameplayAbilityHandle.new()
@@ -165,29 +174,38 @@ func specs() -> Array[GameplayAbilitySpec]:
 	return _specs.duplicate()
 
 
-## Abort, cancel tasks, free the Node, drop the spec. False if unresolved.
-func remove_ability(handle: GameplayAbilityHandle) -> bool:
+## CANCEL_IMMEDIATELY aborts and drops the spec now. AFTER_ACTIVE_END defers
+## via AbilityInstancingRuntime.mark_pending_removal() - T14's own mechanism.
+func remove_ability(
+	handle: GameplayAbilityHandle,
+	policy: AbilityRemovalPolicy = AbilityRemovalPolicy.CANCEL_IMMEDIATELY
+) -> bool:
 	var spec: GameplayAbilitySpec = get_spec(handle)
 	if spec == null:
 		return false
-	_retire(spec)
+	if policy == AbilityRemovalPolicy.AFTER_ACTIVE_END:
+		instancing.mark_pending_removal(spec)
+	else:
+		_retire(spec)
 	return true
 
 
-## Convenience for a caller holding the instance rather than its handle -
-## resolves it through the instance's own spec and delegates.
+## Convenience for AFTER_ACTIVE_END.
+func remove_ability_on_end(handle: GameplayAbilityHandle) -> bool:
+	return remove_ability(handle, AbilityRemovalPolicy.AFTER_ACTIVE_END)
+
+
+## Convenience for a caller holding the instance rather than its handle.
 func remove(ability: GameplayAbility) -> void:
 	if ability == null:
 		return
 	remove_ability(ability.get_ability_handle())
 
 
-## REMOVE_ON_ACTIVE_END - see AbilityInstancingRuntime.mark_pending_removal().
-func mark_pending_removal(handle: GameplayAbilityHandle) -> void:
-	instancing.mark_pending_removal(get_spec(handle))
-
-
 func _retire(spec: GameplayAbilitySpec) -> void:
+	# First: a reevaluation reentered from an abort below must see
+	# PENDING_REMOVAL and never restart what this is tearing down.
+	spec.pending_remove = true
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and is_instance_valid(instance):
 		# Must not outlive its activation - else ability_ended never fires.
@@ -292,6 +310,24 @@ func active_requirements_error(spec: GameplayAbilitySpec) -> ActivationError:
 	return policies.active_requirements_error(spec)
 
 
+## The canonical activation entry point - input, event routing and passives
+## all call this by handle. See AbilityLifecycleRuntime.try_activate().
+func try_activate(
+	handle: GameplayAbilityHandle, context: GameplayEffectContext = null
+) -> GameplayAbilityActivationResult:
+	return lifecycle.try_activate(handle, context)
+
+
+## See AbilityLifecycleRuntime.give_and_activate_once().
+func give_and_activate_once(
+	scene: PackedScene,
+	level: float = 1.0,
+	source: GameplayAbilitySource = null,
+	context: GameplayEffectContext = null
+) -> GameplayAbilityActivationResult:
+	return lifecycle.give_and_activate_once(scene, level, source, context)
+
+
 ## See AbilityTagSemanticsRuntime.effective_ability_tags().
 static func effective_ability_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
 	return AbilityTagSemanticsRuntime.effective_ability_tags(spec)
@@ -309,50 +345,14 @@ func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
 
 
 #region Cooldowns
-## Own tag, shared cooldowns', and any declared explicitly - one place.
+## See AbilityCooldownRuntime.get_cooldown_tags().
 static func get_cooldown_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
-	var cooldown_tags: Array[StringName] = []
-	if spec == null or spec.definition == null:
-		return cooldown_tags
-	if spec.definition.cooldown_effect != null:
-		cooldown_tags.append_array(spec.definition.cooldown_effect.get_granted_tags())
-	for effect: GameplayEffect in spec.definition.shared_cooldown_effects:
-		if effect != null:
-			cooldown_tags.append_array(effect.get_granted_tags())
-	cooldown_tags.append_array(spec.definition.shared_cooldown_tags)
-	return cooldown_tags
+	return AbilityCooldownRuntime.get_cooldown_tags(spec)
 
 
-## Everything a UI needs, read fresh from the tags cooldown effects grant -
-## never an own clock, which would part company the first early refresh.
+## See AbilityCooldownRuntime.get_ability_cooldown_state().
 func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldownState:
-	var state: AbilityCooldownState = AbilityCooldownState.new()
-	var spec: GameplayAbilitySpec = get_spec(handle)
-	if spec == null or owner_asc == null:
-		return state
-
-	for tag: StringName in get_cooldown_tags(spec):
-		# A tag shared between two of its cooldowns is one wait, not two.
-		if state.tags.has(tag):
-			continue
-		state.tags.append(tag)
-
-		var seconds: float = owner_asc.get_tag_duration_remaining(tag)
-		if is_inf(seconds):
-			state.infinite = true
-		elif seconds > state.seconds_remaining:
-			state.seconds_remaining = seconds
-
-		var turns: int = owner_asc.get_tag_turns_remaining(tag)
-		if turns > state.turns_remaining:
-			state.turns_remaining = turns
-
-		if owner_asc.has_tag(tag):
-			state.active = true
-
-	if state.infinite or state.seconds_remaining > 0.0 or state.turns_remaining > 0:
-		state.active = true
-	return state
+	return cooldowns.get_ability_cooldown_state(handle)
 #endregion
 
 

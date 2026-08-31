@@ -267,6 +267,21 @@
         "left": "test/unit/test_ability_activation_policies.gd:test_passive_waits_for_its_required_tag",
         "right": "test/unit/test_ability_activation_policies.gd:test_passive_restarts_once_conditions_are_satisfied_again",
         "reason": "Deliberately parallel, not copied: both grant the same kind of gated passive and prove the first wake on a required tag - the restart test then continues past that exact point to prove the same passive can go idle and wake a second time, which is Task 16's own explicit requirement that a passive 'puede activarse de nuevo' once its conditions hold again. Collapsing them into one test would hide that 'wakes once' and 'wakes again after going idle' are two distinct regressions this suite needs to catch independently, the same reasoning already applied to the stacking suite's duration/turn-based expiration pair."
+      },
+      {
+        "left": "addons/GodotGAS/abilities/ability_lifecycle_runtime.gd:_translate",
+        "right": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:_translate_magnitude_status",
+        "reason": "A third independent status-translation function, same family as the pair declared below: AbilityRuntime.ActivationError to GameplayAbilityActivationResult.Status here, GameplayMagnitudeResult.Status to AttributeEvaluationResult.Status there - unrelated vocabularies that happen to share the shape of a short match/return with a fallback. GameplayAbilityActivationResult.Status is Task 17's own closed, public-facing enum, deliberately not a re-export of ActivationError - merging this translator into either neighbour would couple an ability's internal gate reason to an unrelated public result contract."
+      },
+      {
+        "left": "addons/GodotGAS/abilities/ability_lifecycle_runtime.gd:_translate",
+        "right": "addons/GodotGAS/magnitudes/gameplay_attribute_based_magnitude.gd:_translate",
+        "reason": "Same reasoning as the pair above, one level up: three status-translation functions across this codebase now share the mechanical match/return-with-fallback shape because that is the one way GDScript expresses a closed enum-to-enum mapping, not because any one was copied from another."
+      },
+      {
+        "left": "test/unit/test_ability_lifecycle.gd:test_cancel_immediately_aborts_a_running_instance_and_drops_the_spec",
+        "right": "test/unit/test_ability_lifecycle.gd:test_after_active_end_lets_a_running_instance_finish_first",
+        "reason": "Deliberately parallel, the same way the 2D/3D targeting suites are: both grant and activate the same kind of channelling ability, then remove it - one under CANCEL_IMMEDIATELY, the other under AFTER_ACTIVE_END - and assert the opposite outcome for the still-running instance. The parallel is the point: AbilityRemovalPolicy's two values only mean something in contrast to each other, and collapsing these into one parametrized test would hide that 'aborted now' and 'left running until it ends on its own' are two distinct regressions this suite needs to catch independently."
       }
     ]
   }

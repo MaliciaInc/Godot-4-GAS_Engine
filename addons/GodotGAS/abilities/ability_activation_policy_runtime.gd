@@ -50,12 +50,9 @@ func on_spec_granted(spec: GameplayAbilitySpec) -> void:
 ## "Intentar activar una vez; si falla, permanece concedido; no reintentar
 ## automáticamente por tags" - unlike PASSIVE, a failed ON_GRANTED attempt is
 ## never retried by reevaluate(), which only ever looks at PASSIVE specs.
+## try_activate() itself already no-ops on a gate refusal.
 func _activate_once(spec: GameplayAbilitySpec) -> void:
-	if ability_runtime.activation_error(spec) != AbilityRuntime.ActivationError.NONE:
-		return
-	var instance: GameplayAbility = ability_runtime.instancing.instance_for_activation(spec)
-	if instance != null:
-		instance.try_activate()
+	ability_runtime.try_activate(spec.handle)
 #endregion
 
 
@@ -114,7 +111,7 @@ func _reevaluate_one_spec(spec: GameplayAbilitySpec) -> void:
 		return
 	if ability_runtime.activation_error(spec) == AbilityRuntime.ActivationError.NONE:
 		_attempted_this_cycle.append(spec)
-		instance.try_activate()
+		ability_runtime.try_activate(spec.handle)
 #endregion
 
 

@@ -185,6 +185,32 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   stable meaning. `AbilityRuntime.abort_all()` suspends reevaluation for its
   own duration and skips it entirely for `ASC_CLEANUP`, so a passive aborted by
   a tearing-down ASC cannot restart itself an instant before its own removal.
+- **Activation by handle, and a lifecycle that never leaves a dead grant
+  behind.** `AbilityRuntime.try_activate(handle, context)` is the canonical
+  entry point - input, event routing and passives all call it - and returns
+  a `GameplayAbilityActivationResult` (a closed `Status`, the handle, the
+  instance) the instant activation *starts*, never waiting for
+  `_activate_ability()` to finish: a channelled ability reports `SUCCESS`
+  immediately and keeps running. `GameplayAbility._begin_runtime_activation()`
+  is the shared synchronous primitive both this and the compat
+  `GameplayAbility.try_activate()` wrapper start from; the compat wrapper
+  still blocks until its own instance ends, for every caller that already
+  relies on that. Two ASC signals mirror it: `ability_activated` the moment
+  a handle starts, `ability_runtime_ended` the moment it stops, superseding
+  the instance-only `ability_ended` for anything that only has a handle.
+  `remove_ability(handle, policy)` takes an `AbilityRemovalPolicy` -
+  `CANCEL_IMMEDIATELY` aborts and drops the spec now (marking it
+  `pending_remove` *before* aborting, so an ability that reacts to its own
+  cancellation - a passive's reevaluation, chief among them - can never
+  restart what is already being torn down); `AFTER_ACTIVE_END` (also
+  `remove_ability_on_end()`) lets the current run finish and retires the
+  spec the instant `active_count` returns to 0, immediately if it already
+  has - the same mechanism Task 14's `REMOVE_ON_ACTIVE_END` effect grants
+  use, never a second one. `give_and_activate_once()` composes `give_ability`
+  + `try_activate` + `remove_ability(..., AFTER_ACTIVE_END)`: never started
+  removes the spec on the spot, started marks it `pending_remove` before the
+  call even returns - so PENDING_REMOVAL, not a bespoke flag, is what stops
+  a second activation of the same handle, PER_EXECUTION included.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

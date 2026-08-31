@@ -70,23 +70,12 @@ func release_execution_instance(spec: GameplayAbilitySpec, ability: GameplayAbil
 		ability.queue_free()
 
 
-## Start a spec running through whatever its instancing policy means by that.
-## The one route both input routing and event routing activate a spec
-## through, so "how a spec starts" is decided once rather than reimplemented
-## per caller.
+## Start a spec running through whatever its instancing policy means by that -
+## a thin pass-through to the canonical AbilityRuntime.try_activate(), which
+## gates, resolves/creates the instance and starts it in one place.
 func activate_spec(spec: GameplayAbilitySpec, context: GameplayEffectContext = null) -> void:
-	if ability_runtime == null or ability_runtime.activation_error(spec) != AbilityRuntime.ActivationError.NONE:
-		return
-	var instance: GameplayAbility = instance_for_activation(spec)
-	if instance == null:
-		return
-	var started: bool = await instance.try_activate(context)
-	if not started and spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION:
-		# try_activate can only refuse here if gate state changed between the
-		# pre-check above and its own internal re-check - an instance was
-		# already spent creating it, and nothing else will ever end it to
-		# reach the normal release path above.
-		release_execution_instance(spec, instance)
+	if ability_runtime != null:
+		ability_runtime.try_activate(spec.handle, context)
 
 
 #region Pending removal (REMOVE_ON_ACTIVE_END)

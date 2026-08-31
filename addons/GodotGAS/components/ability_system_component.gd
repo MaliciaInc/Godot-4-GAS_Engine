@@ -63,6 +63,20 @@ signal active_effect_refreshed(active_effect: ActiveGameplayEffect)
 ## An activation attempt was refused, with the closed reason why.
 signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntime.ActivationError)
 
+## AbilityRuntime.try_activate() started this instance - accepted, not
+## finished. See ability_runtime_ended for the outcome.
+signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
+
+## The canonical, handle-addressed superset of the instance's own
+## `ability_ended` - fires for every activation this ASC started, wherever
+## it was started from.
+signal ability_runtime_ended(
+	handle: GameplayAbilityHandle,
+	instance: GameplayAbility,
+	was_cancelled: bool,
+	reason: GameplayAbilityTask.CancelReason
+)
+
 ## An indirect LIVE-magnitude cycle did not converge within the reevaluation
 ## cap. The attribute named is where the cascade was cut off; its
 ## contribution keeps whatever magnitude it last resolved, not a fresh one.
@@ -163,6 +177,8 @@ func _wire_runtimes() -> void:
 	ability_runtime.tag_semantics.owner_asc = self
 	ability_runtime.tag_semantics.ability_runtime = ability_runtime
 	ability_runtime.policies.ability_runtime = ability_runtime
+	ability_runtime.lifecycle.ability_runtime = ability_runtime
+	ability_runtime.cooldowns.ability_runtime = ability_runtime
 
 	events.owner_asc = self
 	events.ability_runtime = ability_runtime

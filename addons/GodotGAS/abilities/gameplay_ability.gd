@@ -1,6 +1,5 @@
 ## One granted ability: activation rules, cost/cooldown, and the logic a
-## subclass overrides. Event payload is a typed GameplayEffectContext, unlike
-## upstream's untyped Variant that made every subclass guess.
+## subclass overrides. Event payload is typed, unlike upstream's Variant.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -17,10 +16,9 @@ enum InstancingPolicy {
 	PER_EXECUTION,
 }
 
-## MANUAL: input/explicit call. ON_GRANTED: tries once when granted, stays
-## idle if that fails, never auto-retries. ON_GAMEPLAY_EVENT:
-## gameplay_event_triggers decide. PASSIVE: continuously reevaluated - see
-## AbilityActivationPolicyRuntime.
+## MANUAL: input/explicit call. ON_GRANTED: tries once, never auto-retries.
+## ON_GAMEPLAY_EVENT: gameplay_event_triggers decide. PASSIVE: continuously
+## reevaluated - see AbilityActivationPolicyRuntime.
 enum ActivationPolicy {
 	MANUAL,
 	ON_GRANTED,
@@ -90,6 +88,9 @@ var is_active: bool = false
 ## Whether this activation has already paid. One activation charges once.
 var _committed: bool = false
 
+## What _run_activation() resolved to - read after try_activate() awaits `ability_ended`.
+var _last_activation_succeeded: bool = false
+
 
 #region Spec accessors
 ## current_spec once granted; the exported default for an uncommitted probe.
@@ -108,13 +109,20 @@ func get_ability_handle() -> GameplayAbilityHandle:
 
 
 #region Execution
-## Try to run this ability. Returns whether it actually ran.
+## Compat: blocks until this finishes, unlike AbilityRuntime.try_activate().
 func try_activate(context: GameplayEffectContext = null) -> bool:
 	if is_active or owner_asc == null:
 		return false
 	if not owner_asc.can_activate_ability(self, true):
 		return false
+	_begin_runtime_activation(context)
+	if is_active:
+		await ability_ended
+	return _last_activation_succeeded
 
+
+## Registers active state, starts _run_activation() without awaiting.
+func _begin_runtime_activation(context: GameplayEffectContext) -> void:
 	is_active = true
 	if current_spec != null:
 		current_spec.active_count += 1
@@ -123,25 +131,25 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 		owner_asc.ability_runtime.request_passive_reevaluation()
 	current_context = context
 	_cancel_conflicting_abilities()
+	_run_activation()
 
-	# `await` hands a coroutine's value back untyped and the local's declared
-	# type does not convert it - a channelled ability crashed on resume with
-	# an Object where a bool belonged. Taken explicitly instead.
+
+func _run_activation() -> void:
+	# `await` hands a coroutine's value back untyped - a channelled ability
+	# crashed on resume with an Object where a bool belonged.
 	var outcome: Variant = await _activate_ability()
 	var success: bool = outcome is bool and outcome
+	_last_activation_succeeded = success
 
 	# Only close if the subclass hasn't already, so `ability_ended` fires once.
 	if is_active:
 		end_ability(not success)
-
 	current_context = null
-	return success
 
 
-## Pay the cost and start the cooldowns as one transaction, called from
-## `_activate_ability` once committed. All-or-nothing: a failed cooldown
-## retires the ones already started, a failed cost retires all of them - no
-## cues/events by contract, so a rollback leaves nothing observable.
+## Pay cost and start cooldowns as one transaction, called from
+## `_activate_ability` once committed - all-or-nothing, no cues/events by
+## contract, so a rollback leaves nothing observable.
 func commit_ability() -> AbilityCommitResult:
 	var result: AbilityCommitResult = AbilityCommitResult.new()
 	if owner_asc == null:
@@ -151,9 +159,7 @@ func commit_ability() -> AbilityCommitResult:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
 
-	# current_spec is guaranteed non-null: owner_asc and current_spec are
-	# always set together by AbilityRuntime.commit_prepared_grant. The only
-	# place a percentage is computed - every step after reads
+	# current_spec is guaranteed non-null. Every step after reads
 	# resolved.absolute_effect, never the definition's costs again.
 	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
 		current_spec.definition.costs, owner_asc, current_spec.level
@@ -165,8 +171,7 @@ func commit_ability() -> AbilityCommitResult:
 	):
 		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
 		return result
-	# Self-check against the resolver's own output - a violation here can
-	# only mean the resolver is broken.
+	# Self-check against the resolver's own output - a violation means it is broken.
 	if not AbilityCommitContract.is_reversible_charge(resolved.absolute_effect, 1.0):
 		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
 		return result
@@ -179,8 +184,7 @@ func commit_ability() -> AbilityCommitResult:
 			result.status = AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION
 			return result
 
-	# Asked before anything applies, so an unaffordable ability never starts
-	# a cooldown it didn't pay for.
+	# Asked before anything applies, so it never starts a cooldown unpaid.
 	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
 		result.status = AbilityCommitResult.Status.INSUFFICIENT_RESOURCES
 		return result
@@ -195,10 +199,8 @@ func commit_ability() -> AbilityCommitResult:
 			return result
 		result.applied_cooldowns.append(started)
 
-	# Charge goes last and is re-asked here, not trusted from resolve time:
-	# applying a cooldown emits signals, and a synchronous listener can move
-	# the very resources about to be taken. Recomputed against the same
-	# resolved.absolute_effect, never a percentage.
+	# Re-asked here, not trusted from resolve time - a cooldown's signals can
+	# let a listener move the resources about to be taken.
 	if (
 		resolved.absolute_effect != null
 		and not owner_asc.can_afford_cost(resolved.absolute_effect, 1.0)
@@ -242,9 +244,8 @@ func abort_ability(
 		end_ability(true, reason)
 
 
-## Close the ability. Stays granted: ending is not un-granting. Idempotent,
-## order load-bearing: `is_active` clears first, since cancelling a task can
-## resume an awaiting coroutine that would otherwise double-emit `ability_ended`.
+## Stays granted: ending is not un-granting. `is_active` clears first, since
+## cancelling a task can resume a coroutine that would otherwise double-emit.
 func end_ability(
 	was_cancelled: bool = false,
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ENDED
@@ -259,8 +260,9 @@ func end_ability(
 	if owner_asc != null:
 		owner_asc.cancel_ability_tasks(self, reason)
 		owner_asc.ability_runtime.request_passive_reevaluation()
-	# The one place a commit is forgotten - `try_activate` deliberately does
-	# not also clear it, or one transition would have two owners.
+		if current_spec != null:
+			owner_asc.ability_runtime_ended.emit(current_spec.handle, self, was_cancelled, reason)
+	# The one place a commit is forgotten - two owners for one transition otherwise.
 	_committed = false
 	ability_ended.emit(was_cancelled)
 
@@ -305,9 +307,8 @@ func accepts_target(target_asc: AbilitySystemComponent) -> bool:
 	return true
 
 
-## Build a spec from an effect and fire it at every target, reporting what
-## happened. Each target gets its own spec copy - sharing one across an AoE
-## let target A's evaluation change what target B received.
+## Each target gets its own spec copy - sharing one across an AoE let target
+## A's evaluation change what target B received.
 func apply_effect_to_targets(
 	effect_res: GameplayEffect, target_data: GameplayAbilityTargetData
 ) -> GameplayTargetApplicationResult:
@@ -383,7 +384,8 @@ func _input_pressed(asc: AbilitySystemComponent) -> void:
 	if is_active:
 		_active_input_pressed(asc)
 		return
-	try_activate()
+	if owner_asc != null:
+		owner_asc.ability_runtime.try_activate(get_ability_handle())
 
 
 ## The bound input was released.
@@ -404,8 +406,7 @@ func _active_input_released(_asc: AbilitySystemComponent) -> void:
 
 
 #region Task factories
-## Hand a freshly built task to the ASC that will own it. Null when there is
-## no ASC - a task nobody owns could never be cancelled or torn down.
+## Null when there is no ASC - a task nobody owns could never be cancelled.
 func _own(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	if task == null or owner_asc == null:
 		return null
@@ -416,9 +417,8 @@ func wait_delay(seconds: float) -> AbilityTaskWaitDelay:
 	return _own(AbilityTaskWaitDelay.create(self, seconds)) as AbilityTaskWaitDelay
 
 
-## Wait for a press. `-1` means this ability's own bound slot. Resolved in
-## the body, not a default parameter value: a default is evaluated against
-## the class and would freeze `input_id` at parse time, not at the call.
+## `-1` means this ability's own bound slot. Resolved in the body, not a
+## default parameter value: that would freeze `input_id` at parse time.
 func wait_input_pressed(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.PRESSED)
 
