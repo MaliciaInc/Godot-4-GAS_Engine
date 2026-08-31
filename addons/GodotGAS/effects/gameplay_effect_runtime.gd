@@ -1,13 +1,10 @@
 ## Application, removal, refresh and cleanup of gameplay effects.
 ##
-## This is the only place that commits what the evaluator staged. Nothing is
-## written until the whole transaction is OK, so an effect whose second
-## attribute divides by zero changes no attribute, registers no active
-## effect, grants no tag, plays no cue and dispatches no event.
-##
-## Removal drops contributions and recomposes rather than reversing a stored
-## delta, which cannot express removing `+20` from a stack still holding
-## `x1.5` and `x2`. Timing lives in GameplayEffectScheduler, state here.
+## The only place that commits what the evaluator staged: nothing is written
+## until the whole transaction is OK. Removal drops contributions and
+## recomposes rather than reversing a stored delta, which cannot express
+## removing `+20` from a stack still holding `x1.5` and `x2`. Timing lives in
+## GameplayEffectScheduler, state here.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_license: MIT
@@ -20,18 +17,19 @@ var owner_asc: AbilitySystemComponent = null
 var attributes: GameplayAttributeRuntime = null
 var tags: GameplayTagRuntime = null
 
-## Keeps a persistent contribution's LIVE-captured magnitude current. Wired
-## alongside everything else in AbilitySystemComponent._wire_runtimes().
+## Collaborators below are all wired alongside everything else in
+## AbilitySystemComponent._wire_runtimes().
+## Keeps a persistent contribution's LIVE-captured magnitude current.
 var live_magnitudes: GameplayLiveMagnitudeRegistry = GameplayLiveMagnitudeRegistry.new()
-
 ## Orchestrates a spec's GameplayEffectComponent hooks: preflight, prepare,
 ## the applied/executed/removed notifications.
 var components: GameplayEffectComponentRuntime = GameplayEffectComponentRuntime.new()
-
 ## Issues/resolves GameplayEffectHandle identities and answers
-## GameplayEffectQuery lookups. Wired alongside everything else in
-## AbilitySystemComponent._wire_runtimes().
+## GameplayEffectQuery lookups.
 var handles: GameplayEffectHandleRegistry = GameplayEffectHandleRegistry.new()
+## Owns inhibited/attached state and ongoing/removal tag-requirement
+## reevaluation.
+var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntime.new()
 
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
@@ -55,9 +53,16 @@ func active_count() -> int:
 	return _active.size()
 
 
-## Remove `active` from the registry without detaching or emitting anything,
-## and without clearing what it held. For GameplayEffectPurgeTransaction
-## alone, which stays reversible until the incoming effect's outcome is known.
+## AbilitySystemComponent.emit_tag_change() calls this after its own public
+## F2 signals, for every tag change - the entry point for ongoing/removal
+## reevaluation. See GameplayEffectInhibitionRuntime.
+func on_owner_tags_changed() -> void:
+	inhibition.on_owner_tags_changed()
+
+
+## Remove `active` without detaching/emitting/clearing anything - for
+## GameplayEffectPurgeTransaction alone, reversible until the incoming
+## effect's own outcome is known.
 func extract_active(active: ActiveGameplayEffect) -> int:
 	var index: int = _active.find(active)
 	if index >= 0:
@@ -65,9 +70,8 @@ func extract_active(active: ActiveGameplayEffect) -> int:
 	return index
 
 
-## Undo extract_active: put `active` back at `at_index`, clamped to the
-## current size so a stale index from a registry that has since shrunk
-## still lands somewhere rather than erroring.
+## Undo extract_active: reinsert at `at_index`, clamped so a stale index
+## from a since-shrunk registry still lands somewhere.
 func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
 	_active.insert(clampi(at_index, 0, _active.size()), active)
 
@@ -109,10 +113,10 @@ func tag_turns_remaining(tag: StringName) -> int:
 
 #region Application
 ## Apply one spec to this ASC. Preflight (validate, then every component's
-## can_apply) runs first, before purge/evaluation/any observable write;
-## preparation follows, ephemeral and reversible; only then does the purge -
-## itself reversible until this application's own outcome is known - and the
-## evaluator run. A refusal at any stage is total: nothing observable happened.
+## can_apply) runs before purge/evaluation/any observable write; preparation
+## is ephemeral and reversible; only then does the purge - itself reversible
+## until this application's own outcome is known - and the evaluator run. A
+## refusal at any stage is total.
 func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if spec == null or spec.effect_def == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
@@ -133,15 +137,13 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
 	spec.set_prepared_component_states(prepared_states)
 
-	# The cleanser runs before evaluation so the new math sees the state it
-	# will land in, reversible until the incoming effect's own outcome is
-	# known: "a refusal is total" applies to the purge too.
+	# Runs before evaluation so the new math sees the state it will land in,
+	# reversible until the incoming effect's own outcome is known.
 	var purge: GameplayEffectPurgeTransaction = GameplayEffectPurgeTransaction.begin(
 		self, effect.get_remove_other_effects_query()
 	)
 
-	# A TARGET+SNAPSHOT capture reads this same post-purge state - what
-	# evaluation itself is about to see - never what stood before the purge.
+	# TARGET+SNAPSHOT reads this post-purge state, never what stood before.
 	if not spec.capture_target_attributes(owner_asc):
 		purge.rollback()
 		components.discard_for(spec)
@@ -169,10 +171,13 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	return GameplayEffectApplicationResult.ok(spec, active)
 
 
-## True if any active effect's GameplayEffectImmunityComponent query matches
-## `spec` - the first match blocks, since a refusal is total either way.
+## True if any uninhibited active effect's GameplayEffectImmunityComponent
+## query matches `spec` - an inhibited immunity's owner is not currently in
+## force, so it does not block.
 func _is_immune_to(spec: GameplayEffectSpec) -> bool:
 	for active: ActiveGameplayEffect in _active:
+		if active.inhibited:
+			continue
 		var query: GameplayEffectQuery = active.get_effect_def().get_immunity_query()
 		if query != null and query.matches_incoming(spec, owner_asc):
 			return true
@@ -190,9 +195,9 @@ func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluation
 	return GameplayEffectEvaluator.evaluate(request)
 
 
-## INSTANT and periodic effects transform the durable value once. DURATION and
-## INFINITE register contributions. One effect cannot be both,
-## because a periodic contributor would compound itself on every tick.
+## INSTANT and periodic effects transform the durable value once; DURATION
+## and INFINITE register contributions - never both, or a periodic
+## contributor would compound itself on every tick.
 static func _mode_for(spec: GameplayEffectSpec) -> GameplayEffectEvaluator.Mode:
 	if spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT:
 		return GameplayEffectEvaluator.Mode.BASE_MUTATION
@@ -212,28 +217,28 @@ func _report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
 func _commit(
 	spec: GameplayEffectSpec, evaluation: GameplayEffectEvaluationResult, order: int
 ) -> ActiveGameplayEffect:
-	# A periodic effect writes nothing here - its modifiers are tick mutations,
-	# and committing now would double-deal a DoT's first tick. The evaluation
-	# still ran, so a broken periodic effect is still refused.
+	# Periodic writes nothing here - its modifiers are tick mutations, and
+	# committing now would double-deal a DoT's first tick.
 	if spec.period <= 0.0:
 		for staged: AttributeBaseMutation in evaluation.base_mutations:
 			attributes.commit_base_write(staged)
 
 	var active: ActiveGameplayEffect = ActiveGameplayEffect.new(spec, order)
 	active.contributed_modifiers = evaluation.contributions
-	attributes.add_contributions(evaluation.contributions)
 
 	var is_instant: bool = spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT
-	if not is_instant:
+	if is_instant:
+		# Grants no tags and never persists: nothing to attach.
+		attributes.add_contributions(evaluation.contributions)
+	else:
+		active.granted_tags = spec.get_granted_tags().duplicate()
 		active.handle = handles.new_handle()
 		handles.register(active)
 		active.component_states = spec.prepared_component_states()
-		# Instant effects grant no tags: they leave nothing behind to hold one.
-		for tag: StringName in spec.get_granted_tags():
-			_grant_tag(active, tag)
 		_active.append(active)
-		if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
-			live_magnitudes.create_bindings_for(active)
+		# Decides the starting inhibited/attached state - an ongoing_query
+		# already unsatisfied registers inhibited from the start.
+		inhibition.initialize(active)
 
 	recompose_and_emit(spec)
 
@@ -245,13 +250,6 @@ func _commit(
 	_dispatch_events(spec)
 	_notify_received(spec)
 	return active
-
-
-func _grant_tag(active: ActiveGameplayEffect, tag: StringName) -> void:
-	var change: GameplayTagRuntime.Change = tags.add(tag)
-	active.granted_tags.append(tag)
-	if owner_asc != null:
-		owner_asc.emit_tag_change(tag, change, tags.count(tag))
 #endregion
 
 
@@ -277,24 +275,29 @@ func _try_refresh(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 		_report_refusal(evaluation)
 		return null
 
-	attributes.remove_contributions_of(existing.application_order)
+	# Only touch the aggregator/bindings if actually attached right now - an
+	# inhibited refresh replaces the receipt but stays detached.
+	var was_attached: bool = existing.state_attached
+	if was_attached:
+		attributes.remove_contributions_of(existing.application_order)
+		live_magnitudes.disconnect_bindings_for(existing)
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
 		attributes.commit_base_write(staged)
 
-	# The old spec's bindings would otherwise keep reacting on behalf of
-	# contributions that no longer exist - disconnected here, before fresh
-	# ones are built for what replaces them.
-	live_magnitudes.disconnect_bindings_for(existing)
 	existing.spec = spec
 	existing.contributed_modifiers = evaluation.contributions
+	existing.granted_tags = spec.get_granted_tags().duplicate()
 	existing.component_states = spec.prepared_component_states()
 	existing.elapsed_time = 0.0
 	existing.completed_ticks = 0
+	existing.period_origin_elapsed = 0.0
+	existing.missed_tick_while_inhibited = false
 	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
 		existing.time_remaining = spec.duration
-	attributes.add_contributions(evaluation.contributions)
-	if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
-		live_magnitudes.create_bindings_for(existing)
+	if was_attached:
+		attributes.add_contributions(evaluation.contributions)
+		if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
+			live_magnitudes.create_bindings_for(existing)
 
 	recompose_and_emit(spec)
 	if owner_asc != null:
@@ -333,21 +336,17 @@ func remove(active: ActiveGameplayEffect) -> void:
 		owner_asc.active_effect_removed.emit(active)
 
 
-## Drop an effect's tags and contributions without recomposing. Separated so
-## a bulk removal can detach everything first and recompose once - per-effect
-## recomposition while others are still registered emits a cascade of
-## intermediate values nobody ever had.
+## Drop an effect's tags/contributions without recomposing, then clear its
+## receipt. Separated from `remove()` so a bulk removal can detach everything
+## first and recompose once. If already detached (inhibited), the receipt
+## was never applied - only clearing it.
 func _detach(active: ActiveGameplayEffect) -> void:
+	if active.state_attached:
+		inhibition.set_attached(active, false)
 	components.notify_removed(active.spec, active, owner_asc)
 	handles.forget(active)
-	for tag: StringName in active.granted_tags:
-		var change: GameplayTagRuntime.Change = tags.remove(tag)
-		if owner_asc != null:
-			owner_asc.emit_tag_change(tag, change, tags.count(tag))
 	active.granted_tags.clear()
 	active.component_states.clear()
-	live_magnitudes.disconnect_bindings_for(active)
-	attributes.remove_contributions_of(active.application_order)
 	active.contributed_modifiers.clear()
 
 
@@ -365,11 +364,8 @@ func remove_effects_from_source(source_node: Node) -> void:
 			remove(_active[index])
 
 
-## Tear down every active effect.
-##
-## Detaches all of them first, empties the registry, then recomposes once from
-## base plus an empty stack. Idempotent: a second call on an already-clean
-## runtime emits nothing at all.
+## Tear down every active effect: detaches all first, empties the registry,
+## then recomposes once. Idempotent - a second call emits nothing.
 func cleanup() -> void:
 	if _active.is_empty():
 		return
@@ -388,10 +384,8 @@ func cleanup() -> void:
 
 
 #region Recomposition and notification
-## Recompose every attribute once and emit one signal per attribute that moved.
-##
-## `source_spec` is passed through to `attribute_changed` so a listener can tell
-## what caused the change. Null for a removal, which has no spec.
+## Recompose every attribute once and emit one signal per attribute that
+## moved. `source_spec` lets a listener tell what caused it; null for removal.
 func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 	for mutation: AttributeMutationResult in attributes.recompose_all():
 		if not mutation.current_changed:

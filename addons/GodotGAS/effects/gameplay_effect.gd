@@ -18,9 +18,16 @@ enum DurationPolicy {
 }
 
 ## Defines the stacking behaviour for the effect.
-enum StackingPolicy { 
+enum StackingPolicy {
 	FREE,             # Can have infinite overlapping instances of this effect.
 	REFRESH_DURATION  # If applied again, resets the timer of the existing instance instead of adding a new one.
+}
+
+## What a periodic effect's clock does with ticks it owed while inhibited.
+enum PeriodInhibitionPolicy {
+	SKIP_MISSED_TICKS, # Missed ticks are simply gone; the clock never catches up.
+	EXECUTE_IMMEDIATELY_ON_UNINHIBIT, # One tick fires the moment uninhibited, if any were missed.
+	RESET_PERIOD_ON_UNINHIBIT, # No catch-up tick; the period starts counting fresh from uninhibit.
 }
 
 @export_category("Effect Rules")
@@ -37,6 +44,8 @@ enum StackingPolicy {
 ## Periodic modifiers are permanent and do NOT reverse when the effect ends.
 ## Note: For Turn-Based effects, set this to 1.0 to tell the system it is a DoT, not a Buff.
 @export_range(0.0, 999.0, 0.1, "or_greater") var period: float = 0.0
+## What ticks owed while this effect is inhibited do to the periodic clock.
+@export var period_inhibition_policy: PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS
 
 @export_category("Turn Based Settings")
 ## How many turns this effect lasts (only used if policy is TURN_BASED).
@@ -111,6 +120,31 @@ func get_immunity_query() -> GameplayEffectQuery:
 		var immunity: GameplayEffectImmunityComponent = component as GameplayEffectImmunityComponent
 		if immunity != null:
 			return immunity.incoming_effect_query
+	return null
+
+
+## The query this effect's GameplayEffectTargetTagRequirementsComponent stays
+## uninhibited by, or null if it has none/never inhibits. At most one is
+## expected; the first found wins.
+func get_ongoing_query() -> GameplayTagQuery:
+	var requirements: GameplayEffectTargetTagRequirementsComponent = _target_tag_requirements()
+	return requirements.ongoing_query if requirements != null else null
+
+
+## The query this effect's GameplayEffectTargetTagRequirementsComponent
+## removes itself by, or null if it has none.
+func get_removal_query() -> GameplayTagQuery:
+	var requirements: GameplayEffectTargetTagRequirementsComponent = _target_tag_requirements()
+	return requirements.removal_query if requirements != null else null
+
+
+func _target_tag_requirements() -> GameplayEffectTargetTagRequirementsComponent:
+	for component: GameplayEffectComponent in components:
+		var requirements: GameplayEffectTargetTagRequirementsComponent = (
+			component as GameplayEffectTargetTagRequirementsComponent
+		)
+		if requirements != null:
+			return requirements
 	return null
 
 

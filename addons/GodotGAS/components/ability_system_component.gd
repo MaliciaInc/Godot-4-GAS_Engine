@@ -67,6 +67,18 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 ## cap. The attribute named is where the cascade was cut off; its
 ## contribution keeps whatever magnitude it last resolved, not a fresh one.
 signal live_magnitude_cycle_aborted(attribute_name: StringName)
+
+## An active effect's ongoing tag requirement stopped/started being
+## satisfied: its contributions and granted tags just detached (true) or
+## reattached (false). Never emitted for the initial application, and never
+## paired with active_effect_added/removed - the effect stays registered.
+signal active_effect_inhibition_changed(handle: GameplayEffectHandle, inhibited: bool)
+
+## An ongoing/removal requirement reevaluation did not converge within the
+## pass cap - an effect's own granted tag falsified its own ongoing query,
+## most likely. The named effect was left inhibited as a fail-safe rather
+## than removed or left in an undetermined state.
+signal effect_requirement_cycle_aborted(handle: GameplayEffectHandle)
 #endregion
 
 
@@ -123,6 +135,7 @@ func _wire_runtimes() -> void:
 	effects.live_magnitudes.effects = effects
 	effects.handles.owner_asc = self
 	effects.handles.runtime = effects
+	effects.inhibition.effects = effects
 
 	scheduler.effects = effects
 
@@ -179,6 +192,7 @@ func emit_tag_change(tag: StringName, change: GameplayTagRuntime.Change, new_cou
 			tag_removed.emit(tag)
 		_:
 			pass
+	effects.on_owner_tags_changed()
 
 
 ## Emit an attribute change and run the set's dependency hook, in that order.

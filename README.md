@@ -72,6 +72,21 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   ever run. Fireball never has to know every ward that might stop it; the
   ward declares what it stops. The first matching immunity wins; removing
   it lets the same application through again.
+- **An active effect can stay registered but inhibited.**
+  `GameplayEffectTargetTagRequirementsComponent` gains `ongoing_query` and
+  `removal_query` alongside `application_query`. While `ongoing_query` fails,
+  the effect's contributions and granted tags detach - the clock, the
+  registration and the logical receipt of what it grants all survive - and
+  they reattach unchanged the moment it is satisfied again; no
+  `active_effect_added`/`removed` pair, one `active_effect_inhibition_changed`
+  per real transition. `removal_query` removes the effect outright, and
+  refuses application outright if already satisfied. A periodic effect's
+  `period_inhibition_policy` (`SKIP_MISSED_TICKS`, default;
+  `EXECUTE_IMMEDIATELY_ON_UNINHIBIT`; `RESET_PERIOD_ON_UNINHIBIT`) decides
+  what happens to ticks owed while inhibited. Reevaluation runs from
+  `GameplayEffectRuntime` alone, behind a reentrancy guard and a pass cap -
+  an effect whose own granted tag falsifies its own `ongoing_query` settles
+  inhibited rather than oscillating or hanging.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

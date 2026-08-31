@@ -54,8 +54,9 @@ func is_empty() -> bool:
 func matches(active: ActiveGameplayEffect, target_asc: AbilitySystemComponent) -> bool:
 	if active == null or active.spec == null or active.get_effect_def() == null:
 		return false
-	if inhibition == InhibitionFilter.INHIBITED_ONLY:
-		# Inhibition does not exist yet (Task 11): nothing is ever inhibited.
+	if inhibition == InhibitionFilter.ACTIVE_ONLY and active.inhibited:
+		return false
+	if inhibition == InhibitionFilter.INHIBITED_ONLY and not active.inhibited:
 		return false
 	var subject: _MatchSubject = _MatchSubject.new()
 	subject.effect_def = active.get_effect_def()

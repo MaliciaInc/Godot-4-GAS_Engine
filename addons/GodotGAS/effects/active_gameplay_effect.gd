@@ -35,8 +35,22 @@ var application_order: int = -1
 ## effects, which mutate the base instead.
 var contributed_modifiers: Array[AttributeModifierContribution] = []
 
-## Tags this effect granted, so removal drops exactly what it added.
+## The logical receipt of tags this effect grants - kept even while
+## inhibited. Whether it is actually applied to the tag runtime right now is
+## `state_attached`, owned by GameplayEffectInhibitionRuntime alone.
 var granted_tags: Array[StringName] = []
+
+## False while an ongoing-requirement failure has detached this effect's
+## contributions/tags without removing it. It stays registered in `_active`,
+## keeps its clock, and reattaches unchanged if the requirement is satisfied
+## again - see GameplayEffectInhibitionRuntime.
+var inhibited: bool = false
+
+## Whether `granted_tags`/`contributed_modifiers` are currently applied to
+## the tag runtime/aggregator. False exactly when `inhibited` is true, plus
+## the brief window during removal after they have been dropped but before
+## the receipt itself is cleared.
+var state_attached: bool = true
 
 ## Prepared state for each of this application's components, indexed the
 ## same as spec.effect_def.components - null where a component prepared
@@ -50,8 +64,19 @@ var time_remaining: float = 0.0
 ## than a countdown, so ticks cannot drift.
 var elapsed_time: float = 0.0
 
-## How many periodic ticks have already been paid.
+## How many periodic ticks have been paid since `period_origin_elapsed`.
 var completed_ticks: int = 0
+
+## Where the periodic clock currently counts ticks from - normally 0.0
+## (paired with `elapsed_time` from application), but reset to `elapsed_time`
+## by GameplayEffectInhibitionRuntime on uninhibit under a policy that
+## restarts the period. `elapsed_time` itself never resets: it is the total
+## duration/turn clock, unaffected by inhibition.
+var period_origin_elapsed: float = 0.0
+
+## True once a due tick has been skipped while inhibited, for
+## EXECUTE_IMMEDIATELY_ON_UNINHIBIT to know a catch-up tick is owed.
+var missed_tick_while_inhibited: bool = false
 
 ## Tolerance used when deciding whether a tick is due. See advance_clock.
 const TICK_EPSILON_SECONDS: float = 1e-9
@@ -89,7 +114,12 @@ func advance_clock(delta: float) -> int:
 	# nine orders of magnitude larger than the accumulated error and nine
 	# orders smaller than any period a game would use, so it can only ever
 	# decide a boundary case that was meant to be exact.
-	var due: int = floori((elapsed_time + TICK_EPSILON_SECONDS) / spec.period)
+	#
+	# Relative to period_origin_elapsed rather than 0.0, so a period reset
+	# (RESET_PERIOD_ON_UNINHIBIT) can restart the count without touching the
+	# total elapsed_time clock.
+	var since_origin: float = elapsed_time - period_origin_elapsed
+	var due: int = floori((since_origin + TICK_EPSILON_SECONDS) / spec.period)
 	var owed: int = due - completed_ticks
 	return maxi(owed, 0)
 
@@ -98,10 +128,11 @@ func consume_ticks(count: int) -> void:
 	completed_ticks += count
 
 
-## The instant in time the Nth tick was theoretically due, for a cue or event
-## that wants to say when it happened rather than when it was processed.
+## The instant in time the Nth tick (since the current period origin) was
+## theoretically due, for a cue or event that wants to say when it happened
+## rather than when it was processed.
 func tick_time(tick_index: int) -> float:
-	return spec.period * float(tick_index) if is_periodic() else 0.0
+	return period_origin_elapsed + spec.period * float(tick_index) if is_periodic() else 0.0
 #endregion
 
 
