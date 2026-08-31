@@ -17,10 +17,25 @@ enum DurationPolicy {
 	TURN_BASED # Applies math/tags for X turns, handled discretely by an external Turn Manager.
 }
 
-## Defines the stacking behaviour for the effect.
-enum StackingPolicy {
-	FREE,             # Can have infinite overlapping instances of this effect.
-	REFRESH_DURATION  # If applied again, resets the timer of the existing instance instead of adding a new one.
+## Identity two applications are matched by to become one stack instead of
+## two independent active effects.
+enum StackingType {
+	NONE,                 # Every application is its own independent active effect.
+	AGGREGATE_BY_SOURCE,  # Same effect_def AND same source ASC join one stack.
+	AGGREGATE_BY_TARGET,  # Same effect_def on this target joins one stack, any source.
+}
+
+## Whether a successful reapplication restarts a stacked effect's DURATION clock.
+enum StackDurationRefreshPolicy { NEVER, ON_SUCCESSFUL_APPLICATION }
+
+## Whether a successful reapplication restarts a stacked effect's periodic clock.
+enum StackPeriodResetPolicy { NEVER, ON_SUCCESSFUL_APPLICATION }
+
+## What happens to a stack when its clock runs out.
+enum StackExpirationPolicy {
+	CLEAR_ENTIRE_STACK,                       # The whole stack, all counts, is removed.
+	REMOVE_SINGLE_STACK_AND_REFRESH_DURATION, # stack_count -= 1; if >0, duration restarts.
+	REFRESH_DURATION,                         # count is kept; duration restarts.
 }
 
 ## What a periodic effect's clock does with ticks it owed while inhibited.
@@ -31,10 +46,6 @@ enum PeriodInhibitionPolicy {
 }
 
 @export_category("Effect Rules")
-## How this effect behaves if it is applied while already active on the target.
-## FREE = multiple unique stacks, REFRESH_DURATION will refresh existing
-## NOTE: Does not override or decide 'if' a effect stacks
-@export var stacking_policy: StackingPolicy = StackingPolicy.FREE
 ## How long this effect persists on the target.
 @export var policy: DurationPolicy = DurationPolicy.INSTANT
 ## The lifespan of the effect in seconds. Only used if policy is DURATION.
@@ -52,6 +63,34 @@ enum PeriodInhibitionPolicy {
 @export_range(1, 999) var duration_turns: int = 1
 ## If true, periodic effects (period > 0) trigger their math and cues when the turn advances.
 @export var tick_on_turn_start: bool = true
+
+@export_category("Stacking")
+## Identity two applications must share to join one stack. NONE means every
+## application is its own independent active effect - the whole category
+## below does not apply.
+@export var stacking_type: StackingType = StackingType.NONE
+## <= 0 is unlimited. Reaching this count is not itself a failure - see
+## deny_overflow_application.
+@export var stack_limit_count: int = 0
+## False: each standard modifier contributes its single-stack magnitude.
+## True: `resolved_magnitude * stack_count`, recomputed from the authored
+## magnitude whenever the count changes - never an incremental delta.
+@export var factor_in_stack_count: bool = false
+## If true, an application that would exceed stack_limit_count is refused
+## outright instead of being accepted as a non-growing refresh.
+@export var deny_overflow_application: bool = false
+## If true, the entire stack is removed once an overflow is decided,
+## independently of deny_overflow_application.
+@export var clear_stack_on_overflow: bool = false
+## Applied to the same target, with derived source/context, whenever an
+## application overflows this stack's limit.
+@export var overflow_effects: Array[GameplayEffect] = []
+## Whether a successful reapplication restarts the DURATION clock.
+@export var stack_duration_refresh_policy: StackDurationRefreshPolicy = StackDurationRefreshPolicy.NEVER
+## Whether a successful reapplication restarts the periodic clock.
+@export var stack_period_reset_policy: StackPeriodResetPolicy = StackPeriodResetPolicy.NEVER
+## What happens to the stack when its clock runs out.
+@export var stack_expiration_policy: StackExpirationPolicy = StackExpirationPolicy.CLEAR_ENTIRE_STACK
 
 @export_category("Cue Management")
 ## Cues that play exactly once when the effect is first applied to a target.
@@ -172,6 +211,8 @@ func is_silent() -> bool:
 ## tags it grants - the same ground is_silent() already covers. Anything that
 ## can refuse, roll, purge, or otherwise decide during application can.
 func _has_observable_component() -> bool:
+	if stacking_type != StackingType.NONE and not overflow_effects.is_empty():
+		return true
 	for component: GameplayEffectComponent in components:
 		if (
 			component is GameplayEffectTargetTagRequirementsComponent

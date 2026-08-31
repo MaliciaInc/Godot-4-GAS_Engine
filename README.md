@@ -87,6 +87,29 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   `GameplayEffectRuntime` alone, behind a reentrancy guard and a pass cap -
   an effect whose own granted tag falsifies its own `ongoing_query` settles
   inhibited rather than oscillating or hanging.
+- **Stacking has identity, limits and overflow**, replacing the old
+  FREE/REFRESH_DURATION pair. `stacking_type` (`NONE`,
+  `AGGREGATE_BY_SOURCE`, `AGGREGATE_BY_TARGET`) decides which applications
+  join one `ActiveGameplayEffect` instead of becoming independent ones;
+  `stack_limit_count` (unlimited at `<= 0`) caps how far a join can grow. A
+  reapplication always replaces the authoritative spec/contributions/tags
+  with its own - never an incremental delta - and `factor_in_stack_count`
+  decides whether a standard modifier's magnitude is scaled by the current
+  count (an execution calculation is never auto-scaled; it reads
+  `spec.stack_count` itself). Hitting the limit is overflow: it always
+  signals and fires `overflow_effects` on the same target,
+  `deny_overflow_application` refuses the join outright instead of
+  accepting it as a non-growing refresh, and `clear_stack_on_overflow` can
+  drop the whole stack afterward, independently of that. Overflow (and,
+  from Task 13, Additional Effects) specs carry a `chain_depth`, refused
+  past `GameplayEffectRuntime.MAX_EFFECT_CHAIN_DEPTH` so a cycle cannot
+  recurse forever. `stack_duration_refresh_policy`/`stack_period_reset_policy`
+  govern whether a successful reapplication restarts those clocks;
+  `stack_expiration_policy` (`CLEAR_ENTIRE_STACK`,
+  `REMOVE_SINGLE_STACK_AND_REFRESH_DURATION`, `REFRESH_DURATION`) decides
+  what a naturally-expiring clock does to the stack - always restarting it,
+  which is what tells a survived expiration apart from an ordinary
+  reapplication.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

@@ -31,6 +31,11 @@ var handle: GameplayEffectHandle = null
 ## wins.
 var application_order: int = -1
 
+## How many applications this stack represents. Always 1 for
+## `stacking_type == NONE`. Kept synchronized with `spec.stack_count` -
+## GameplayEffectStackingRuntime is the only writer of either.
+var stack_count: int = 1
+
 ## The contributions this effect registered. Empty for instant and periodic
 ## effects, which mutate the base instead.
 var contributed_modifiers: Array[AttributeModifierContribution] = []

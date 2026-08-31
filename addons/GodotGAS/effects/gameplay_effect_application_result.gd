@@ -3,9 +3,8 @@
 ## Replaces a bare ActiveGameplayEffect-or-null: a component can refuse an
 ## application for a reason AttributeEvaluationResult.Status cannot express,
 ## and callers need one typed answer, not a second parallel result type per
-## new refusal source. Later tasks add new Status values here - IMMUNE (T10),
-## stacking statuses (T12), CHAIN_DEPTH_EXCEEDED (T13) - never a competing
-## result type.
+## new refusal source. Later tasks add new Status values here - never a
+## competing result type.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_license: MIT
@@ -18,6 +17,13 @@ enum Status {
 	COMPONENT_REJECTED,
 	EVALUATION_FAILED,
 	IMMUNE,
+	## deny_overflow_application refused an application that would have
+	## exceeded stack_limit_count.
+	STACK_OVERFLOW_DENIED,
+	## spec.chain_depth exceeded GameplayEffectRuntime.MAX_EFFECT_CHAIN_DEPTH
+	## - an overflow_effects (or, from Task 13, Additional Effects) cycle
+	## refused before recursing forever.
+	CHAIN_DEPTH_EXCEEDED,
 }
 
 var status: Status = Status.SUCCESS

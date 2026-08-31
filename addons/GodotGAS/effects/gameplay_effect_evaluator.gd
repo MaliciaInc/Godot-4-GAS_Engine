@@ -211,6 +211,16 @@ static func _stage_execution_deltas(
 
 
 #region Modifiers
+## A standard modifier's resolved magnitude, scaled by the stack it belongs
+## to when the effect asks for it. Never applies to an execution
+## calculation's own math - that reads spec.stack_count itself and decides.
+static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
+	var magnitude: float = spec.get_magnitude(index)
+	if spec.effect_def.factor_in_stack_count:
+		return magnitude * float(spec.stack_count)
+	return magnitude
+
+
 ## Every attribute a standard modifier writes to, without duplicates.
 static func _modifier_attribute_names(spec: GameplayEffectSpec) -> Array[StringName]:
 	var names: Array[StringName] = []
@@ -249,7 +259,7 @@ static func _build_contributions(
 		if modifier == null or modifier.attribute_name.is_empty():
 			continue
 
-		var magnitude: float = spec.get_magnitude(index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index)
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = modifier.attribute_name
@@ -319,7 +329,7 @@ static func _compose_for_attribute(
 		if modifier == null or modifier.attribute_name != attribute_name:
 			continue
 
-		var magnitude: float = spec.get_magnitude(index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index)
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name

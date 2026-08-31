@@ -247,6 +247,16 @@
         "left": "addons/GodotGAS/effects/gameplay_effect_component_runtime.gd:_notify_runtime",
         "right": "addons/GodotGAS/effects/gameplay_effect_component_runtime.gd:notify_removed",
         "reason": "Both walk the same components/states pairing, but one builds a GameplayEffectComponentRuntimeContext for on_effect_applied/on_effect_executed and the other a GameplayEffectComponentRemovalContext for on_effect_removed - the same two deliberately-separate DTOs declared above. Sharing one iterator between them would mean it either returns Variant or takes a context-building Callable per call site, in both cases hiding which context type a given notification actually builds behind a layer neither reader nor the type checker can see through."
+      },
+      {
+        "left": "test/unit/test_gameplay_effect_stacking.gd:test_the_three_expiration_policies_govern_what_survives",
+        "right": "test/unit/test_gameplay_effect_stacking.gd:test_turn_based_expiration_uses_remaining_turns_not_seconds",
+        "reason": "Task 12's own doc lists these as two separate required tests: the same three StackExpirationPolicy values answering the identical question once for a DURATION effect's seconds and once for a TURN_BASED effect's remaining_turns - the parallel exists specifically to prove the policies never convert one unit into the other. Merging them into one parametrized test would hide that a duration-clock bug and a turn-clock bug are two distinct regressions this suite needs to catch independently."
+      },
+      {
+        "left": "test/unit/*.gd:_*_cases",
+        "right": "test/unit/*.gd:_*_cases",
+        "reason": "Same shape as the *Case._init wildcard above, one level up: every use_parameters() case-list builder is `var x = XCase.new(); x.field = ...; return [x, ...] as Array[XCase]`, because that is the only way GDScript builds a handful of named-field objects without a keyword constructor. Two builders are masked-similar because they are both that one mechanical shape, not because one was copied from the other - contorting a case list's construction to dodge the score would make the test harder to read for nothing real."
       }
     ]
   }

@@ -1,17 +1,13 @@
 ## One application of a GameplayEffect: the immutable definition plus all the
 ## runtime state that belongs to this application and no other.
 ##
-## Two upstream defects are fixed here.
-##
-## **Runtime magnitudes were keyed by attribute name.** An effect with
-## `Attack ADD +10` and `Attack MULTIPLY 2` had one slot for both, so the
-## second modifier overwrote the first. The key is the modifier's index
-## inside `effect_def.modifiers`, stable for the spec's life.
-##
-## **One spec was handed to several targets.** A spec is RefCounted and holds
-## mutable state, so an AoE let target A's evaluation change what target B
-## received. `create_application_copy()` gives each target its own, sharing
-## only the immutable definition.
+## Two upstream defects are fixed here. Runtime magnitudes were keyed by
+## attribute name, so `Attack ADD +10` and `Attack MULTIPLY 2` shared one slot
+## and the second overwrote the first - the key is now the modifier's index
+## inside `effect_def.modifiers`, stable for the spec's life. And one spec was
+## handed to several targets, so an AoE let target A's evaluation change what
+## target B received - `create_application_copy()` gives each target its own,
+## sharing only the immutable definition.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -56,40 +52,43 @@ var remaining_turns: int = 0
 ## Runtime period, mutable the same way.
 var period: float = 0.0
 
+## Synchronized with the ActiveGameplayEffect stack it joins, if any - always
+## 1 outside GameplayEffectStackingRuntime, the only writer.
+var stack_count: int = 1
+
+## Overflow_effects hops that produced this application: 0 for a normal cast,
+## parent+1 for an overflow child. Refused past
+## GameplayEffectRuntime.MAX_EFFECT_CHAIN_DEPTH so a cycle cannot recurse forever.
+var chain_depth: int = 0
+
 ## Runtime override per modifier index, set by an execution calculation
-## during evaluation. Private and generic on purpose: the public contract is
-## get_magnitude/set_magnitude, so the storage shape can change without every
-## execution calculation in the game changing with it. Distinct from authored
-## magnitude resolution - `_evaluation_magnitude_cache` below - which this
-## always wins over: an override is the runtime overruling the authoring, not
-## a second copy of it.
+## during evaluation. Private and generic: the public contract is
+## get_magnitude/set_magnitude, so the storage shape can change freely.
+## Always wins over authored resolution (`_evaluation_magnitude_cache`
+## below) - an override is the runtime overruling the authoring.
 var _runtime_magnitude_overrides: Dictionary[int, float] = {}
 
-## Every authored modifier magnitude resolved for the evaluation currently in
-## progress, keyed by modifier index. Rebuilt at the start of every
-## evaluation - see `_begin_evaluation_cache()` - so a LIVE magnitude never
-## answers with a value a previous evaluation happened to resolve.
+## Every authored modifier magnitude resolved for the evaluation in progress,
+## keyed by modifier index. Rebuilt each evaluation (`_begin_evaluation_cache`)
+## so a LIVE magnitude never answers with a stale, previously-resolved value.
 var _evaluation_magnitude_cache: Dictionary[int, float] = {}
 
 ## Whether an evaluation is currently resolving this spec. Gates reading
-## `_evaluation_magnitude_cache`: outside evaluation, a cached value from the
-## last one that ran would be exactly the staleness `get_magnitude()` must
-## not hand back.
+## `_evaluation_magnitude_cache`: outside evaluation, a value the last run
+## resolved is exactly the staleness `get_magnitude()` must not hand back.
 var _evaluation_active: bool = false
 
 ## Values the caster supplied at cast time for this spec's
 ## GameplaySetByCallerMagnitudes, keyed by data tag.
 var _set_by_caller: Dictionary[StringName, float] = {}
 
-## Set once this spec has begun evaluating. `set_set_by_caller()` refuses
-## after this: a SetByCaller value is pre-application input, not something a
-## running evaluation should see change under it.
+## Set once evaluation has begun. `set_set_by_caller()` refuses after this -
+## it is pre-application input, not something a running evaluation sees change.
 var _sealed: bool = false
 
-## Set when anything asked for a modifier index this effect does not have.
-## The evaluator turns this into INVALID_MODIFIER_INDEX and fails the whole
-## application. Returning 0.0 and carrying on would let a typo in an execution
-## calculation ship as a silently weaker ability.
+## Set when anything asked for a modifier index this effect does not have -
+## the evaluator turns this into INVALID_MODIFIER_INDEX and fails the whole
+## application, rather than letting a typo ship as a silently weaker ability.
 var _invalid_magnitude_access: bool = false
 
 ## Every capture this spec's execution calculations declared, keyed by the
@@ -236,6 +235,7 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.duration = duration
 	copy.remaining_turns = remaining_turns
 	copy.period = period
+	copy.chain_depth = chain_depth
 	copy.context = context.create_application_copy() if context != null else null
 	copy.dynamic_tags = dynamic_tags.duplicate()
 	copy.source_tags_snapshot = source_tags_snapshot.duplicate()

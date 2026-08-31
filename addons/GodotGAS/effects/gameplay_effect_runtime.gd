@@ -30,6 +30,12 @@ var handles: GameplayEffectHandleRegistry = GameplayEffectHandleRegistry.new()
 ## Owns inhibited/attached state and ongoing/removal tag-requirement
 ## reevaluation.
 var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntime.new()
+## Owns stack identity, growth and the receipt swap a reapplication makes.
+var stacking: GameplayEffectStackingRuntime = GameplayEffectStackingRuntime.new()
+
+## Overflow_effects (and, from Task 13, Additional Effects) are refused past
+## this depth, so a cycle cannot recurse forever.
+const MAX_EFFECT_CHAIN_DEPTH: int = 32
 
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
@@ -121,12 +127,21 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if spec == null or spec.effect_def == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
 
+	if spec.chain_depth > MAX_EFFECT_CHAIN_DEPTH:
+		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.CHAIN_DEPTH_EXCEEDED, spec)
+
 	if _is_immune_to(spec):
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.IMMUNE, spec)
 
 	var effect: GameplayEffect = spec.effect_def
 	if not components.validate_all(effect).is_ok():
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_DEFINITION, spec)
+
+	# Detected before the rest of preflight: which path this application
+	# takes - fresh active effect or a join onto an existing stack - decides
+	# nothing about whether it is a legal application, only what happens once
+	# it is one.
+	var stack_candidate: ActiveGameplayEffect = stacking.find_candidate(spec)
 
 	var request: GameplayEffectComponentApplyRequest = components.build_request(spec, owner_asc)
 	if not components.can_apply_all(request).is_allowed():
@@ -149,17 +164,21 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 		components.discard_for(spec)
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
 
-	var refreshed: ActiveGameplayEffect = _try_refresh(spec)
-	if refreshed != null:
-		purge.commit()
-		return GameplayEffectApplicationResult.ok(spec, refreshed)
+	if stack_candidate != null:
+		var stack_result: GameplayEffectApplicationResult = stacking.apply_to_existing(stack_candidate, spec)
+		if stack_result.is_ok():
+			purge.commit()
+		else:
+			purge.rollback()
+			components.discard_for(spec)
+		return stack_result
 
 	var order: int = _next_application_order
-	var evaluation: GameplayEffectEvaluationResult = _evaluate(spec, order)
+	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, order)
 	if not evaluation.is_ok():
 		purge.rollback()
 		components.discard_for(spec)
-		_report_refusal(evaluation)
+		report_refusal(evaluation)
 		return GameplayEffectApplicationResult.failure(
 			GameplayEffectApplicationResult.Status.EVALUATION_FAILED,
 			spec, evaluation.status, evaluation.error_attribute_name
@@ -184,7 +203,9 @@ func _is_immune_to(spec: GameplayEffectSpec) -> bool:
 	return false
 
 
-func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluationResult:
+## Public: also called by GameplayEffectStackingRuntime, which needs to
+## re-evaluate a spec against a stack's own application_order.
+func evaluate_spec(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluationResult:
 	var request: GameplayEffectEvaluator.Request = GameplayEffectEvaluator.Request.new()
 	request.spec = spec
 	request.attributes = attributes
@@ -206,7 +227,7 @@ static func _mode_for(spec: GameplayEffectSpec) -> GameplayEffectEvaluator.Mode:
 	return GameplayEffectEvaluator.Mode.CONTRIBUTION
 
 
-func _report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
+func report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
 	if owner_asc == null:
 		return
 	owner_asc.effect_application_refused.emit(evaluation.status, evaluation.error_attribute_name)
@@ -225,6 +246,7 @@ func _commit(
 
 	var active: ActiveGameplayEffect = ActiveGameplayEffect.new(spec, order)
 	active.contributed_modifiers = evaluation.contributions
+	active.stack_count = spec.stack_count
 
 	var is_instant: bool = spec.effect_def.policy == GameplayEffect.DurationPolicy.INSTANT
 	if is_instant:
@@ -246,85 +268,22 @@ func _commit(
 		owner_asc.active_effect_added.emit(active)
 
 	components.notify_applied(spec, active, owner_asc)
-	_play_cues(spec.effect_def.application_cue_tags, spec)
-	_dispatch_events(spec)
-	_notify_received(spec)
+	play_cues(spec.effect_def.application_cue_tags, spec)
+	dispatch_events(spec)
+	notify_received(spec)
 	return active
 #endregion
 
 
-#region Refresh
-## Reapply an effect whose stacking policy is REFRESH_DURATION. The logical
-## instance survives: contributions/snapshot are replaced and its clock
-## restarts. Emits `active_effect_refreshed` once, never a remove/add pair -
-## a UI that saw one would tear down and rebuild an icon that never actually
-## went away. The granted tag refcount stays at one for the same reason.
-func _try_refresh(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
-	var effect: GameplayEffect = spec.effect_def
-	if effect.stacking_policy != GameplayEffect.StackingPolicy.REFRESH_DURATION:
-		return null
-	if not _is_refreshable_policy(effect.policy):
-		return null
-
-	var existing: ActiveGameplayEffect = _find_active_of(effect)
-	if existing == null:
-		return null
-
-	var evaluation: GameplayEffectEvaluationResult = _evaluate(spec, existing.application_order)
-	if not evaluation.is_ok():
-		_report_refusal(evaluation)
-		return null
-
-	# Only touch the aggregator/bindings if actually attached right now - an
-	# inhibited refresh replaces the receipt but stays detached.
-	var was_attached: bool = existing.state_attached
-	if was_attached:
-		attributes.remove_contributions_of(existing.application_order)
-		live_magnitudes.disconnect_bindings_for(existing)
-	for staged: AttributeBaseMutation in evaluation.base_mutations:
-		attributes.commit_base_write(staged)
-
-	existing.spec = spec
-	existing.contributed_modifiers = evaluation.contributions
-	existing.granted_tags = spec.get_granted_tags().duplicate()
-	existing.component_states = spec.prepared_component_states()
-	existing.elapsed_time = 0.0
-	existing.completed_ticks = 0
-	existing.period_origin_elapsed = 0.0
-	existing.missed_tick_while_inhibited = false
-	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
-		existing.time_remaining = spec.duration
-	if was_attached:
-		attributes.add_contributions(evaluation.contributions)
-		if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
-			live_magnitudes.create_bindings_for(existing)
-
-	recompose_and_emit(spec)
-	if owner_asc != null:
-		owner_asc.active_effect_refreshed.emit(existing)
-	components.notify_applied(spec, existing, owner_asc)
-	_play_cues(effect.application_cue_tags, spec)
-	_dispatch_events(spec)
-	_notify_received(spec)
-	return existing
-
-
-static func _is_refreshable_policy(policy: GameplayEffect.DurationPolicy) -> bool:
-	return (
-		policy == GameplayEffect.DurationPolicy.DURATION
-		or policy == GameplayEffect.DurationPolicy.TURN_BASED
-	)
-
-
-func _find_active_of(effect: GameplayEffect) -> ActiveGameplayEffect:
-	for active: ActiveGameplayEffect in _active:
-		if active.get_effect_def() == effect:
-			return active
-	return null
-#endregion
-
-
 #region Removal
+## Called by the scheduler when `active`'s own clock (duration or turns)
+## reaches zero naturally - as opposed to `remove()` (gameplay code, or a
+## removal query), which always takes the whole stack down regardless of
+## stack_expiration_policy. See GameplayEffectStackingRuntime.expire().
+func expire(active: ActiveGameplayEffect) -> void:
+	stacking.expire(active)
+
+
 ## Remove one effect: drop its tags and contributions, then recompose.
 func remove(active: ActiveGameplayEffect) -> void:
 	if active == null or not _active.has(active):
@@ -396,7 +355,8 @@ func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 
 
 #region Cues and events
-func _play_cues(cue_tags: Array[StringName], spec: GameplayEffectSpec) -> void:
+## Public: also called by GameplayEffectStackingRuntime after a reapplication.
+func play_cues(cue_tags: Array[StringName], spec: GameplayEffectSpec) -> void:
 	if owner_asc == null:
 		return
 	for cue_tag: StringName in cue_tags:
@@ -412,13 +372,13 @@ func _cue_params_for(cue_tag: StringName, spec: GameplayEffectSpec) -> GameplayC
 	return params
 
 
-func _dispatch_events(spec: GameplayEffectSpec) -> void:
+func dispatch_events(spec: GameplayEffectSpec) -> void:
 	if owner_asc == null:
 		return
 	owner_asc.dispatch_effect_events(spec)
 
 
-func _notify_received(spec: GameplayEffectSpec) -> void:
+func notify_received(spec: GameplayEffectSpec) -> void:
 	if owner_asc == null:
 		return
 	owner_asc.effect_received.emit(owner_asc.find_source_asc(spec), spec)
@@ -428,9 +388,9 @@ func _notify_received(spec: GameplayEffectSpec) -> void:
 ## scheduler, which owns when a tick is due.
 func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 	var spec: GameplayEffectSpec = active.spec
-	var evaluation: GameplayEffectEvaluationResult = _evaluate(spec, active.application_order)
+	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, active.application_order)
 	if not evaluation.is_ok():
-		_report_refusal(evaluation)
+		report_refusal(evaluation)
 		return
 
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
@@ -438,6 +398,6 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 
 	recompose_and_emit(spec)
 	components.notify_executed(spec, active, owner_asc)
-	_play_cues(spec.effect_def.periodic_cue_tags, spec)
-	_dispatch_events(spec)
+	play_cues(spec.effect_def.periodic_cue_tags, spec)
+	dispatch_events(spec)
 #endregion

@@ -113,8 +113,15 @@ static func granting(effect: GameplayEffect, tags: Array[StringName]) -> Gamepla
 	return effect
 
 
+## The F2 REFRESH_DURATION shape: one logical instance per target, never a
+## second stack, reapplication restarts duration/period. Expressed now as a
+## stack limited to 1 - overflow (any reapplication past the first) is
+## accepted by default and settles as a pure refresh, never denied.
 static func refreshing(effect: GameplayEffect) -> GameplayEffect:
-	effect.stacking_policy = GameplayEffect.StackingPolicy.REFRESH_DURATION
+	effect.stacking_type = GameplayEffect.StackingType.AGGREGATE_BY_TARGET
+	effect.stack_limit_count = 1
+	effect.stack_duration_refresh_policy = GameplayEffect.StackDurationRefreshPolicy.ON_SUCCESSFUL_APPLICATION
+	effect.stack_period_reset_policy = GameplayEffect.StackPeriodResetPolicy.ON_SUCCESSFUL_APPLICATION
 	return effect
 
 
@@ -220,6 +227,49 @@ static func immune_to(effect: GameplayEffect, query: GameplayEffectQuery) -> Gam
 	var immunity: GameplayEffectImmunityComponent = GameplayEffectImmunityComponent.new()
 	immunity.incoming_effect_query = query
 	effect.components.append(immunity)
+	return effect
+
+
+## Turns `effect` into a stacked effect under `type`. `limit` <= 0 is
+## unlimited.
+static func stacked(
+	effect: GameplayEffect,
+	stacking_type: GameplayEffect.StackingType,
+	limit: int = 0,
+	factor_in_count: bool = false
+) -> GameplayEffect:
+	effect.stacking_type = stacking_type
+	effect.stack_limit_count = limit
+	effect.factor_in_stack_count = factor_in_count
+	return effect
+
+
+static func with_overflow_effects(
+	effect: GameplayEffect,
+	on_overflow: Array[GameplayEffect],
+	deny_application: bool = false,
+	clear_on_overflow: bool = false
+) -> GameplayEffect:
+	effect.overflow_effects = on_overflow
+	effect.deny_overflow_application = deny_application
+	effect.clear_stack_on_overflow = clear_on_overflow
+	return effect
+
+
+static func with_stack_expiration_policy(
+	effect: GameplayEffect, expiration_policy: GameplayEffect.StackExpirationPolicy
+) -> GameplayEffect:
+	effect.stack_expiration_policy = expiration_policy
+	return effect
+
+
+static func with_stack_clock_policies(
+	effect: GameplayEffect,
+	duration_policy: GameplayEffect.StackDurationRefreshPolicy = GameplayEffect.StackDurationRefreshPolicy.NEVER,
+	period_policy: GameplayEffect.StackPeriodResetPolicy = GameplayEffect.StackPeriodResetPolicy.NEVER
+) -> GameplayEffect:
+	effect.stack_duration_refresh_policy = duration_policy
+	effect.stack_period_reset_policy = period_policy
 	return effect
 #endregion
 

@@ -79,6 +79,14 @@ signal active_effect_inhibition_changed(handle: GameplayEffectHandle, inhibited:
 ## most likely. The named effect was left inhibited as a fail-safe rather
 ## than removed or left in an undetermined state.
 signal effect_requirement_cycle_aborted(handle: GameplayEffectHandle)
+
+## A stack's count actually changed - growth, a non-growing overflow never
+## emits this, nor does an unchanged expiration policy re-set at the same
+## count.
+signal active_effect_stack_changed(handle: GameplayEffectHandle, old_count: int, new_count: int)
+
+## A stack was already at its limit when another application arrived.
+signal active_effect_stack_overflowed(handle: GameplayEffectHandle)
 #endregion
 
 
@@ -136,6 +144,7 @@ func _wire_runtimes() -> void:
 	effects.handles.owner_asc = self
 	effects.handles.runtime = effects
 	effects.inhibition.effects = effects
+	effects.stacking.effects = effects
 
 	scheduler.effects = effects
 

@@ -63,7 +63,7 @@ func _advance_one(active: ActiveGameplayEffect, delta: float) -> void:
 		return
 	active.time_remaining -= delta
 	if active.time_remaining <= 0.0:
-		effects.remove(active)
+		effects.expire(active)
 
 
 ## Run the ticks this effect owes, up to the per-update cap. Returns the
@@ -148,5 +148,5 @@ func _advance_one_turn(active: ActiveGameplayEffect) -> void:
 
 	active.spec.remaining_turns -= 1
 	if active.spec.remaining_turns <= 0:
-		effects.remove(active)
+		effects.expire(active)
 #endregion
