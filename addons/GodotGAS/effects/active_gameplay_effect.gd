@@ -19,6 +19,19 @@
 @icon("res://addons/GodotGAS/icons/godot_gas_asc.svg")
 class_name ActiveGameplayEffect extends RefCounted
 
+## Why an active effect stopped being active. Natural (the clock ran out on
+## its own) fires on_natural_expiration; every other gameplay-caused removal
+## is premature and fires on_premature_removal; both fire on_any_removal.
+## ASC_CLEANUP fires neither - see GameplayEffectAdditionalEffectsComponent.
+enum RemovalReason {
+	NATURAL_EXPIRATION,
+	EXPLICIT,
+	CLEANSE,
+	SOURCE_REMOVED,
+	STACK_OVERFLOW,
+	ASC_CLEANUP,
+}
+
 ## This application's own spec. Never shared with another target.
 var spec: GameplayEffectSpec = null
 

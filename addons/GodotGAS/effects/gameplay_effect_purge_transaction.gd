@@ -41,6 +41,13 @@ var _runtime: GameplayEffectRuntime = null
 var _removed: Array[ActiveGameplayEffect] = []
 var _removed_at: Array[int] = []
 
+## Parallel to `_removed`: whether each was actually attached at the moment
+## it was purged. An inhibited effect's tags/contributions were never
+## applied, so there is nothing to drop for it here and nothing to restore
+## on rollback - touching them anyway would decrement a tag another active
+## effect might still legitimately hold.
+var _was_attached: Array[bool] = []
+
 var _tag_removals: Array[TagRemoval] = []
 var _attribute_mutations: Array[AttributeMutationResult] = []
 
@@ -70,9 +77,12 @@ static func begin(
 			continue
 		transaction._removed.append(active)
 		transaction._removed_at.append(index)
-		for tag: StringName in active.granted_tags:
-			transaction._tag_removals.append(_remove_one_tag(runtime, tag))
-		runtime.attributes.remove_contributions_of(active.application_order)
+		var was_attached: bool = active.state_attached
+		transaction._was_attached.append(was_attached)
+		if was_attached:
+			for tag: StringName in active.granted_tags:
+				transaction._tag_removals.append(_remove_one_tag(runtime, tag))
+			runtime.attributes.remove_contributions_of(active.application_order)
 		runtime.extract_active(active)
 		runtime.handles.forget(active)
 
@@ -100,8 +110,8 @@ static func _remove_one_tag(runtime: GameplayEffectRuntime, tag: StringName) -> 
 #region Resolve
 ## The incoming effect succeeded, by refresh or by full application. Announce
 ## exactly what detaching already decided, once each, in the order it
-## happened - the same signals an ordinary `remove()` of each effect would
-## have produced.
+## happened - the same notifications and signals an ordinary `remove()` of
+## each effect would have produced, reason CLEANSE.
 func commit() -> void:
 	if _resolved:
 		return
@@ -115,10 +125,14 @@ func commit() -> void:
 		if mutation.current_changed and owner_asc != null:
 			owner_asc.emit_attribute_changed(mutation, null)
 	for active: ActiveGameplayEffect in _removed:
+		_runtime.components.notify_removed(active.spec, active, owner_asc)
 		active.granted_tags.clear()
+		active.component_states.clear()
 		active.contributed_modifiers.clear()
+		_runtime.chain.fire_on_removal(active, ActiveGameplayEffect.RemovalReason.CLEANSE)
 		if owner_asc != null:
 			owner_asc.active_effect_removed.emit(active)
+			owner_asc.gameplay_effect_removal_finished.emit(active, ActiveGameplayEffect.RemovalReason.CLEANSE)
 
 
 ## The incoming effect failed. Put every purged effect back exactly as found -
@@ -134,7 +148,8 @@ func rollback() -> void:
 		_runtime.tags.add(removal.tag)
 	for i: int in range(_removed.size() - 1, -1, -1):
 		var active: ActiveGameplayEffect = _removed[i]
-		_runtime.attributes.add_contributions(active.contributed_modifiers)
+		if _was_attached[i]:
+			_runtime.attributes.add_contributions(active.contributed_modifiers)
 		_runtime.restore_active(active, _removed_at[i])
 		_runtime.handles.register(active)
 	if not _removed.is_empty():

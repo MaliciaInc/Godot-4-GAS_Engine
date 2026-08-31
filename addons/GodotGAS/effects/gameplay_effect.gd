@@ -139,6 +139,16 @@ func get_granted_tags() -> Array[StringName]:
 	return tags
 
 
+## This effect's GameplayEffectAdditionalEffectsComponent, or null if it has
+## none. At most one is expected; the first found wins.
+func get_additional_effects_component() -> GameplayEffectAdditionalEffectsComponent:
+	for component: GameplayEffectComponent in components:
+		var additional: GameplayEffectAdditionalEffectsComponent = component as GameplayEffectAdditionalEffectsComponent
+		if additional != null:
+			return additional
+	return null
+
+
 ## The query this effect's GameplayEffectRemoveOtherEffectsComponent purges
 ## by, or null if it has none. At most one is expected; the first found wins.
 func get_remove_other_effects_query() -> GameplayEffectQuery:
@@ -219,6 +229,7 @@ func _has_observable_component() -> bool:
 			or component is GameplayEffectChanceToApplyComponent
 			or component is GameplayEffectCustomCanApplyComponent
 			or component is GameplayEffectRemoveOtherEffectsComponent
+			or component is GameplayEffectAdditionalEffectsComponent
 		):
 			return true
 	return false

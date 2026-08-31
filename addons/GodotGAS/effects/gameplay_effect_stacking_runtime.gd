@@ -142,7 +142,7 @@ func _handle_overflow(existing: ActiveGameplayEffect, spec: GameplayEffectSpec) 
 		result = _refresh_without_growing(existing, spec)
 
 	if effect.clear_stack_on_overflow and effects.active_effects().has(existing):
-		effects.remove(existing)
+		effects.remove(existing, ActiveGameplayEffect.RemovalReason.STACK_OVERFLOW)
 	return result
 
 
@@ -190,14 +190,14 @@ func _apply_overflow_effects(effect: GameplayEffect, incoming_spec: GameplayEffe
 func expire(active: ActiveGameplayEffect) -> void:
 	var effect: GameplayEffect = active.get_effect_def()
 	if effect.stacking_type == GameplayEffect.StackingType.NONE:
-		effects.remove(active)
+		effects.remove(active, ActiveGameplayEffect.RemovalReason.NATURAL_EXPIRATION)
 		return
 	match effect.stack_expiration_policy:
 		GameplayEffect.StackExpirationPolicy.CLEAR_ENTIRE_STACK:
-			effects.remove(active)
+			effects.remove(active, ActiveGameplayEffect.RemovalReason.NATURAL_EXPIRATION)
 		GameplayEffect.StackExpirationPolicy.REMOVE_SINGLE_STACK_AND_REFRESH_DURATION:
 			if active.stack_count <= 1:
-				effects.remove(active)
+				effects.remove(active, ActiveGameplayEffect.RemovalReason.NATURAL_EXPIRATION)
 			else:
 				_settle_expiring(active, active.stack_count - 1)
 		GameplayEffect.StackExpirationPolicy.REFRESH_DURATION:
@@ -256,4 +256,5 @@ func _finish_reapplication(existing: ActiveGameplayEffect, spec: GameplayEffectS
 	effects.play_cues(spec.effect_def.application_cue_tags, spec)
 	effects.dispatch_events(spec)
 	effects.notify_received(spec)
+	effects.chain.fire_on_application(spec)
 #endregion

@@ -271,6 +271,32 @@ static func with_stack_clock_policies(
 	effect.stack_duration_refresh_policy = duration_policy
 	effect.stack_period_reset_policy = period_policy
 	return effect
+
+
+static func conditional_effect(
+	child_effect: GameplayEffect, target_query: GameplayTagQuery = null, source_query: GameplayTagQuery = null
+) -> GameplayEffectConditionalEffect:
+	var conditional: GameplayEffectConditionalEffect = GameplayEffectConditionalEffect.new()
+	conditional.effect = child_effect
+	conditional.target_query = target_query
+	conditional.source_query = source_query
+	return conditional
+
+
+static func with_additional_effects(
+	effect: GameplayEffect,
+	on_application: Array[GameplayEffectConditionalEffect] = [],
+	on_natural_expiration: Array[GameplayEffectConditionalEffect] = [],
+	on_premature_removal: Array[GameplayEffectConditionalEffect] = [],
+	on_any_removal: Array[GameplayEffectConditionalEffect] = []
+) -> GameplayEffect:
+	var component: GameplayEffectAdditionalEffectsComponent = GameplayEffectAdditionalEffectsComponent.new()
+	component.on_application = on_application
+	component.on_natural_expiration = on_natural_expiration
+	component.on_premature_removal = on_premature_removal
+	component.on_any_removal = on_any_removal
+	effect.components.append(component)
+	return effect
 #endregion
 
 

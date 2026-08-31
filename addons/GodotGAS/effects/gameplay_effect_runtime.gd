@@ -32,9 +32,11 @@ var handles: GameplayEffectHandleRegistry = GameplayEffectHandleRegistry.new()
 var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntime.new()
 ## Owns stack identity, growth and the receipt swap a reapplication makes.
 var stacking: GameplayEffectStackingRuntime = GameplayEffectStackingRuntime.new()
+## Fires GameplayEffectAdditionalEffectsComponent's application/removal chains.
+var chain: GameplayEffectChainRuntime = GameplayEffectChainRuntime.new()
 
-## Overflow_effects (and, from Task 13, Additional Effects) are refused past
-## this depth, so a cycle cannot recurse forever.
+## Overflow_effects and Additional Effects are refused past this depth, so a
+## cycle cannot recurse forever.
 const MAX_EFFECT_CHAIN_DEPTH: int = 32
 
 var _active: Array[ActiveGameplayEffect] = []
@@ -271,6 +273,7 @@ func _commit(
 	play_cues(spec.effect_def.application_cue_tags, spec)
 	dispatch_events(spec)
 	notify_received(spec)
+	chain.fire_on_application(spec)
 	return active
 #endregion
 
@@ -284,15 +287,22 @@ func expire(active: ActiveGameplayEffect) -> void:
 	stacking.expire(active)
 
 
-## Remove one effect: drop its tags and contributions, then recompose.
-func remove(active: ActiveGameplayEffect) -> void:
+## Remove one effect: drop its tags and contributions, fire its removal
+## chain, then recompose and announce. `reason` decides which
+## GameplayEffectAdditionalEffectsComponent arrays fire - see
+## GameplayEffectChainRuntime.
+func remove(
+	active: ActiveGameplayEffect, reason: ActiveGameplayEffect.RemovalReason = ActiveGameplayEffect.RemovalReason.EXPLICIT
+) -> void:
 	if active == null or not _active.has(active):
 		return
 	_detach(active)
 	_active.erase(active)
 	recompose_and_emit(null)
+	chain.fire_on_removal(active, reason)
 	if owner_asc != null:
 		owner_asc.active_effect_removed.emit(active)
+		owner_asc.gameplay_effect_removal_finished.emit(active, reason)
 
 
 ## Drop an effect's tags/contributions without recomposing, then clear its
@@ -320,11 +330,12 @@ func remove_effects_from_source(source_node: Node) -> void:
 		return
 	for index: int in range(_active.size() - 1, -1, -1):
 		if _active[index].get_instigator() == source_node:
-			remove(_active[index])
+			remove(_active[index], ActiveGameplayEffect.RemovalReason.SOURCE_REMOVED)
 
 
 ## Tear down every active effect: detaches all first, empties the registry,
-## then recomposes once. Idempotent - a second call emits nothing.
+## then recomposes once. Idempotent - a second call emits nothing. Never
+## fires an Additional Effects chain - ASC_CLEANUP is not a gameplay removal.
 func cleanup() -> void:
 	if _active.is_empty():
 		return
@@ -339,6 +350,7 @@ func cleanup() -> void:
 		return
 	for active: ActiveGameplayEffect in removed:
 		owner_asc.active_effect_removed.emit(active)
+		owner_asc.gameplay_effect_removal_finished.emit(active, ActiveGameplayEffect.RemovalReason.ASC_CLEANUP)
 #endregion
 
 

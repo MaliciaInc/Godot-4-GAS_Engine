@@ -87,6 +87,12 @@ signal active_effect_stack_changed(handle: GameplayEffectHandle, old_count: int,
 
 ## A stack was already at its limit when another application arrived.
 signal active_effect_stack_overflowed(handle: GameplayEffectHandle)
+
+## Every removal, with the typed reason - superset of `active_effect_removed`
+## (kept as the legacy signal every removal still also emits), for a
+## debugger/task that needs to tell a natural expiration from an explicit
+## remove from a cleanse from ASC teardown.
+signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, reason: ActiveGameplayEffect.RemovalReason)
 #endregion
 
 
@@ -145,6 +151,7 @@ func _wire_runtimes() -> void:
 	effects.handles.runtime = effects
 	effects.inhibition.effects = effects
 	effects.stacking.effects = effects
+	effects.chain.effects = effects
 
 	scheduler.effects = effects
 

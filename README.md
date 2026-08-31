@@ -110,6 +110,23 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   what a naturally-expiring clock does to the stack - always restarting it,
   which is what tells a survived expiration apart from an ordinary
   reapplication.
+- **Effects can chain other effects at declared lifecycle points, without a
+  script.** `GameplayEffectAdditionalEffectsComponent` applies
+  `GameplayEffectConditionalEffect` entries - each gated by an optional
+  `target_query`/`source_query`, every configured one required to match -
+  `on_application` once this effect's own application commits,
+  `on_natural_expiration`/`on_premature_removal`/`on_any_removal` once it is
+  removed. A typed `ActiveGameplayEffect.RemovalReason`
+  (`NATURAL_EXPIRATION`, `EXPLICIT`, `CLEANSE`, `SOURCE_REMOVED`,
+  `STACK_OVERFLOW`, `ASC_CLEANUP`) travels every removal path - the
+  scheduler, remove-by-handle/query, the cleanser, a stack overflow, GLoot
+  unequip - and decides which arrays fire; `ASC_CLEANUP` fires none. Every
+  child reuses the exact `chain_depth`/`MAX_EFFECT_CHAIN_DEPTH` guard
+  `overflow_effects` introduced, so a cycle refuses past the limit instead
+  of recursing forever, and a child's own refusal never undoes an already-
+  committed parent. `gameplay_effect_removal_finished(active_effect,
+  reason)` carries the reason to listeners; `active_effect_removed` keeps
+  emitting for every removal as the untyped legacy signal.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -201,7 +218,7 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
-  effects/components/ GameplayEffectComponent and the eight concrete kinds
+  effects/components/ GameplayEffectComponent and the nine concrete kinds
   magnitudes/      typed modifier magnitudes: scalable, attribute-based,
                    SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch
