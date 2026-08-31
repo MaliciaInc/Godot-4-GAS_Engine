@@ -40,7 +40,7 @@ static func is_reversible_charge(effect: GameplayEffect, level: float) -> bool:
 
 
 ## Every modifier subtracts or does nothing at all; none of them reads the
-## value it changes.
+## value it changes; none of them can become dynamic again after resolving.
 ##
 ## Only ADD is allowed. MULTIPLY, DIVIDE and OVERRIDE each depend on the value
 ## they are charged against, so the amount previewed and the amount taken
@@ -48,13 +48,22 @@ static func is_reversible_charge(effect: GameplayEffect, level: float) -> bool:
 ## back. An empty modifier list is legal: a cost list that resolved to nothing
 ## owed on every attribute is a real, declared cost that happens to be free,
 ## not a missing one.
+##
+## A magnitude must be a bare GameplayScalableMagnitude, not an
+## attribute-based, SetByCaller or custom one: `GameplayAbilityCostResolver`
+## is the only code that ever builds this effect, and it always resolves a
+## percentage once into a fixed value before this is asked. Anything else
+## here can only mean the resolver stopped freezing what it resolves.
 static func _is_add_only_non_positive(effect: GameplayEffect, level: float) -> bool:
 	for modifier: GameplayEffectModifier in effect.modifiers:
 		if modifier == null:
 			return false
 		if modifier.operation != GameplayEffectModifier.Operation.ADD:
 			return false
-		if modifier.calculate_magnitude(level) > 0.0:
+		var scalable: GameplayScalableMagnitude = modifier.magnitude as GameplayScalableMagnitude
+		if scalable == null or scalable.value == null:
+			return false
+		if scalable.value.evaluate(level) > 0.0:
 			return false
 	return true
 #endregion

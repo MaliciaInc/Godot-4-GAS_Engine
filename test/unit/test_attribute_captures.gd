@@ -51,20 +51,6 @@ func after_each() -> void:
 	target = null
 
 
-func _definition(
-	actor: GameplayAttributeCaptureDefinition.Actor,
-	attribute_name: StringName,
-	value: GameplayAttributeCaptureDefinition.Value,
-	policy: GameplayAttributeCaptureDefinition.Policy = GameplayAttributeCaptureDefinition.Policy.SNAPSHOT
-) -> GameplayAttributeCaptureDefinition:
-	var definition: GameplayAttributeCaptureDefinition = GameplayAttributeCaptureDefinition.new()
-	definition.actor = actor
-	definition.attribute_name = attribute_name
-	definition.value = value
-	definition.policy = policy
-	return definition
-
-
 func _spec() -> GameplayEffectSpec:
 	var effect: GameplayEffect = Factory.instant([])
 	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
@@ -134,7 +120,7 @@ func test_a_snapshot_captures_the_named_actors_named_value(
 
 	var per_source: bool = case.actor == GameplayAttributeCaptureDefinition.Actor.SOURCE
 	var attribute_name: StringName = ATTACK if per_source else HEALTH
-	var definition: GameplayAttributeCaptureDefinition = _definition(case.actor, attribute_name, case.value)
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(case.actor, attribute_name, case.value)
 	var spec: GameplayEffectSpec = _spec()
 	spec.register_capture(definition)
 	if per_source:
@@ -149,7 +135,7 @@ func test_a_snapshot_captures_the_named_actors_named_value(
 
 func test_a_snapshot_does_not_change_after_the_source_moves_on() -> void:
 	source.set_base(ATTACK, 40.0)
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE, ATTACK, GameplayAttributeCaptureDefinition.Value.BASE
 	)
 	var spec: GameplayEffectSpec = _spec()
@@ -166,7 +152,7 @@ func test_a_snapshot_does_not_change_after_the_source_moves_on() -> void:
 #region Live: never frozen
 func test_a_source_live_capture_tracks_the_source_as_it_changes() -> void:
 	source.set_base(ATTACK, 40.0)
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE,
 		ATTACK,
 		GameplayAttributeCaptureDefinition.Value.BASE,
@@ -185,7 +171,7 @@ func test_a_source_live_capture_tracks_the_source_as_it_changes() -> void:
 
 func test_a_target_live_capture_tracks_the_target_as_it_changes() -> void:
 	target.set_base(HEALTH, 60.0)
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.TARGET,
 		HEALTH,
 		GameplayAttributeCaptureDefinition.Value.BASE,
@@ -257,7 +243,7 @@ func _refusal_cases() -> Array[RefusalCase]:
 func test_a_capture_reports_why_it_could_not_resolve(
 	case: RefusalCase = use_parameters(_refusal_cases())
 ) -> void:
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		case.actor, case.attribute_name, GameplayAttributeCaptureDefinition.Value.CURRENT
 	)
 	var spec: GameplayEffectSpec = _spec()
@@ -276,7 +262,7 @@ func test_a_non_finite_value_is_refused() -> void:
 	# defence the canonical formula has elsewhere - so reaching around it
 	# directly is the only way to exercise the capture's own guard.
 	source.asc.get_attribute(ATTACK).base_value = INF
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE, ATTACK, GameplayAttributeCaptureDefinition.Value.BASE
 	)
 	var spec: GameplayEffectSpec = _spec()
@@ -290,7 +276,7 @@ func test_a_non_finite_value_is_refused() -> void:
 #region Through the real pipeline
 func test_an_execution_calculation_receives_already_resolved_captures() -> void:
 	source.set_base(ATTACK, 25.0)
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE, ATTACK, GameplayAttributeCaptureDefinition.Value.CURRENT
 	)
 	var calculation: CapturingCalculation = CapturingCalculation.new()
@@ -317,10 +303,10 @@ func test_target_a_and_b_get_independent_snapshots_from_one_shared_source() -> v
 	target.set_base(HEALTH, 60.0)
 	target_b.set_base(HEALTH, 90.0)
 
-	var source_capture: GameplayAttributeCaptureDefinition = _definition(
+	var source_capture: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE, ATTACK, GameplayAttributeCaptureDefinition.Value.CURRENT
 	)
-	var target_capture: GameplayAttributeCaptureDefinition = _definition(
+	var target_capture: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.TARGET, HEALTH, GameplayAttributeCaptureDefinition.Value.CURRENT
 	)
 	var calculation: CapturingCalculation = CapturingCalculation.new()
@@ -349,7 +335,7 @@ func test_target_a_and_b_get_independent_snapshots_from_one_shared_source() -> v
 
 
 func test_a_failed_capture_refuses_the_whole_application() -> void:
-	var definition: GameplayAttributeCaptureDefinition = _definition(
+	var definition: GameplayAttributeCaptureDefinition = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE,
 		&"no_such_attribute",
 		GameplayAttributeCaptureDefinition.Value.CURRENT

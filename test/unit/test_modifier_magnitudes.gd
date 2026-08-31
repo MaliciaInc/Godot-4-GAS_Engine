@@ -123,14 +123,37 @@ func test_an_invalid_index_refuses_the_application_instead_of_weakening_it() -> 
 #endregion
 
 
-#region Level scaling
-func test_magnitudes_are_snapshotted_at_the_application_level() -> void:
+#region Level resolution
+## A flat GameplayScalableMagnitude needs nothing but the spec's own level to
+## answer - resolved fresh each time get_magnitude() is asked (outside an
+## evaluation, this is case 3 of its contract: a pure scalable magnitude
+## resolves deterministically from the level alone), never read from a value
+## captured once at construction the way an authored magnitude used to be.
+func test_a_flat_magnitude_resolves_deterministically_from_the_level_alone() -> void:
 	var effect: GameplayEffect = Factory.infinite([Factory.add(ATTACK, 5.0)])
 	var spec: GameplayEffectSpec = GameplayEffectSpec.new(
 		effect, GameplayEffectContext.new(fixture.owner), 3.0
 	)
-	# No curve is attached, so the level does not scale a flat magnitude. The
-	# point is that the value was captured once, at application.
+	# No curve is attached, so the level does not scale a flat magnitude.
 	assert_almost_eq(spec.get_magnitude(0), 5.0, TOLERANCE)
 	assert_almost_eq(spec.level, 3.0, TOLERANCE, "the level travelled with the spec")
+
+
+func test_a_curve_scaled_magnitude_resolves_deterministically_from_the_level() -> void:
+	# Sampling exactly at a control point is exact for any Bezier curve,
+	# tangents included: the curve passes through its own points.
+	var curve: Curve = Curve.new()
+	curve.max_domain = 3.0
+	curve.max_value = 2.0
+	curve.add_point(Vector2(1.0, 1.0))
+	curve.add_point(Vector2(3.0, 2.0))
+	var modifier: GameplayEffectModifier = Factory.modifier(
+		ATTACK, GameplayEffectModifier.Operation.ADD, 0.0
+	)
+	modifier.magnitude = Factory.scalable_magnitude(5.0, curve)
+	var effect: GameplayEffect = Factory.infinite([modifier])
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(
+		effect, GameplayEffectContext.new(fixture.owner), 3.0
+	)
+	assert_almost_eq(spec.get_magnitude(0), 10.0, TOLERANCE, "curve sampled at level 3 (2.0), times 5")
 #endregion

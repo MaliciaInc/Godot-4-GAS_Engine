@@ -113,6 +113,11 @@ static func _resolve_one(
 ## that actually owes something. An attribute whose aggregated total resolved
 ## to zero gets no modifier at all: a declared-but-free cost is not an
 ## unnecessary write.
+##
+## Each modifier's magnitude is a GameplayScalableMagnitude holding the
+## percentage-or-absolute math already done - no curve, no capture, no
+## SetByCaller - so nothing downstream can recompute a percentage mid-commit
+## by resolving this magnitude a second time against state that has moved.
 static func _build_effect(
 	totals: Dictionary[StringName, float], order: Array[StringName]
 ) -> GameplayEffect:
@@ -122,9 +127,13 @@ static func _build_effect(
 		if total <= 0.0:
 			continue
 		var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
-		modifier.attribute_name = String(attribute_name)
+		modifier.attribute_name = attribute_name
 		modifier.operation = GameplayEffectModifier.Operation.ADD
-		modifier.magnitude = -total
+		var fixed_value: GameplayScalableFloat = GameplayScalableFloat.new()
+		fixed_value.value = -total
+		var scalable: GameplayScalableMagnitude = GameplayScalableMagnitude.new()
+		scalable.value = fixed_value
+		modifier.magnitude = scalable
 		modifiers.append(modifier)
 
 	var effect: GameplayEffect = GameplayEffect.new()

@@ -35,7 +35,7 @@ var context: GameplayEffectContext = null
 ## happens to be standing on when it asks.
 var source_asc: AbilitySystemComponent = null
 
-## The ability or effect level these magnitudes were snapshotted at.
+## The ability or effect level authored magnitudes resolve at.
 var level: float = 1.0
 
 ## When this application happened, in seconds.
@@ -53,10 +53,35 @@ var remaining_turns: int = 0
 ## Runtime period, mutable the same way.
 var period: float = 0.0
 
-## Runtime magnitude per modifier index. Private and generic on purpose: the
-## public contract is get_magnitude/set_magnitude, so the storage shape can
-## change without every execution calculation in the game changing with it.
-var _magnitudes: Dictionary[int, float] = {}
+## Runtime override per modifier index, set by an execution calculation
+## during evaluation. Private and generic on purpose: the public contract is
+## get_magnitude/set_magnitude, so the storage shape can change without every
+## execution calculation in the game changing with it. Distinct from authored
+## magnitude resolution - `_evaluation_magnitude_cache` below - which this
+## always wins over: an override is the runtime overruling the authoring, not
+## a second copy of it.
+var _runtime_magnitude_overrides: Dictionary[int, float] = {}
+
+## Every authored modifier magnitude resolved for the evaluation currently in
+## progress, keyed by modifier index. Rebuilt at the start of every
+## evaluation - see `_begin_evaluation_cache()` - so a LIVE magnitude never
+## answers with a value a previous evaluation happened to resolve.
+var _evaluation_magnitude_cache: Dictionary[int, float] = {}
+
+## Whether an evaluation is currently resolving this spec. Gates reading
+## `_evaluation_magnitude_cache`: outside evaluation, a cached value from the
+## last one that ran would be exactly the staleness `get_magnitude()` must
+## not hand back.
+var _evaluation_active: bool = false
+
+## Values the caster supplied at cast time for this spec's
+## GameplaySetByCallerMagnitudes, keyed by data tag.
+var _set_by_caller: Dictionary[StringName, float] = {}
+
+## Set once this spec has begun evaluating. `set_set_by_caller()` refuses
+## after this: a SetByCaller value is pre-application input, not something a
+## running evaluation should see change under it.
+var _sealed: bool = false
 
 ## Set when anything asked for a modifier index this effect does not have.
 ## The evaluator turns this into INVALID_MODIFIER_INDEX and fails the whole
@@ -85,19 +110,6 @@ func _init(
 	duration = in_effect.duration
 	period = in_effect.period
 	remaining_turns = in_effect.duration_turns
-	_snapshot_magnitudes()
-
-
-## Snapshot every modifier's magnitude at this level, by index.
-##
-## Standard magnitudes are snapshotted per application. A later
-## change to the source's stats does not retroactively alter an active buff.
-func _snapshot_magnitudes() -> void:
-	for index: int in effect_def.modifiers.size():
-		var modifier: GameplayEffectModifier = effect_def.modifiers[index]
-		if modifier == null:
-			continue
-		_magnitudes[index] = modifier.calculate_magnitude(level)
 #endregion
 
 
@@ -110,7 +122,18 @@ func _is_valid_index(modifier_index: int) -> bool:
 	return modifier_index >= 0 and modifier_index < modifier_count()
 
 
-## The runtime magnitude of one modifier.
+## The runtime magnitude of one modifier:
+##
+##   1. a runtime override, if an execution calculation set one;
+##   2. this evaluation's already-resolved authored value, if one is
+##      currently being prepared;
+##   3. for a GameplayScalableMagnitude, resolved fresh from just the
+##      level - it needs no capture or ASC, so asking outside evaluation
+##      still answers honestly;
+##   4. anything else asked outside evaluation - a capture or SetByCaller
+##      magnitude with no evaluation in progress to resolve it against -
+##      flags the access and answers 0.0, the same way an out-of-range
+##      index always has, rather than inventing a number.
 ##
 ## An out-of-range index flags the spec rather than returning a quiet zero, and
 ## the evaluator refuses the whole application. The policy lives here, not at
@@ -119,7 +142,24 @@ func get_magnitude(modifier_index: int) -> float:
 	if not _is_valid_index(modifier_index):
 		_invalid_magnitude_access = true
 		return 0.0
-	return _magnitudes.get(modifier_index, 0.0)
+	if _runtime_magnitude_overrides.has(modifier_index):
+		return _runtime_magnitude_overrides[modifier_index]
+	if _evaluation_active and _evaluation_magnitude_cache.has(modifier_index):
+		return _evaluation_magnitude_cache[modifier_index]
+
+	var modifier: GameplayEffectModifier = effect_def.modifiers[modifier_index]
+	if modifier != null:
+		var scalable: GameplayScalableMagnitude = modifier.magnitude as GameplayScalableMagnitude
+		if scalable != null:
+			var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
+			context.spec = self
+			context.level = level
+			var resolved: GameplayMagnitudeResult = scalable.resolve(context)
+			if resolved.is_ok():
+				return resolved.value
+
+	_invalid_magnitude_access = true
+	return 0.0
 
 
 func set_magnitude(modifier_index: int, value: float) -> void:
@@ -130,11 +170,54 @@ func set_magnitude(modifier_index: int, value: float) -> void:
 			+ " is out of range for this effect; the application will be refused."
 		)
 		return
-	_magnitudes[modifier_index] = value
+	_runtime_magnitude_overrides[modifier_index] = value
 
 
 func had_invalid_magnitude_access() -> bool:
 	return _invalid_magnitude_access
+#endregion
+
+
+#region Evaluation cache
+## Begin one evaluation. The authored-magnitude cache starts empty - the
+## evaluator rebuilds it fresh, so a LIVE magnitude read this time can never
+## come from an earlier evaluation - and this spec is sealed against further
+## `set_set_by_caller()` calls from here on.
+func _begin_evaluation_cache() -> void:
+	_evaluation_magnitude_cache.clear()
+	_evaluation_active = true
+	_sealed = true
+
+
+func _end_evaluation_cache() -> void:
+	_evaluation_active = false
+
+
+func _cache_evaluation_magnitude(modifier_index: int, value: float) -> void:
+	_evaluation_magnitude_cache[modifier_index] = value
+#endregion
+
+
+#region SetByCaller
+## Supply a caster-chosen value for a GameplaySetByCallerMagnitude tagged
+## `tag`. Refused once this spec has begun evaluating, once for a bad tag or
+## a non-finite value - the same "reject rather than store garbage" policy
+## `set_magnitude` already has for an out-of-range index.
+func set_set_by_caller(tag: StringName, value: float) -> bool:
+	if _sealed or tag == &"" or not is_finite(value):
+		return false
+	_set_by_caller[tag] = value
+	return true
+
+
+func has_set_by_caller(tag: StringName) -> bool:
+	return _set_by_caller.has(tag)
+
+
+func get_set_by_caller(tag: StringName) -> GameplayMagnitudeResult:
+	if not _set_by_caller.has(tag):
+		return GameplayMagnitudeResult.failure(GameplayMagnitudeResult.Status.MISSING_SET_BY_CALLER)
+	return GameplayMagnitudeResult.ok(_set_by_caller[tag])
 #endregion
 
 
@@ -155,7 +238,13 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.period = period
 	copy.context = context.create_application_copy() if context != null else null
 	copy.dynamic_tags = dynamic_tags.duplicate()
-	copy._magnitudes = _magnitudes.duplicate()
+	copy._runtime_magnitude_overrides = _runtime_magnitude_overrides.duplicate()
+	# SetByCaller values are pre-application input a whole AoE is meant to
+	# share, the same as a SOURCE capture snapshot - duplicated so a later
+	# `set_set_by_caller()` on one copy (before its own evaluation seals it)
+	# cannot be observed through another. copy._sealed starts false: each
+	# copy seals on its own evaluation, not the moment this one was taken.
+	copy._set_by_caller = _set_by_caller.duplicate()
 	# Stable across every copy of one spec: who caused it does not change
 	# per target. A SOURCE snapshot already taken travels with it too, so a
 	# capture common to an AoE reads identically on every target; a TARGET
@@ -212,10 +301,11 @@ func register_capture(definition: GameplayAttributeCaptureDefinition) -> bool:
 	return true
 
 
-## Register every capture this spec's execution calculations declare, and
-## take every SOURCE+SNAPSHOT one now. Idempotent throughout: safe to call
-## once on a shared spec before it is copied for a target, and again -
-## harmlessly - on each copy that already carries an earlier snapshot.
+## Register every capture this spec's execution calculations AND modifier
+## magnitudes declare, and take every SOURCE+SNAPSHOT one now. Idempotent
+## throughout: safe to call once on a shared spec before it is copied for a
+## target, and again - harmlessly - on each copy that already carries an
+## earlier snapshot.
 func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 	if source_asc == null:
 		source_asc = resolved_source_asc
@@ -224,6 +314,11 @@ func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 			if execution == null:
 				continue
 			for definition: GameplayAttributeCaptureDefinition in execution.required_captures():
+				register_capture(definition)
+		for modifier: GameplayEffectModifier in effect_def.modifiers:
+			if modifier == null or modifier.magnitude == null:
+				continue
+			for definition: GameplayAttributeCaptureDefinition in modifier.magnitude.required_captures():
 				register_capture(definition)
 	return capture_source_attributes(source_asc)
 

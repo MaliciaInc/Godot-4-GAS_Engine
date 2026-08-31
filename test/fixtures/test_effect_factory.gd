@@ -9,16 +9,28 @@ class_name TestEffectFactory extends RefCounted
 
 
 #region Modifiers
-## One modifier. Several may target the same attribute; the engine tells them
-## apart by index, which is exactly what the suite has to prove.
+## One modifier, its magnitude a flat GameplayScalableMagnitude. Several
+## modifiers may target the same attribute; the engine tells them apart by
+## index, which is exactly what the suite has to prove.
 static func modifier(
 	attribute_name: StringName, operation: GameplayEffectModifier.Operation, magnitude: float
 ) -> GameplayEffectModifier:
 	var mod: GameplayEffectModifier = GameplayEffectModifier.new()
-	mod.attribute_name = String(attribute_name)
+	mod.attribute_name = attribute_name
 	mod.operation = operation
-	mod.magnitude = magnitude
+	mod.magnitude = scalable_magnitude(magnitude)
 	return mod
+
+
+## A flat GameplayScalableMagnitude, for a modifier or any other authoring
+## surface that takes one directly.
+static func scalable_magnitude(value: float, curve: Curve = null) -> GameplayScalableMagnitude:
+	var scalable_float: GameplayScalableFloat = GameplayScalableFloat.new()
+	scalable_float.value = value
+	scalable_float.scaling_curve = curve
+	var scalable: GameplayScalableMagnitude = GameplayScalableMagnitude.new()
+	scalable.value = scalable_float
+	return scalable
 
 
 static func add(attribute_name: StringName, magnitude: float) -> GameplayEffectModifier:
@@ -138,4 +150,22 @@ static func apply(
 	var instigator: Node = source if source != null else target.get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
 	return target.apply_effect_spec(GameplayEffectSpec.new(effect, context, level))
+#endregion
+
+
+#region Captures
+## One attribute capture declaration, for a GameplayAttributeBasedMagnitude or
+## an execution calculation to register.
+static func capture_definition(
+	actor: GameplayAttributeCaptureDefinition.Actor,
+	attribute_name: StringName,
+	value: GameplayAttributeCaptureDefinition.Value = GameplayAttributeCaptureDefinition.Value.CURRENT,
+	policy: GameplayAttributeCaptureDefinition.Policy = GameplayAttributeCaptureDefinition.Policy.SNAPSHOT
+) -> GameplayAttributeCaptureDefinition:
+	var definition: GameplayAttributeCaptureDefinition = GameplayAttributeCaptureDefinition.new()
+	definition.actor = actor
+	definition.attribute_name = attribute_name
+	definition.value = value
+	definition.policy = policy
+	return definition
 #endregion

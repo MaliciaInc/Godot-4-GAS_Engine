@@ -20,6 +20,20 @@ enum Status {
 	AMBIGUOUS_ATTRIBUTE_WRITE,
 	DIVISION_BY_ZERO,
 	NON_FINITE_VALUE,
+	## A modifier's GameplayMagnitude is null, or otherwise malformed on its
+	## own terms - distinct from INVALID_MODIFIER_INDEX, which means the
+	## index itself was out of range.
+	INVALID_MAGNITUDE_DEFINITION,
+	## A GameplayAttributeBasedMagnitude's capture never resolved.
+	MISSING_CAPTURE,
+	## A GameplaySetByCallerMagnitude's tag was never set and requires one.
+	MISSING_SET_BY_CALLER,
+	## A GameplayCustomMagnitude's calculation refused or returned nothing.
+	MAGNITUDE_CALCULATION_FAILED,
+	## A modifier's magnitude reads, LIVE, the very attribute it writes -
+	## direct self-reference, refused outright rather than evaluated once and
+	## left to loop the moment anything reacts to it.
+	LIVE_MAGNITUDE_CYCLE,
 }
 
 var status: Status = Status.OK

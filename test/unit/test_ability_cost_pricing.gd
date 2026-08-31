@@ -317,8 +317,9 @@ func test_a_reference_changing_after_resolve_does_not_change_the_frozen_charge()
 	assert_almost_eq(
 		resolved.entries[0].resolved_amount, 50.0, TOLERANCE, "the snapshot still reads 50"
 	)
+	var frozen: GameplayScalableMagnitude = resolved.absolute_effect.modifiers[0].magnitude as GameplayScalableMagnitude
 	assert_almost_eq(
-		resolved.absolute_effect.modifiers[0].calculate_magnitude(1.0),
+		frozen.value.evaluate(1.0),
 		-50.0,
 		TOLERANCE,
 		"and the frozen effect still charges 50, not the new reference"

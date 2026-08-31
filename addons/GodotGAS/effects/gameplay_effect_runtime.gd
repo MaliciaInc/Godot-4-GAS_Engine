@@ -23,6 +23,11 @@ var owner_asc: AbilitySystemComponent = null
 var attributes: GameplayAttributeRuntime = null
 var tags: GameplayTagRuntime = null
 
+## Keeps a persistent contribution's LIVE-captured magnitude current. Wired
+## to `self` and `owner_asc` alongside everything else in
+## AbilitySystemComponent._wire_runtimes().
+var live_magnitudes: GameplayLiveMagnitudeRegistry = GameplayLiveMagnitudeRegistry.new()
+
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
 
@@ -207,6 +212,8 @@ func _commit(
 		for tag: StringName in spec.effect_def.granted_tags:
 			_grant_tag(active, tag)
 		_active.append(active)
+		if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
+			live_magnitudes.create_bindings_for(active)
 
 	recompose_and_emit(spec)
 
@@ -255,6 +262,10 @@ func _try_refresh(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
 		attributes.commit_base_write(staged)
 
+	# The old spec's bindings would otherwise keep reacting on behalf of
+	# contributions that no longer exist - disconnected here, before fresh
+	# ones are built for what replaces them.
+	live_magnitudes.disconnect_bindings_for(existing)
 	existing.spec = spec
 	existing.contributed_modifiers = evaluation.contributions
 	existing.elapsed_time = 0.0
@@ -262,6 +273,8 @@ func _try_refresh(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
 		existing.time_remaining = spec.duration
 	attributes.add_contributions(evaluation.contributions)
+	if _mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
+		live_magnitudes.create_bindings_for(existing)
 
 	recompose_and_emit(spec)
 	if owner_asc != null:
@@ -310,6 +323,7 @@ func _detach(active: ActiveGameplayEffect) -> void:
 		if owner_asc != null:
 			owner_asc.emit_tag_change(tag, change, tags.count(tag))
 	active.granted_tags.clear()
+	live_magnitudes.disconnect_bindings_for(active)
 	attributes.remove_contributions_of(active.application_order)
 	active.contributed_modifiers.clear()
 

@@ -52,8 +52,25 @@ static func evaluate(request: Request) -> GameplayEffectEvaluationResult:
 	if request == null or request.spec == null or request.spec.effect_def == null:
 		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.INVALID_SPEC, &"")
 
+	# Brackets every return path below in one place, so a per-evaluation
+	# magnitude cache never leaks into the next evaluation of the same spec -
+	# a PERIODIC tick reusing an earlier tick's LIVE reading would be exactly
+	# the staleness that cache exists to prevent.
+	request.spec._begin_evaluation_cache()
+	var result: GameplayEffectEvaluationResult = _evaluate_inner(request)
+	request.spec._end_evaluation_cache()
+	return result
+
+
+static func _evaluate_inner(request: Request) -> GameplayEffectEvaluationResult:
 	var spec: GameplayEffectSpec = request.spec
 	var result: GameplayEffectEvaluationResult = GameplayEffectEvaluationResult.new()
+
+	# Authored magnitudes resolve once, before executions run, so an
+	# execution calculation's own get_magnitude()/set_magnitude() sees this
+	# evaluation's real values rather than nothing yet prepared.
+	if not _resolve_authored_magnitudes(request, result):
+		return result
 
 	var execution_deltas: Dictionary[StringName, float] = _run_executions(request)
 	if spec.had_invalid_magnitude_access():
@@ -75,6 +92,77 @@ static func evaluate(request: Request) -> GameplayEffectEvaluationResult:
 		_stage_modifier_base_mutations(request, modifier_targets, result)
 
 	return result
+
+
+#region Magnitudes
+## Resolve every modifier's authored magnitude once for this evaluation and
+## cache each by index, so get_magnitude() answers consistently for the rest
+## of it. One modifier failing to resolve fails the whole evaluation, the
+## same as any other refusal here.
+static func _resolve_authored_magnitudes(
+	request: Request, result: GameplayEffectEvaluationResult
+) -> bool:
+	var spec: GameplayEffectSpec = request.spec
+	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
+	context.spec = spec
+	context.source_asc = request.source_asc
+	context.target_asc = request.owner_asc
+	context.level = spec.level
+
+	for index: int in spec.effect_def.modifiers.size():
+		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
+		if modifier == null or modifier.magnitude == null:
+			continue
+		if _is_direct_live_self_cycle(modifier):
+			result.status = AttributeEvaluationResult.Status.LIVE_MAGNITUDE_CYCLE
+			result.error_attribute_name = modifier.attribute_name
+			return false
+		var resolved: GameplayMagnitudeResult = modifier.magnitude.resolve(context)
+		if not resolved.is_ok():
+			result.status = _translate_magnitude_status(resolved.status)
+			result.error_attribute_name = modifier.attribute_name
+			return false
+		spec._cache_evaluation_magnitude(index, resolved.value)
+	return true
+
+
+## A modifier whose magnitude reads, LIVE, the exact TARGET attribute it
+## itself writes: the contribution's own output would be an input to
+## computing itself, on every single read, not merely on a later reactive
+## update - refused before it is ever evaluated once, not just before a
+## GameplayLiveMagnitudeBinding would be created for it.
+static func _is_direct_live_self_cycle(modifier: GameplayEffectModifier) -> bool:
+	var attribute_based: GameplayAttributeBasedMagnitude = modifier.magnitude as GameplayAttributeBasedMagnitude
+	if attribute_based == null or attribute_based.capture == null:
+		return false
+	var capture: GameplayAttributeCaptureDefinition = attribute_based.capture
+	return (
+		capture.policy == GameplayAttributeCaptureDefinition.Policy.LIVE
+		and capture.actor == GameplayAttributeCaptureDefinition.Actor.TARGET
+		and capture.attribute_name == modifier.attribute_name
+	)
+
+
+## GameplayMagnitudeResult's reasons, translated to this evaluator's own
+## vocabulary - the one it already reports through, so a caller checking
+## `result.status` never has to know two different failure enums exist.
+static func _translate_magnitude_status(
+	status: GameplayMagnitudeResult.Status
+) -> AttributeEvaluationResult.Status:
+	match status:
+		GameplayMagnitudeResult.Status.MISSING_CAPTURE:
+			return AttributeEvaluationResult.Status.MISSING_CAPTURE
+		GameplayMagnitudeResult.Status.MISSING_SET_BY_CALLER:
+			return AttributeEvaluationResult.Status.MISSING_SET_BY_CALLER
+		GameplayMagnitudeResult.Status.ATTRIBUTE_NOT_FOUND:
+			return AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
+		GameplayMagnitudeResult.Status.CALCULATION_FAILED:
+			return AttributeEvaluationResult.Status.MAGNITUDE_CALCULATION_FAILED
+		GameplayMagnitudeResult.Status.NON_FINITE_VALUE:
+			return AttributeEvaluationResult.Status.NON_FINITE_VALUE
+		_:
+			return AttributeEvaluationResult.Status.INVALID_MAGNITUDE_DEFINITION
+#endregion
 
 
 #region Execution calculations
@@ -129,9 +217,8 @@ static func _modifier_attribute_names(spec: GameplayEffectSpec) -> Array[StringN
 	for modifier: GameplayEffectModifier in spec.effect_def.modifiers:
 		if modifier == null or modifier.attribute_name.is_empty():
 			continue
-		var name: StringName = StringName(modifier.attribute_name)
-		if not names.has(name):
-			names.append(name)
+		if not names.has(modifier.attribute_name):
+			names.append(modifier.attribute_name)
 	return names
 
 
@@ -165,18 +252,18 @@ static func _build_contributions(
 		var magnitude: float = spec.get_magnitude(index)
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
-			result.error_attribute_name = StringName(modifier.attribute_name)
+			result.error_attribute_name = modifier.attribute_name
 			result.contributions.clear()
 			return
 
 		if modifier.operation == GameplayEffectModifier.Operation.DIVIDE and is_zero_approx(magnitude):
 			result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
-			result.error_attribute_name = StringName(modifier.attribute_name)
+			result.error_attribute_name = modifier.attribute_name
 			result.contributions.clear()
 			return
 
 		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
-		contribution.attribute_name = StringName(modifier.attribute_name)
+		contribution.attribute_name = modifier.attribute_name
 		contribution.operation = modifier.operation
 		contribution.magnitude = magnitude
 		contribution.modifier_index = index
@@ -229,7 +316,7 @@ static func _compose_for_attribute(
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-		if modifier == null or StringName(modifier.attribute_name) != attribute_name:
+		if modifier == null or modifier.attribute_name != attribute_name:
 			continue
 
 		var magnitude: float = spec.get_magnitude(index)

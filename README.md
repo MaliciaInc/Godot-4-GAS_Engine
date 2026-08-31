@@ -35,6 +35,16 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   at the physics boundary into typed hits. One actor wearing several colliders
   arrives as one target, the caster is left out of its own sweep, and anything
   without an ability system is not a target.
+- **Typed modifier magnitudes.** A modifier's "how much" is a
+  `GameplayScalableMagnitude` (a flat value, optionally scaled by a curve
+  against the effect's level), a `GameplayAttributeBasedMagnitude`
+  (`((captured + pre_add) * coefficient) + post_add`, from a source or target
+  attribute), a `GameplaySetByCallerMagnitude` (a value the caster supplies at
+  cast time, required or defaulted), or a `GameplayCustomMagnitude` (an
+  arbitrary calculation). An attribute-based magnitude may capture LIVE - a
+  persistent contribution then updates on its own as the captured attribute
+  moves, with a direct self-reference refused outright and an indirect
+  reaction cycle bounded so it cannot hang a frame.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -96,6 +106,10 @@ wrong.
 - **Magnitudes are keyed by modifier index**, so an effect with `Attack +10` and
   `Attack x2` keeps both. Upstream keyed by attribute name and the second
   overwrote the first.
+- **A magnitude is a typed Resource, not a bare float plus an optional
+  Curve.** Attribute-based, SetByCaller and custom-calculation magnitudes
+  resolve once per evaluation and are cached for its duration, so a PERIODIC
+  tick never answers with a value an earlier tick resolved.
 - **Base and effective clamps are separate hooks.**
 - **Preview and commit share one evaluator**, so a cost prediction cannot
   disagree with the payment it predicted.
@@ -122,6 +136,8 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
+  magnitudes/      typed modifier magnitudes: scalable, attribute-based,
+                   SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch
   cues/            typed cue params, pooling
   gameplay_tag/    the tag registry and its one grammar

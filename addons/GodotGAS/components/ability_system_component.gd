@@ -57,6 +57,11 @@ signal active_effect_refreshed(active_effect: ActiveGameplayEffect)
 
 ## An activation attempt was refused, with the closed reason why.
 signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntime.ActivationError)
+
+## An indirect LIVE-magnitude cycle did not converge within the reevaluation
+## cap. The attribute named is where the cascade was cut off; its
+## contribution keeps whatever magnitude it last resolved, not a fresh one.
+signal live_magnitude_cycle_aborted(attribute_name: StringName)
 #endregion
 
 
@@ -109,6 +114,8 @@ func _wire_runtimes() -> void:
 	effects.owner_asc = self
 	effects.attributes = attributes
 	effects.tags = tags
+	effects.live_magnitudes.owner_asc = self
+	effects.live_magnitudes.effects = effects
 
 	scheduler.effects = effects
 
