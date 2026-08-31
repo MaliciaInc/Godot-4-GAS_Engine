@@ -87,3 +87,33 @@ func activate_spec(spec: GameplayAbilitySpec, context: GameplayEffectContext = n
 		# already spent creating it, and nothing else will ever end it to
 		# reach the normal release path above.
 		release_execution_instance(spec, instance)
+
+
+#region Pending removal (REMOVE_ON_ACTIVE_END)
+## `spec` retires once every activation currently in flight ends, or
+## immediately if none is - the Task 14 ability-grant removal policy that
+## lets a running cast finish instead of being cut off.
+func mark_pending_removal(spec: GameplayAbilitySpec) -> void:
+	if spec == null:
+		return
+	if spec.active_count <= 0:
+		ability_runtime.remove_ability(spec.handle)
+		return
+	spec.pending_remove = true
+	var callback: Callable = _on_pending_removal_instance_ended.bind(spec)
+	for instance: GameplayAbility in _running_instances(spec):
+		if not instance.ability_ended.is_connected(callback):
+			instance.ability_ended.connect(callback)
+
+
+func _running_instances(spec: GameplayAbilitySpec) -> Array[GameplayAbility]:
+	var instances: Array[GameplayAbility] = spec.active_instances.duplicate()
+	if spec.per_actor_instance != null and is_instance_valid(spec.per_actor_instance):
+		instances.append(spec.per_actor_instance)
+	return instances
+
+
+func _on_pending_removal_instance_ended(_was_cancelled: bool, spec: GameplayAbilitySpec) -> void:
+	if spec.pending_remove and spec.active_count <= 0 and ability_runtime.get_spec(spec.handle) == spec:
+		ability_runtime.remove_ability(spec.handle)
+#endregion

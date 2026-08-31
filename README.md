@@ -127,6 +127,22 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   committed parent. `gameplay_effect_removal_finished(active_effect,
   reason)` carries the reason to listeners; `active_effect_removed` keeps
   emitting for every removal as the untyped legacy signal.
+- **Effects can grant abilities while they are active.**
+  `GameplayEffectGrantAbilitiesComponent` reuses Task 4's grant pipeline
+  exactly - `prepare_ability_grant` in `prepare_application()`,
+  `commit_prepared_grant` in `on_effect_applied()`, matching cleanup in
+  `discard_prepared()` - never a second validator. Each
+  `GameplayEffectAbilityGrant` names a scene, a `GameplayScalableFloat`
+  level, an input slot, and a `RemovalPolicy`:
+  `CANCEL_AND_REMOVE_ON_EFFECT_END` cuts a running activation off
+  immediately, `REMOVE_ON_ACTIVE_END` blocks new activations and waits for
+  the current one to finish, `KEEP_AFTER_EFFECT_END` never retires it. The
+  granted spec's source is a typed `GameplayAbilityEffectSource`, never a
+  bare `Variant`, naming the granting effect's own handle. A stack grants
+  once per active effect, never once per join - a component that reads
+  `GameplayEffectComponentApplyRequest.existing_active_effect` skips
+  re-preparing on a reapplication, and the stack runtime preserves its
+  state across the join instead of erasing it.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -218,7 +234,7 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
-  effects/components/ GameplayEffectComponent and the nine concrete kinds
+  effects/components/ GameplayEffectComponent and the ten concrete kinds
   magnitudes/      typed modifier magnitudes: scalable, attribute-based,
                    SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch

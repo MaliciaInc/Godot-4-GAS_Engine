@@ -146,6 +146,7 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	var stack_candidate: ActiveGameplayEffect = stacking.find_candidate(spec)
 
 	var request: GameplayEffectComponentApplyRequest = components.build_request(spec, owner_asc)
+	request.existing_active_effect = stack_candidate
 	if not components.can_apply_all(request).is_allowed():
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
 

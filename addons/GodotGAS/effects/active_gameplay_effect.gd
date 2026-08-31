@@ -30,6 +30,12 @@ enum RemovalReason {
 	SOURCE_REMOVED,
 	STACK_OVERFLOW,
 	ASC_CLEANUP,
+	## An invariant violation, not a gameplay branch: GameplayEffectGrant-
+	## AbilitiesComponent's post-commit finalization failed after its own
+	## prepare already validated everything. Fires no chain, same as
+	## ASC_CLEANUP - this is the runtime unwinding its own failure, not
+	## something gameplay decided.
+	GRANT_FINALIZATION_FAILED,
 }
 
 ## This application's own spec. Never shared with another target.
@@ -74,6 +80,11 @@ var state_attached: bool = true
 ## same as spec.effect_def.components - null where a component prepared
 ## nothing. Empty for INSTANT and periodic effects, which never persist.
 var component_states: Array[GameplayEffectComponentState] = []
+
+## Every ability handle GameplayEffectGrantAbilitiesComponent actually
+## granted while committing this effect - the receipt removal reads,
+## never the authoring Resource, which may have changed since.
+var granted_ability_handles: Array[GameplayAbilityHandle] = []
 
 ## Seconds left, for a DURATION effect.
 var time_remaining: float = 0.0

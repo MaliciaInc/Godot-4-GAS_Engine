@@ -25,9 +25,13 @@ func fire_on_application(spec: GameplayEffectSpec) -> void:
 
 ## Called after `active` has been detached and dropped from the registry,
 ## before the final removal signal - `reason` decides which arrays fire.
-## ASC_CLEANUP fires nothing.
+## ASC_CLEANUP and GRANT_FINALIZATION_FAILED fire nothing: neither is a
+## gameplay-caused removal.
 func fire_on_removal(active: ActiveGameplayEffect, reason: ActiveGameplayEffect.RemovalReason) -> void:
-	if reason == ActiveGameplayEffect.RemovalReason.ASC_CLEANUP:
+	if (
+		reason == ActiveGameplayEffect.RemovalReason.ASC_CLEANUP
+		or reason == ActiveGameplayEffect.RemovalReason.GRANT_FINALIZATION_FAILED
+	):
 		return
 	var component: GameplayEffectAdditionalEffectsComponent = active.get_effect_def().get_additional_effects_component()
 	if component == null:

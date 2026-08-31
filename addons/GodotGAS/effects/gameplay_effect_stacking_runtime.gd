@@ -64,12 +64,26 @@ func replace_stack_state(
 	existing.stack_count = new_count
 	existing.contributed_modifiers = evaluation.contributions
 	existing.granted_tags = spec.get_granted_tags().duplicate()
-	existing.component_states = spec.prepared_component_states()
+	existing.component_states = _merged_component_states(existing.component_states, spec.prepared_component_states())
 
 	if was_attached:
 		effects.attributes.add_contributions(evaluation.contributions)
 		if GameplayEffectRuntime._mode_for(spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
 			effects.live_magnitudes.create_bindings_for(existing)
+
+
+## A component that opts out of re-preparing on a stack reapplication (see
+## GameplayEffectComponentApplyRequest.existing_active_effect) leaves its
+## slot null in the fresh preparation - this keeps its previous state there
+## instead of erasing it, so state that belongs to the stack as a whole,
+## not to each individual join, survives every reapplication.
+func _merged_component_states(
+	old_states: Array[GameplayEffectComponentState], new_states: Array[GameplayEffectComponentState]
+) -> Array[GameplayEffectComponentState]:
+	for i: int in new_states.size():
+		if new_states[i] == null and i < old_states.size() and old_states[i] != null:
+			new_states[i] = old_states[i]
+	return new_states
 
 
 ## Restarts `existing`'s duration/period clocks per its effect's

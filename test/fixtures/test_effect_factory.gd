@@ -297,6 +297,43 @@ static func with_additional_effects(
 	component.on_any_removal = on_any_removal
 	effect.components.append(component)
 	return effect
+
+
+## Packs a fresh ability instance into a scene, for a GameplayEffectAbilityGrant.
+## Same pack-then-free rule as TestAbilityFactory.give(): packing captures
+## state without consuming the Node, so the template is freed immediately -
+## it was never added to a tree, and nothing else would free it.
+static func ability_scene(ability: GameplayAbility) -> PackedScene:
+	var scene: PackedScene = PackedScene.new()
+	var pack_error: Error = scene.pack(ability)
+	assert(pack_error == OK, "TestEffectFactory: packing a fixture ability failed")
+	ability.free()
+	return scene
+
+
+## Attaches one more grant to `effect`'s GameplayEffectGrantAbilitiesComponent,
+## creating it on first use.
+static func granting_ability(
+	effect: GameplayEffect,
+	scene: PackedScene,
+	removal_policy: GameplayEffectAbilityGrant.RemovalPolicy = GameplayEffectAbilityGrant.RemovalPolicy.CANCEL_AND_REMOVE_ON_EFFECT_END,
+	input_id: int = -1
+) -> GameplayEffect:
+	var grant: GameplayEffectAbilityGrant = GameplayEffectAbilityGrant.new()
+	grant.ability_scene = scene
+	grant.removal_policy = removal_policy
+	grant.input_id = input_id
+
+	var component: GameplayEffectGrantAbilitiesComponent = null
+	for existing: GameplayEffectComponent in effect.components:
+		var found: GameplayEffectGrantAbilitiesComponent = existing as GameplayEffectGrantAbilitiesComponent
+		if found != null:
+			component = found
+	if component == null:
+		component = GameplayEffectGrantAbilitiesComponent.new()
+		effect.components.append(component)
+	component.grants.append(grant)
+	return effect
 #endregion
 
 

@@ -18,3 +18,11 @@ var source_asc: AbilitySystemComponent = null
 ## and every component asked through the same runtime draws from it - never
 ## from the engine's global random state, which no test can pin down.
 var rng: RandomNumberGenerator = null
+
+## Null for a fresh application; the stack this one is about to join, for a
+## reapplication onto an existing stack (see GameplayEffectStackingRuntime).
+## A component whose state belongs to the stack as a whole, not to each
+## individual reapplication - GameplayEffectGrantAbilitiesComponent grants
+## once per active effect, never once per stack join - reads this to skip
+## preparing again.
+var existing_active_effect: ActiveGameplayEffect = null
