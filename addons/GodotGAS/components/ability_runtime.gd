@@ -1,22 +1,18 @@
 ## Granted abilities, the activation gate and input routing.
 ##
-## What was granted and what is running are different things: the registry
-## holds `GameplayAbilitySpec`s, each identified by a `GameplayAbilityHandle`
-## rather than by the Node instance underneath it - a handle from another ASC
-## can never resolve here by coincidence of a locally-reused id.
+## The registry holds `GameplayAbilitySpec`s, each identified by a
+## `GameplayAbilityHandle` rather than the Node underneath it - a handle from
+## another ASC can never resolve here by coincidence of a reused id.
 ##
 ## Granting is a two-step transaction: `prepare_ability_grant` instantiates
-## the scene and validates it exactly once, and either
-## `commit_prepared_grant` registers what it found or `discard_prepared_grant`
-## frees it. `give_ability` does both in sequence; nothing else validates a
-## grant a second way.
+## and validates once, `commit_prepared_grant`/`discard_prepared_grant`
+## register or free it. `give_ability` does both; nothing else validates.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_license: MIT
 class_name AbilityRuntime extends RefCounted
 
-## Why an activation was refused. Closed: a caller switching over this cannot
-## silently miss a reason added later.
+## Why an activation was refused. Closed, so a switch cannot silently miss one.
 enum ActivationError {
 	NONE,
 	ALREADY_ACTIVE,
@@ -27,15 +23,12 @@ enum ActivationError {
 	INTERNAL_ERROR,
 	## Marked for REMOVE_ON_ACTIVE_END removal - see mark_pending_removal().
 	PENDING_REMOVAL,
-	## Refused by another spec's block_abilities_query or an uninhibited
-	## GameplayEffectBlockAbilityTagsComponent - never BLOCKED_TAG.
+	## Refused by another spec's block_abilities_query, or a block effect.
 	BLOCKED_BY_ACTIVE_ABILITY,
 }
 
 var owner_asc: AbilitySystemComponent = null
 var tags: GameplayTagRuntime = null
-
-## Every task any granted ability is currently waiting on.
 var tasks: AbilityTaskRuntime = AbilityTaskRuntime.new()
 
 ## How a spec's instancing policy turns into a running Node.
@@ -44,6 +37,9 @@ var instancing: AbilityInstancingRuntime = AbilityInstancingRuntime.new()
 ## Effective tags, cancel/block matching, activation-owned tag refcounting.
 var tag_semantics: AbilityTagSemanticsRuntime = AbilityTagSemanticsRuntime.new()
 
+## ON_GRANTED's one attempt, PASSIVE's continuous reevaluation.
+var policies: AbilityActivationPolicyRuntime = AbilityActivationPolicyRuntime.new()
+
 var _specs: Array[GameplayAbilitySpec] = []
 var _specs_by_id: Dictionary[int, GameplayAbilitySpec] = {}
 var _next_handle_id: int = 1
@@ -51,8 +47,7 @@ var _held_inputs: Array[int] = []
 
 
 #region Grant pipeline
-## Instantiate `scene` once and validate it. Registers nothing: the result
-## must be committed or discarded before this operation is considered done.
+## Instantiate `scene` once and validate it. Registers nothing until committed.
 func prepare_ability_grant(
 	scene: PackedScene, level: float, input_id: int, source: GameplayAbilitySource
 ) -> PreparedAbilityGrant:
@@ -72,20 +67,29 @@ func prepare_ability_grant(
 
 	var probe: GameplayAbility = instance as GameplayAbility
 	if probe == null:
-		# Never added to a tree, so an immediate free is safe - no one-frame
-		# window where a queue_free() here left the orphan counter to catch.
+		# Never added to a tree, so an immediate free is safe.
 		instance.free()
 		prepared.validation.status = AbilityGrantValidationResult.Status.ROOT_NOT_GAMEPLAY_ABILITY
 		return prepared
 
+	var definition: GameplayAbilityDefinitionSnapshot = GameplayAbilityDefinitionSnapshot.from_probe(scene, probe)
+	# A passive is a continuous state; several auto PER_EXECUTION instances
+	# of it have no stable semantics, refused rather than forced to PER_ACTOR.
+	if (
+		definition.activation_policy == GameplayAbility.ActivationPolicy.PASSIVE
+		and definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION
+	):
+		probe.free()
+		prepared.validation.status = AbilityGrantValidationResult.Status.INVALID_DEFINITION
+		return prepared
+
 	prepared.probe = probe
-	prepared.definition = GameplayAbilityDefinitionSnapshot.from_probe(scene, probe)
+	prepared.definition = definition
 	return prepared
 
 
-## Register a validated preparation as a real grant. Refuses - without
-## freeing anything, since the caller still owns an unconsumed preparation -
-## a null, already-consumed, or invalid one.
+## Register a validated preparation as a real grant. Refuses a null,
+## already-consumed, or invalid one - without freeing anything.
 func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHandle:
 	if prepared == null or prepared.consumed or not prepared.validation.is_ok():
 		return GameplayAbilityHandle.new()
@@ -110,18 +114,18 @@ func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHan
 		if owner_asc != null:
 			owner_asc.add_child(probe)
 	else:
-		# PER_EXECUTION keeps no persistent instance: the probe only validated
-		# the scene and captured the snapshot above, and was never treed.
+		# PER_EXECUTION keeps no persistent instance: never treed.
 		probe.free()
 
 	_specs.append(spec)
 	_specs_by_id[handle.id] = spec
 	prepared.consumed = true
+	# Only now: the spec must resolve by handle before ON_GRANTED/PASSIVE try.
+	policies.on_spec_granted(spec)
 	return handle
 
 
-## Free what a preparation instantiated, if never committed. Idempotent - a
-## second call on an already-consumed preparation is a no-op, never a double free.
+## Free what a preparation instantiated, if never committed. Idempotent.
 func discard_prepared_grant(prepared: PreparedAbilityGrant) -> void:
 	if prepared == null or prepared.consumed:
 		return
@@ -130,8 +134,8 @@ func discard_prepared_grant(prepared: PreparedAbilityGrant) -> void:
 		prepared.probe.free()
 
 
-## The official convenience: prepare, then commit if that succeeded, or an
-## invalid handle if it did not. No other route grants an ability.
+## Prepare, then commit if that succeeded, else an invalid handle. No other
+## route grants an ability.
 func give_ability(
 	scene: PackedScene,
 	level: float = 1.0,
@@ -147,9 +151,7 @@ func give_ability(
 
 
 #region Registry
-## The spec a handle names, or null: an unknown id, a handle from another
-## ASC, or an invalid handle all answer null rather than resolving by
-## coincidence.
+## The spec a handle names, or null - never resolving by id coincidence.
 func get_spec(handle: GameplayAbilityHandle) -> GameplayAbilitySpec:
 	if handle == null or not handle.is_valid():
 		return null
@@ -163,8 +165,7 @@ func specs() -> Array[GameplayAbilitySpec]:
 	return _specs.duplicate()
 
 
-## Retire a grant by handle: abort its running instance, cancel its tasks,
-## free the Node, drop the spec. False when the handle does not resolve here.
+## Abort, cancel tasks, free the Node, drop the spec. False if unresolved.
 func remove_ability(handle: GameplayAbilityHandle) -> bool:
 	var spec: GameplayAbilitySpec = get_spec(handle)
 	if spec == null:
@@ -173,18 +174,15 @@ func remove_ability(handle: GameplayAbilityHandle) -> bool:
 	return true
 
 
-## Convenience for a caller holding the running instance rather than its
-## handle. A stateless wrapper over remove_ability - resolves the handle
-## through the instance's own spec and delegates.
+## Convenience for a caller holding the instance rather than its handle -
+## resolves it through the instance's own spec and delegates.
 func remove(ability: GameplayAbility) -> void:
 	if ability == null:
 		return
 	remove_ability(ability.get_ability_handle())
 
 
-## REMOVE_ON_ACTIVE_END: retires `handle` once every in-flight activation
-## ends, or immediately if none is - see
-## AbilityInstancingRuntime.mark_pending_removal().
+## REMOVE_ON_ACTIVE_END - see AbilityInstancingRuntime.mark_pending_removal().
 func mark_pending_removal(handle: GameplayAbilityHandle) -> void:
 	instancing.mark_pending_removal(get_spec(handle))
 
@@ -192,16 +190,14 @@ func mark_pending_removal(handle: GameplayAbilityHandle) -> void:
 func _retire(spec: GameplayAbilitySpec) -> void:
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and is_instance_valid(instance):
-		# A removed ability must not outlive its own activation - freeing the
-		# node mid-cast would leave ability_ended unfired and its commit stuck.
+		# Must not outlive its activation - else ability_ended never fires.
 		if instance.is_active:
 			instance.abort_ability(GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
 		tasks.cancel_for_ability(instance, GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
 		instance.owner_asc = null
 		instance.current_spec = null
 		instance.queue_free()
-	# Every PER_EXECUTION instance still running retires the same way, from a
-	# snapshot: aborting one erases it from this array as it goes.
+	# Snapshot: aborting a PER_EXECUTION instance erases it from this array.
 	for execution: GameplayAbility in spec.active_instances.duplicate():
 		if is_instance_valid(execution) and execution.is_active:
 			execution.abort_ability(GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
@@ -209,15 +205,16 @@ func _retire(spec: GameplayAbilitySpec) -> void:
 	spec.active_instances.clear()
 	_specs.erase(spec)
 	_specs_by_id.erase(spec.handle.id)
+	policies.request_reevaluation()
 
 
-## Abort every running ability. Used by cleanup, which must leave the ASC in a
-## state a second cleanup can safely see - PER_ACTOR stays idle afterward,
-## but PER_EXECUTION has no idle state, so aborting frees it too, the same
-## `ability_ended` path an end uses.
+## Abort every running ability, for cleanup - PER_ACTOR stays idle after,
+## PER_EXECUTION has no idle state so aborting frees it too, same as an end.
 func abort_all(
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
 ) -> void:
+	# A passive aborted below must not restart mid-loop - see .suspended.
+	policies.suspended = true
 	for spec: GameplayAbilitySpec in _specs.duplicate():
 		var instance: GameplayAbility = spec.per_actor_instance
 		if instance != null and is_instance_valid(instance) and instance.is_active:
@@ -226,6 +223,10 @@ func abort_all(
 			if is_instance_valid(execution) and execution.is_active:
 				execution.abort_ability(reason)
 	tasks.cancel_all(reason)
+	policies.suspended = false
+	# ASC_CLEANUP: everything is about to be cleared, never reevaluated.
+	if reason != GameplayAbilityTask.CancelReason.ASC_CLEANUP:
+		policies.request_reevaluation()
 
 
 func clear() -> void:
@@ -236,21 +237,17 @@ func clear() -> void:
 
 
 #region Activation gate
-## Whether a granted spec may activate, and why not when it may not.
-##
-## Returns the reason rather than a bare bool so the caller emits one signal
-## carrying the cause, not a branch per caller announcing its own.
+## Whether a spec may activate, and why not - a reason, not a bare bool.
 func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	if spec == null or spec.definition == null:
 		return ActivationError.INTERNAL_ERROR
 	if spec.pending_remove:
 		return ActivationError.PENDING_REMOVAL
-	# PER_ACTOR's one instance blocks a second cast while running; PER_EXECUTION
-	# keeps per_actor_instance null by construction, never refused here.
+	# PER_EXECUTION keeps per_actor_instance null by construction, never refused here.
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and instance.is_active:
 		return ActivationError.ALREADY_ACTIVE
-	if _query_matches_runtime(spec.definition.activation_blocked_query, tags):
+	if query_matches_runtime(spec.definition.activation_blocked_query, tags):
 		return ActivationError.BLOCKED_TAG
 	if tags.has_any(get_cooldown_tags(spec)):
 		return ActivationError.ON_COOLDOWN
@@ -260,8 +257,7 @@ func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	if tag_semantics.blocked_by_active_ability(spec):
 		return ActivationError.BLOCKED_BY_ACTIVE_ABILITY
 	if owner_asc != null and not spec.definition.costs.is_empty():
-		# The same resolver commit_ability() uses - a preview here and the
-		# actual charge can never disagree.
+		# The same resolver commit_ability() uses - never disagrees.
 		var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
 			spec.definition.costs, owner_asc, spec.level
 		)
@@ -272,12 +268,28 @@ func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	return ActivationError.NONE
 
 
-static func _query_matches_runtime(query: GameplayTagQuery, runtime: GameplayTagRuntime) -> bool:
+## Public: AbilityActivationPolicyRuntime needs the same check.
+static func query_matches_runtime(query: GameplayTagQuery, runtime: GameplayTagRuntime) -> bool:
 	return query != null and not query.is_empty() and query.matches_runtime(runtime)
 
 
 func can_activate(spec: GameplayAbilitySpec) -> bool:
 	return activation_error(spec) == ActivationError.NONE
+
+
+## See AbilityActivationPolicyRuntime.request_reevaluation().
+func request_passive_reevaluation() -> void:
+	policies.request_reevaluation()
+
+
+## See AbilityActivationPolicyRuntime.reevaluate().
+func reevaluate_passives() -> void:
+	policies.reevaluate()
+
+
+## See AbilityActivationPolicyRuntime.active_requirements_error().
+func active_requirements_error(spec: GameplayAbilitySpec) -> ActivationError:
+	return policies.active_requirements_error(spec)
 
 
 ## See AbilityTagSemanticsRuntime.effective_ability_tags().
@@ -297,9 +309,7 @@ func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
 
 
 #region Cooldowns
-## Every tag that represents a cooldown for this grant: the definition's own,
-## its shared cooldown effects', and any declared explicitly - the one place
-## this is computed, so the gate and a cooldown reading never disagree.
+## Own tag, shared cooldowns', and any declared explicitly - one place.
 static func get_cooldown_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
 	var cooldown_tags: Array[StringName] = []
 	if spec == null or spec.definition == null:
@@ -313,9 +323,8 @@ static func get_cooldown_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
 	return cooldown_tags
 
 
-## Everything a UI needs to draw one grant's cooldown, read fresh from the
-## tags its definition's cooldown effects grant - never from an own clock,
-## which would part company the first time it refreshed or expired early.
+## Everything a UI needs, read fresh from the tags cooldown effects grant -
+## never an own clock, which would part company the first early refresh.
 func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldownState:
 	var state: AbilityCooldownState = AbilityCooldownState.new()
 	var spec: GameplayAbilitySpec = get_spec(handle)
@@ -323,8 +332,7 @@ func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldow
 		return state
 
 	for tag: StringName in get_cooldown_tags(spec):
-		# A tag shared between the ability's own cooldown and a shared one is
-		# one wait, not two, and must not be counted twice.
+		# A tag shared between two of its cooldowns is one wait, not two.
 		if state.tags.has(tag):
 			continue
 		state.tags.append(tag)
@@ -349,8 +357,7 @@ func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldow
 
 
 #region Input routing
-## Bind an ability to an input slot. `unbind_others` releases any other
-## granted spec holding that slot, so two abilities never both answer one press.
+## `unbind_others` releases any other spec holding the slot already.
 func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool = true) -> bool:
 	if ability == null or ability.current_spec == null or not _specs.has(ability.current_spec):
 		push_error("GodotGAS: cannot bind an ability that was never granted to this ASC.")
@@ -365,8 +372,7 @@ func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool 
 	return true
 
 
-## The slots currently held down, as a copy: a caller clearing this would
-## leave the runtime believing nothing is pressed.
+## As a copy: a caller clearing this must not leave the runtime believing nothing is pressed.
 func held_inputs() -> Array[int]:
 	return _held_inputs.duplicate()
 
@@ -374,12 +380,10 @@ func held_inputs() -> Array[int]:
 func input_pressed(input_id: int) -> void:
 	if not _held_inputs.has(input_id):
 		_held_inputs.append(input_id)
-	# Formal tasks hear the transition before an active ability's ad hoc hooks.
-	# If a task ends the ability the hook below no longer runs, which is the
-	# point: one press must not both finish a cast and be re-read by it.
+	# Formal tasks hear the transition before an active ability's ad hoc hooks
+	# - if a task ends the ability, the hook below no longer runs.
 	tasks.input_pressed(input_id)
-	# Snapshot: an ability that grants another one on press must not have its
-	# new sibling receive the same press.
+	# Snapshot: a sibling granted by this press must not also receive it.
 	for spec: GameplayAbilitySpec in _specs.duplicate():
 		if spec.input_id != input_id:
 			continue
@@ -388,10 +392,8 @@ func input_pressed(input_id: int) -> void:
 			func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
 			func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
 		)
-		# PER_ACTOR's instance already decided above whether the press
-		# started or continued it. PER_EXECUTION has none to ask, so the
-		# spec may start one more of its own too - a press never stops
-		# meaning "start" just because an earlier one is still running.
+		# PER_EXECUTION has no instance to ask above, so a press still means
+		# "start one more" even while an earlier one keeps running.
 		if (
 			spec.definition != null
 			and spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION
@@ -411,9 +413,8 @@ func input_released(input_id: int) -> void:
 			)
 
 
-## Deliver an input transition to whatever should hear it now: PER_ACTOR's one
-## instance, or a snapshot of every PER_EXECUTION instance already running -
-## never a fresh one, since a transition does not itself start anything.
+## PER_ACTOR's one instance, or a snapshot of every PER_EXECUTION instance
+## already running - never a fresh one, a transition does not start anything.
 func _deliver_input(
 	spec: GameplayAbilitySpec, per_actor: Callable, per_execution: Callable
 ) -> void:
@@ -431,8 +432,7 @@ func _deliver_input(
 
 
 #region Ability tasks
-## Small pass-throughs. The task runtime owns the tasks; this only forwards,
-## so one place decides what still running means.
+## Small pass-throughs - the task runtime owns the tasks, this only forwards.
 func register_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	return tasks.register(task)
 

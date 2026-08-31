@@ -162,6 +162,7 @@ func _wire_runtimes() -> void:
 	ability_runtime.instancing.ability_runtime = ability_runtime
 	ability_runtime.tag_semantics.owner_asc = self
 	ability_runtime.tag_semantics.ability_runtime = ability_runtime
+	ability_runtime.policies.ability_runtime = ability_runtime
 
 	events.owner_asc = self
 	events.ability_runtime = ability_runtime
@@ -211,6 +212,7 @@ func emit_tag_change(tag: StringName, change: GameplayTagRuntime.Change, new_cou
 		_:
 			pass
 	effects.on_owner_tags_changed()
+	ability_runtime.request_passive_reevaluation()
 
 
 ## Emit an attribute change and run the set's dependency hook, in that order.
@@ -226,6 +228,7 @@ func emit_attribute_changed(
 	attributes.notify_current_changed(
 		mutation.attribute_name, mutation.old_current_value, mutation.new_current_value
 	)
+	ability_runtime.request_passive_reevaluation()
 
 
 ## The node cues and effects act on: the entity, not this component.

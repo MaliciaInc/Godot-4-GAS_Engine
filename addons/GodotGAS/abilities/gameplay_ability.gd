@@ -1,6 +1,6 @@
 ## One granted ability: activation rules, cost/cooldown, and the logic a
-## subclass overrides. Event payload is a typed GameplayEffectContext -
-## upstream's untyped Variant made every subclass guess, wrong guesses null.
+## subclass overrides. Event payload is a typed GameplayEffectContext, unlike
+## upstream's untyped Variant that made every subclass guess.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -11,17 +11,30 @@ class_name GameplayAbility extends Node
 
 
 ## PER_ACTOR: one instance for the grant's lifetime, second activation
-## refused while running. PER_EXECUTION: one instance per activation, so
-## several casts can run at once.
+## refused while running. PER_EXECUTION: one instance per activation.
 enum InstancingPolicy {
 	PER_ACTOR,
 	PER_EXECUTION,
+}
+
+## MANUAL: input/explicit call. ON_GRANTED: tries once when granted, stays
+## idle if that fails, never auto-retries. ON_GAMEPLAY_EVENT:
+## gameplay_event_triggers decide. PASSIVE: continuously reevaluated - see
+## AbilityActivationPolicyRuntime.
+enum ActivationPolicy {
+	MANUAL,
+	ON_GRANTED,
+	ON_GAMEPLAY_EVENT,
+	PASSIVE,
 }
 
 signal ability_ended(was_cancelled: bool)
 
 @export_category("Ability Rules")
 @export var ability_name: String = ""
+
+## Frozen at grant time, same as instancing_policy.
+@export var activation_policy: ActivationPolicy = ActivationPolicy.MANUAL
 
 ## Identity, not activation gating - effective tags are these plus dynamic_tags.
 @export var ability_tags: Array[StringName] = []
@@ -50,16 +63,15 @@ signal ability_ended(was_cancelled: bool)
 @export var target_blocked_query: GameplayTagQuery = null
 
 @export_category("Ability Mechanics")
-## Every priced entry this ability charges. Empty means free. Resolved as one
-## frozen charge at commit time by GameplayAbilityCostResolver.
+## Every priced entry this charges. Empty means free; resolved once at commit.
 @export var costs: Array[GameplayAbilityCost] = []
 @export var cooldown_effect: GameplayEffect
 @export var shared_cooldown_effects: Array[GameplayEffect] = []
 @export var shared_cooldown_tags: Array[StringName] = []
 
 @export_category("Ability Triggers")
-## Hierarchical: a listener on `Event.Damage` also receives `Event.Damage.Critical`.
-@export var trigger_event_tag: StringName = &""
+## Only consulted for ON_GAMEPLAY_EVENT - any one matching trigger wakes this.
+@export var gameplay_event_triggers: Array[GameplayAbilityEventTrigger] = []
 
 @export_category("Input Routing")
 ## The input slot this ability answers, or -1 when unbound.
@@ -70,8 +82,7 @@ var current_context: GameplayEffectContext = null
 
 var owner_asc: AbilitySystemComponent = null
 
-## Null until AbilityRuntime's grant pipeline assigns it; once set, level/input
-## are read through the accessors below, never the exported fields above.
+## Null until granted; once set, read level/input through the accessors below.
 var current_spec: GameplayAbilitySpec = null
 
 var is_active: bool = false
@@ -109,6 +120,7 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 		current_spec.active_count += 1
 		if current_spec.active_count == 1:
 			_set_activation_owned_tags(true)
+		owner_asc.ability_runtime.request_passive_reevaluation()
 	current_context = context
 	_cancel_conflicting_abilities()
 
@@ -126,11 +138,10 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 	return success
 
 
-## Pay the cost and start the cooldowns as one transaction. Call from
-## `_activate_ability` the moment the ability commits, so a cancelled cast
-## never charged the player. All-or-nothing: a failed cooldown retires the
-## ones already started, a failed cost retires all of them. Costs/cooldowns
-## carry no cues/events by contract, so a rollback leaves nothing observable.
+## Pay the cost and start the cooldowns as one transaction, called from
+## `_activate_ability` once committed. All-or-nothing: a failed cooldown
+## retires the ones already started, a failed cost retires all of them - no
+## cues/events by contract, so a rollback leaves nothing observable.
 func commit_ability() -> AbilityCommitResult:
 	var result: AbilityCommitResult = AbilityCommitResult.new()
 	if owner_asc == null:
@@ -211,8 +222,7 @@ func commit_ability() -> AbilityCommitResult:
 	return result
 
 
-## Undo the cooldowns a failed commit had already started. The list is
-## emptied as well as retired, so a failed result reports nothing applied.
+## Undo cooldowns a failed commit already started; emptied too, so the result reports nothing applied.
 func _roll_back(result: AbilityCommitResult) -> void:
 	for started: ActiveGameplayEffect in result.applied_cooldowns:
 		owner_asc.remove_active_effect(started)
@@ -232,10 +242,9 @@ func abort_ability(
 		end_ability(true, reason)
 
 
-## Close the ability. It stays granted: ending is not un-granting. Idempotent,
-## and order is load-bearing: `is_active` clears first because cancelling a
-## task can resume a coroutine that awaited it, and that coroutine arriving
-## here again would double-emit `ability_ended` if it found itself still open.
+## Close the ability. Stays granted: ending is not un-granting. Idempotent,
+## order load-bearing: `is_active` clears first, since cancelling a task can
+## resume an awaiting coroutine that would otherwise double-emit `ability_ended`.
 func end_ability(
 	was_cancelled: bool = false,
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ENDED
@@ -249,6 +258,7 @@ func end_ability(
 			_set_activation_owned_tags(false)
 	if owner_asc != null:
 		owner_asc.cancel_ability_tasks(self, reason)
+		owner_asc.ability_runtime.request_passive_reevaluation()
 	# The one place a commit is forgotten - `try_activate` deliberately does
 	# not also clear it, or one transition would have two owners.
 	_committed = false
@@ -282,8 +292,7 @@ func execute_cue(tag: StringName) -> void:
 	owner_asc.execute_cue(params)
 
 
-## Whether `target_asc`'s tags satisfy target_required_query and not
-## target_blocked_query - read from the frozen snapshot, immune to edits.
+## Reads the frozen snapshot's target_required/blocked_query, immune to edits.
 func accepts_target(target_asc: AbilitySystemComponent) -> bool:
 	if target_asc == null or current_spec == null or current_spec.definition == null:
 		return false
@@ -297,10 +306,8 @@ func accepts_target(target_asc: AbilitySystemComponent) -> bool:
 
 
 ## Build a spec from an effect and fire it at every target, reporting what
-## happened. Each target gets its own spec copy via
-## `apply_effect_spec_to_target` - sharing one spec across an AoE let target
-## A's evaluation change what target B received. A result comes back even
-## for unusable arguments, so a caller never distinguishes null from nothing.
+## happened. Each target gets its own spec copy - sharing one across an AoE
+## let target A's evaluation change what target B received.
 func apply_effect_to_targets(
 	effect_res: GameplayEffect, target_data: GameplayAbilityTargetData
 ) -> GameplayTargetApplicationResult:
@@ -352,21 +359,17 @@ func apply_effect_to_targets(
 	return result
 
 
-## The ability system a node belongs to. Public because callers use it, but
-## owns no algorithm - the search lives in one place only.
+## The ability system a node belongs to - no algorithm of its own, one search.
 static func find_asc_on(node: Node) -> AbilitySystemComponent:
 	return AbilitySystemLocator.find_for_node(node)
 
 
-## Its own tag, its shared cooldowns', and any declared explicitly. Convenience
-## wrapper - the implementation lives on AbilityRuntime, keyed by spec.
+## Convenience wrapper - the implementation lives on AbilityRuntime, keyed by spec.
 func get_cooldown_tags() -> Array[StringName]:
 	return AbilityRuntime.get_cooldown_tags(current_spec)
 
 
-## Everything a UI needs to draw this ability's cooldown, read fresh.
-## Convenience wrapper for a live instance; the runtime answers the same
-## question by handle, for a tool that kept the handle but lost the Node.
+## Everything a UI needs, read fresh. Live-instance wrapper; AbilityRuntime answers by handle.
 func get_cooldown_state() -> AbilityCooldownState:
 	if owner_asc == null or current_spec == null:
 		return AbilityCooldownState.new()
@@ -402,8 +405,7 @@ func _active_input_released(_asc: AbilitySystemComponent) -> void:
 
 #region Task factories
 ## Hand a freshly built task to the ASC that will own it. Null when there is
-## no ASC - a task nobody owns is worse than no task: nothing could ever
-## cancel it, and no teardown path would reach it.
+## no ASC - a task nobody owns could never be cancelled or torn down.
 func _own(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	if task == null or owner_asc == null:
 		return null
@@ -414,10 +416,9 @@ func wait_delay(seconds: float) -> AbilityTaskWaitDelay:
 	return _own(AbilityTaskWaitDelay.create(self, seconds)) as AbilityTaskWaitDelay
 
 
-## Wait for a press. `-1` means this ability's own bound slot; any other
-## value is used as given. Resolved in the body, not as a default parameter
-## value: a default is evaluated against the class and would freeze whatever
-## `input_id` held at parse time instead of at the call.
+## Wait for a press. `-1` means this ability's own bound slot. Resolved in
+## the body, not a default parameter value: a default is evaluated against
+## the class and would freeze `input_id` at parse time, not at the call.
 func wait_input_pressed(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.PRESSED)
 

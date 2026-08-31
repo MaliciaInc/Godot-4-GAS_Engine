@@ -162,6 +162,29 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   `GameplayAbilityDefinitionSnapshot`, immune to a template edited after the
   grant. `AbilityTagSemanticsRuntime` owns all of it as one collaborator, the
   same shape as `AbilityInstancingRuntime`/`AbilityTaskRuntime`.
+- **An ability declares how it activates.** `activation_policy` (`MANUAL`,
+  `ON_GRANTED`, `ON_GAMEPLAY_EVENT`, `PASSIVE`) replaces the old implicit
+  "trigger tag means event ability" rule. `MANUAL` behaves like F2. `ON_GRANTED`
+  tries once when the spec registers, stays granted-but-idle on failure, and is
+  never auto-retried. `ON_GAMEPLAY_EVENT` abilities declare one or more
+  `GameplayAbilityEventTrigger`s - each an `event_query` matched hierarchically
+  against the dispatched tag, replacing the old singular `trigger_event_tag`.
+  `PASSIVE` is continuously reevaluated by `AbilityActivationPolicyRuntime`: it
+  starts the moment its `activation_required_query`/`activation_blocked_query`
+  allow, cancels the instant they stop (checked through
+  `active_requirements_error()`, which never answers `ALREADY_ACTIVE` or gates
+  on cost/cooldown - continuity is not a purchase), and can restart once its
+  conditions hold again. Reevaluation runs on every tag change, attribute
+  change, ability start/end and grant/remove, guarded by a reentrancy flag and
+  a 64-pass cap so a passive's own activation-owned tag reacting to itself
+  still converges in one call; a spec that already tried to (re)activate this
+  cycle is not retried again within the same cycle, so an ability whose
+  `_activate_ability()` completes synchronously starts once per external
+  trigger, not once per pass. `PASSIVE` + `PER_EXECUTION` is refused outright
+  at grant time - several automatic executions of one continuous state have no
+  stable meaning. `AbilityRuntime.abort_all()` suspends reevaluation for its
+  own duration and skips it entirely for `ASC_CLEANUP`, so a passive aborted by
+  a tearing-down ASC cannot restart itself an instant before its own removal.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

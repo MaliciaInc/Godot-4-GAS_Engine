@@ -262,6 +262,11 @@
         "left": "test/unit/test_ability_tag_semantics.gd:test_activating_an_ability_cancels_others_matching_its_cancel_query",
         "right": "test/unit/test_ability_tag_semantics.gd:test_a_cancel_ability_tags_effect_cancels_matching_active_abilities",
         "reason": "Task 15's own design calls for cancel_matching_query to have exactly one implementation reached by two distinct callers: an ability's own cancel_abilities_query on a successful activation, and GameplayEffectCancelAbilityTagsComponent.on_effect_applied(). These two tests are deliberately parallel, the same way the 2D/3D targeting suites are - each grants a channelling ability, triggers the OTHER caller, and asserts the same cancellation - because the point is that both entry points reach the identical algorithm. Forcing a structural difference between them to dodge the score would hide that the parallel is the point: a reader comparing the two should see the same shape proving the same shared code path, not two independently-shaped tests that happen to prove related things."
+      },
+      {
+        "left": "test/unit/test_ability_activation_policies.gd:test_passive_waits_for_its_required_tag",
+        "right": "test/unit/test_ability_activation_policies.gd:test_passive_restarts_once_conditions_are_satisfied_again",
+        "reason": "Deliberately parallel, not copied: both grant the same kind of gated passive and prove the first wake on a required tag - the restart test then continues past that exact point to prove the same passive can go idle and wake a second time, which is Task 16's own explicit requirement that a passive 'puede activarse de nuevo' once its conditions hold again. Collapsing them into one test would hide that 'wakes once' and 'wakes again after going idle' are two distinct regressions this suite needs to catch independently, the same reasoning already applied to the stacking suite's duration/turn-based expiration pair."
       }
     ]
   }

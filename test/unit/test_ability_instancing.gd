@@ -232,7 +232,8 @@ func test_an_event_activates_a_per_execution_listener_with_no_per_actor_template
 	var probe: ChannelingAbility = ChannelingAbility.new()
 	probe.ability_tags = [PROBE_TAG]
 	probe.instancing_policy = GameplayAbility.InstancingPolicy.PER_EXECUTION
-	probe.trigger_event_tag = EVENT_TAG
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [GameplayAbilityEventTrigger.for_tag(EVENT_TAG)]
 	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
 	assert_null(spec.per_actor_instance, "nothing was ever kept as a template")
 

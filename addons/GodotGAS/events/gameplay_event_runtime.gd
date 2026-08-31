@@ -64,8 +64,9 @@ func _activate(spec: GameplayAbilitySpec, context: GameplayEffectContext) -> voi
 		instance.try_activate(context)
 
 
-## Every spec whose definition's trigger tag covers this event, as a stable
-## snapshot.
+## Every ON_GAMEPLAY_EVENT spec with a trigger covering this event, as a
+## stable snapshot. MANUAL/ON_GRANTED/PASSIVE specs never listen this way,
+## even if a scene happened to leave gameplay_event_triggers populated.
 static func eligible_listeners(
 	event_tag: StringName, specs: Array[GameplayAbilitySpec]
 ) -> Array[GameplayAbilitySpec]:
@@ -73,12 +74,24 @@ static func eligible_listeners(
 	for spec: GameplayAbilitySpec in specs:
 		if spec == null or spec.definition == null:
 			continue
-		var trigger: StringName = spec.definition.legacy_trigger_event_tag
-		if trigger == &"":
+		if spec.definition.activation_policy != GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT:
 			continue
-		if matches(event_tag, trigger):
+		if _any_trigger_matches(spec.definition.gameplay_event_triggers, event_tag):
 			listeners.append(spec)
 	return listeners
+
+
+## A trigger's event_query is matched against a single-element tag set
+## holding the event's own tag - the same GameplayTagQuery hierarchy rule
+## `matches()` below implements for a bare tag, reused rather than
+## reimplemented for a query.
+static func _any_trigger_matches(
+	triggers: Array[GameplayAbilityEventTrigger], event_tag: StringName
+) -> bool:
+	for trigger: GameplayAbilityEventTrigger in triggers:
+		if trigger != null and trigger.event_query != null and trigger.event_query.matches_tags([event_tag]):
+			return true
+	return false
 
 
 ## Whether an event reaches a listener.

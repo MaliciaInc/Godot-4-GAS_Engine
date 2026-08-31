@@ -2,8 +2,8 @@
 ## already-instantiated Node: pack a configured instance into a scene, give
 ## it through the real grant pipeline, and hand back the spec.
 ##
-## Configure `@export` fields - ability_tag, costs, cooldown_effect,
-## trigger_event_tag, and so on - on the instance BEFORE calling this: those
+## Configure `@export` fields - ability_tags, costs, cooldown_effect,
+## gameplay_event_triggers, and so on - on the instance BEFORE calling this: those
 ## survive packing because they are this ability's real authoring surface.
 ## Test-only tracking fields that are not exported - ProbeAbility's
 ## `activations`, `commits`, `channels` - do not, and are set afterward

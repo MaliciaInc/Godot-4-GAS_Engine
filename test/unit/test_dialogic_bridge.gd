@@ -226,7 +226,8 @@ func test_a_send_event_reaches_the_ability_system() -> void:
 ## all - the bridge never activates anything directly.
 func test_an_event_from_a_dialogue_can_wake_a_listening_ability() -> void:
 	var probe: ProbeAbility = Probe.build(PROBE_TAG)
-	probe.trigger_event_tag = EVENT_PARENT
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [GameplayAbilityEventTrigger.for_tag(EVENT_PARENT)]
 	var spec: GameplayAbilitySpec = AbilityFactory.give(fixture.asc, probe)
 	var ability: ProbeAbility = spec.per_actor_instance as ProbeAbility
 	assert_true(_bound())

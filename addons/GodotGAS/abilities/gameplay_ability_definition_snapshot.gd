@@ -16,6 +16,7 @@ class_name GameplayAbilityDefinitionSnapshot extends RefCounted
 var ability_scene: PackedScene = null
 var ability_name: String = ""
 var instancing_policy: GameplayAbility.InstancingPolicy = GameplayAbility.InstancingPolicy.PER_ACTOR
+var activation_policy: GameplayAbility.ActivationPolicy = GameplayAbility.ActivationPolicy.MANUAL
 
 ## Task 15's complete tag semantics - see GameplayAbility for what each means.
 var ability_tags: Array[StringName] = []
@@ -28,9 +29,8 @@ var block_abilities_query: GameplayTagQuery = null
 var target_required_query: GameplayTagQuery = null
 var target_blocked_query: GameplayTagQuery = null
 
-## Not yet formalised past Phase 2 - Task 16 replaces this with a typed
-## trigger collection.
-var legacy_trigger_event_tag: StringName = &""
+## Only consulted for ON_GAMEPLAY_EVENT. See GameplayAbilityEventTrigger.
+var gameplay_event_triggers: Array[GameplayAbilityEventTrigger] = []
 
 var costs: Array[GameplayAbilityCost] = []
 var cooldown_effect: GameplayEffect = null
@@ -45,6 +45,7 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.ability_scene = scene
 	snapshot.ability_name = probe.ability_name
 	snapshot.instancing_policy = probe.instancing_policy
+	snapshot.activation_policy = probe.activation_policy
 	snapshot.ability_tags = probe.ability_tags.duplicate()
 	snapshot.activation_required_query = probe.activation_required_query
 	snapshot.activation_blocked_query = probe.activation_blocked_query
@@ -54,7 +55,7 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.block_abilities_query = probe.block_abilities_query
 	snapshot.target_required_query = probe.target_required_query
 	snapshot.target_blocked_query = probe.target_blocked_query
-	snapshot.legacy_trigger_event_tag = probe.trigger_event_tag
+	snapshot.gameplay_event_triggers = probe.gameplay_event_triggers.duplicate()
 	snapshot.costs = probe.costs.duplicate()
 	snapshot.cooldown_effect = probe.cooldown_effect
 	snapshot.shared_cooldown_effects = probe.shared_cooldown_effects.duplicate()

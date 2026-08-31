@@ -43,7 +43,8 @@ func _event(tag: StringName) -> GameplayEventData:
 
 func _listener(trigger: StringName) -> RecordingAbility:
 	var probe: RecordingAbility = RecordingAbility.new()
-	probe.trigger_event_tag = trigger
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [GameplayAbilityEventTrigger.for_tag(trigger)]
 	probe.ability_tags = [&"Ability.Recorder"]
 	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
 	return spec.per_actor_instance as RecordingAbility
@@ -119,7 +120,8 @@ func test_two_listeners_each_receive_once() -> void:
 
 func test_a_listener_granted_during_dispatch_does_not_receive_this_event() -> void:
 	var late_probe: RecordingAbility = RecordingAbility.new()
-	late_probe.trigger_event_tag = DAMAGE
+	late_probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	late_probe.gameplay_event_triggers = [GameplayAbilityEventTrigger.for_tag(DAMAGE)]
 	late_probe.ability_tags = [&"Ability.Late"]
 	# A lambda captures an outer local by value: reassigning `late` inside the
 	# callback would rebind only its own copy, and the ability actually granted
