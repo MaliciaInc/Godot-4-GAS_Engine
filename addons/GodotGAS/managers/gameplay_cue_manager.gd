@@ -21,6 +21,7 @@ const CueNotify = preload("res://addons/GodotGAS/cues/gameplay_cue_notify.gd")
 const CueRegistry = preload("res://addons/GodotGAS/cues/gameplay_cue_registry.gd")
 const CueEntry = preload("res://addons/GodotGAS/cues/gameplay_cue_entry.gd")
 const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
+const CueHandle = preload("res://addons/GodotGAS/cues/gameplay_cue_handle.gd")
 const PoolBucket = preload("res://addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd")
 
 ## Dormant instances, one bucket per cue tag.
@@ -28,6 +29,13 @@ var _pool: Dictionary[StringName, PoolBucket] = {}
 
 ## Scenes to instantiate, one per cue tag.
 var _cue_scenes: Dictionary[StringName, PackedScene] = {}
+
+## Every persistent cue currently running, keyed by its handle's own id -
+## the id, not the handle object, so a caller's copy of the handle still
+## resolves.
+var _active_persistent_by_id: Dictionary[int, CueNotify] = {}
+
+var _next_persistent_id: int = 1
 
 
 #region Initialization
@@ -69,21 +77,54 @@ func _warn_missing_registry(cue_registry_path: String) -> void:
 ## an arbitrary Dictionary payload would let the caller and the cue disagree
 ## about every key with nothing in between to notice.
 func execute_cue(params: CueParams) -> void:
-	if params == null or params.target == null:
+	var cue_instance: CueNotify = _resolve_and_parent(params)
+	if cue_instance != null:
+		cue_instance.execute_cue(params)
+
+
+## Take/instantiate a cue, parent it, and run its PERSISTENT on_active/
+## while_active. Returns an invalid handle for a missing registry entry -
+## gameplay stays correct with no cue to show for it, per this task's own
+## principle.
+func activate_persistent_cue(params: CueParams) -> CueHandle:
+	var handle: CueHandle = CueHandle.new()
+	var cue_instance: CueNotify = _resolve_and_parent(params)
+	if cue_instance == null:
+		return handle
+	handle.id = _next_persistent_id
+	_next_persistent_id += 1
+	_active_persistent_by_id[handle.id] = cue_instance
+	cue_instance.begin_persistent(params)
+	return handle
+
+
+## Ends and pools a persistent cue by its handle. A handle that no longer
+## resolves - already ended, or never valid - is a no-op, never an error:
+## the same "gameplay stays correct without the cue" contract as a missing
+## registry entry.
+func deactivate_persistent_cue(handle: CueHandle, params: CueParams) -> void:
+	if handle == null or not _active_persistent_by_id.has(handle.id):
 		return
-	if not _cue_scenes.has(params.cue_tag):
-		return
+	var cue_instance: CueNotify = _active_persistent_by_id[handle.id]
+	_active_persistent_by_id.erase(handle.id)
+	cue_instance.end_persistent(params)
+
+
+## Resolve the registry entry, take or instantiate the instance, and (re)parent
+## it under the target - the setup both one-shot and persistent activation share.
+func _resolve_and_parent(params: CueParams) -> CueNotify:
+	if params == null or params.target == null or not _cue_scenes.has(params.cue_tag):
+		return null
 
 	var cue_instance: CueNotify = _get_or_create_cue(params.cue_tag)
 	if cue_instance == null:
-		return
+		return null
 
 	var previous_parent: Node = cue_instance.get_parent()
 	if previous_parent != null:
 		previous_parent.remove_child(cue_instance)
-
 	params.target.add_child(cue_instance)
-	cue_instance.execute_cue(params)
+	return cue_instance
 #endregion
 
 

@@ -23,6 +23,7 @@ const Params = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 
 
 const EffectContext = preload("res://addons/GodotGAS/target_data/gameplay_effect_context.gd")
+const EffectHandle = preload("res://addons/GodotGAS/effects/gameplay_effect_handle.gd")
 
 ## The cue tag being executed.
 var cue_tag: StringName = &""
@@ -42,6 +43,13 @@ var has_location: bool = false
 
 ## The originating effect context, when the cue came from an effect.
 var context: EffectContext = null
+
+## The stable identity of the effect that caused this cue, when one exists -
+## null for INSTANT (no handle at all) and for a cue with no effect behind
+## it. An opaque handle, never the live ActiveGameplayEffect: a cue script
+## can resolve it through a query if it needs to, but cannot reach in and
+## mutate runtime state through it.
+var effect_handle: EffectHandle = null
 
 
 ## Build the common case in one call, so the ASC does not repeat six assignments

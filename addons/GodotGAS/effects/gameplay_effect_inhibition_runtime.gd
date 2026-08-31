@@ -191,6 +191,7 @@ func _attach(active: ActiveGameplayEffect) -> void:
 	if GameplayEffectRuntime._mode_for(active.spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
 		effects.live_magnitudes.create_bindings_for(active)
 	_resume_periodic_clock(active)
+	_activate_persistent_cues(active)
 
 
 func _detach(active: ActiveGameplayEffect) -> void:
@@ -200,6 +201,33 @@ func _detach(active: ActiveGameplayEffect) -> void:
 			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count(tag))
 	effects.live_magnitudes.disconnect_bindings_for(active)
 	effects.attributes.remove_contributions_of(active.application_order)
+	_deactivate_persistent_cues(active)
+
+
+## "Entra uninhibited" - a fresh lifecycle activation every time this runs,
+## never reusing a handle from a previous attach: uninhibiting always
+## appends new ones onto an array `_deactivate_persistent_cues` already
+## emptied.
+func _activate_persistent_cues(active: ActiveGameplayEffect) -> void:
+	if effects.owner_asc == null:
+		return
+	for binding: GameplayCueBinding in active.get_effect_def().get_persistent_cue_bindings():
+		var params: GameplayCueParams = effects.cue_params_for(binding.cue_tag, active.spec, active.handle)
+		active.persistent_cue_handles.append(effects.owner_asc.activate_persistent_cue(params))
+
+
+## Ends and pools every persistent cue this effect is currently running,
+## whether from an inhibit or the effect's own removal - `_detach()` is the
+## one place either reaches. Paired by index with the bindings that started
+## them, which `_activate_persistent_cues` builds in the same order.
+func _deactivate_persistent_cues(active: ActiveGameplayEffect) -> void:
+	if effects.owner_asc != null:
+		var bindings: Array[GameplayCueBinding] = active.get_effect_def().get_persistent_cue_bindings()
+		for i: int in active.persistent_cue_handles.size():
+			var tag: StringName = bindings[i].cue_tag if i < bindings.size() else &""
+			var params: GameplayCueParams = effects.cue_params_for(tag, active.spec, active.handle)
+			effects.owner_asc.deactivate_persistent_cue(active.persistent_cue_handles[i], params)
+	active.persistent_cue_handles.clear()
 
 
 ## Applies the effect's PeriodInhibitionPolicy at the moment of reattaching.

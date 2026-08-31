@@ -217,7 +217,29 @@ static func with_events(effect: GameplayEffect, tags: Array[StringName]) -> Game
 static func with_application_cues(
 	effect: GameplayEffect, tags: Array[StringName]
 ) -> GameplayEffect:
-	effect.application_cue_tags = tags
+	return _with_cue_bindings(effect, tags, GameplayCueBinding.Type.EXECUTED_ON_APPLICATION)
+
+
+static func with_periodic_cues(
+	effect: GameplayEffect, tags: Array[StringName]
+) -> GameplayEffect:
+	return _with_cue_bindings(effect, tags, GameplayCueBinding.Type.EXECUTED_ON_PERIODIC)
+
+
+static func with_persistent_cues(
+	effect: GameplayEffect, tags: Array[StringName]
+) -> GameplayEffect:
+	return _with_cue_bindings(effect, tags, GameplayCueBinding.Type.PERSISTENT)
+
+
+static func _with_cue_bindings(
+	effect: GameplayEffect, tags: Array[StringName], type: GameplayCueBinding.Type
+) -> GameplayEffect:
+	for tag: StringName in tags:
+		var binding: GameplayCueBinding = GameplayCueBinding.new()
+		binding.cue_tag = tag
+		binding.type = type
+		effect.cues.append(binding)
 	return effect
 
 

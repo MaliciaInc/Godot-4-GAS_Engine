@@ -93,10 +93,10 @@ enum PeriodInhibitionPolicy {
 @export var stack_expiration_policy: StackExpirationPolicy = StackExpirationPolicy.CLEAR_ENTIRE_STACK
 
 @export_category("Cue Management")
-## Cues that play exactly once when the effect is first applied to a target.
-@export var application_cue_tags: Array[StringName] = []
-## Cues that play every time a periodic tick occurs.
-@export var periodic_cue_tags: Array[StringName] = []
+## One authoring route, not two arrays that could disagree: each binding
+## names its own tag and GameplayCueBinding.Type. See get_application_cue_tags()/
+## get_periodic_cue_tags()/get_persistent_cue_bindings().
+@export var cues: Array[GameplayCueBinding] = []
 
 @export_category("Attribute Modifiers")
 ## Custom mathematical scripts that run complex logic (e.g., Damage = Attack - Defense).
@@ -136,6 +136,34 @@ func get_granted_tags() -> Array[StringName]:
 		var target_component: GameplayEffectTargetTagsComponent = component as GameplayEffectTargetTagsComponent
 		if target_component != null:
 			tags.append_array(target_component.granted_tags)
+	return tags
+
+
+## Every tag this effect's EXECUTED_ON_APPLICATION cue bindings name.
+func get_application_cue_tags() -> Array[StringName]:
+	return _cue_tags_of_type(GameplayCueBinding.Type.EXECUTED_ON_APPLICATION)
+
+
+## Every tag this effect's EXECUTED_ON_PERIODIC cue bindings name.
+func get_periodic_cue_tags() -> Array[StringName]:
+	return _cue_tags_of_type(GameplayCueBinding.Type.EXECUTED_ON_PERIODIC)
+
+
+## Every PERSISTENT cue binding this effect declares - one running instance
+## per active effect per binding, never once per stack join.
+func get_persistent_cue_bindings() -> Array[GameplayCueBinding]:
+	var bindings: Array[GameplayCueBinding] = []
+	for binding: GameplayCueBinding in cues:
+		if binding != null and binding.type == GameplayCueBinding.Type.PERSISTENT:
+			bindings.append(binding)
+	return bindings
+
+
+func _cue_tags_of_type(type: GameplayCueBinding.Type) -> Array[StringName]:
+	var tags: Array[StringName] = []
+	for binding: GameplayCueBinding in cues:
+		if binding != null and binding.type == type:
+			tags.append(binding.cue_tag)
 	return tags
 
 
@@ -219,8 +247,7 @@ func is_silent() -> bool:
 	if not (
 		is_zero_approx(period)
 		and executions.is_empty()
-		and application_cue_tags.is_empty()
-		and periodic_cue_tags.is_empty()
+		and cues.is_empty()
 		and event_tags.is_empty()
 	):
 		return false

@@ -86,6 +86,12 @@ var component_states: Array[GameplayEffectComponentState] = []
 ## never the authoring Resource, which may have changed since.
 var granted_ability_handles: Array[GameplayAbilityHandle] = []
 
+## Every PERSISTENT cue currently running for this effect - owned by
+## GameplayEffectInhibitionRuntime alone, the same as `state_attached`.
+## Never searched by tag: two effects may share a cue tag and must never
+## pool each other's handle.
+var persistent_cue_handles: Array[GameplayCueHandle] = []
+
 ## Seconds left, for a DURATION effect.
 var time_remaining: float = 0.0
 

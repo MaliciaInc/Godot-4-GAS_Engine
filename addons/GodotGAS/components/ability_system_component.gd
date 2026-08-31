@@ -3,11 +3,9 @@
 ## This node owns the signals, the exported configuration and the public API.
 ## It owns no gameplay state: tags live in GameplayTagRuntime, attributes in
 ## GameplayAttributeRuntime, effects in GameplayEffectRuntime, timing in
-## GameplayEffectScheduler, abilities in AbilityRuntime. Each piece of mutable
-## state has exactly one owner, so there is never a second copy to keep in step.
-##
-## Networking is gone. The behaviour of this addon is local,
-## and no `@rpc`, `MultiplayerSynchronizer` or authority branch remains.
+## GameplayEffectScheduler, abilities in AbilityRuntime - one owner per piece
+## of mutable state, never a second copy to keep in step. Networking is gone:
+## no `@rpc`, `MultiplayerSynchronizer` or authority branch remains.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -38,9 +36,8 @@ signal effect_applied_to_target(target_asc: AbilitySystemComponent, spec: Gamepl
 ## This ASC received an effect from someone.
 signal effect_received(source_asc: AbilitySystemComponent, spec: GameplayEffectSpec)
 
-## An application was refused. Carries the typed reason and, when the reason
-## names one, the attribute it was about. Kept for evaluator failures - a
-## component's own refusal reason lives on gameplay_effect_application_finished.
+## An application was refused, with the reason and attribute if any. Kept for
+## evaluator failures - a component's own reason lives on the finished signal below.
 signal effect_application_refused(
 	status: AttributeEvaluationResult.Status, attribute_name: StringName
 )
@@ -49,9 +46,8 @@ signal effect_application_refused(
 ## reason a legacy refusal signal could carry, plus every component reason.
 signal gameplay_effect_application_finished(result: GameplayEffectApplicationResult)
 
-## One periodic tick actually ran - the same "execution" GameplayEffectComponent.
-## on_effect_executed() already means, extended to the ASC as one typed
-## signal rather than a second protocol for ticks.
+## One periodic tick ran - the same "execution" GameplayEffectComponent.
+## on_effect_executed() means, extended to the ASC as one typed signal.
 signal gameplay_effect_executed(spec: GameplayEffectSpec, active_effect: ActiveGameplayEffect)
 
 ## A gameplay event reached this ASC.
@@ -60,9 +56,8 @@ signal gameplay_event_received(event: GameplayEventData)
 signal active_effect_added(active_effect: ActiveGameplayEffect)
 signal active_effect_removed(active_effect: ActiveGameplayEffect)
 
-## A REFRESH_DURATION reapplication renewed an existing instance. Emitted
-## instead of a remove/add pair, because the logical instance never went away
-## and a UI that saw the pair would rebuild an icon that was still there.
+## A REFRESH_DURATION reapplication renewed an existing instance - never a
+## remove/add pair, or a UI would rebuild an icon that was still there.
 signal active_effect_refreshed(active_effect: ActiveGameplayEffect)
 
 ## An activation attempt was refused, with the closed reason why.
@@ -73,8 +68,7 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
 
 ## The canonical, handle-addressed superset of the instance's own
-## `ability_ended` - fires for every activation this ASC started, wherever
-## it was started from.
+## `ability_ended` - fires for every activation this ASC started.
 signal ability_runtime_ended(
 	handle: GameplayAbilityHandle,
 	instance: GameplayAbility,
@@ -82,35 +76,27 @@ signal ability_runtime_ended(
 	reason: GameplayAbilityTask.CancelReason
 )
 
-## An indirect LIVE-magnitude cycle did not converge within the reevaluation
-## cap. The attribute named is where the cascade was cut off; its
-## contribution keeps whatever magnitude it last resolved, not a fresh one.
+## An indirect LIVE-magnitude cycle did not converge within the cap - the
+## attribute named is where it was cut off, keeping its last resolved magnitude.
 signal live_magnitude_cycle_aborted(attribute_name: StringName)
 
-## An active effect's ongoing tag requirement stopped/started being
-## satisfied: its contributions and granted tags just detached (true) or
-## reattached (false). Never emitted for the initial application, and never
-## paired with active_effect_added/removed - the effect stays registered.
+## An ongoing tag requirement stopped/started being satisfied - never on the
+## initial application, never paired with added/removed.
 signal active_effect_inhibition_changed(handle: GameplayEffectHandle, inhibited: bool)
 
-## An ongoing/removal requirement reevaluation did not converge within the
-## pass cap - an effect's own granted tag falsified its own ongoing query,
-## most likely. The named effect was left inhibited as a fail-safe rather
-## than removed or left in an undetermined state.
+## An ongoing/removal reevaluation did not converge within the pass cap.
+## Left inhibited as a fail-safe, never removed or left undetermined.
 signal effect_requirement_cycle_aborted(handle: GameplayEffectHandle)
 
-## A stack's count actually changed - growth, a non-growing overflow never
-## emits this, nor does an unchanged expiration policy re-set at the same
-## count.
+## A stack's count actually changed - never for a non-growing overflow, nor
+## an expiration policy re-set at the same count.
 signal active_effect_stack_changed(handle: GameplayEffectHandle, old_count: int, new_count: int)
 
 ## A stack was already at its limit when another application arrived.
 signal active_effect_stack_overflowed(handle: GameplayEffectHandle)
 
-## Every removal, with the typed reason - superset of `active_effect_removed`
-## (kept as the legacy signal every removal still also emits), for a
-## debugger/task that needs to tell a natural expiration from an explicit
-## remove from a cleanse from ASC teardown.
+## Every removal, typed - superset of `active_effect_removed` (still emitted
+## too), which cannot tell expiration apart from remove/cleanse/teardown.
 signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, reason: ActiveGameplayEffect.RemovalReason)
 #endregion
 
@@ -125,9 +111,8 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 #endregion
 
 
-# The cue manager is an autoload, so its script cannot also declare a
-# class_name: the singleton already owns that global name. The type still
-# has to come from somewhere, so this one alias stays.
+# The autoload's script declares no class_name (the singleton owns that
+# global name already), so this alias is the type.
 const CueManagerScript = preload("res://addons/GodotGAS/managers/gameplay_cue_manager.gd")
 
 var attributes: GameplayAttributeRuntime = GameplayAttributeRuntime.new()
@@ -258,12 +243,10 @@ func get_effect_target() -> Node:
 	return parent if parent != null else self
 
 
-## The ASC of whoever caused a spec, when there is one.
-##
-## Asked of the locator rather than looked up by name here. This used to take
-## whatever direct child carried the conventional name, without checking that it
-## was one and without climbing from a collider to its actor - a second, weaker
-## answer to a question that already had one.
+## The ASC of whoever caused a spec, when there is one. Asked of the locator
+## rather than looked up by name here - a second, weaker answer (a direct
+## child by convention, never checked, never climbing a collider to its
+## actor) to a question that already had one.
 func find_source_asc(spec: GameplayEffectSpec) -> AbilitySystemComponent:
 	if spec == null or spec.context == null:
 		return null
@@ -280,18 +263,44 @@ func dispatch_effect_events(spec: GameplayEffectSpec) -> void:
 
 
 #region Cues
-## Play a cue on this entity through the global manager.
+## The autoload declares no class_name, so it is typed through its script - a
+## bare Node here would make every call to it an unsafe method access. Null,
+## never an engine error, when this ASC is mid-teardown and already outside
+## the tree - a persistent cue's own removal can reach this from `cleanup()`,
+## unlike a one-shot's `execute_cue()`, which never ran there before.
+func _cue_manager() -> CueManagerScript:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/GameplayCueManager") as CueManagerScript
+
+
+## Play a one-shot cue on this entity through the global manager.
 func execute_cue(params: GameplayCueParams) -> void:
 	if params == null:
 		return
 	if params.target == null:
 		params.target = get_effect_target()
-	# The autoload declares no class_name, so it is typed through its script.
-	# A bare Node here would make every call to it an unsafe method access.
-	var manager: CueManagerScript = get_node_or_null("/root/GameplayCueManager") as CueManagerScript
-	if manager == null:
-		return
-	manager.execute_cue(params)
+	var manager: CueManagerScript = _cue_manager()
+	if manager != null:
+		manager.execute_cue(params)
+
+
+## Start a PERSISTENT cue's on_active/while_active. An invalid handle if
+## there is no manager or no registry entry for the tag.
+func activate_persistent_cue(params: GameplayCueParams) -> GameplayCueHandle:
+	if params == null:
+		return GameplayCueHandle.new()
+	if params.target == null:
+		params.target = get_effect_target()
+	var manager: CueManagerScript = _cue_manager()
+	return manager.activate_persistent_cue(params) if manager != null else GameplayCueHandle.new()
+
+
+## End and pool a PERSISTENT cue started by `activate_persistent_cue`.
+func deactivate_persistent_cue(handle: GameplayCueHandle, params: GameplayCueParams) -> void:
+	var manager: CueManagerScript = _cue_manager()
+	if manager != null:
+		manager.deactivate_persistent_cue(handle, params)
 #endregion
 
 
@@ -335,11 +344,10 @@ func apply_attribute_base_delta(
 	return set_attribute_base(attribute_name, requested, source_spec)
 
 
-## Replace base values while preserving active contributions.
-##
-## This always means "replace the base", never "reset the entity".
-## A x2 buff over base 10 shows 20; initializing the base to 50 shows 100, not
-## 80 and not 50, because the buff was never touched.
+## Replace base values while preserving active contributions - always
+## "replace the base", never "reset the entity". A x2 buff over base 10
+## shows 20; initializing the base to 50 shows 100, not 80 and not 50,
+## because the buff was never touched.
 func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) -> void:
 	for attribute_name: StringName in overrides:
 		set_attribute_base(attribute_name, overrides[attribute_name])
@@ -347,10 +355,9 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 
 
 #region Effects
-## The one entry point every application reaches, self-application included -
-## `apply_gameplay_effect_result`/`apply_effect_spec_to_target_result` both
-## fall through here. `self` is always the target, so an unresolved SOURCE
-## gets one last chance - `context.instigator` - before a required capture refuses.
+## The one entry point every application reaches, self-application included.
+## `self` is always the target, so an unresolved SOURCE gets one last chance
+## - `context.instigator` - before a required capture refuses.
 func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	_cleaned_up = false
 	var result: GameplayEffectApplicationResult
@@ -444,16 +451,12 @@ func get_active_effects() -> Array[ActiveGameplayEffect]:
 	return effects.active_effects()
 
 
-## Whether every attribute this cost touches can pay it in full from its durable
-## base.
-##
-## A temporary buff does not subsidise a durable cost. Mana base 10
-## with an active +20 cannot pay 20, because committing -20 to base would be
-## reduced by the clamp - and a cost that the clamp had to shrink was not
-## affordable, it was merely survivable.
-##
-## Runs the same evaluator the commit runs, on an isolated spec copy, so the
-## preview cannot disagree with the commit and cannot mutate anything.
+## Whether every attribute this cost touches can pay it in full from its
+## durable base. A temporary buff does not subsidise it - Mana base 10 with
+## an active +20 cannot pay 20, since committing -20 to base gets reduced by
+## the clamp, and a cost the clamp had to shrink was survivable, not
+## affordable. Runs the same evaluator the commit runs, on an isolated spec
+## copy, so the preview cannot disagree with the commit or mutate anything.
 func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 	if effect == null:
 		return true
@@ -522,10 +525,9 @@ func get_tag_turns_remaining(tag: StringName) -> int:
 
 
 #region Abilities, input and events
-## Grant an ability from its scene - the one authoring source, and the one
-## way an ability is ever granted. prepare -> commit under the hood; a
-## failed prepare frees whatever it instantiated and returns an invalid
-## handle rather than a Node nobody owns.
+## Grant an ability from its scene - the one way an ability is ever granted.
+## prepare -> commit under the hood; a failed prepare frees whatever it
+## instantiated rather than leaving a Node nobody owns.
 func give_ability(
 	ability_scene: PackedScene,
 	level: float = 1.0,
@@ -562,9 +564,8 @@ func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 
 ## Route an input slot to a granted ability. False when it was never granted.
 ##
-## The runtime refuses that case and says so; the facade used to drop the
-## answer, so a caller binding an ability the ASC does not have was told
-## nothing and found out when the press reached no one.
+## The runtime refuses and says so; the facade used to drop the answer, so a
+## caller binding an ungranted ability found out only when the press reached no one.
 func bind_ability_to_input(
 	ability: GameplayAbility, input_id: int, unbind_others: bool = true
 ) -> bool:

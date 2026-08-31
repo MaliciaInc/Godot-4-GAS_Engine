@@ -31,14 +31,49 @@ class RecordingCue extends GameplayCueNotify:
 		last_parent = get_parent()
 
 
+## A cue overriding the new lifecycle directly, none of it falling through
+## to the F2 virtual.
+class RecordingPersistentCue extends GameplayCueNotify:
+	var events: Array[StringName] = []
+	var executed_count: int = 0
+	var play_cue_count: int = 0
+
+	func executed(_params: GameplayCueParams) -> void:
+		executed_count += 1
+
+	func play_cue(_params: GameplayCueParams) -> void:
+		play_cue_count += 1
+
+	func on_active(_params: GameplayCueParams) -> void:
+		events.append(&"on_active")
+
+	func while_active(_params: GameplayCueParams) -> void:
+		events.append(&"while_active")
+
+	func on_removed(_params: GameplayCueParams) -> void:
+		events.append(&"on_removed")
+
+
 func before_each() -> void:
 	fixture = Fixture.create("CueTarget")
 	add_child_autofree(fixture.owner)
 	asc = fixture.asc
 	manager = asc.get_node_or_null("/root/GameplayCueManager") as CueManagerScript
+	# The project's real cue registry ships empty - a scene is injected
+	# directly into the manager's own maps, the same shape _load_registry()
+	# would have built from a populated one, so a test can go through the
+	# real manager instead of constructing a cue and driving it by hand.
+	var instance: RecordingPersistentCue = RecordingPersistentCue.new()
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(instance)
+	instance.free()
+	manager._cue_scenes[IMPACT] = scene
+	manager._pool[IMPACT] = GameplayCuePoolBucket.new()
 
 
 func after_each() -> void:
+	manager._cue_scenes.erase(IMPACT)
+	manager._pool.erase(IMPACT)
 	fixture = null
 	asc = null
 	manager = null
@@ -178,4 +213,181 @@ func test_the_asc_fills_in_the_target_when_the_caller_did_not() -> void:
 func test_a_null_parameter_object_is_ignored() -> void:
 	asc.execute_cue(null)
 	pass_test("no crash, and nothing to assert beyond that")
+#endregion
+
+
+#region F2.5 compatibility
+func test_executed_defaults_to_the_legacy_play_cue_override() -> void:
+	var cue: RecordingCue = RecordingCue.new()
+	add_child_autofree(cue)
+	cue.executed(_params())
+	assert_eq(cue.play_count, 1, "the default executed() falls through to play_cue()")
+
+
+func test_a_subclass_overriding_executed_never_falls_through_to_play_cue() -> void:
+	var cue: RecordingPersistentCue = RecordingPersistentCue.new()
+	add_child_autofree(cue)
+	cue.executed(_params())
+	assert_eq(cue.executed_count, 1)
+	assert_eq(cue.play_cue_count, 0, "overriding executed() skips play_cue() entirely")
+#endregion
+
+
+#region Persistent lifecycle
+func test_persistent_cue_runs_on_active_then_while_active() -> void:
+	var cue: RecordingPersistentCue = RecordingPersistentCue.new()
+	add_child_autofree(cue)
+	cue.begin_persistent(_params())
+	assert_eq(cue.events, [&"on_active", &"while_active"])
+
+
+func test_persistent_cue_never_auto_destroys_while_active() -> void:
+	var cue: RecordingPersistentCue = RecordingPersistentCue.new()
+	cue.destroy_delay = 0.0
+	add_child_autofree(cue)
+	cue.begin_persistent(_params())
+	# A one-shot with a zero delay would already be finished by now; a
+	# persistent activation never scheduled the timer that would do that.
+	assert_not_null(cue.current_params, "still playing - begin_persistent() never finishes on its own")
+
+
+func test_end_persistent_calls_on_removed_and_reports_finished() -> void:
+	var cue: RecordingPersistentCue = RecordingPersistentCue.new()
+	add_child_autofree(cue)
+	cue.begin_persistent(_params())
+
+	# A lambda captures an outer local by value - a one-element array is
+	# captured by the same reference on both sides, so writing into slot 0
+	# is visible out here too.
+	var finished_count: Array[int] = [0]
+	cue.cue_finished.connect(func(_node: GameplayCueNotify, _tag: StringName) -> void: finished_count[0] += 1)
+	cue.end_persistent(_params())
+
+	assert_eq(cue.events, [&"on_active", &"while_active", &"on_removed"])
+	assert_eq(finished_count[0], 1, "reused the one-shot pooling signal")
+
+
+func test_a_stale_one_shot_timer_does_not_steal_a_reused_persistent_cue() -> void:
+	var cue: RecordingPersistentCue = RecordingPersistentCue.new()
+	cue.destroy_delay = 1000.0
+	add_child_autofree(cue)
+
+	# One-shot playback schedules a timer for _playback_id 1, then the cue is
+	# pooled early (finish_cue() called directly, the way a real cue's own
+	# AudioStreamPlayer.finished would) - the timer is still pending.
+	cue.execute_cue(_params())
+	cue.finish_cue()
+
+	# Reused for a persistent activation - a fresh _playback_id.
+	cue.begin_persistent(_params())
+	assert_not_null(cue.current_params, "the persistent activation is live")
+
+	# The stale timer fires now, bound to the old (no longer current) id.
+	cue._on_auto_destroy_elapsed(1)
+	assert_not_null(
+		cue.current_params, "the stale one-shot timer must not finish the persistent reuse"
+	)
+#endregion
+
+
+#region Effect-driven persistent lifecycle
+func _infinite_persistent(tag: StringName) -> GameplayEffect:
+	var no_modifiers: Array[GameplayEffectModifier] = []
+	return Factory.with_persistent_cues(Factory.infinite(no_modifiers), [tag])
+
+
+func test_effect_application_activates_exactly_one_persistent_cue_per_binding() -> void:
+	var active: ActiveGameplayEffect = Factory.apply(asc, _infinite_persistent(IMPACT))
+	assert_eq(active.persistent_cue_handles.size(), 1)
+	assert_true(active.persistent_cue_handles[0].is_valid())
+
+
+func test_removing_the_effect_pools_the_persistent_cue_exactly_once() -> void:
+	var active: ActiveGameplayEffect = Factory.apply(asc, _infinite_persistent(IMPACT))
+	var pooled_before: int = manager.get_pooled_count(IMPACT)
+
+	asc.effects.remove(active)
+	assert_eq(active.persistent_cue_handles.size(), 0, "the receipt is cleared")
+	assert_eq(manager.get_pooled_count(IMPACT), pooled_before + 1, "pooled exactly once")
+
+
+func test_two_effects_sharing_a_cue_tag_get_independent_handles() -> void:
+	var first: ActiveGameplayEffect = Factory.apply(asc, _infinite_persistent(IMPACT))
+	var second: ActiveGameplayEffect = Factory.apply(asc, _infinite_persistent(IMPACT))
+	assert_false(first.persistent_cue_handles[0].id == second.persistent_cue_handles[0].id)
+
+	asc.effects.remove(first)
+	assert_eq(second.persistent_cue_handles.size(), 1, "removing one never touches the other's receipt")
+
+
+func test_a_stack_reapplication_does_not_create_a_second_persistent_cue() -> void:
+	var effect: GameplayEffect = _infinite_persistent(IMPACT)
+	Factory.stacked(effect, GameplayEffect.StackingType.AGGREGATE_BY_TARGET, 5)
+	Factory.apply(asc, effect)
+	var active: ActiveGameplayEffect = Factory.apply(asc, effect)
+	assert_eq(active.stack_count, 2, "the join happened")
+	assert_eq(active.persistent_cue_handles.size(), 1, "one per active effect, not one per join")
+
+
+func test_inhibiting_the_effect_removes_its_persistent_cue() -> void:
+	asc.add_tag(&"Status.Ready")
+	var effect: GameplayEffect = Factory.with_ongoing_requirement(_infinite_persistent(IMPACT), [&"Status.Ready"])
+	var active: ActiveGameplayEffect = Factory.apply(asc, effect)
+	assert_eq(active.persistent_cue_handles.size(), 1)
+
+	asc.remove_tag(&"Status.Ready")
+	assert_true(active.inhibited)
+	assert_eq(active.persistent_cue_handles.size(), 0, "on_removed already ran, receipt cleared")
+
+
+func test_uninhibiting_activates_a_fresh_handle_not_the_old_one() -> void:
+	asc.add_tag(&"Status.Ready")
+	var effect: GameplayEffect = Factory.with_ongoing_requirement(_infinite_persistent(IMPACT), [&"Status.Ready"])
+	var active: ActiveGameplayEffect = Factory.apply(asc, effect)
+	var first_id: int = active.persistent_cue_handles[0].id
+
+	asc.remove_tag(&"Status.Ready")
+	asc.add_tag(&"Status.Ready")
+	assert_false(active.inhibited)
+	assert_eq(active.persistent_cue_handles.size(), 1, "a new lifecycle activation")
+	assert_ne(active.persistent_cue_handles[0].id, first_id, "never the old handle reused")
+
+
+func test_cleanup_ends_persistent_cues_exactly_once() -> void:
+	Factory.apply(asc, _infinite_persistent(IMPACT))
+	var pooled_before: int = manager.get_pooled_count(IMPACT)
+
+	asc.cleanup()
+	assert_eq(manager.get_pooled_count(IMPACT), pooled_before + 1, "pooled exactly once, not per teardown path")
+
+
+func test_missing_registry_activation_returns_an_invalid_handle_without_crashing() -> void:
+	var handle: GameplayCueHandle = asc.activate_persistent_cue(_params_for(&"Cue.NeverRegistered"))
+	assert_false(handle.is_valid())
+	asc.deactivate_persistent_cue(handle, _params_for(&"Cue.NeverRegistered"))
+	pass_test("no crash either way")
+
+
+## Task 19's own "cue callback cannot mutate runtime through exposed internal
+## collection": the params a cue receives carry only an opaque handle, never
+## the live ActiveGameplayEffect a script could reach in and edit.
+func test_cue_params_carry_an_opaque_handle_not_a_live_reference() -> void:
+	var active: ActiveGameplayEffect = Factory.apply(asc, _infinite_persistent(IMPACT))
+	var params: GameplayCueParams = asc.effects.cue_params_for(IMPACT, active.spec, active.handle)
+	assert_true(params.effect_handle is GameplayEffectHandle, "an opaque handle, not the live effect")
+	assert_true(params.effect_handle.same_as(active.handle), "the same identity, not a copy that drifted")
+	var declared_fields: Array[String] = []
+	for property: Dictionary in params.get_property_list():
+		declared_fields.append(property.name)
+	assert_false(
+		declared_fields.has("active_effect"), "no live ActiveGameplayEffect field exists on GameplayCueParams"
+	)
+
+
+func _params_for(tag: StringName) -> GameplayCueParams:
+	var params: GameplayCueParams = GameplayCueParams.new()
+	params.cue_tag = tag
+	params.instigator = fixture.owner
+	params.target = fixture.owner
+	return params
 #endregion

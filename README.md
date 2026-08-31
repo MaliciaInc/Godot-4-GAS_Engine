@@ -243,6 +243,29 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   Overlap detection was deliberately not built as its own task: it is
   `wait_target_data()` plus the existing targeting pipeline, the one
   physical boundary this addon already has for "who did a cast reach".
+- **Cues have a full cosmetic lifecycle**, not just one-shot playback.
+  `GameplayEffect.cues: Array[GameplayCueBinding]` replaces the old
+  `application_cue_tags`/`periodic_cue_tags` pair with one authoring route -
+  each binding names a tag and a `Type` (`EXECUTED_ON_APPLICATION`,
+  `EXECUTED_ON_PERIODIC`, `PERSISTENT`). `GameplayCueNotify` gains
+  `on_active()`/`while_active()`/`on_removed()` for the persistent case and
+  `executed()` for the one-shot case; `executed()` defaults to the F2 legacy
+  `play_cue()` virtual, so an existing subclass that only overrides that one
+  keeps working unchanged - `play_cue()` itself never calls `executed()`,
+  which would recurse for the new API and do nothing for the old one. A
+  PERSISTENT binding runs `on_active`/`while_active` the instant its active
+  effect becomes uninhibited and `on_removed` the instant it is inhibited or
+  removed - the same `state_attached` transition `GameplayEffectInhibitionRuntime`
+  already owns, never a second state machine - and is never auto-pooled on a
+  delay timer while running. `ActiveGameplayEffect.persistent_cue_handles`
+  is the receipt: one `GameplayCueHandle` per active effect per binding,
+  never once per stack join, never searched by tag (two effects may share
+  one). Uninhibiting always starts a fresh lifecycle activation with a new
+  handle, never the old one. `GameplayCueParams` carries a `effect_handle` -
+  an opaque `GameplayEffectHandle`, never the live `ActiveGameplayEffect` a
+  cue script could reach in and mutate through. A missing registry entry
+  degrades to no cue playing, never a gameplay failure, persistent
+  activation included.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

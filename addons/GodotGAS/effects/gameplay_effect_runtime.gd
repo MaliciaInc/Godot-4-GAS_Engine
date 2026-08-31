@@ -271,7 +271,7 @@ func _commit(
 		owner_asc.active_effect_added.emit(active)
 
 	components.notify_applied(spec, active, owner_asc)
-	play_cues(spec.effect_def.application_cue_tags, spec)
+	play_cues(spec.effect_def.get_application_cue_tags(), spec, active.handle)
 	dispatch_events(spec)
 	notify_received(spec)
 	chain.fire_on_application(spec)
@@ -368,20 +368,28 @@ func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 
 
 #region Cues and events
-## Public: also called by GameplayEffectStackingRuntime after a reapplication.
-func play_cues(cue_tags: Array[StringName], spec: GameplayEffectSpec) -> void:
+## Public: also called by GameplayEffectStackingRuntime after a reapplication,
+## and by GameplayEffectInhibitionRuntime for a PERSISTENT binding's params.
+## `effect_handle` is null for INSTANT (no handle exists) or when there is no
+## active effect behind this call yet.
+func play_cues(
+	cue_tags: Array[StringName], spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+) -> void:
 	if owner_asc == null:
 		return
 	for cue_tag: StringName in cue_tags:
-		owner_asc.execute_cue(_cue_params_for(cue_tag, spec))
+		owner_asc.execute_cue(cue_params_for(cue_tag, spec, effect_handle))
 
 
-func _cue_params_for(cue_tag: StringName, spec: GameplayEffectSpec) -> GameplayCueParams:
+func cue_params_for(
+	cue_tag: StringName, spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+) -> GameplayCueParams:
 	var params: GameplayCueParams = GameplayCueParams.new()
 	params.cue_tag = cue_tag
 	params.instigator = spec.context.instigator if spec.context != null else null
 	params.target = owner_asc.get_effect_target()
 	params.context = spec.context
+	params.effect_handle = effect_handle
 	return params
 
 
@@ -413,6 +421,6 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 	components.notify_executed(spec, active, owner_asc)
 	if owner_asc != null:
 		owner_asc.gameplay_effect_executed.emit(spec, active)
-	play_cues(spec.effect_def.periodic_cue_tags, spec)
+	play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
 	dispatch_events(spec)
 #endregion

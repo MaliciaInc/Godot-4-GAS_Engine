@@ -37,12 +37,12 @@ var current_params: CueParams = null
 var _playback_id: int = 0
 
 
-#region Execution Lifecycle
-## Called by the manager when this cue is pulled from the pool and parented.
+#region One-shot lifecycle
+## Called by the manager when this cue is pulled from the pool and parented
+## for an EXECUTED_ON_APPLICATION/EXECUTED_ON_PERIODIC binding.
 func execute_cue(params: CueParams) -> void:
-	current_params = params
-	_playback_id += 1
-	play_cue(params)
+	_begin_playback(params)
+	executed(params)
 
 	if not auto_destroy:
 		return
@@ -54,7 +54,8 @@ func execute_cue(params: CueParams) -> void:
 
 ## Only the playback that scheduled a timer may end it. Without this guard, a
 ## cue reused within `destroy_delay` would be pooled by its predecessor's timer
-## while it is still playing.
+## while it is still playing - and a cue since handed to a PERSISTENT
+## activation would be stolen out from under it the same way.
 func _on_auto_destroy_elapsed(scheduled_id: int) -> void:
 	if scheduled_id != _playback_id:
 		return
@@ -68,8 +69,57 @@ func finish_cue() -> void:
 	cue_finished.emit(self, gameplay_cue_tag)
 
 
-## Override this in a specific cue script. The default does nothing, so a cue
-## that forgets to override still pools correctly instead of hanging forever.
+## New F2.5 entry point. Defaults to the legacy virtual so a subclass that
+## still only overrides `play_cue()` keeps working unchanged.
+func executed(params: CueParams) -> void:
+	play_cue(params)
+
+
+## The F2 override point. Never call `executed()` from here: that would
+## recurse for a subclass using the new API, and do nothing silently for one
+## still using this one.
 func play_cue(_params: CueParams) -> void:
 	pass
+#endregion
+
+
+#region Persistent lifecycle
+## Called by the manager once, when a non-instant active effect's PERSISTENT
+## binding becomes uninhibited. Never schedules an auto-destroy timer - a
+## persistent cue ends explicitly, through `end_persistent()`, not on a delay.
+func begin_persistent(params: CueParams) -> void:
+	_begin_playback(params)
+	on_active(params)
+	while_active(params)
+
+
+## Called once, when the owning active effect is inhibited or removed.
+## Reuses `finish_cue()` - the same signal the manager already pools a
+## one-shot cue from - so persistent cues need no second pooling path.
+func end_persistent(params: CueParams) -> void:
+	on_removed(params)
+	finish_cue()
+
+
+## Override for a cue that starts a loop when it becomes active.
+func on_active(_params: CueParams) -> void:
+	pass
+
+
+## Override for anything that should run once the cue is already looping.
+func while_active(_params: CueParams) -> void:
+	pass
+
+
+## Override for a cue that needs to stop something `on_active`/`while_active`
+## started, before the Node is pooled.
+func on_removed(_params: CueParams) -> void:
+	pass
+
+
+## Shared by both lifecycles: marks a new playback so a stale timer or a
+## reused instance from a prior one can never finish this one.
+func _begin_playback(params: CueParams) -> void:
+	current_params = params
+	_playback_id += 1
 #endregion

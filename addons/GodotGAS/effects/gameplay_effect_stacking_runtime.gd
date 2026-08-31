@@ -267,7 +267,7 @@ func _evaluation_failure(
 func _finish_reapplication(existing: ActiveGameplayEffect, spec: GameplayEffectSpec) -> void:
 	effects.recompose_and_emit(spec)
 	effects.components.notify_applied(spec, existing, effects.owner_asc)
-	effects.play_cues(spec.effect_def.application_cue_tags, spec)
+	effects.play_cues(spec.effect_def.get_application_cue_tags(), spec, existing.handle)
 	effects.dispatch_events(spec)
 	effects.notify_received(spec)
 	effects.chain.fire_on_application(spec)
