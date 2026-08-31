@@ -411,6 +411,8 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 
 	recompose_and_emit(spec)
 	components.notify_executed(spec, active, owner_asc)
+	if owner_asc != null:
+		owner_asc.gameplay_effect_executed.emit(spec, active)
 	play_cues(spec.effect_def.periodic_cue_tags, spec)
 	dispatch_events(spec)
 #endregion

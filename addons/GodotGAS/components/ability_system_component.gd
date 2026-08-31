@@ -49,6 +49,11 @@ signal effect_application_refused(
 ## reason a legacy refusal signal could carry, plus every component reason.
 signal gameplay_effect_application_finished(result: GameplayEffectApplicationResult)
 
+## One periodic tick actually ran - the same "execution" GameplayEffectComponent.
+## on_effect_executed() already means, extended to the ASC as one typed
+## signal rather than a second protocol for ticks.
+signal gameplay_effect_executed(spec: GameplayEffectSpec, active_effect: ActiveGameplayEffect)
+
 ## A gameplay event reached this ASC.
 signal gameplay_event_received(event: GameplayEventData)
 

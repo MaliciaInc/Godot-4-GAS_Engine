@@ -211,6 +211,38 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   removes the spec on the spot, started marks it `pending_remove` before the
   call even returns - so PENDING_REMOVAL, not a bespoke flag, is what stops
   a second activation of the same handle, PER_EXECUTION included.
+- **A standard task library for observation and reactivity**, all
+  `AbilityTaskRuntime`-owned, none inventing a second async framework:
+  `AbilityTaskWaitAttributeChange`/`WaitAttributeThreshold` (five
+  comparisons, optional immediate trigger, no per-frame polling);
+  `WaitTagAdded`/`WaitTagRemoved` (hierarchical, the same rule every tag
+  match in this addon already uses) and `WaitTagQuery` for an arbitrary
+  `GameplayTagQuery` reaching a desired bool; `WaitGameplayEffectApplied`
+  (matches by `GameplayEffectQuery.matches_incoming()`, observes an INSTANT
+  success even with no active handle, and can stay `RUNNING` across several
+  matches when `trigger_once` is false); `WaitGameplayEffectRemoved` (by
+  exact handle or by query) and `WaitGameplayEffectStackChange`;
+  `WaitAbilityActivated`/`WaitAbilityEnded`, watching Task 17's own
+  `ability_activated`/`ability_runtime_ended`, by handle or by a
+  `GameplayTagQuery` over effective ability tags; `WaitConfirmCancel` (two
+  input ids, one `Decision` enum, no UI of its own);
+  `AbilityTaskRepeat` (runtime-driven, never a `SceneTreeTimer` - a large
+  delta pays owed repetitions from elapsed time, capped and carried as
+  backlog exactly the way `GameplayEffectScheduler` already paces periodic
+  ticks); `AbilityTaskPlayAnimationAndWait` (Godot-native, never an
+  AnimMontage reimplementation, `stop_on_cancel` defaulting false since the
+  `AnimationPlayer` may be shared). A new ASC signal,
+  `gameplay_effect_executed(spec, active_effect)`, extends the existing
+  application/execution protocol to periodic ticks specifically, rather than
+  a task inferring them from attribute changes. Every task with no place in
+  `AbilityTaskRuntime`'s dispatch protocol connects straight to the ASC
+  signal it needs and disconnects in `_on_finish()` - never a second bus.
+  Factories live in `AbilityTaskFactory`, called as
+  `AbilityTaskFactory.wait_tag_added(self, tag)` from inside an ability,
+  rather than fifteen more one-line wrappers on `GameplayAbility` itself.
+  Overlap detection was deliberately not built as its own task: it is
+  `wait_target_data()` plus the existing targeting pipeline, the one
+  physical boundary this addon already has for "who did a cast reach".
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

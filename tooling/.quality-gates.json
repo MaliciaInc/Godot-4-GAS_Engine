@@ -282,6 +282,21 @@
         "left": "test/unit/test_ability_lifecycle.gd:test_cancel_immediately_aborts_a_running_instance_and_drops_the_spec",
         "right": "test/unit/test_ability_lifecycle.gd:test_after_active_end_lets_a_running_instance_finish_first",
         "reason": "Deliberately parallel, the same way the 2D/3D targeting suites are: both grant and activate the same kind of channelling ability, then remove it - one under CANCEL_IMMEDIATELY, the other under AFTER_ACTIVE_END - and assert the opposite outcome for the still-running instance. The parallel is the point: AbilityRemovalPolicy's two values only mean something in contrast to each other, and collapsing these into one parametrized test would hide that 'aborted now' and 'left running until it ends on its own' are two distinct regressions this suite needs to catch independently."
+      },
+      {
+        "left": "addons/GodotGAS/abilities/tasks/*.gd:create*",
+        "right": "addons/GodotGAS/abilities/tasks/*.gd:create*",
+        "reason": "Task 18's eight new observation tasks all follow the one factory shape `GameplayAbilityTask` itself already established: `var task = X.new(); task.owner_ability = ability; task.<fields> = <args>; task.target_asc = target if target != null else (ability.owner_asc if ability != null else null); return task`. Two `create()`/`create_matching()` functions are masked- or structural-similar because they are both that one mechanical shape GDScript has no named-parameter constructor to write once and share - not because one was copied from another. Forcing a structural difference between any two of them to dodge the score would make each task harder to read for nothing real, the same reasoning already applied to the *Case._init and _*_cases wildcards."
+      },
+      {
+        "left": "addons/GodotGAS/abilities/tasks/ability_task_wait_confirm_cancel.gd:create",
+        "right": "addons/GodotGAS/cues/gameplay_cue_params.gd:for_target",
+        "reason": "Two unrelated two-field constructors - a task naming its confirm/cancel input slots, a cue param naming its instigator/target - that happen to share the shape of `var x = X.new(); x.a = a; x.b = b; return x`. Coincidence of shape, not of purpose: merging them would couple an ability task to a cue's authoring surface for no reason either was written."
+      },
+      {
+        "left": "addons/GodotGAS/abilities/tasks/ability_task_factory.gd:*",
+        "right": "addons/GodotGAS/abilities/tasks/ability_task_factory.gd:*",
+        "reason": "Every factory in this file but `_own()` is `return _own(ability, X.create(ability, ...args)) as X` - the one wrapper shape the file exists to apply uniformly across Task 18's whole task library, declared in the file's own header comment. Two factories are masked-similar because they are both that one delegation, not because one was copied from another."
       }
     ]
   }
