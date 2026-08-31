@@ -27,6 +27,9 @@ enum ActivationError {
 	INTERNAL_ERROR,
 	## Marked for REMOVE_ON_ACTIVE_END removal - see mark_pending_removal().
 	PENDING_REMOVAL,
+	## Refused by another spec's block_abilities_query or an uninhibited
+	## GameplayEffectBlockAbilityTagsComponent - never BLOCKED_TAG.
+	BLOCKED_BY_ACTIVE_ABILITY,
 }
 
 var owner_asc: AbilitySystemComponent = null
@@ -37,6 +40,9 @@ var tasks: AbilityTaskRuntime = AbilityTaskRuntime.new()
 
 ## How a spec's instancing policy turns into a running Node.
 var instancing: AbilityInstancingRuntime = AbilityInstancingRuntime.new()
+
+## Effective tags, cancel/block matching, activation-owned tag refcounting.
+var tag_semantics: AbilityTagSemanticsRuntime = AbilityTagSemanticsRuntime.new()
 
 var _specs: Array[GameplayAbilitySpec] = []
 var _specs_by_id: Dictionary[int, GameplayAbilitySpec] = {}
@@ -114,9 +120,8 @@ func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHan
 	return handle
 
 
-## Free what a preparation instantiated, if it was never committed.
-## Idempotent - a second call on an already-consumed preparation does
-## nothing, never a double free.
+## Free what a preparation instantiated, if never committed. Idempotent - a
+## second call on an already-consumed preparation is a no-op, never a double free.
 func discard_prepared_grant(prepared: PreparedAbilityGrant) -> void:
 	if prepared == null or prepared.consumed:
 		return
@@ -245,12 +250,15 @@ func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and instance.is_active:
 		return ActivationError.ALREADY_ACTIVE
-	if tags.has_any(spec.definition.legacy_activation_blocked_tags):
+	if _query_matches_runtime(spec.definition.activation_blocked_query, tags):
 		return ActivationError.BLOCKED_TAG
 	if tags.has_any(get_cooldown_tags(spec)):
 		return ActivationError.ON_COOLDOWN
-	if not tags.has_all(spec.definition.legacy_activation_required_tags):
+	var required: GameplayTagQuery = spec.definition.activation_required_query
+	if required != null and not required.is_empty() and not required.matches_runtime(tags):
 		return ActivationError.MISSING_TAG
+	if tag_semantics.blocked_by_active_ability(spec):
+		return ActivationError.BLOCKED_BY_ACTIVE_ABILITY
 	if owner_asc != null and not spec.definition.costs.is_empty():
 		# The same resolver commit_ability() uses - a preview here and the
 		# actual charge can never disagree.
@@ -264,34 +272,27 @@ func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
 	return ActivationError.NONE
 
 
+static func _query_matches_runtime(query: GameplayTagQuery, runtime: GameplayTagRuntime) -> bool:
+	return query != null and not query.is_empty() and query.matches_runtime(runtime)
+
+
 func can_activate(spec: GameplayAbilitySpec) -> bool:
 	return activation_error(spec) == ActivationError.NONE
 
 
-## Abort any running ability whose spec carries or is blocked by one of these
-## tags - every running instance, PER_ACTOR's one or PER_EXECUTION's several.
+## See AbilityTagSemanticsRuntime.effective_ability_tags().
+static func effective_ability_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
+	return AbilityTagSemanticsRuntime.effective_ability_tags(spec)
+
+
+## See AbilityTagSemanticsRuntime.cancel_matching_query().
+func cancel_matching_query(query: GameplayTagQuery, excluding: GameplayAbilitySpec = null) -> void:
+	tag_semantics.cancel_matching_query(query, excluding)
+
+
+## See AbilityTagSemanticsRuntime.cancel_with_tags().
 func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
-	for spec: GameplayAbilitySpec in _specs:
-		if spec.definition == null or not _spec_matches_cancel_tags(spec, cancel_tags):
-			continue
-		var instance: GameplayAbility = spec.per_actor_instance
-		if instance != null and is_instance_valid(instance) and instance.is_active:
-			instance.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
-		for execution: GameplayAbility in spec.active_instances.duplicate():
-			if is_instance_valid(execution) and execution.is_active:
-				execution.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
-
-
-static func _spec_matches_cancel_tags(
-	spec: GameplayAbilitySpec, cancel_tags: Array[StringName]
-) -> bool:
-	for tag: StringName in cancel_tags:
-		if (
-			spec.definition.legacy_ability_tag == tag
-			or spec.definition.legacy_activation_blocked_tags.has(tag)
-		):
-			return true
-	return false
+	tag_semantics.cancel_with_tags(cancel_tags)
 #endregion
 
 

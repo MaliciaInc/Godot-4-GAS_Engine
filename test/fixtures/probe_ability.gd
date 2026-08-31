@@ -41,7 +41,7 @@ var last_commit: AbilityCommitResult = null
 static func build(tag: StringName) -> ProbeAbility:
 	var probe: ProbeAbility = ProbeAbility.new()
 	probe.name = String(tag).replace(".", "_")
-	probe.ability_tag = tag
+	probe.ability_tags = [tag]
 	return probe
 
 

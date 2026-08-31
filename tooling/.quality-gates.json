@@ -257,6 +257,11 @@
         "left": "test/unit/*.gd:_*_cases",
         "right": "test/unit/*.gd:_*_cases",
         "reason": "Same shape as the *Case._init wildcard above, one level up: every use_parameters() case-list builder is `var x = XCase.new(); x.field = ...; return [x, ...] as Array[XCase]`, because that is the only way GDScript builds a handful of named-field objects without a keyword constructor. Two builders are masked-similar because they are both that one mechanical shape, not because one was copied from the other - contorting a case list's construction to dodge the score would make the test harder to read for nothing real."
+      },
+      {
+        "left": "test/unit/test_ability_tag_semantics.gd:test_activating_an_ability_cancels_others_matching_its_cancel_query",
+        "right": "test/unit/test_ability_tag_semantics.gd:test_a_cancel_ability_tags_effect_cancels_matching_active_abilities",
+        "reason": "Task 15's own design calls for cancel_matching_query to have exactly one implementation reached by two distinct callers: an ability's own cancel_abilities_query on a successful activation, and GameplayEffectCancelAbilityTagsComponent.on_effect_applied(). These two tests are deliberately parallel, the same way the 2D/3D targeting suites are - each grants a channelling ability, triggers the OTHER caller, and asserts the same cancellation - because the point is that both entry points reach the identical algorithm. Forcing a structural difference between them to dodge the score would hide that the parallel is the point: a reader comparing the two should see the same shape proving the same shared code path, not two independently-shaped tests that happen to prove related things."
       }
     ]
   }

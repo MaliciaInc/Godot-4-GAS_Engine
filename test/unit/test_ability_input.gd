@@ -40,7 +40,7 @@ func after_each() -> void:
 
 
 ## Grant a configured ability to the ASC through the real grant pipeline.
-## Whatever configure sets - activation_blocked_tags, costs, anything the
+## Whatever configure sets - activation_blocked_query, costs, anything the
 ## grant snapshots - is authored before the grant, since editing it on the
 ## running instance afterward would not reach the frozen definition.
 func _granted(tag: StringName, configure: Callable = Callable()) -> ProbeAbility:
@@ -199,7 +199,11 @@ func test_a_release_reaches_nothing_when_the_ability_is_idle() -> void:
 #region The gate still applies to input
 func test_a_blocked_ability_does_not_activate_on_a_press() -> void:
 	var ability: ProbeAbility = _granted(FIRE, func(p: ProbeAbility) -> void:
-		p.activation_blocked_tags = [STUNNED] as Array[StringName]
+		var blocked: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+		blocked.operator = GameplayTagQueryExpression.Operator.ANY
+		blocked.tags = [STUNNED] as Array[StringName]
+		p.activation_blocked_query = GameplayTagQuery.new()
+		p.activation_blocked_query.root = blocked
 	)
 	asc.bind_ability_to_input(ability, SLOT)
 	asc.add_tag(STUNNED)

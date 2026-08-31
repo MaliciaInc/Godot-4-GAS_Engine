@@ -143,6 +143,25 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   `GameplayEffectComponentApplyRequest.existing_active_effect` skips
   re-preparing on a reapplication, and the stack runtime preserves its
   state across the join instead of erasing it.
+- **Gameplay tag semantics are queries, not tag arrays.** `ability_tags` is
+  identity, combined with `spec.dynamic_tags` into one *effective tags* set
+  every other rule reads - never activation gating on its own.
+  `activation_required_query`/`activation_blocked_query` gate a single
+  activation; `activation_owned_tags` are granted once per definition on the
+  0→1 `active_count` edge and retired once on the 1→0 edge, never once per
+  `PER_EXECUTION` instance. A successful activation cancels every other
+  granted spec its `cancel_abilities_query` matches (never itself unless
+  `allow_self_cancel`), and is refused with `BLOCKED_BY_ACTIVE_ABILITY` -
+  never the generic `BLOCKED_TAG` - by another spec's `block_abilities_query`
+  or an uninhibited `GameplayEffectBlockAbilityTagsComponent` on an active
+  effect. `GameplayEffectCancelAbilityTagsComponent` reaches the identical
+  cancellation algorithm from the effect side, never a second one.
+  `target_required_query`/`target_blocked_query` gate `accepts_target()`,
+  enforced once inside `apply_effect_to_targets()` so nothing can reach a
+  target by skipping a UI check. Every rule is read from the frozen
+  `GameplayAbilityDefinitionSnapshot`, immune to a template edited after the
+  grant. `AbilityTagSemanticsRuntime` owns all of it as one collaborator, the
+  same shape as `AbilityInstancingRuntime`/`AbilityTaskRuntime`.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

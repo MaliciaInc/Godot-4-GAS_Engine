@@ -58,7 +58,7 @@ var activations: int = 0
 static func build(tag: StringName) -> TaskProbeAbility:
 	var probe: TaskProbeAbility = TaskProbeAbility.new()
 	probe.name = String(tag).replace(".", "_")
-	probe.ability_tag = tag
+	probe.ability_tags = [tag]
 	return probe
 
 

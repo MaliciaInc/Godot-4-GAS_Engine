@@ -149,6 +149,17 @@ func get_additional_effects_component() -> GameplayEffectAdditionalEffectsCompon
 	return null
 
 
+## The query this effect's GameplayEffectBlockAbilityTagsComponent blocks
+## ability activation with, or null if it has none. At most one is expected;
+## the first found wins.
+func get_block_ability_tags_query() -> GameplayTagQuery:
+	for component: GameplayEffectComponent in components:
+		var blocker: GameplayEffectBlockAbilityTagsComponent = component as GameplayEffectBlockAbilityTagsComponent
+		if blocker != null:
+			return blocker.query
+	return null
+
+
 ## The query this effect's GameplayEffectRemoveOtherEffectsComponent purges
 ## by, or null if it has none. At most one is expected; the first found wins.
 func get_remove_other_effects_query() -> GameplayEffectQuery:
@@ -230,6 +241,7 @@ func _has_observable_component() -> bool:
 			or component is GameplayEffectCustomCanApplyComponent
 			or component is GameplayEffectRemoveOtherEffectsComponent
 			or component is GameplayEffectAdditionalEffectsComponent
+			or component is GameplayEffectCancelAbilityTagsComponent
 		):
 			return true
 	return false

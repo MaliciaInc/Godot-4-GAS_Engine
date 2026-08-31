@@ -31,7 +31,7 @@ var finished_successfully: bool = false
 static func build(tag: StringName) -> TargetingProbeAbility:
 	var probe: TargetingProbeAbility = TargetingProbeAbility.new()
 	probe.name = String(tag).replace(".", "_")
-	probe.ability_tag = tag
+	probe.ability_tags = [tag]
 	return probe
 
 

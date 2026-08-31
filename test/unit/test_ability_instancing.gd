@@ -48,7 +48,7 @@ func _grant_channeling(
 	policy: GameplayAbility.InstancingPolicy, input_id: int = -1
 ) -> GameplayAbilitySpec:
 	var probe: ChannelingAbility = ChannelingAbility.new()
-	probe.ability_tag = PROBE_TAG
+	probe.ability_tags = [PROBE_TAG]
 	probe.instancing_policy = policy
 	return AbilityFactory.give(asc, probe, 1.0, input_id)
 
@@ -203,7 +203,7 @@ func test_a_press_starts_one_more_execution_alongside_those_already_running() ->
 ## received cannot make the loop skip its neighbour.
 func test_a_press_reaches_every_running_execution_even_when_the_first_ends_itself() -> void:
 	var template: SelfEndingAbility = SelfEndingAbility.new()
-	template.ability_tag = PROBE_TAG
+	template.ability_tags = [PROBE_TAG]
 	template.instancing_policy = GameplayAbility.InstancingPolicy.PER_EXECUTION
 	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, template, 1.0, SLOT)
 
@@ -230,7 +230,7 @@ func _event(tag: StringName) -> GameplayEventData:
 
 func test_an_event_activates_a_per_execution_listener_with_no_per_actor_template() -> void:
 	var probe: ChannelingAbility = ChannelingAbility.new()
-	probe.ability_tag = PROBE_TAG
+	probe.ability_tags = [PROBE_TAG]
 	probe.instancing_policy = GameplayAbility.InstancingPolicy.PER_EXECUTION
 	probe.trigger_event_tag = EVENT_TAG
 	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
