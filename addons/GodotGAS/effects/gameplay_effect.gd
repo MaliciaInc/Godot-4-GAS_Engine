@@ -103,6 +103,17 @@ func get_remove_other_effects_query() -> GameplayEffectQuery:
 	return null
 
 
+## The query this effect's GameplayEffectImmunityComponent blocks incoming
+## applications with, or null if it has none. At most one is expected; the
+## first found wins.
+func get_immunity_query() -> GameplayEffectQuery:
+	for component: GameplayEffectComponent in components:
+		var immunity: GameplayEffectImmunityComponent = component as GameplayEffectImmunityComponent
+		if immunity != null:
+			return immunity.incoming_effect_query
+	return null
+
+
 ## Whether applying this can be noticed by anything except the attributes it
 ## moves and the tags it grants.
 ##

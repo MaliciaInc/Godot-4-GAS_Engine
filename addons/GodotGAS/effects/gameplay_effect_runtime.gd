@@ -38,22 +38,15 @@ var _next_application_order: int = 0
 
 
 #region Queries
-## Every active effect, as a copy.
-##
-## A copy because a caller that loops over this while removing is writing
-## the most ordinary code there is, and handing back the live array made
-## that loop skip every other effect.
+## Every active effect, as a copy - a caller looping while removing must not
+## see the live array skip an effect.
 func active_effects() -> Array[ActiveGameplayEffect]:
 	return _active.duplicate()
 
 
-## The live array, for the scheduler alone.
-##
-## It walks backwards with a bounds guard precisely so an effect removing
-## itself or another during the walk cannot skip one, and it runs every
-## frame, so a copy per update would be an allocation for nothing. Nobody
-## else should hold this: the guarantee comes from how it is iterated, not
-## from the array.
+## The live array, for the scheduler alone: it walks backwards with a bounds
+## guard so a self/other removal mid-walk cannot skip one, and runs every
+## frame, so a copy here would be an allocation for nothing.
 func live_active_effects() -> Array[ActiveGameplayEffect]:
 	return _active
 
@@ -62,11 +55,9 @@ func active_count() -> int:
 	return _active.size()
 
 
-## Remove `active` from the registry without detaching or emitting
-## anything, and without clearing what it held. For
-## GameplayEffectPurgeTransaction alone, which manages tags and
-## contributions itself so it can capture exactly what changed and stay
-## reversible until the incoming effect's outcome is known.
+## Remove `active` from the registry without detaching or emitting anything,
+## and without clearing what it held. For GameplayEffectPurgeTransaction
+## alone, which stays reversible until the incoming effect's outcome is known.
 func extract_active(active: ActiveGameplayEffect) -> int:
 	var index: int = _active.find(active)
 	if index >= 0:
@@ -81,16 +72,11 @@ func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
 	_active.insert(clampi(at_index, 0, _active.size()), active)
 
 
-## The longest remaining duration among effects granting a tag, in seconds, for
-## a cooldown sweep in the UI.
-##
-## INF when something grants it with no end. `time_remaining` is only ever set
-## for a DURATION effect, so an INFINITE one used to leave this at 0.0 and the
-## sweep read a cooldown that never expires as one that already had.
-##
-## Turn-based effects are not counted: their clock runs in turns, and answering
-## a question about seconds with a number of turns is worse than answering 0.
-## Ask `tag_turns_remaining` for those.
+## The longest remaining duration among effects granting a tag, in seconds,
+## for a cooldown sweep in the UI. INF when something grants it with no end -
+## an INFINITE effect leaves `time_remaining` at 0.0, which used to read as a
+## cooldown that already had rather than one that never expires. Turn-based
+## effects are not counted: ask `tag_turns_remaining` for those instead.
 func tag_duration_remaining(tag: StringName) -> float:
 	var longest: float = 0.0
 	for effect: ActiveGameplayEffect in _active:
@@ -130,6 +116,9 @@ func tag_turns_remaining(tag: StringName) -> int:
 func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if spec == null or spec.effect_def == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
+
+	if _is_immune_to(spec):
+		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.IMMUNE, spec)
 
 	var effect: GameplayEffect = spec.effect_def
 	if not components.validate_all(effect).is_ok():
@@ -178,6 +167,16 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	_next_application_order += 1
 	var active: ActiveGameplayEffect = _commit(spec, evaluation, order)
 	return GameplayEffectApplicationResult.ok(spec, active)
+
+
+## True if any active effect's GameplayEffectImmunityComponent query matches
+## `spec` - the first match blocks, since a refusal is total either way.
+func _is_immune_to(spec: GameplayEffectSpec) -> bool:
+	for active: ActiveGameplayEffect in _active:
+		var query: GameplayEffectQuery = active.get_effect_def().get_immunity_query()
+		if query != null and query.matches_incoming(spec, owner_asc):
+			return true
+	return false
 
 
 func _evaluate(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluationResult:

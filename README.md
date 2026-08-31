@@ -64,6 +64,14 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   read live from the target ASC, source tags are a snapshot taken once at
   application. `GameplayEffectRemoveOtherEffectsComponent` replaces the old
   flat tag array with a query, resolved before the new effect is evaluated.
+- **Immunity moves to the target's own state.** A `GameplayEffectImmunity-
+  Component`, carried by an effect already active on the target, blocks any
+  incoming application its `GameplayEffectQuery` matches - asset/granted/
+  source tags, definition, modified attribute, and the target's own live
+  tags - before the incoming effect's own preflight, purge or evaluation
+  ever run. Fireball never has to know every ward that might stop it; the
+  ward declares what it stops. The first matching immunity wins; removing
+  it lets the same application through again.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic
@@ -155,7 +163,7 @@ addons/GodotGAS/
   components/      the ASC facade, ability runtime, tag runtime
   cooldowns/       typed cooldown state
   effects/         the pure evaluator, the effect runtime, the scheduler
-  effects/components/ GameplayEffectComponent and the seven concrete kinds
+  effects/components/ GameplayEffectComponent and the eight concrete kinds
   magnitudes/      typed modifier magnitudes: scalable, attribute-based,
                    SetByCaller, custom calculations
   events/          typed event data and hierarchical dispatch

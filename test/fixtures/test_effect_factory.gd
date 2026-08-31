@@ -181,6 +181,15 @@ static func with_application_cues(
 ) -> GameplayEffect:
 	effect.application_cue_tags = tags
 	return effect
+
+
+## Attaches a GameplayEffectImmunityComponent: while `effect` is active on a
+## target, any incoming application `query` matches is refused.
+static func immune_to(effect: GameplayEffect, query: GameplayEffectQuery) -> GameplayEffect:
+	var immunity: GameplayEffectImmunityComponent = GameplayEffectImmunityComponent.new()
+	immunity.incoming_effect_query = query
+	effect.components.append(immunity)
+	return effect
 #endregion
 
 
@@ -195,6 +204,19 @@ static func apply(
 	var instigator: Node = source if source != null else target.get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
 	return target.apply_effect_spec(GameplayEffectSpec.new(effect, context, level))
+
+
+## Same as apply(), but returns the full typed result - for asserting on a
+## refusal's status rather than only "was there an active effect back".
+static func apply_result(
+	target: AbilitySystemComponent,
+	effect: GameplayEffect,
+	source: Node = null,
+	level: float = 1.0
+) -> GameplayEffectApplicationResult:
+	var instigator: Node = source if source != null else target.get_effect_target()
+	var context: GameplayEffectContext = GameplayEffectContext.new(instigator)
+	return target.apply_effect_spec_result(GameplayEffectSpec.new(effect, context, level))
 #endregion
 
 

@@ -17,6 +17,7 @@ enum Status {
 	INVALID_DEFINITION,
 	COMPONENT_REJECTED,
 	EVALUATION_FAILED,
+	IMMUNE,
 }
 
 var status: Status = Status.SUCCESS

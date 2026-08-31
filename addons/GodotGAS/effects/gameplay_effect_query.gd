@@ -24,6 +24,17 @@ enum InhibitionFilter {
 var source: Node = null
 
 
+## The fields `_matches_common` needs, read off either an ActiveGameplayEffect
+## or an incoming spec - one object so the two callers stay under the
+## parameter-count limit instead of forwarding five loose values each.
+class _MatchSubject:
+	var effect_def: GameplayEffect
+	var instigator: Node
+	var asset_tags: Array[StringName]
+	var granted_tags: Array[StringName]
+	var source_tags: Array[StringName]
+
+
 func is_empty() -> bool:
 	return (
 		effect_definition == null
@@ -43,22 +54,47 @@ func is_empty() -> bool:
 func matches(active: ActiveGameplayEffect, target_asc: AbilitySystemComponent) -> bool:
 	if active == null or active.spec == null or active.get_effect_def() == null:
 		return false
-	if effect_definition != null and active.get_effect_def() != effect_definition:
-		return false
-	if source != null and active.get_instigator() != source:
-		return false
 	if inhibition == InhibitionFilter.INHIBITED_ONLY:
 		# Inhibition does not exist yet (Task 11): nothing is ever inhibited.
 		return false
-	if asset_tags != null and not asset_tags.matches_tags(active.spec.get_asset_tags()):
+	var subject: _MatchSubject = _MatchSubject.new()
+	subject.effect_def = active.get_effect_def()
+	subject.instigator = active.get_instigator()
+	subject.asset_tags = active.spec.get_asset_tags()
+	subject.granted_tags = active.granted_tags
+	subject.source_tags = active.spec.source_tags_snapshot
+	return _matches_common(subject, target_asc)
+
+
+## For immunity: matches an incoming, not-yet-active spec against the same
+## AND'd fields as `matches()`, read straight off the spec since it has no
+## ActiveGameplayEffect yet. `inhibition` never applies to an incoming spec.
+func matches_incoming(spec: GameplayEffectSpec, target_asc: AbilitySystemComponent) -> bool:
+	if spec == null or spec.effect_def == null:
 		return false
-	if granted_tags != null and not granted_tags.matches_tags(active.granted_tags):
+	var subject: _MatchSubject = _MatchSubject.new()
+	subject.effect_def = spec.effect_def
+	subject.instigator = spec.context.instigator if spec.context != null else null
+	subject.asset_tags = spec.get_asset_tags()
+	subject.granted_tags = spec.get_granted_tags()
+	subject.source_tags = spec.source_tags_snapshot
+	return _matches_common(subject, target_asc)
+
+
+func _matches_common(subject: _MatchSubject, target_asc: AbilitySystemComponent) -> bool:
+	if effect_definition != null and subject.effect_def != effect_definition:
 		return false
-	if source_tags != null and not source_tags.matches_tags(active.spec.source_tags_snapshot):
+	if source != null and subject.instigator != source:
+		return false
+	if asset_tags != null and not asset_tags.matches_tags(subject.asset_tags):
+		return false
+	if granted_tags != null and not granted_tags.matches_tags(subject.granted_tags):
+		return false
+	if source_tags != null and not source_tags.matches_tags(subject.source_tags):
 		return false
 	if target_tags != null and target_asc != null and not target_tags.matches_runtime(target_asc.tags):
 		return false
-	if modified_attribute != &"" and not _modifies_attribute(active.get_effect_def(), modified_attribute):
+	if modified_attribute != &"" and not _modifies_attribute(subject.effect_def, modified_attribute):
 		return false
 	return true
 
