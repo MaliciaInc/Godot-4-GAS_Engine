@@ -125,6 +125,40 @@ func test_a_finished_cue_forgets_its_parameters() -> void:
 #endregion
 
 
+#region The registry's own lookup
+## `GameplayCueRegistry.get_scene_for_tag` and GameplayCueManager both answer
+## "which scene plays for this tag", and they answered differently.
+##
+## The manager builds a Dictionary while loading, skipping an entry with no tag
+## or no scene, so a tag listed twice resolves to the last usable entry. The
+## registry's own lookup returned the first entry carrying the tag whatever it
+## held - so a duplicate answered with the earlier scene, and an entry whose
+## scene was left empty answered null for a tag the manager plays happily.
+##
+## Nothing in the addon calls it, which is why the two were free to drift; it is
+## public on an exported Resource, so a game may well be the one asking.
+func test_the_registry_answers_the_same_scene_the_manager_plays() -> void:
+	var first: GameplayCueEntry = GameplayCueEntry.new()
+	first.tag = IMPACT
+	var second: GameplayCueEntry = GameplayCueEntry.new()
+	second.tag = IMPACT
+	second.scene = manager._cue_scenes[IMPACT]
+
+	var registry: GameplayCueRegistry = GameplayCueRegistry.new()
+	registry.entries = [first, second] as Array[GameplayCueEntry]
+
+	assert_eq(
+		registry.get_scene_for_tag(IMPACT), second.scene,
+		"the entry the manager would have kept, not the unusable one before it"
+	)
+
+
+func test_the_registry_answers_nothing_for_a_tag_it_does_not_carry() -> void:
+	var registry: GameplayCueRegistry = GameplayCueRegistry.new()
+	assert_null(registry.get_scene_for_tag(IMPACT))
+#endregion
+
+
 #region Pooling
 func test_the_pool_starts_empty_for_an_unknown_tag() -> void:
 	assert_not_null(manager, "the autoload is present")
