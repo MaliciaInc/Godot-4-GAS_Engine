@@ -3,9 +3,10 @@
 ## Both directions at once is what makes this the awkward one. A completed quest
 ## becomes a gameplay event; a gameplay event can be progress on a quest; and a
 ## designer who gives one quest overlapping tags would have the completion event
-## come straight back and complete the same quest again, forever. A flag raised
-## only around the outward call closes that door without asking anyone to
-## configure their way around it.
+## come straight back and complete the same quest again, forever. A depth held
+## across the outward call closes that door without asking anyone to configure
+## their way around it - a depth rather than a flag, because a listener can
+## announce a second quest from inside the first announcement.
 ##
 ## Quests are held only as they are seen. The addon's public lookup by id
 ## exposes operations this bridge has no business performing, so instead it
@@ -45,8 +46,17 @@ var _quest_system: Node = null
 ## Quests this bridge has actually been handed, by id. Never invented.
 var _observed: Dictionary[int, Object] = {}
 
-## Raised only while a quest announcement is being turned into a gameplay event.
-var _forwarding_quest_event: bool = false
+## How many quest announcements are being turned into gameplay events right now.
+##
+## A depth, not a flag. A listener on the outward event can announce a second
+## quest, and that nested forward used to lower the flag on its way out while
+## the outer one was still being dispatched - so every listener after it saw
+## the door standing open, and the outer completion event walked back in as
+## progress on the very quest that produced it.
+##
+## Raising and lowering bracket one synchronous call with nothing between them
+## that can return early, so the pair always balances.
+var _forwarding_depth: int = 0
 
 
 #region Binding
@@ -173,11 +183,12 @@ func _forward(quest: Object, moment: Moment) -> void:
 	event.instigator = avatar
 	event.magnitude = float(quest_id)
 
-	# Raised around this call only. A completion turned into an event must not
-	# arrive back at the objective listener and complete the same quest again.
-	_forwarding_quest_event = true
+	# Held around this call only. A completion turned into an event must not
+	# arrive back at the objective listener and complete the same quest again,
+	# and it must stay held while a nested announcement finishes inside it.
+	_forwarding_depth += 1
 	target_asc.send_gameplay_event(event)
-	_forwarding_quest_event = false
+	_forwarding_depth -= 1
 
 	quest_event_forwarded.emit(quest_id, tag)
 
@@ -210,8 +221,8 @@ func _binding_for(quest_id: int) -> QuestGasBinding:
 
 #region Gameplay reaching the quests
 func _on_gameplay_event(event: GameplayEventData) -> void:
-	# The door against re-entry: this is the event we just sent outward.
-	if _forwarding_quest_event or event == null or _quest_system == null:
+	# The door against re-entry: this is an event still being sent outward.
+	if _forwarding_depth > 0 or event == null or _quest_system == null:
 		return
 
 	for binding: QuestGasBinding in bindings:

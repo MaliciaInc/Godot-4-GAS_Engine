@@ -259,6 +259,47 @@ func test_a_completion_that_looks_like_progress_does_not_loop() -> void:
 	assert_eq(forwarded, [ACCEPTED_TAG, OBJECTIVE_TAG] as Array[StringName], "and it settled")
 
 
+## The guard was a flag, and a flag is not a depth.
+##
+## A listener that runs before the bridge's own can turn one outward event into
+## a second quest announcement. That nested forward raises the flag, sends its
+## own event, and lowers it again - while the outer forward is still being
+## dispatched. Every listener after that point saw the door standing open, and
+## the outer completion event walked back in as progress on the very quest that
+## produced it, which is the one thing this bridge exists to prevent.
+func test_a_nested_announcement_does_not_open_the_door_for_the_outer_one() -> void:
+	var overlapping: QuestGasBinding = _binding(QUEST_ID)
+	overlapping.completed_event_tag = OBJECTIVE_TAG
+	overlapping.auto_complete_on_objective_event = true
+	var entries: Array[QuestGasBinding] = [overlapping, _binding(OTHER_ID)]
+
+	# Connected before bind(), so Godot dispatches it before the bridge's own
+	# handler for the same event. It fires on the completion event only - the one
+	# the guard is protecting - and only once, because this is a nesting test and
+	# not a recursion one.
+	var announced: Array[bool] = [false]
+	var other: FakeQuest = Quest.build(OTHER_ID)
+	fixture.asc.gameplay_event_received.connect(
+		func(event: GameplayEventData) -> void:
+			if announced[0] or event.event_tag != OBJECTIVE_TAG:
+				return
+			announced[0] = true
+			system.offer(other)
+	)
+	assert_true(_bind_with(entries))
+
+	var quest: FakeQuest = Quest.build(QUEST_ID)
+	system.accept(quest)
+
+	system.finish(quest)
+
+	assert_true(announced[0], "the nested announcement really happened")
+	assert_eq(
+		system.completed.size(), 0,
+		"the outer completion event still did not come back as progress on its own quest"
+	)
+
+
 ## Progress arriving from elsewhere still completes, and still settles.
 func test_progress_from_outside_completes_once_and_settles() -> void:
 	var overlapping: QuestGasBinding = _binding(QUEST_ID)
