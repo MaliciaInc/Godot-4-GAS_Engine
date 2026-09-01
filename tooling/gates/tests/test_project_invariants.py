@@ -13,6 +13,7 @@ so what is asserted is the checker's verdict, not an internal helper.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -113,6 +114,84 @@ class AutoloadTests(unittest.TestCase):
             any("gone.gd" in item and "does not exist" in item for item in found),
             found,
         )
+
+
+class UidPairingTests(unittest.TestCase):
+    """A script and its `.uid` are a pair, and both halves are checked.
+
+    `tracked_files()` shells out to git and returns None anywhere that is not a
+    checkout, which would make every assertion here vacuously true - so these
+    build a real one rather than a directory of files.
+    """
+
+    def _checkout(self, root: Path, files: dict[str, str]) -> None:
+        subprocess.run(
+            [project_invariants.gate_io.GIT_EXECUTABLE, "init", "-q", str(root)],
+            check=True, capture_output=True,
+        )
+        (root / project_invariants.PROJECT_FILE).write_text(
+            sound_project_file(), encoding="utf-8"
+        )
+        for name, body in files.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(body, encoding="utf-8")
+        subprocess.run(
+            [project_invariants.gate_io.GIT_EXECUTABLE, "-C", str(root), "add", "-A"],
+            check=True, capture_output=True,
+        )
+
+    def test_a_script_tracked_without_its_uid_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._checkout(root, {"test/unit/test_thing.gd": "extends Node\n"})
+            found = project_invariants.problems(root)
+        self.assertTrue(
+            any("test_thing.gd" in item for item in found),
+            "a script with no .uid has to be named, got %r" % found,
+        )
+
+    def test_a_script_paired_with_its_uid_is_sound(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._checkout(
+                root,
+                {
+                    "test/unit/test_thing.gd": "extends Node\n",
+                    "test/unit/test_thing.gd.uid": "uid://bxxxxxxxxxxxx\n",
+                },
+            )
+            self.assertEqual(project_invariants.problems(root), [])
+
+    def test_a_uid_left_behind_by_a_moved_script_is_still_reported(self) -> None:
+        # The direction that already existed, pinned so adding the second one
+        # cannot quietly replace it.
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._checkout(root, {"test/unit/gone.gd.uid": "uid://bxxxxxxxxxxxx\n"})
+            found = project_invariants.problems(root)
+        self.assertTrue(
+            any("gone.gd.uid" in item for item in found),
+            "an orphaned .uid has to be named, got %r" % found,
+        )
+
+    def test_the_vendored_addon_is_exempt_in_both_directions(self) -> None:
+        # Pinned byte-identical upstream, so neither half is ours to add.
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._checkout(
+                root,
+                {
+                    project_invariants.VENDORED_PREFIX + "lonely.gd": "extends Node\n",
+                    project_invariants.VENDORED_PREFIX + "orphan.gd.uid": "uid://b1\n",
+                },
+            )
+            self.assertEqual(project_invariants.problems(root), [])
+
+    def test_the_real_checkout_pairs_every_script_with_a_uid(self) -> None:
+        # The assertion that would have caught the omission this check exists
+        # for: it was made against the tree, not a fixture.
+        self.assertEqual(project_invariants.scripts_without_uid(REPO_ROOT), [])
 
 
 if __name__ == "__main__":

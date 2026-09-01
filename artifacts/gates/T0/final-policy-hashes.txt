@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# quality-gates policy pin follows the LIVE magnitude tests into their own file; the policy's own pins now have a self-test
+# project-invariants now checks both directions of the script/.uid pair
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T17:50:37Z
-# commit-previo: 957098f38fc423d89a158ec6fe71fc050c6ddc01
+# date-utc: 2026-09-01T19:49:56Z
+# commit-previo: 12694c5307b3efc15da5b6d59ee30689c747183d
 # files: 23
 8f00e293944ec2ca9b2148372ad81fa493d9000c5fe4082feffbb28fb6c15119  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
@@ -29,7 +29,7 @@ f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
 031af0ce46e2ba5a6513ab093117053ff7ce03178d66366b301146220be222c8  tooling/product_identity.py
-d2435ae0d452b4978ddb5138245df6a787a51e3034c8aed33caa82634d8fdf98  tooling/project_invariants.py
+0a53871dcf11a3e3c16d06154d409117d2926eec37ee08c4d15abb6f68c300e3  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
 5d462e78928dbfeb8fabd321b5576d7b282a2a0d13b6609782230a4f22e0eccf  tooling/verify.ps1

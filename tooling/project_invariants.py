@@ -33,8 +33,12 @@ So this checks the whole parse-time closure of every autoload, not just the
 autoload script: a preloaded file naming a global has the same effect.
 
 Fourth, smaller and the same shape: Godot writes a `.gd.uid` beside each script
-and resolves `uid://` references through it. Moving a script leaves the old one
-behind, tracked, naming a path that no longer exists.
+and resolves `uid://` references through it, so the two files are a pair and
+either half can go missing. Moving a script leaves the .uid behind, tracked,
+naming a path that no longer exists; adding a script without opening the editor
+commits the script with no .uid at all, and every checkout then invents its own
+id for it. Only the first half was checked, and the second half is how a test
+script added from a shell reached main.
 
     python tooling/project_invariants.py [--project-root .]
 
@@ -211,6 +215,7 @@ def global_class_dependencies(root: Path, text: str) -> list[str]:
 VENDORED_PREFIX = "addons/gut/"
 
 UID_SUFFIX = ".uid"
+SCRIPT_SUFFIX = ".gd"
 
 
 def orphaned_uid_files(root: Path) -> list[str]:
@@ -229,6 +234,27 @@ def orphaned_uid_files(root: Path) -> list[str]:
                 "Moving a script leaves it behind." % relative
             )
     return found
+
+
+def scripts_without_uid(root: Path) -> list[str]:
+    """Tracked scripts with no tracked `.uid` beside them."""
+    tracked = tracked_files(root)
+    if tracked is None:
+        return []
+    found: list[str] = []
+    for relative in sorted(tracked):
+        if not relative.endswith(SCRIPT_SUFFIX) or relative.startswith(VENDORED_PREFIX):
+            continue
+        if relative + UID_SUFFIX not in tracked:
+            found.append(
+                "%s has no tracked %s beside it. Godot writes one for every script "
+                "and resolves uid:// through it, so a script committed without one is "
+                "given a fresh id in every checkout and no two agree. Open the project "
+                "once and commit the file it generates."
+                % (relative, UID_SUFFIX)
+            )
+    return found
+
 
 def problems(root: Path) -> list[str]:
     path = root / PROJECT_FILE
@@ -266,6 +292,7 @@ def problems(root: Path) -> list[str]:
 
     found.extend(global_class_dependencies(root, text))
     found.extend(orphaned_uid_files(root))
+    found.extend(scripts_without_uid(root))
     return found
 
 
