@@ -110,9 +110,20 @@ static func _resolve_one(
 
 
 ## One INSTANT, silent effect with one negative ADD modifier per attribute
-## that actually owes something. An attribute whose aggregated total resolved
-## to zero gets no modifier at all: a declared-but-free cost is not an
-## unnecessary write.
+## that actually owes something, or null when nothing owes anything.
+##
+## An attribute whose aggregated total resolved to zero gets no modifier: a
+## declared-but-free cost is not an unnecessary write. Nor is a whole list of
+## them - this used to answer an effect carrying no modifiers at all, and the
+## commit applied it, so the entire application pipeline ran for a charge of
+## zero and `effect_received` fired over an effect that took nothing. Half of
+## nothing is nothing, and a percentage cost against a resource already at zero
+## is an ordinary moment in a fight, not an authoring mistake.
+##
+## Null is what an empty cost list already resolves to, so both ways of owing
+## nothing now answer the same thing, and every caller already handles it:
+## `can_afford_cost` and `is_reversible_charge` both accept null, and
+## `commit_ability` only charges when there is something to charge.
 ##
 ## Each modifier's magnitude is a GameplayScalableMagnitude holding the
 ## percentage-or-absolute math already done - no curve, no capture, no
@@ -135,6 +146,9 @@ static func _build_effect(
 		scalable.value = fixed_value
 		modifier.magnitude = scalable
 		modifiers.append(modifier)
+
+	if modifiers.is_empty():
+		return null
 
 	var effect: GameplayEffect = GameplayEffect.new()
 	effect.policy = GameplayEffect.DurationPolicy.INSTANT

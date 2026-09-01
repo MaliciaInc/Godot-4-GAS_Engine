@@ -39,6 +39,18 @@ func _absolute(target: StringName, positive_amount: float) -> GameplayAbilityCos
 	return cost
 
 
+func _percent_of_current(
+	target: StringName, reference: StringName, fraction: float
+) -> GameplayAbilityCost:
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.mode = GameplayAbilityCost.Mode.PERCENT_OF_CURRENT
+	cost.target_attribute = target
+	cost.reference_attribute = reference
+	cost.amount = GameplayScalableFloat.new()
+	cost.amount.value = fraction
+	return cost
+
+
 func _resolve(costs: Array[GameplayAbilityCost]) -> GameplayResolvedCost:
 	return GameplayAbilityCostResolver.resolve(costs, asc, 1.0)
 #endregion
@@ -146,4 +158,26 @@ func test_insufficient_resources_still_carries_the_frozen_effect_and_entries() -
 	assert_not_null(resolved.absolute_effect, "the price is still known")
 	assert_eq(resolved.entries.size(), 1, "and so is why")
 	assert_false(resolved.is_ok(), "but it is not affordable")
+
+
+## A cost that resolves to nothing is nothing to charge, the same as no cost
+## at all - and the resolver already answers null for an empty list.
+##
+## It answered an INSTANT effect carrying no modifiers instead: the whole
+## application pipeline ran for a charge of zero, so `effect_received` and the
+## component notifications fired over an effect that took nothing. The comment
+## on _build_effect already says a declared-but-free cost "is not an
+## unnecessary write"; the modifier was skipped and the write happened anyway.
+##
+## Reachable without authoring a zero: half of nothing is nothing, and a
+## percentage cost against a resource already at zero is an ordinary moment in
+## a fight.
+func test_a_cost_that_resolves_to_nothing_has_nothing_to_charge() -> void:
+	fixture.set_base(MANA, 0.0)
+	var resolved: GameplayResolvedCost = _resolve([_percent_of_current(MANA, MANA, 0.5)])
+
+	assert_true(resolved.is_ok(), "half of nothing is affordable")
+	assert_eq(resolved.entries.size(), 1, "the declared cost is still accounted for")
+	assert_almost_eq(resolved.entries[0].resolved_amount, 0.0, 0.0001, "and it came to nothing")
+	assert_null(resolved.absolute_effect, "so there is nothing to charge")
 #endregion
