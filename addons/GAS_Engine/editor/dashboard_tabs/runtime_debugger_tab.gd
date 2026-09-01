@@ -19,12 +19,32 @@ extends Control
 ## fast enough to feel live, slow enough not to fight the editor for frames.
 const REFRESH_INTERVAL_SECONDS: float = 0.5
 
+## Shown for an ASC that exists in the edited scene but has never started.
+##
+## An AbilitySystemComponent builds every runtime it owns in `_ready`, and
+## the editor does not run `_ready` for a node in a scene being edited - the
+## component is not a `@tool` script, and making it one would run the whole
+## gameplay engine at design time and rewrite the designer's exported
+## attribute sets on the way past.
+##
+## So every section below is empty, and used to be empty in silence: seven
+## headings all reading (0), which is indistinguishable from an engine that
+## is not working. Saying it is the difference between that and "nothing has
+## happened yet".
+const NOT_STARTED: String = (
+	"%s exists in the edited scene but has not started: an AbilitySystemComponent builds its runtime in _ready, which the editor does not run. There is no runtime state to read until the scene is played."
+)
+
 var _asc_picker: OptionButton = null
 var _refresh_button: Button = null
 var _tree: Tree = null
 var _status_label: Label = null
 
 var _known_ascs: Array[AbilitySystemComponent] = []
+
+## What the last scan found, so a refresh can put it back after replacing it
+## with something more specific about the selected component.
+var _scan_status: String = ""
 var _time_since_refresh: float = REFRESH_INTERVAL_SECONDS
 
 
@@ -93,11 +113,12 @@ func _rescan_ascs() -> void:
 		_collect_ascs(scene_root)
 	for asc: AbilitySystemComponent in _known_ascs:
 		_asc_picker.add_item(String(asc.get_path()))
-	_status_label.text = (
+	_scan_status = (
 		"%d AbilitySystemComponent(s) found in the edited scene" % _known_ascs.size()
 		if not _known_ascs.is_empty()
 		else "No AbilitySystemComponent found in the edited scene - open one that has one, then Rescan"
 	)
+	_status_label.text = _scan_status
 	_refresh()
 
 
@@ -126,6 +147,16 @@ func _refresh() -> void:
 	var asc: AbilitySystemComponent = _selected_asc()
 	if asc == null:
 		return
+
+	# `_wire_runtimes()` is the first thing `_ready` does, so an unset
+	# back-reference is exactly "this component has never started" - asked of
+	# the runtime itself rather than guessed at from an empty snapshot, which
+	# a started-but-idle component would also produce.
+	if asc.effects.owner_asc == null:
+		_status_label.text = NOT_STARTED % String(asc.get_path())
+		return
+
+	_status_label.text = _scan_status
 	var snapshot: GasRuntimeSnapshot = GasRuntimeSnapshot.capture(asc)
 	var root: TreeItem = _tree.create_item()
 	_build_attributes(root, snapshot.attributes)
