@@ -345,18 +345,31 @@ func _detach(active: ActiveGameplayEffect) -> void:
 	active.contributed_modifiers.clear()
 
 
+## Both bulk removals walk a snapshot, not the live registry.
+##
+## `remove()` may remove more than the effect it was given - its Additional
+## Effects chain applies a child, and that child's remove-other-effects query
+## purges a third - so the registry can shrink by several entries in one
+## iteration, and an index walk whose bounds were computed once reads past its
+## end: "Out of bounds get index '1' (on base: 'Array[ActiveGameplayEffect]')",
+## which stops a debug build at the debugger. The scheduler's walk guards
+## against exactly this; these two did not. A snapshot needs no guard, because
+## `remove()` already ignores anything no longer registered. Reverse order is
+## kept: most recently applied first, as these have always removed.
 func remove_effects_with_tag(tag: StringName) -> void:
-	for index: int in range(_active.size() - 1, -1, -1):
-		if _active[index].granted_tags.has(tag):
-			remove(_active[index])
+	var snapshot: Array[ActiveGameplayEffect] = active_effects()
+	for index: int in range(snapshot.size() - 1, -1, -1):
+		if snapshot[index].granted_tags.has(tag):
+			remove(snapshot[index])
 
 
 func remove_effects_from_source(source_node: Node) -> void:
 	if source_node == null:
 		return
-	for index: int in range(_active.size() - 1, -1, -1):
-		if _active[index].get_instigator() == source_node:
-			remove(_active[index], ActiveGameplayEffect.RemovalReason.SOURCE_REMOVED)
+	var snapshot: Array[ActiveGameplayEffect] = active_effects()
+	for index: int in range(snapshot.size() - 1, -1, -1):
+		if snapshot[index].get_instigator() == source_node:
+			remove(snapshot[index], ActiveGameplayEffect.RemovalReason.SOURCE_REMOVED)
 
 
 ## Tear down every active effect: detaches all first, empties the registry,

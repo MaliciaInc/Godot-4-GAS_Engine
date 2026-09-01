@@ -278,4 +278,39 @@ func test_effects_can_be_removed_by_their_source() -> void:
 
 	asc.remove_effects_from_source(source.owner)
 	assert_eq(asc.get_active_effects().size(), 1, "only that source's effects went")
+
+
+## Removing one effect is allowed to remove another. An Additional Effects
+## chain applies a child effect on removal, and that child's
+## remove-other-effects query purges a third - so the registry can shrink by
+## more than the one entry the caller asked about, in one iteration.
+##
+## The bulk removals walked the live registry by index with the bounds
+## computed once. The scheduler's own walk carries a guard against exactly
+## this; these two did not, and read past the end of the array.
+func test_a_bulk_removal_survives_the_registry_shrinking_under_it() -> void:
+	var no_modifiers: Array[GameplayEffectModifier] = []
+	var cleanser: GameplayEffect = Factory.removing_effects_with_tags(
+		Factory.instant(no_modifiers), [POISON] as Array[StringName]
+	)
+	var chained: Array[GameplayEffectConditionalEffect] = [Factory.conditional_effect(cleanser)]
+
+	var first: GameplayEffect = Factory.granting(Factory.infinite(no_modifiers), [STUNNED] as Array[StringName])
+	var bystander: GameplayEffect = Factory.granting(Factory.infinite(no_modifiers), [POISON] as Array[StringName])
+	var last: GameplayEffect = Factory.with_additional_effects(
+		Factory.granting(Factory.infinite(no_modifiers), [STUNNED] as Array[StringName]),
+		[], [], [], chained
+	)
+
+	Factory.apply(asc, first)
+	Factory.apply(asc, bystander)
+	Factory.apply(asc, last)
+	assert_eq(asc.get_active_effects().size(), 3, "three registered before the removal")
+
+	# Removing `last` fires its chain, the chain purges `bystander`, and the
+	# walk still has to reach `first`.
+	asc.remove_effects_with_tag(STUNNED)
+
+	assert_eq(asc.get_active_effects().size(), 0, "every one of them went")
+	assert_false(asc.has_tag(STUNNED), "and the tag it was asked about is gone")
 #endregion
