@@ -79,6 +79,21 @@ class Run extends RefCounted:
 	var style: Style = null
 	var needle: String = ""
 
+	## Every row placed so far, keyed by the dotted path it stands for.
+	##
+	## The branch a later tag has to reuse used to be found by reading the row's
+	## text back - and decorating a leaf rewrites that text to
+	## `Stunned (Status.Stunned)`. So a segment that is itself a registered tag
+	## stopped answering to its own name, and every longer tag under it built a
+	## second branch beside the first: `Status` and `Status.Stunned` drew two
+	## `Status` rows, one holding the tag and one holding the children. The
+	## registry sorts its tags and `Status` sorts before `Status.Stunned`, so
+	## that is the order a real project hands over.
+	##
+	## What a row IS - the path - and how a row READS are two different things,
+	## and only one of them can be its identity.
+	var placed: Dictionary[String, TreeItem] = {}
+
 	func is_searching() -> bool:
 		return not needle.is_empty()
 
@@ -103,26 +118,21 @@ static func load_registry() -> GameplayTagRegistry:
 ## Walk one tag's segments, reusing branches that already exist.
 static func _place(run: Run, tag: StringName, full: String) -> void:
 	var current: TreeItem = run.root
+	var path: String = ""
 	for part: String in full.split(SEPARATOR):
-		var existing: TreeItem = _child_named(current, part)
-		if existing != null:
-			current = existing
+		path = part if path.is_empty() else path + SEPARATOR + part
+		if run.placed.has(path):
+			current = run.placed[path]
 			continue
 		current = run.tree.create_item(current)
 		current.set_text(0, part)
+		run.placed[path] = current
 		# Auto-expand while searching, so a match is not hidden under a
 		# collapsed parent the user never opened.
 		if run.is_searching():
 			current.collapsed = false
 
 	_decorate_leaf(current, tag, run.unavailable, run.style)
-
-
-static func _child_named(parent: TreeItem, text: String) -> TreeItem:
-	for child: TreeItem in parent.get_children():
-		if child.get_text(0) == text:
-			return child
-	return null
 
 
 static func _decorate_leaf(
