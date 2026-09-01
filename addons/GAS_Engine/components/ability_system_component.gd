@@ -122,9 +122,6 @@ var scheduler: GameplayEffectScheduler = GameplayEffectScheduler.new()
 var ability_runtime: AbilityRuntime = AbilityRuntime.new()
 var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
-var _cleaned_up: bool = false
-
-
 #region Lifecycle
 func _ready() -> void:
 	_isolate_attribute_sets()
@@ -185,17 +182,21 @@ func advance_turn(turns: int = 1) -> void:
 	scheduler.advance_turn(turns)
 
 
-## Stop everything and return to a clean state. Idempotent: calling it twice
-## emits nothing the second time.
+## Stop everything and return to a clean state.
+##
+## Idempotent because each of its four steps is: `effects.cleanup()` returns at
+## once on an empty registry, `abort_all` walks no specs and asks for no
+## reevaluation under ASC_CLEANUP, and the three `clear()`s announce nothing.
+## It used to be told so instead, by a flag lowered only when an effect was
+## applied - so an ASC cleaned up once and then given an ability had a flag
+## saying clean and no effects to contradict it, and the second cleanup returned
+## before aborting anything. Cleanup owns four things; the shortcut asked one.
 func cleanup() -> void:
-	if _cleaned_up and effects.active_count() == 0:
-		return
 	ability_runtime.abort_all(GameplayAbilityTask.CancelReason.ASC_CLEANUP)
 	effects.cleanup()
 	ability_runtime.clear()
 	tags.clear_all()
 	attributes.clear_contributions()
-	_cleaned_up = true
 
 
 func _notification(what: int) -> void:
@@ -359,7 +360,6 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 ## `self` is always the target, so an unresolved SOURCE gets one last chance
 ## - `context.instigator` - before a required capture refuses.
 func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
-	_cleaned_up = false
 	var result: GameplayEffectApplicationResult
 	if spec == null:
 		result = GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)

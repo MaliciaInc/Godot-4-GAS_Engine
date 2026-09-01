@@ -280,4 +280,31 @@ func test_effect_removal_still_defers_a_grant_marked_remove_on_active_end() -> v
 
 	instance.channel_gate.emit()
 	assert_null(target.asc.ability_runtime.get_spec(handle), "retired once the execution ended")
+
+
+## Cleanup owns four things - effects, abilities, tags and contributions - and
+## its "already clean, say nothing" shortcut asked only about effects.
+##
+## The flag behind it is lowered when an effect is applied and nowhere else, so
+## an ASC cleaned up once and then given an ability had a flag saying clean and
+## no effects to contradict it. The second cleanup returned before aborting
+## anything: the ability kept running, its tasks were never cancelled, and the
+## spec registry was never emptied. Reusing a component - pooling an actor, or
+## simply tearing one down twice - is all it takes.
+func test_a_second_cleanup_still_stops_an_ability_granted_since_the_first() -> void:
+	target.asc.cleanup()
+
+	var probe: ChannelingAbility = ChannelingAbility.new()
+	probe.ability_tags = [&"Ability.AfterCleanup"]
+	probe.activation_policy = GameplayAbility.ActivationPolicy.PASSIVE
+	var spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, probe)
+	assert_true(spec.per_actor_instance.is_active, "granted and running after the first cleanup")
+
+	target.asc.cleanup()
+
+	assert_false(
+		is_instance_valid(spec.per_actor_instance) and spec.per_actor_instance.is_active,
+		"the second cleanup stopped it"
+	)
+	assert_true(target.asc.ability_runtime.specs().is_empty(), "and emptied the registry")
 #endregion
