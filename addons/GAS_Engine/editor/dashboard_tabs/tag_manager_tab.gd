@@ -20,6 +20,13 @@ const TAGS_ICON_PATH: String = "res://addons/GAS_Engine/icons/gas_engine_tags.sv
 const DELETE_BUTTON_ID: int = 0
 const DELETE_TOOLTIP: String = "Delete this tag"
 
+## Shown when the registry refuses a deletion. remove_tag() rolls the tag back
+## when it cannot write, so the tree comes back holding it - and a refresh with
+## nothing said reads as a delete that did not take for no reason at all.
+const DELETE_FAILED: String = (
+	"'%s' could not be deleted: the tag registry, or the constants generated from it, could not be written."
+)
+
 ## Colours and styleboxes, shared with the other dashboard tabs.
 var _theme: DashboardTheme = DashboardTheme.new()
 
@@ -174,7 +181,8 @@ func _on_tree_button_clicked(
 func _execute_delete() -> void:
 	if _tag_to_delete == &"" or _registry == null:
 		return
-	_registry.remove_tag(_tag_to_delete)
+	if not _registry.remove_tag(_tag_to_delete):
+		_show_dialog(DELETE_FAILED % String(_tag_to_delete))
 	_tag_to_delete = &""
 	_refresh_tag_tree()
 

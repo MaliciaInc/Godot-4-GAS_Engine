@@ -338,7 +338,15 @@ func _on_tree_button_clicked(
 			tags.erase(tag)
 			_publish(tags, shape)
 
-	_registry.remove_tag(tag)
+	# remove_tag() answers whether the registry and its generated constants were
+	# actually written, and rolls the tag back when they were not. `Deleted tag:`
+	# used to be printed either way, over a tree that came back still holding it.
+	# The drop from this property stands: the tag is still there to pick again.
+	if not _registry.remove_tag(tag):
+		_set_status("Could not delete '" + String(tag) + "': the registry was not written.", false)
+		_refresh_tree()
+		return
+
 	_set_status("Deleted tag: " + String(tag), true)
 	_refresh_tree()
 
