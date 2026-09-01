@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# resealed over LF bytes; the previous seal recorded CRLF working copies that no clean checkout produces, and seal_policy.py now refuses to hash them
+# quality-gates policy pin follows the LIVE magnitude tests into their own file; the policy's own pins now have a self-test
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T17:30:02Z
-# commit-previo: 47b4e82a24005eba3502894357c012a72908d143
+# date-utc: 2026-09-01T17:50:37Z
+# commit-previo: 957098f38fc423d89a158ec6fe71fc050c6ddc01
 # files: 23
-9e0d77f90842a4896cdf80a98ebfd23695d295249ddef70b4a3a9f4642074ecd  tooling/.quality-gates.json
+8f00e293944ec2ca9b2148372ad81fa493d9000c5fe4082feffbb28fb6c15119  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json

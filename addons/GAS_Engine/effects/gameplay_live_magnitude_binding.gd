@@ -38,6 +38,8 @@ var observed_asc: AbilitySystemComponent = null
 ## separately-created Callables wrapping the same lambda body are not `==`.
 var attribute_changed_handler: Callable = Callable()
 
-## The Callable connected to `observed_asc.tree_exiting`, disconnecting this
-## binding proactively if the ASC it watches is on its way out.
+## The Callables connected to `observed_asc.tree_exiting`/`tree_entered`.
+## Leaving a tree suspends the subscription above and entering one resumes
+## it, so an actor that is merely moved keeps feeding what reads it.
 var tree_exiting_handler: Callable = Callable()
+var tree_entered_handler: Callable = Callable()

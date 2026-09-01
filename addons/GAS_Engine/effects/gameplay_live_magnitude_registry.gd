@@ -84,13 +84,22 @@ func _connect(
 			_reevaluate(binding)
 	observed.attribute_changed.connect(binding.attribute_changed_handler)
 
-	# The ASC watched for this capture may go away before the effect reading
-	# it does - the source despawning while its buff is still on the target,
-	# say. Godot itself severs a freed Object's connections, so nothing would
-	# crash; this only keeps the binding from lingering, still believing it
-	# has something to watch.
-	binding.tree_exiting_handler = func() -> void: _disconnect(binding)
+	# Suspended while the watched ASC is out of the tree, not abandoned.
+	#
+	# `tree_exiting` used to be read as "the source despawned" and the binding
+	# was dropped for good. It is not that: `remove_child` followed by
+	# `add_child` fires it too, which is what reparenting and pooling an actor
+	# are - so moving the source froze every contribution reading it at its
+	# last value, permanently and without a word.
+	#
+	# Suspending answers both. A despawned actor never enters a tree again, so
+	# its binding simply stops being listened to, which is the safety the old
+	# handler was really providing: nothing reaches `_reevaluate` holding an
+	# ASC that is being destroyed. One that was only moved comes back.
+	binding.tree_exiting_handler = func() -> void: _suspend(binding)
 	observed.tree_exiting.connect(binding.tree_exiting_handler)
+	binding.tree_entered_handler = func() -> void: _resume(binding)
+	observed.tree_entered.connect(binding.tree_entered_handler)
 
 	_bindings.append(binding)
 
@@ -108,12 +117,35 @@ func _disconnect(binding: GameplayLiveMagnitudeBinding) -> void:
 	_bindings.erase(binding)
 	if not is_instance_valid(binding.observed_asc):
 		return
-	if binding.attribute_changed_handler.is_valid():
-		if binding.observed_asc.attribute_changed.is_connected(binding.attribute_changed_handler):
-			binding.observed_asc.attribute_changed.disconnect(binding.attribute_changed_handler)
+	_suspend(binding)
 	if binding.tree_exiting_handler.is_valid():
 		if binding.observed_asc.tree_exiting.is_connected(binding.tree_exiting_handler):
 			binding.observed_asc.tree_exiting.disconnect(binding.tree_exiting_handler)
+	if binding.tree_entered_handler.is_valid():
+		if binding.observed_asc.tree_entered.is_connected(binding.tree_entered_handler):
+			binding.observed_asc.tree_entered.disconnect(binding.tree_entered_handler)
+
+
+## Stop listening without letting the binding go - the watched ASC is out of
+## the tree, which is either a move or the beginning of its destruction, and
+## neither is a moment to be resolving magnitudes against it.
+func _suspend(binding: GameplayLiveMagnitudeBinding) -> void:
+	if not is_instance_valid(binding.observed_asc):
+		return
+	if not binding.attribute_changed_handler.is_valid():
+		return
+	if binding.observed_asc.attribute_changed.is_connected(binding.attribute_changed_handler):
+		binding.observed_asc.attribute_changed.disconnect(binding.attribute_changed_handler)
+
+
+## The watched ASC is back in a tree: pick the subscription up again.
+func _resume(binding: GameplayLiveMagnitudeBinding) -> void:
+	if not is_instance_valid(binding.observed_asc):
+		return
+	if not binding.attribute_changed_handler.is_valid():
+		return
+	if not binding.observed_asc.attribute_changed.is_connected(binding.attribute_changed_handler):
+		binding.observed_asc.attribute_changed.connect(binding.attribute_changed_handler)
 #endregion
 
 
@@ -124,6 +156,14 @@ func _disconnect(binding: GameplayLiveMagnitudeBinding) -> void:
 ## last resolved to, rather than blanking a buff to zero: the binding stays
 ## subscribed and picks the reading back up the moment it resolves again.
 func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
+	# Checked before the context is built, not after. Assigning a freed
+	# instance to a typed property does not raise in Godot 4.7.2 - it stops
+	# the process at the debugger and never returns - so a binding whose
+	# source has gone has to be let go here rather than resolved.
+	if not _still_resolvable(binding):
+		_disconnect(binding)
+		return
+
 	if _reevaluation_depth >= MAX_REEVALUATION_PASSES:
 		if owner_asc != null:
 			owner_asc.live_magnitude_cycle_aborted.emit(binding.output_attribute)
@@ -134,7 +174,12 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 	var spec: GameplayEffectSpec = binding.active_effect.spec
 	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
 	context.spec = spec
-	context.source_asc = spec.source_asc if spec != null else null
+	# Assigned only when it is really there. A freed instance reaching a typed
+	# property stops Godot 4.7.2 at the debugger and never comes back, and a
+	# source that departed is exactly what this binding may still be holding.
+	var source: AbilitySystemComponent = spec.source_asc if spec != null else null
+	if is_instance_valid(source):
+		context.source_asc = source
 	context.target_asc = owner_asc
 	context.level = spec.level if spec != null else 1.0
 
@@ -147,6 +192,16 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 				effects.recompose_and_emit(spec)
 
 	_reevaluation_depth -= 1
+
+
+## Whether everything this binding has to read still exists.
+func _still_resolvable(binding: GameplayLiveMagnitudeBinding) -> bool:
+	if not is_instance_valid(binding.observed_asc):
+		return false
+	if binding.active_effect == null or binding.active_effect.spec == null:
+		return false
+	var source: AbilitySystemComponent = binding.active_effect.spec.source_asc
+	return source == null or is_instance_valid(source)
 
 
 func _find_contribution(binding: GameplayLiveMagnitudeBinding) -> AttributeModifierContribution:
