@@ -90,11 +90,16 @@ func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
 ## for a cooldown sweep in the UI. INF when something grants it with no end -
 ## an INFINITE effect leaves `time_remaining` at 0.0, which used to read as a
 ## cooldown that already had rather than one that never expires. Turn-based
-## effects are not counted: ask `tag_turns_remaining` for those instead.
+## effects are not counted: ask `tag_turns_remaining` for those instead. Nor is
+## an inhibited one - `granted_tags` is the receipt uninhibiting puts back, not
+## a claim the owner holds them, and reading it alone reported seconds, and
+## forever, on a tag `has_tag` denied at that same instant. `state_attached`
+## says the receipt is applied; `_is_immune_to` skips inhibited for the same
+## reason.
 func tag_duration_remaining(tag: StringName) -> float:
 	var longest: float = 0.0
 	for effect: ActiveGameplayEffect in _active:
-		if not effect.granted_tags.has(tag):
+		if not effect.state_attached or not effect.granted_tags.has(tag):
 			continue
 		var policy: GameplayEffect.DurationPolicy = effect.get_effect_def().policy
 		if policy == GameplayEffect.DurationPolicy.INFINITE:
@@ -108,11 +113,11 @@ func tag_duration_remaining(tag: StringName) -> float:
 ##
 ## The counterpart to `tag_duration_remaining`, and separate from it because
 ## turns and seconds are different units: a UI that mixed them would count down
-## a three-turn debuff in seconds.
+## a three-turn debuff in seconds. Skips inhibited effects on the same grounds.
 func tag_turns_remaining(tag: StringName) -> int:
 	var longest: int = 0
 	for effect: ActiveGameplayEffect in _active:
-		if not effect.granted_tags.has(tag) or effect.spec == null:
+		if not effect.state_attached or not effect.granted_tags.has(tag) or effect.spec == null:
 			continue
 		if effect.get_effect_def().policy != GameplayEffect.DurationPolicy.TURN_BASED:
 			continue
@@ -349,13 +354,11 @@ func _detach(active: ActiveGameplayEffect) -> void:
 ##
 ## `remove()` may remove more than the effect it was given - its Additional
 ## Effects chain applies a child, and that child's remove-other-effects query
-## purges a third - so the registry can shrink by several entries in one
-## iteration, and an index walk whose bounds were computed once reads past its
-## end: "Out of bounds get index '1' (on base: 'Array[ActiveGameplayEffect]')",
-## which stops a debug build at the debugger. The scheduler's walk guards
-## against exactly this; these two did not. A snapshot needs no guard, because
-## `remove()` already ignores anything no longer registered. Reverse order is
-## kept: most recently applied first, as these have always removed.
+## purges a third - so the registry can shrink by several entries in one pass,
+## and an index walk whose bounds were computed once reads past its end: "Out
+## of bounds get index '1'", which stops a debug build at the debugger. The
+## scheduler's walk guards against this; these two did not. A snapshot needs no
+## guard: `remove()` ignores anything no longer registered. Reverse order kept.
 func remove_effects_with_tag(tag: StringName) -> void:
 	var snapshot: Array[ActiveGameplayEffect] = active_effects()
 	for index: int in range(snapshot.size() - 1, -1, -1):

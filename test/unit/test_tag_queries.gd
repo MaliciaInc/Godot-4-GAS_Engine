@@ -197,6 +197,54 @@ func test_a_turn_based_tag_is_counted_in_turns_not_seconds() -> void:
 func test_a_timed_tag_has_no_turns() -> void:
 	Factory.apply(asc, Factory.granting(Factory.duration([], 5.0), [STUNNED] as Array[StringName]))
 	assert_eq(asc.get_tag_turns_remaining(STUNNED), 0)
+
+
+## An inhibited effect is not granting anything.
+##
+## `granted_tags` stays populated while an effect is inhibited - it is the
+## receipt of what the effect would grant, and that is what lets uninhibiting
+## put the same tags back. It is not a statement that the owner holds them, and
+## these two answered as if it were: `has_tag` said no while the very same call
+## reported seconds, and forever, left on it.
+func test_an_inhibited_effect_reports_no_time_left_on_a_tag_it_is_not_granting() -> void:
+	var timed: GameplayEffect = Factory.with_ongoing_requirement(
+		Factory.granting(Factory.duration([], 5.0), [STUNNED] as Array[StringName]),
+		[BURNING] as Array[StringName]
+	)
+	var endless: GameplayEffect = Factory.with_ongoing_requirement(
+		Factory.granting(Factory.infinite([]), [STUNNED] as Array[StringName]),
+		[BURNING] as Array[StringName]
+	)
+	var turned: GameplayEffect = Factory.with_ongoing_requirement(
+		Factory.granting(Factory.turn_based([], 3), [STUNNED] as Array[StringName]),
+		[BURNING] as Array[StringName]
+	)
+
+	asc.add_tag(BURNING)
+	Factory.apply(asc, timed)
+	Factory.apply(asc, endless)
+	Factory.apply(asc, turned)
+	assert_true(asc.has_tag(STUNNED), "all three are granting it while uninhibited")
+
+	asc.remove_tag(BURNING)
+	assert_false(asc.has_tag(STUNNED), "and none of them is, once inhibited")
+	assert_almost_eq(asc.get_tag_duration_remaining(STUNNED), 0.0, 0.0001)
+	assert_eq(asc.get_tag_turns_remaining(STUNNED), 0)
+
+
+## Only the inhibited grants drop out, not the tag itself.
+func test_an_uninhibited_grant_still_counts_beside_an_inhibited_one() -> void:
+	var inhibited: GameplayEffect = Factory.with_ongoing_requirement(
+		Factory.granting(Factory.infinite([]), [STUNNED] as Array[StringName]),
+		[BURNING] as Array[StringName]
+	)
+	Factory.apply(asc, inhibited)
+	Factory.apply(asc, Factory.granting(Factory.duration([], 4.0), [STUNNED] as Array[StringName]))
+
+	assert_almost_eq(
+		asc.get_tag_duration_remaining(STUNNED), 4.0, 0.0001,
+		"the endless grant is inhibited, so four seconds is the whole answer"
+	)
 #endregion
 
 
