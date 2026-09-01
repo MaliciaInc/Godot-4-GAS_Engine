@@ -85,7 +85,10 @@ const MIGRATED_SETTING_NAMES: Array[String] = [
 
 #region Registration
 static func init_project_settings() -> void:
-	_migrate_legacy_project_settings()
+	if _migrate_legacy_project_settings():
+		var save_error: Error = ProjectSettings.save()
+		if save_error != OK:
+			push_error("GAS_Engine: failed to save migrated project settings.")
 	_init_attributes_draft_config_path()
 	_init_attributes_output_dir()
 	_init_generated_tag_script_path()
@@ -94,7 +97,16 @@ static func init_project_settings() -> void:
 	_init_editor_tag_property_editor()
 
 
-static func _migrate_legacy_project_settings() -> void:
+## Move every legacy `godot_gas/...` setting onto its `gas_engine/...` name, in
+## memory only, and report whether anything moved.
+##
+## The write used to live here. It is the caller's now because this is the one
+## piece of the addon a test can exercise directly, and saving inside it flushed
+## the whole of ProjectSettings - including whatever scratch value an unrelated
+## test happened to have set - into the `project.godot` this repository tracks.
+## Migrating and persisting the migration are two decisions, and only one of
+## them belongs to a test.
+static func _migrate_legacy_project_settings() -> bool:
 	var changed: bool = false
 	for current_name: String in MIGRATED_SETTING_NAMES:
 		var suffix: String = current_name.substr(PROJECT_SETTINGS_NAME.length())
@@ -115,10 +127,7 @@ static func _migrate_legacy_project_settings() -> void:
 		ProjectSettings.set_setting(legacy_name, null)
 		changed = true
 
-	if changed:
-		var save_error: Error = ProjectSettings.save()
-		if save_error != OK:
-			push_error("GAS_Engine: failed to save migrated project settings.")
+	return changed
 
 
 static func owns_cue_manager_autoload() -> bool:

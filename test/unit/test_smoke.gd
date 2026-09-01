@@ -10,6 +10,9 @@ extends GutTest
 
 const CUE_MANAGER_PATH: String = "/root/GameplayCueManager"
 
+## The project file itself, read from disk to prove nothing wrote it.
+const PROJECT_FILE: String = "res://project.godot"
+
 const Plugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
 const GasEnginePlugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
 
@@ -117,7 +120,10 @@ func test_legacy_default_paths_migrate_to_gas_engine_defaults() -> void:
 		GASEngineProjectSettings.LEGACY_DEFAULT_PATH + "/gameplay_tags.gd"
 	)
 
-	GASEngineProjectSettings.init_project_settings()
+	# The migration, not `init_project_settings()`. The initialiser persists a
+	# migration it performed, and a save here writes the whole of ProjectSettings
+	# into the `project.godot` this repository tracks - scratch values included.
+	assert_true(GASEngineProjectSettings._migrate_legacy_project_settings())
 
 	var migrated_value: Variant = ProjectSettings.get_setting(current)
 	assert_true(migrated_value is String, "the migrated setting is a String")
@@ -143,7 +149,10 @@ func test_legacy_custom_path_is_preserved_during_namespace_migration() -> void:
 	ProjectSettings.set_setting(current, null)
 	ProjectSettings.set_setting(legacy, "res://my_game/custom_tags.tres")
 
-	GASEngineProjectSettings.init_project_settings()
+	# The migration, not `init_project_settings()`. The initialiser persists a
+	# migration it performed, and a save here writes the whole of ProjectSettings
+	# into the `project.godot` this repository tracks - scratch values included.
+	assert_true(GASEngineProjectSettings._migrate_legacy_project_settings())
 
 	var migrated_value: Variant = ProjectSettings.get_setting(current)
 	assert_true(migrated_value is String, "the preserved setting is a String")
@@ -151,6 +160,41 @@ func test_legacy_custom_path_is_preserved_during_namespace_migration() -> void:
 		var migrated_string: String = migrated_value
 		assert_eq(migrated_string, "res://my_game/custom_tags.tres")
 	assert_false(ProjectSettings.has_setting(legacy))
+
+	ProjectSettings.set_setting(current, previous_current)
+	ProjectSettings.set_setting(legacy, previous_legacy)
+
+
+## The migration is the one piece of settings code a test reaches directly, and
+## it used to save ProjectSettings itself. A save writes every setting currently
+## in memory - including a scratch value some other test set and has not put back
+## yet - into the `project.godot` this repository tracks, and no assertion
+## anywhere would have failed. This is the guard: a migration with real work to
+## do leaves the file on disk byte-identical.
+func test_migrating_legacy_settings_never_writes_the_project_file() -> void:
+	var current: String = (
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_ON
+	)
+	var suffix: String = current.substr(GASEngineProjectSettings.PROJECT_SETTINGS_NAME.length())
+	var legacy: String = GASEngineProjectSettings.LEGACY_PROJECT_SETTINGS_NAME + suffix
+
+	var previous_current: Variant = ProjectSettings.get_setting(current, null)
+	var previous_legacy: Variant = ProjectSettings.get_setting(legacy, null)
+	var before: String = FileAccess.get_file_as_string(PROJECT_FILE)
+	assert_ne(before, "", "the project file was readable at " + PROJECT_FILE)
+
+	ProjectSettings.set_setting(current, null)
+	ProjectSettings.set_setting(legacy, "scratch,never_persisted")
+
+	assert_true(
+		GASEngineProjectSettings._migrate_legacy_project_settings(),
+		"the migration had work to do, so a save would have happened"
+	)
+	assert_eq(
+		FileAccess.get_file_as_string(PROJECT_FILE).sha256_text(),
+		before.sha256_text(),
+		PROJECT_FILE + " is unchanged by a migration"
+	)
 
 	ProjectSettings.set_setting(current, previous_current)
 	ProjectSettings.set_setting(legacy, previous_legacy)

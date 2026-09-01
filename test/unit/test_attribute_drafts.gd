@@ -28,10 +28,16 @@ const ATTRIBUTE: String = "max_health"
 
 var drafts: AttributeSetDrafts = null
 var _original_path: Variant = null
+## Whether the project declared the setting at all before the redirect.
+## Restoring only when a previous value existed leaves the redirect standing
+## on a project that declared none - which is this one - so the scratch path
+## outlived the suite and reached `project.godot` the next time anything saved.
+var _had_original: bool = false
 
 
 func before_each() -> void:
-	if ProjectSettings.has_setting(SETTING):
+	_had_original = ProjectSettings.has_setting(SETTING)
+	if _had_original:
 		_original_path = ProjectSettings.get_setting(SETTING)
 	ProjectSettings.set_setting(SETTING, REDIRECTED)
 	drafts = AttributeSetDrafts.new()
@@ -39,8 +45,13 @@ func before_each() -> void:
 
 func after_each() -> void:
 	drafts = null
-	if _original_path != null:
+	if _had_original:
 		ProjectSettings.set_setting(SETTING, _original_path)
+	else:
+		# `null` is how ProjectSettings deletes a setting, and "there was none"
+		# is the state this has to restore.
+		ProjectSettings.set_setting(SETTING, null)
+	_had_original = false
 	_original_path = null
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(REDIRECTED))
 
