@@ -16,7 +16,7 @@ const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 const Probe = preload("res://test/fixtures/probe_ability.gd")
 const Slot = preload("res://test/fixtures/fake_gloot_slot.gd")
 const Item = preload("res://test/fixtures/fake_gloot_item.gd")
-const CueManagerScript = preload("res://addons/GodotGAS/managers/gameplay_cue_manager.gd")
+const CueManagerScript = preload("res://addons/GAS_Engine/managers/gameplay_cue_manager.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = TestAttributeSet.ATTACK

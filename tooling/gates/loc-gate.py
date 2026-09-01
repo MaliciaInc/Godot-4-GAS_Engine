@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arhalies GAS LOC and source-structure gate.
+"""GAS_Engine LOC and source-structure gate.
 
 Enforces the frozen limits in `.quality-gates.json`: lines per file, lines per
 function, parameters per function, module-frontier rules, entrypoint shape and
@@ -311,7 +311,7 @@ def report(result: Result, root: Path, settings: Settings) -> gate_report.Report
 
 def build_parser() -> argparse.ArgumentParser:
     """The canonical CLI. The verification chain depends on these exact names."""
-    parser = argparse.ArgumentParser(description="Arhalies GAS LOC and source-structure gate.")
+    parser = argparse.ArgumentParser(description="GAS_Engine LOC and source-structure gate.")
     gate_io.add_common_arguments(parser)
     parser.add_argument("--max-file-lines", type=int)
     parser.add_argument("--max-function-lines", type=int)

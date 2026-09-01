@@ -9,7 +9,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
-const CueManagerScript = preload("res://addons/GodotGAS/managers/gameplay_cue_manager.gd")
+const CueManagerScript = preload("res://addons/GAS_Engine/managers/gameplay_cue_manager.gd")
 
 const IMPACT: StringName = &"Cue.Impact"
 const TOLERANCE: float = 0.0001

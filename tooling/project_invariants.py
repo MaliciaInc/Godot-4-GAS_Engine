@@ -84,7 +84,7 @@ def tracked_files(root: Path) -> set[str] | None:
 
 
 #: Anything under here declares the global classes an autoload must not rely on.
-ADDON_ROOT = "addons/GodotGAS"
+ADDON_ROOT = "addons/GAS_Engine"
 
 PRELOADED = re.compile(r'preload\(\s*"(?P<path>res://[^"]+\.gd)"\s*\)')
 DECLARES_CLASS = re.compile(r"^class_name\s+(?P<name>\w+)", re.MULTILINE)

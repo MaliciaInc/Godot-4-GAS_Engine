@@ -12,24 +12,24 @@
     ],
     "file_length_allowlist": [
       {
-        "glob": "addons/GodotGAS/components/ability_system_component.gd",
+        "glob": "addons/GAS_Engine/components/ability_system_component.gd",
         "max_lines": 600,
         "reason": "The facade is the single public surface over six runtimes: one-line delegation, no branching, no state of its own. Its length tracks how much the engine can do rather than how tangled it is, and the file limit exists to catch the second. Splitting it would give callers two places to look for one component, which is the thing the facade was introduced to prevent. Raised from 520 to 600 at Task 9, when the handle/query API (get_active_effect, find_active_effects, count_active_effects, remove_active_effects and five more) added another eleven lines of the same one-line-delegation shape the 520 raise already accepted - every later task's own facade surface (T10 immunities, T11 ongoing requirements, and on) is the same pattern, not a new one, so the ceiling is set with headroom for it rather than re-litigated at each task."
       },
       {
-        "glob": "addons/GodotGAS/effects/gameplay_effect_spec.gd",
+        "glob": "addons/GAS_Engine/effects/gameplay_effect_spec.gd",
         "max_lines": 470,
         "reason": "Task 21 made create_application_copy() propagate a context-payload copy failure as an explicit null spec rather than silently continuing with context=null - a real correctness fix (apply_effect_spec_to_target_result()'s existing null-spec guard is what turns it into a proper refusal), not new surface area. The file is already dense with one-paragraph-per-field 'why' documentation; trimming further would cut the documentation this project treats as load-bearing rather than the five lines of guard logic the fix actually needed. Set with the same small headroom T9's raise used, not re-litigated per task."
       },
       {
-        "glob": "addons/GodotGAS/effects/gameplay_effect_runtime.gd",
+        "glob": "addons/GAS_Engine/effects/gameplay_effect_runtime.gd",
         "max_lines": 480,
         "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task."
       }
     ],
     "function_parameter_allowlist": [
       {
-        "glob": "addons/GodotGAS/gameplay_tag/gameplay_tag_inspector_plugin.gd",
+        "glob": "addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd",
         "function": "_parse_property",
         "reason": "Godot declares EditorInspectorPlugin._parse_property with seven parameters. Overriding it with fewer stops the override working, and the tag picker has no other entry point. The signature is the engine's, not this project's."
       }
@@ -89,19 +89,19 @@
         "reason": "Names the test category in the gates and the test directory in the policy."
       },
       {
-        "literal": "res://addons/GodotGAS/icons/godot_gas_asc.svg",
+        "literal": "res://addons/GAS_Engine/icons/gas_engine_asc.svg",
         "reason": "@icon() annotation. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
       },
       {
-        "literal": "res://addons/GodotGAS/icons/godot_gas_tags.svg",
+        "literal": "res://addons/GAS_Engine/icons/gas_engine_tags.svg",
         "reason": "preload() of an icon. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
       },
       {
-        "literal": "res://addons/GodotGAS/icons/godot_gas_icon_star.svg",
+        "literal": "res://addons/GAS_Engine/icons/gas_engine_icon_star.svg",
         "reason": "preload() of an icon. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
       },
       {
-        "literal": "res://addons/GodotGAS/managers/gameplay_cue_manager.gd",
+        "literal": "res://addons/GAS_Engine/managers/gameplay_cue_manager.gd",
         "reason": "The autoload's script: preload() in the ASC needs the type, and the plugin needs the same path to register the autoload. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
       },
       {
@@ -177,23 +177,23 @@
         "reason": "tooling/_gatelib.py must name the gates directory to put it on sys.path, and gate_io declares the same segment as a constant once inside it. A bootstrap cannot use the constant it bootstraps. Every other tooling spelling of this word was collapsed into that constant."
       },
       {
-        "literal": "res://addons/GodotGAS/cues/gameplay_cue_entry.gd",
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_entry.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
       },
       {
-        "literal": "res://addons/GodotGAS/cues/gameplay_cue_notify.gd",
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_notify.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
       },
       {
-        "literal": "res://addons/GodotGAS/cues/gameplay_cue_params.gd",
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_params.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
       },
       {
-        "literal": "res://addons/GodotGAS/target_data/gameplay_effect_context.gd",
+        "literal": "res://addons/GAS_Engine/target_data/gameplay_effect_context.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
       },
       {
-        "literal": "res://addons/GodotGAS/target_data/gameplay_target_hit.gd",
+        "literal": "res://addons/GAS_Engine/target_data/gameplay_target_hit.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
       },
       {
@@ -214,18 +214,18 @@
   "duplication": {
     "pair_allowlist": [
       {
-        "left": "addons/GodotGAS/targeting/gameplay_*_request_*d.gd:<file>",
-        "right": "addons/GodotGAS/targeting/gameplay_*_request_*d.gd:<file>",
+        "left": "addons/GAS_Engine/targeting/gameplay_*_request_*d.gd:<file>",
+        "right": "addons/GAS_Engine/targeting/gameplay_*_request_*d.gd:<file>",
         "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3."
       },
       {
-        "left": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:raycast_2d",
-        "right": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:raycast_3d",
+        "left": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:raycast_2d",
+        "right": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:raycast_3d",
         "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. PhysicsRayQueryParameters2D and 3D share no ancestor."
       },
       {
-        "left": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:overlap_2d",
-        "right": "addons/GodotGAS/targeting/gameplay_targeting_service.gd:overlap_3d",
+        "left": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:overlap_2d",
+        "right": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:overlap_3d",
         "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. CircleShape2D and SphereShape3D share no ancestor either."
       },
       {
@@ -234,8 +234,8 @@
         "reason": "The two suites ask the same questions of the two physics servers, which is the point: the 2D suite passing says nothing about whether a sphere sweep reports what a circle sweep does. Only the cross-dimension pairing is declared here - duplication inside either file is still caught."
       },
       {
-        "left": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:_translate_magnitude_status",
-        "right": "addons/GodotGAS/magnitudes/gameplay_attribute_based_magnitude.gd:_translate",
+        "left": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:_translate_magnitude_status",
+        "right": "addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:_translate",
         "reason": "Two independent status-translation functions with unrelated vocabularies - GameplayMagnitudeResult.Status to AttributeEvaluationResult.Status, and AttributeCaptureResult.Status to GameplayMagnitudeResult.Status - that happen to share the shape of a short match/return with a fallback. GameplayMagnitudeResult deliberately keeps its own enum rather than reusing either neighbour's, exactly so a magnitude failure and a capture failure are never confused; merging these two functions into one would mean merging the two enums they translate between, coupling vocabularies this project keeps separate on purpose."
       },
       {
@@ -249,13 +249,13 @@
         "reason": "Deliberately parallel, the same way the 2D/3D targeting suites are: one asks what an INSTANT application with a LIVE capture reads after its source changes, the other asks what an INFINITE contribution with a SNAPSHOT capture reads after the same change - two magnitude policies answering the identical question side by side. Forcing a structural difference between them to dodge the similarity score would hide that the parallel is the point: a reader comparing the two should see the same shape with the one line that differs, not two independently-shaped tests that happen to prove related things."
       },
       {
-        "left": "addons/GodotGAS/effects/components/gameplay_effect_component_runtime_context.gd:<file>",
-        "right": "addons/GodotGAS/effects/components/gameplay_effect_component_removal_context.gd:<file>",
+        "left": "addons/GAS_Engine/effects/components/gameplay_effect_component_runtime_context.gd:<file>",
+        "right": "addons/GAS_Engine/effects/components/gameplay_effect_component_removal_context.gd:<file>",
         "reason": "Task 8's own design calls for two DTOs here, not one: a runtime context and a removal context that happen to carry the same five fields today, kept separate because they answer different questions and a future field (a removal reason, an applied-vs-refreshed flag) belongs on only one of them. Collapsing them into a shared type the moment they match exactly would force every later addition to decide whether the other call site tolerates an unused field, coupling two call sites the framework deliberately keeps free to diverge."
       },
       {
-        "left": "addons/GodotGAS/effects/gameplay_effect_component_runtime.gd:_notify_runtime",
-        "right": "addons/GodotGAS/effects/gameplay_effect_component_runtime.gd:notify_removed",
+        "left": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:_notify_runtime",
+        "right": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:notify_removed",
         "reason": "Both walk the same components/states pairing, but one builds a GameplayEffectComponentRuntimeContext for on_effect_applied/on_effect_executed and the other a GameplayEffectComponentRemovalContext for on_effect_removed - the same two deliberately-separate DTOs declared above. Sharing one iterator between them would mean it either returns Variant or takes a context-building Callable per call site, in both cases hiding which context type a given notification actually builds behind a layer neither reader nor the type checker can see through."
       },
       {
@@ -279,13 +279,13 @@
         "reason": "Deliberately parallel, not copied: both grant the same kind of gated passive and prove the first wake on a required tag - the restart test then continues past that exact point to prove the same passive can go idle and wake a second time, which is Task 16's own explicit requirement that a passive 'puede activarse de nuevo' once its conditions hold again. Collapsing them into one test would hide that 'wakes once' and 'wakes again after going idle' are two distinct regressions this suite needs to catch independently, the same reasoning already applied to the stacking suite's duration/turn-based expiration pair."
       },
       {
-        "left": "addons/GodotGAS/abilities/ability_lifecycle_runtime.gd:_translate",
-        "right": "addons/GodotGAS/effects/gameplay_effect_evaluator.gd:_translate_magnitude_status",
+        "left": "addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:_translate",
+        "right": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:_translate_magnitude_status",
         "reason": "A third independent status-translation function, same family as the pair declared below: AbilityRuntime.ActivationError to GameplayAbilityActivationResult.Status here, GameplayMagnitudeResult.Status to AttributeEvaluationResult.Status there - unrelated vocabularies that happen to share the shape of a short match/return with a fallback. GameplayAbilityActivationResult.Status is Task 17's own closed, public-facing enum, deliberately not a re-export of ActivationError - merging this translator into either neighbour would couple an ability's internal gate reason to an unrelated public result contract."
       },
       {
-        "left": "addons/GodotGAS/abilities/ability_lifecycle_runtime.gd:_translate",
-        "right": "addons/GodotGAS/magnitudes/gameplay_attribute_based_magnitude.gd:_translate",
+        "left": "addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:_translate",
+        "right": "addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:_translate",
         "reason": "Same reasoning as the pair above, one level up: three status-translation functions across this codebase now share the mechanical match/return-with-fallback shape because that is the one way GDScript expresses a closed enum-to-enum mapping, not because any one was copied from another."
       },
       {
@@ -294,18 +294,18 @@
         "reason": "Deliberately parallel, the same way the 2D/3D targeting suites are: both grant and activate the same kind of channelling ability, then remove it - one under CANCEL_IMMEDIATELY, the other under AFTER_ACTIVE_END - and assert the opposite outcome for the still-running instance. The parallel is the point: AbilityRemovalPolicy's two values only mean something in contrast to each other, and collapsing these into one parametrized test would hide that 'aborted now' and 'left running until it ends on its own' are two distinct regressions this suite needs to catch independently."
       },
       {
-        "left": "addons/GodotGAS/abilities/tasks/*.gd:create*",
-        "right": "addons/GodotGAS/abilities/tasks/*.gd:create*",
+        "left": "addons/GAS_Engine/abilities/tasks/*.gd:create*",
+        "right": "addons/GAS_Engine/abilities/tasks/*.gd:create*",
         "reason": "Task 18's eight new observation tasks all follow the one factory shape `GameplayAbilityTask` itself already established: `var task = X.new(); task.owner_ability = ability; task.<fields> = <args>; task.target_asc = target if target != null else (ability.owner_asc if ability != null else null); return task`. Two `create()`/`create_matching()` functions are masked- or structural-similar because they are both that one mechanical shape GDScript has no named-parameter constructor to write once and share - not because one was copied from another. Forcing a structural difference between any two of them to dodge the score would make each task harder to read for nothing real, the same reasoning already applied to the *Case._init and _*_cases wildcards."
       },
       {
-        "left": "addons/GodotGAS/abilities/tasks/ability_task_wait_confirm_cancel.gd:create",
-        "right": "addons/GodotGAS/cues/gameplay_cue_params.gd:for_target",
+        "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:create",
+        "right": "addons/GAS_Engine/cues/gameplay_cue_params.gd:for_target",
         "reason": "Two unrelated two-field constructors - a task naming its confirm/cancel input slots, a cue param naming its instigator/target - that happen to share the shape of `var x = X.new(); x.a = a; x.b = b; return x`. Coincidence of shape, not of purpose: merging them would couple an ability task to a cue's authoring surface for no reason either was written."
       },
       {
-        "left": "addons/GodotGAS/abilities/tasks/ability_task_factory.gd:*",
-        "right": "addons/GodotGAS/abilities/tasks/ability_task_factory.gd:*",
+        "left": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:*",
+        "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:*",
         "reason": "Every factory in this file but `_own()` is `return _own(ability, X.create(ability, ...args)) as X` - the one wrapper shape the file exists to apply uniformly across Task 18's whole task library, declared in the file's own header comment. Two factories are masked-similar because they are both that one delegation, not because one was copied from another."
       }
     ]

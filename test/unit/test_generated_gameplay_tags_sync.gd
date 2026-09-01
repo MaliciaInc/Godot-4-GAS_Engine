@@ -1,7 +1,7 @@
 ## The generated constants and the registry they came from say the same thing.
 ##
-## `godot_gas/tag_registry.tres` is the only source of truth for authored tags.
-## `godot_gas/gameplay_tags.gd` is derived from it and versioned so an editor can
+## `gas_engine/tag_registry.tres` is the only source of truth for authored tags.
+## `gas_engine/gameplay_tags.gd` is derived from it and versioned so an editor can
 ## complete a tag name, and it is never edited by hand.
 ##
 ## Two tracked files that are supposed to agree will not stay agreeing on their
@@ -16,7 +16,7 @@ extends GutTest
 
 
 func _tracked_registry() -> GameplayTagRegistry:
-	var loaded: Resource = ResourceLoader.load(GodotGasProjectSettings.get_registry_tag_path())
+	var loaded: Resource = ResourceLoader.load(GASEngineProjectSettings.get_registry_tag_path())
 	return loaded as GameplayTagRegistry
 
 
@@ -30,7 +30,7 @@ func test_the_generated_script_is_exactly_what_the_registry_renders() -> void:
 	var registry: GameplayTagRegistry = _tracked_registry()
 	var expected: String = GameplayTagGenerator.render_tags_source(registry.tags)
 	var actual: String = FileAccess.get_file_as_string(
-		GodotGasProjectSettings.get_generated_tag_script_path()
+		GASEngineProjectSettings.get_generated_tag_script_path()
 	)
 
 	# Byte for byte, and asked through the same public renderer the writer uses.
@@ -52,7 +52,7 @@ func test_the_generated_script_is_exactly_what_the_registry_renders() -> void:
 func test_every_registry_tag_has_a_constant_and_no_others_do() -> void:
 	var registry: GameplayTagRegistry = _tracked_registry()
 	var generated: String = FileAccess.get_file_as_string(
-		GodotGasProjectSettings.get_generated_tag_script_path()
+		GASEngineProjectSettings.get_generated_tag_script_path()
 	)
 
 	var constants: int = 0

@@ -3,7 +3,7 @@
 
 Godot's `debug/gdscript/warnings/exclude_addons` defaults to **true**, which
 silently exempted every file under `addons/` from the eight warnings section 2.2
-promotes to errors. The entire engine lives in `addons/GodotGAS`, so the phase's
+promotes to errors. The entire engine lives in `addons/GAS_Engine`, so the phase's
 own typing gate was reporting green over code it had never looked at. That is
 the blind-gate class this project exists to prevent.
 
@@ -15,7 +15,7 @@ takes the whole test suite with it.
 So the project runs in the permissive mode and is verified in a strict one:
 
     python tooling/strict_typing_pass.py enter
-    <validate addons/GodotGAS/** through the Godot MCP>
+    <validate addons/GAS_Engine/** through the Godot MCP>
     python tooling/strict_typing_pass.py leave
 
 `enter` writes `exclude_addons=false` and drops a `.gdignore` into `addons/gut`
@@ -23,7 +23,7 @@ so Godot skips the vendored dependency entirely. `leave` restores both. Neither
 mode weakens a single warning: the difference is only which trees Godot applies
 them to.
 
-The pass covers `addons/GodotGAS/**`. Test sources extend `GutTest` and cannot
+The pass covers `addons/GAS_Engine/**`. Test sources extend `GutTest` and cannot
 be parsed while GUT is ignored, so they are checked in the permissive run and
 by the four quality gates, which do not exclude them.
 """

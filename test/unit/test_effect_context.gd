@@ -166,7 +166,7 @@ func test_no_dictionary_domain_payload() -> void:
 	# there is no untyped fallback path a Dictionary key could have used.
 	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
 	context.add_payload(GameplayHitContextPayload.new())
-	var unrelated_script: Script = load("res://addons/GodotGAS/target_data/gameplay_effect_context.gd") as Script
+	var unrelated_script: Script = load("res://addons/GAS_Engine/target_data/gameplay_effect_context.gd") as Script
 	assert_false(context.has_payload_script(unrelated_script))
 #endregion
 

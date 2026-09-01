@@ -1,16 +1,16 @@
-# Arhalies GAS
+# GAS_Engine
 
-**Arhalies GAS** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
+**GAS_Engine** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
 
-It is the gameplay-combat foundation of the *Arhalies* project and is developed as a reusable Godot addon in its own right.
+It is developed as a standalone reusable Godot addon.
 
-> **License model:** use Arhalies GAS unmodified in personal or commercial games for free. Modifying Arhalies GAS itself, distributing modified versions, or creating a derivative framework requires a separate paid Commercial Modification License.
+> **License model:** use GAS_Engine unmodified in personal or commercial games for free. Modifying GAS_Engine itself, distributing modified versions, or creating a derivative framework requires a separate paid Commercial Modification License.
 
 See [License](#license) for the exact distinction.
 
 ## Design goals
 
-Arhalies GAS is built around a few non-negotiable rules:
+GAS_Engine is built around a few non-negotiable rules:
 
 - deterministic gameplay state;
 - typed domain contracts instead of generic `Variant` / `Dictionary` APIs;
@@ -102,7 +102,7 @@ Tag semantics are centralized so different subsystems do not invent slightly dif
 
 ### Targeting
 
-Arhalies GAS supports typed targeting in both **2D and 3D**.
+GAS_Engine supports typed targeting in both **2D and 3D**.
 
 The targeting boundary handles:
 
@@ -166,7 +166,7 @@ The built-in context can represent:
 - typed target data;
 - extensible typed payload objects.
 
-Games can define their own context payload classes for information such as weapon metadata, critical-hit data, surfaces, combat provenance, or project-specific schemas without requiring those concepts to become permanent fields in Arhalies GAS.
+Games can define their own context payload classes for information such as weapon metadata, critical-hit data, surfaces, combat provenance, or project-specific schemas without requiring those concepts to become permanent fields in GAS_Engine.
 
 ## Optional integrations
 
@@ -217,7 +217,7 @@ Examples include:
 - invalid effect chains;
 - rejected application requirements.
 
-When evaluation fails, Arhalies GAS does not intentionally leave behind partial attribute mutations, active-effect registrations, granted tags, cues, or events.
+When evaluation fails, GAS_Engine does not intentionally leave behind partial attribute mutations, active-effect registrations, granted tags, cues, or events.
 
 ### Stable handles
 
@@ -247,9 +247,9 @@ The project is developed against structural and behavioral gates including:
 
 The repository itself is the executable specification: important gameplay rules are expected to have tests rather than exist only as comments or documentation claims.
 
-## Using Arhalies GAS in a game
+## Using GAS_Engine in a game
 
-Arhalies GAS is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
+GAS_Engine is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
 
 Under the free Community Use License, you may build game-specific systems using techniques such as:
 
@@ -266,13 +266,13 @@ These forms of normal game development do not become paid merely because the res
 
 ## License
 
-Arhalies GAS uses a **source-available dual licensing model**.
+GAS_Engine uses a **source-available dual licensing model**.
 
 ### Community Use License: free
 
-The root [`LICENSE`](LICENSE) contains the **Arhalies GAS Community Use License 1.0**.
+The root [`LICENSE`](LICENSE) contains the **GAS_Engine Community Use License 1.0**.
 
-It allows you to use the **unmodified** Arhalies GAS framework free of charge in:
+It allows you to use the **unmodified** GAS_Engine framework free of charge in:
 
 - personal games;
 - hobby projects;
@@ -283,36 +283,36 @@ It allows you to use the **unmodified** Arhalies GAS framework free of charge in
 - proprietary games;
 - commercial games.
 
-You may sell and commercially distribute a game that uses unmodified Arhalies GAS. You do **not** owe a royalty, revenue share, per-seat fee, or per-game fee merely because your game makes money.
+You may sell and commercially distribute a game that uses unmodified GAS_Engine. You do **not** owe a royalty, revenue share, per-seat fee, or per-game fee merely because your game makes money.
 
-Your game's own source code does not have to become open source simply because it uses Arhalies GAS.
+Your game's own source code does not have to become open source simply because it uses GAS_Engine.
 
 ### Commercial Modification License: paid
 
 A separate paid license is required if you want to exercise rights reserved by the Community Use License, including:
 
-- modifying Arhalies GAS source files;
-- distributing a modified version of Arhalies GAS;
+- modifying GAS_Engine source files;
+- distributing a modified version of GAS_Engine;
 - maintaining an authorized modified framework branch under commercial terms;
-- creating or distributing a derivative framework based on copyrightable Arhalies GAS code;
-- redistributing Arhalies GAS as a standalone development product beyond the Community Use Grant.
+- creating or distributing a derivative framework based on copyrightable GAS_Engine code;
+- redistributing GAS_Engine as a standalone development product beyond the Community Use Grant.
 
 See [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md) for the commercial licensing model.
 
 **Commercial game does not mean commercial modification.**
 
-A studio can sell a game built with unmodified Arhalies GAS under the free Community Use License. The paid license applies when the studio wants to modify or derive from **Arhalies GAS itself**.
+A studio can sell a game built with unmodified GAS_Engine under the free Community Use License. The paid license applies when the studio wants to modify or derive from **GAS_Engine itself**.
 
 ### Source-available, not OSI open source
 
-Arhalies GAS source is publicly readable, but the Community Use License reserves modification and derivative-framework rights. For that reason, the project should be described as **source-available**, not as OSI-approved open source.
+GAS_Engine source is publicly readable, but the Community Use License reserves modification and derivative-framework rights. For that reason, the project should be described as **source-available**, not as OSI-approved open source.
 
 ### Third-party material
 
-Third-party software or historical third-party portions, where present, retain their own applicable license terms. Those notices are documented separately in `THIRD_PARTY.md` and do not make the root Arhalies GAS project MIT-licensed.
+Third-party software or historical third-party portions, where present, retain their own applicable license terms. Those notices are documented separately in `THIRD_PARTY.md` and do not make the root GAS_Engine project MIT-licensed.
 
 ## Copyright
 
 Copyright © 2026 MaliciaInc.
 
-Arhalies GAS and its original source code are distributed under the terms in [`LICENSE`](LICENSE). Modification and derivative-development rights beyond that grant require a separate written commercial agreement as described in [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).
+GAS_Engine and its original source code are distributed under the terms in [`LICENSE`](LICENSE). Modification and derivative-development rights beyond that grant require a separate written commercial agreement as described in [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).

@@ -14,12 +14,12 @@
 ## @meta_license: MIT
 extends GutTest
 
-const GodotGasProjectSettings = preload("res://addons/GodotGAS/utilities/project_settings.gd")
+const GASEngineProjectSettings = preload("res://addons/GAS_Engine/utilities/project_settings.gd")
 
 ## The setting the drafts read their path from, named through the constant
 ## rather than retyped: a literal here would drift the moment it moved.
 const SETTING: String = (
-	GodotGasProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE
+	GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE
 )
 const REDIRECTED: String = "user://test_attribute_drafts.cfg"
 

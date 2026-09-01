@@ -177,7 +177,7 @@ func test_the_rendered_source_carries_the_constants_it_was_given() -> void:
 ## designer went there to create did not exist, and nothing said so.
 func test_generation_reports_whether_it_actually_wrote() -> void:
 	var setting: String = (
-		GodotGasProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
 	)
 	var previous: Variant = ProjectSettings.get_setting(setting)
 	ProjectSettings.set_setting(setting, SCRATCH_SCRIPT)
@@ -202,7 +202,7 @@ func test_generation_reports_whether_it_actually_wrote() -> void:
 ## project's constants, one suite run would replace the whole project's tags
 ## with whatever the last test happened to hold.
 func test_an_anonymous_registry_does_not_regenerate_the_project_file() -> void:
-	var generated_path: String = GodotGasProjectSettings.get_generated_tag_script_path()
+	var generated_path: String = GASEngineProjectSettings.get_generated_tag_script_path()
 	var before: String = FileAccess.get_file_as_string(generated_path)
 
 	registry.add_tag("Scratch.Tag")

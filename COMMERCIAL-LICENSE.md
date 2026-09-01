@@ -1,16 +1,16 @@
-# Arhalies GAS Commercial Modification License
+# GAS_Engine Commercial Modification License
 
-Arhalies GAS may be used **unmodified** in personal and commercial games under the [Arhalies GAS Community Use License 1.0](LICENSE).
+GAS_Engine may be used **unmodified** in personal and commercial games under the [GAS_Engine Community Use License 1.0](LICENSE).
 
-A separate **paid Commercial Modification License** is required if you want to modify Arhalies GAS itself, distribute modified versions, create a derivative framework, or reuse substantial copyrightable portions of Arhalies GAS in another reusable gameplay framework, addon, SDK, library, or development tool.
+A separate **paid Commercial Modification License** is required if you want to modify GAS_Engine itself, distribute modified versions, create a derivative framework, or reuse substantial copyrightable portions of GAS_Engine in another reusable gameplay framework, addon, SDK, library, or development tool.
 
 ## What the commercial license can cover
 
 Depending on the written agreement issued by MaliciaInc, a Commercial Modification License may authorize one or more of the following rights:
 
-- modification of Arhalies GAS source files;
+- modification of GAS_Engine source files;
 - private internal forks maintained by a studio or organization;
-- distribution of modified Arhalies GAS as part of one or more games;
+- distribution of modified GAS_Engine as part of one or more games;
 - publication of an approved modified version;
 - creation of an approved derivative framework or specialized branch;
 - redistribution rights beyond those granted by the Community Use License;
@@ -29,15 +29,15 @@ Those rights become effective only when MaliciaInc and the licensee enter into a
 
 You do **not** need a Commercial Modification License merely because your game is commercial.
 
-If you use Arhalies GAS without modifying its covered source files, the Community Use License permits you to:
+If you use GAS_Engine without modifying its covered source files, the Community Use License permits you to:
 
 - ship commercial games;
 - charge money for those games;
 - distribute through stores and platforms;
 - keep your game's own source code proprietary;
-- build game-specific systems around Arhalies GAS through its public APIs, composition, subclasses, data, resources, adapters, and documented extension points.
+- build game-specific systems around GAS_Engine through its public APIs, composition, subclasses, data, resources, adapters, and documented extension points.
 
-The paid license is about **modifying or deriving from Arhalies GAS itself**, not about whether your game makes money.
+The paid license is about **modifying or deriving from GAS_Engine itself**, not about whether your game makes money.
 
 ## Requesting a commercial modification license
 

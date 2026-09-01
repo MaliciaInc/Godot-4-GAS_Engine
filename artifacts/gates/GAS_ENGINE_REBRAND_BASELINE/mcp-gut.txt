@@ -1,0 +1,1113 @@
+Godot Engine v4.7.2.stable.steam.ed1daf0bf - https://godotengine.org
+
+---  GUT  ---
+[1m[INFO]:  [0musing [C:/Users/Edward/AppData/Roaming/Godot/app_userdata/Arhalies GAS] for temporary output.
+Godot version:  4.7.2
+GUT version:  9.7.1
+[4m
+
+res://test/unit/test_ability_activation_policies.gd
+[0m* test_manual_does_not_auto_activate_on_grant
+* test_on_granted_activates_exactly_once
+* test_on_granted_failure_leaves_it_granted_and_idle
+* test_an_ability_can_declare_multiple_event_triggers
+* test_passive_activates_immediately_when_requirements_already_hold
+* test_passive_waits_for_its_required_tag
+* test_passive_cancels_when_a_blocking_condition_appears
+* test_passive_restarts_once_conditions_are_satisfied_again
+* test_passive_reevaluation_is_reentrancy_stable
+* test_passive_per_execution_is_refused_as_invalid_definition
+* test_cleanup_stops_a_running_passive_without_restarting_it
+* test_an_effect_granted_passive_activates_and_removal_retires_it
+[1m12/12 passed.
+[0m[4m
+
+res://test/unit/test_ability_commit.gd
+[0m* test_an_ability_with_no_cost_and_no_cooldown_commits
+* test_an_ability_with_no_owner_reports_owner_missing
+* test_a_second_commit_in_one_activation_is_refused
+* test_a_cooldown_that_moves_an_attribute_is_refused
+* test_a_cooldown_without_a_granted_tag_is_refused
+* test_an_instant_cooldown_is_refused
+* test_an_unaffordable_cost_starts_no_cooldown
+* test_a_cooldown_that_fails_to_apply_charges_nothing
+* test_a_cost_that_fails_to_apply_retires_the_cooldowns
+* test_a_cooldown_listed_twice_is_applied_once
+* test_a_successful_commit_charges_exactly_once
+* test_a_new_activation_may_commit_again
+* test_a_cooldown_listener_that_drains_resources_rolls_back_and_reports_the_change
+* test_activation_error_and_commit_ability_agree_on_affordability
+* test_removing_an_active_ability_ends_it_exactly_once
+[1m15/15 passed.
+[0m[4m
+
+res://test/unit/test_ability_commit_contract.gd
+[0m* test_null_is_a_legal_cost
+* test_a_negative_add_is_a_legal_cost
+* test_an_effect_with_no_modifiers_is_a_legal_cost
+* test_several_negative_adds_are_a_legal_cost
+* test_a_non_instant_cost_is_refused
+* test_a_cost_with_an_execution_is_refused
+* test_multiply_reads_the_value_and_is_refused
+* test_divide_reads_the_value_and_is_refused
+* test_override_discards_the_value_and_is_refused
+* test_a_positive_magnitude_is_refused
+* test_a_cost_that_grants_a_tag_is_refused
+* test_a_cost_that_dispatches_an_event_is_refused
+* test_a_cost_that_plays_a_cue_is_refused
+* test_a_null_modifier_is_refused
+* test_null_is_a_legal_cooldown
+* test_a_cooldown_with_a_modifier_is_refused
+* test_a_cooldown_with_no_granted_tag_is_refused
+* test_a_zero_duration_cooldown_is_refused
+* test_a_well_formed_duration_cooldown_is_legal
+* test_a_well_formed_turn_based_cooldown_is_legal
+* test_a_shared_resource_listed_in_both_is_one_cooldown
+* test_the_own_cooldown_comes_before_the_shared_ones
+* test_a_null_own_cooldown_contributes_nothing
+[1m23/23 passed.
+[0m[4m
+
+res://test/unit/test_ability_cost_pricing.gd
+[0m* test_an_absolute_cost_charges_the_declared_amount
+* test_an_absolute_cost_scales_with_a_curve_and_level
+* test_ten_percent_of_base_charges_a_tenth_of_the_durable_value
+* test_ten_percent_of_current_prices_against_the_derived_value
+* test_a_cost_priced_against_a_different_attribute_than_it_spends
+* test_five_percent_of_health_current_spends_health
+* test_twenty_five_percent_of_attack_base_spends_attack
+* test_a_zero_percent_cost_commits_without_writing_the_attribute
+* test_a_hundred_percent_cost_takes_everything
+* test_a_percent_over_one_hundred_is_refused
+* test_a_negative_percent_is_refused
+* test_a_non_finite_percent_is_refused
+* test_a_cost_naming_an_unknown_target_attribute_is_refused
+* test_a_percent_cost_naming_an_unknown_reference_is_refused
+* test_two_costs_on_the_same_attribute_are_aggregated
+* test_costs_on_different_attributes_charge_both
+* test_a_temporary_buff_raises_the_price_but_not_the_durable_funds
+* test_preview_and_commit_agree_on_a_percentage_cost
+* test_a_second_activation_re_resolves_against_the_current_state
+* test_a_reference_changing_after_resolve_does_not_change_the_frozen_charge
+[1m20/20 passed.
+[0m[4m
+
+res://test/unit/test_ability_input.gd
+[0m* test_a_bound_ability_activates_on_its_own_slot
+* test_a_press_on_another_slot_reaches_nothing
+* test_an_unbound_ability_never_hears_a_press
+* test_binding_an_ungranted_ability_is_refused
+ERROR: GodotGAS: cannot bind an ability that was never granted to this ASC.
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] bind_to_input (res://addons/GodotGAS/components/ability_runtime.gd:363)
+       [1] bind_ability_to_input (res://addons/GodotGAS/components/ability_system_component.gd:572)
+       [2] test_binding_an_ungranted_ability_is_refused (res://test/unit/test_ability_input.gd:81)
+       [3] _run_test (res://addons/gut/gut.gd:622)
+       [4] _test_the_scripts (res://addons/gut/gut.gd:835)
+[34m[ExpectedError][0mExpected push_error error containing 'GodotGAS: cannot bind an ability that was never granted to this ASC.'.  
+* test_two_abilities_on_one_slot_answer_as_the_binding_said<parameterized>
+    - params[0](<RefCounted#-9223371706377169809>)
+    - params[1](<RefCounted#-9223371706360392594>)
+* test_a_held_slot_is_reported_until_release
+* test_pressing_the_same_slot_twice_records_it_once
+* test_releasing_a_slot_nobody_pressed_is_harmless
+* test_input_while_channelling_reaches_the_active_hooks
+* test_a_release_reaches_nothing_when_the_ability_is_idle
+* test_a_blocked_ability_does_not_activate_on_a_press
+* test_a_press_cannot_pay_a_cost_the_owner_cannot_afford
+* test_removing_an_ability_stops_its_input
+* test_ending_an_ability_leaves_it_granted_and_bound
+[1m14/14 passed.
+[0m[4m
+
+res://test/unit/test_ability_instancing.gd
+[0m* test_per_actor_reuses_the_one_instance_across_activations
+* test_per_actor_refuses_a_second_activation_while_the_first_runs
+* test_per_execution_grants_no_persistent_instance
+* test_per_execution_gives_each_activation_a_distinct_node_id
+* test_simultaneous_executions_share_no_fields_tasks_or_context
+* test_ending_one_execution_leaves_its_sibling_running
+* test_removing_the_spec_cancels_every_execution
+* test_cleanup_cancels_every_execution_across_every_spec
+* test_a_press_starts_one_more_execution_alongside_those_already_running
+* test_a_press_reaches_every_running_execution_even_when_the_first_ends_itself
+* test_an_event_activates_a_per_execution_listener_with_no_per_actor_template
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_ability_lifecycle.gd
+[0m* test_try_activate_starts_a_manual_ability
+* test_try_activate_reports_spec_not_found_for_an_unresolvable_handle
+* test_try_activate_maps_a_blocked_query_to_blocked_by_tags
+* test_try_activate_maps_a_missing_required_query_to_missing_required_tags
+* test_try_activate_maps_an_active_cooldown_tag_to_on_cooldown
+* test_a_channelled_ability_reports_success_immediately_and_stays_active
+* test_ability_activated_signal_fires_with_handle_and_instance
+* test_ability_runtime_ended_signal_fires_when_the_activation_finishes
+* test_cancel_immediately_aborts_a_running_instance_and_drops_the_spec
+* test_after_active_end_lets_a_running_instance_finish_first
+* test_remove_ability_on_end_is_the_after_active_end_convenience
+* test_pending_removal_blocks_a_reactivation_attempt
+* test_removing_a_running_passive_does_not_let_it_restart_mid_removal
+* test_give_and_activate_once_success
+* test_give_and_activate_once_failure_leaves_no_spec_behind
+* test_give_and_activate_once_cannot_be_activated_a_second_time
+* test_give_and_activate_once_per_execution_runs_only_that_one_execution
+* test_cleanup_retires_a_pending_removal_spec_along_with_everything_else
+* test_effect_removal_still_defers_a_grant_marked_remove_on_active_end
+[1m19/19 passed.
+[0m[4m
+
+res://test/unit/test_ability_spec_and_handle.gd
+[0m* test_the_default_handle_is_invalid
+* test_handle_ids_are_monotonic_within_one_asc
+* test_two_ascs_can_both_report_local_id_one_without_colliding
+* test_a_handle_from_another_asc_does_not_resolve_here
+* test_a_handle_from_another_asc_cannot_remove_a_spec_here
+* test_an_unknown_handle_resolves_to_nothing
+* test_a_removed_handle_stays_valid_but_resolves_to_nothing
+* test_specs_returns_a_copy_the_caller_cannot_use_to_mutate_the_registry
+* test_level_and_input_are_read_from_the_spec
+* test_the_source_passed_to_give_ability_lands_on_the_spec
+* test_dynamic_tags_are_independent_between_two_grants
+* test_the_instance_is_bound_back_to_its_own_spec
+* test_removing_one_handle_leaves_an_unrelated_grant_alone
+* test_a_scene_whose_root_is_not_an_ability_registers_nothing
+* test_a_missing_scene_registers_nothing
+* test_discarding_a_valid_preparation_frees_it_without_registering_anything
+* test_cleanup_empties_the_spec_registry
+[1m17/17 passed.
+[0m[4m
+
+res://test/unit/test_ability_system_locator.gd
+[0m* test_a_node_that_is_the_component_answers_itself
+* test_a_child_under_the_conventional_name_is_found
+* test_a_renamed_child_still_resolves_by_type
+* test_a_decoy_using_the_name_is_not_accepted
+* test_a_collider_finds_the_component_beside_it
+* test_the_search_climbs_past_more_than_one_ancestor
+* test_nothing_is_found_when_there_is_nothing_to_find
+* test_a_component_inside_a_descendant_is_not_captured
+* test_the_ability_facade_and_the_locator_are_the_same_search
+[1m9/9 passed.
+[0m[4m
+
+res://test/unit/test_ability_tag_semantics.gd
+[0m* test_an_ability_can_carry_multiple_identity_tags
+* test_effective_tags_include_the_specs_own_dynamic_tags
+* test_activation_required_query_blocks_until_satisfied
+* test_activation_blocked_query_blocks_while_it_matches
+* test_an_active_ability_blocks_another_matching_its_block_query
+* test_activating_an_ability_cancels_others_matching_its_cancel_query
+* test_an_ability_does_not_cancel_itself_by_default
+* test_activation_owned_tags_are_a_single_ref_across_per_execution_instances
+* test_a_block_ability_tags_effect_blocks_matching_activation
+* test_an_inhibited_block_ability_tags_effect_stops_blocking
+* test_a_cancel_ability_tags_effect_cancels_matching_active_abilities
+* test_target_required_query_is_enforced_at_effect_application
+* test_target_blocked_query_is_enforced_at_effect_application
+* test_a_query_matches_a_more_specific_descendant_tag
+* test_a_query_does_not_match_a_tag_sharing_only_a_string_prefix
+* test_legacy_cancel_with_tags_still_cancels_by_effective_tags
+* test_cancelling_an_active_ability_emits_ability_ended_exactly_once
+[1m17/17 passed.
+[0m[4m
+
+res://test/unit/test_ability_target_application.gd
+[0m* test_unusable_arguments_still_answer_with_a_result
+* test_a_target_without_an_ability_system_is_named_rather_than_missed
+* test_two_colliders_on_one_actor_are_charged_once
+* test_the_effects_context_carries_the_casting_abilitys_handle
+* test_a_target_that_refuses_is_reported_as_refused
+* test_each_target_is_evaluated_against_its_own_state
+* test_the_source_of_an_effect_is_found_by_the_same_search
+* test_the_result_separates_the_three_ways_a_target_drops_out
+* test_the_whole_route_runs_from_activation_to_confirmation
+* test_two_colliders_on_one_actor_are_hit_once_along_the_route
+* test_a_cast_cancelled_before_its_targets_arrive_fires_nothing
+* test_removing_the_ability_mid_cast_leaves_nothing_waiting
+* test_tearing_down_the_asc_mid_cast_leaves_nothing_behind
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_ability_task_library.gd
+[0m* test_wait_attribute_change_succeeds_on_the_named_attribute
+* test_wait_attribute_threshold_triggers_immediately_when_already_true
+* test_wait_attribute_threshold_waits_for_the_comparison_to_hold
+* test_wait_tag_added_succeeds_hierarchically
+* test_wait_tag_removed_succeeds_once_nothing_still_matches
+* test_wait_tag_query_nested_expression
+* test_wait_gameplay_effect_applied_matches_by_query_including_instant_success
+* test_wait_gameplay_effect_applied_multiple_executions_stays_running
+* test_wait_gameplay_effect_removed_matches_by_handle
+* test_wait_gameplay_effect_stack_change_reports_old_and_new
+* test_wait_ability_activated_matches_by_handle
+* test_wait_ability_ended_matches_by_tag_query
+* test_wait_confirm_cancel_distinguishes_the_two_decisions
+* test_repeat_pays_a_large_delta_with_a_cap_and_backlog
+* test_repeat_indefinite_keeps_going_until_cancelled
+* test_play_animation_and_wait_succeeds_only_for_the_requested_animation
+* test_play_animation_and_wait_cancel_does_not_stop_a_shared_player_by_default
+* test_removing_the_ability_disconnects_a_signal_based_task
+* test_zero_tasks_remain_after_a_batch_of_tasks_end
+[1m19/19 passed.
+[0m[4m
+
+res://test/unit/test_ability_tasks.gd
+[0m* test_registering_a_task_starts_it
+* test_a_task_without_an_owner_is_refused
+ERROR: GodotGAS: an ability task must name the ability that owns it.
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] register (res://addons/GodotGAS/abilities/tasks/ability_task_runtime.gd:30)
+       [1] register_task (res://addons/GodotGAS/components/ability_runtime.gd:437)
+       [2] register_ability_task (res://addons/GodotGAS/components/ability_system_component.gd:584)
+       [3] test_a_task_without_an_owner_is_refused (res://test/unit/test_ability_tasks.gd:105)
+       [4] _run_test (res://addons/gut/gut.gd:622)
+       [5] _test_the_scripts (res://addons/gut/gut.gd:835)
+[34m[ExpectedError][0mExpected push_error error containing 'GodotGAS: an ability task must name the ability that owns it.'.  
+* test_a_task_that_succeeds_is_dropped
+* test_a_task_that_is_cancelled_is_dropped
+* test_cancelling_still_emits_finished
+* test_an_ending_is_reported_exactly_once
+* test_every_way_of_closing_an_ability_cancels_its_tasks<parameterized>
+    - params[0](<RefCounted#-9223371500654943746>)
+    - params[1](<RefCounted#-9223371500638166533>)
+    - params[2](<RefCounted#-9223371500621389311>)
+    - params[3](<RefCounted#-9223371500604612094>)
+* test_cleanup_cancels_every_task
+* test_cleaning_up_twice_does_not_report_twice
+* test_a_finished_task_hears_nothing_further
+* test_a_live_task_hears_every_channel
+* test_target_data_reaches_only_the_ability_it_was_addressed_to
+* test_a_task_ending_its_neighbour_does_not_skip_the_rest
+* test_nothing_is_left_running_after_the_ability_goes
+* test_nothing_is_left_running_after_the_asc_goes
+* test_even_a_zero_delay_costs_one_advance
+* test_a_delay_ends_once_its_seconds_have_gone_by
+* test_one_long_frame_finishes_a_delay_it_overshoots
+* test_a_negative_delay_is_clamped_rather_than_waited_out
+* test_an_input_task_wakes_only_on_its_own_slot_and_direction
+* test_a_release_task_is_not_woken_by_the_press_before_it
+* test_an_input_task_defaults_to_the_abilitys_own_slot
+* test_an_event_task_matches_downwards_and_not_upwards
+* test_a_target_data_task_ends_when_its_own_ability_submits
+* test_a_target_data_task_ignores_another_abilitys_submission
+* test_a_factory_refuses_when_no_asc_can_own_the_task
+* test_closing_an_ability_cancels_a_standard_task_too
+[1m27/27 passed.
+[0m[4m
+
+res://test/unit/test_attribute_aggregation.gd
+[0m* test_two_adds_sum_onto_the_base
+* test_adds_from_separate_effects_also_sum
+* test_multipliers_compound_with_each_other
+* test_add_then_multiply_is_forty_not_thirty
+* test_declaration_order_does_not_change_the_result
+* test_divisors_compound
+* test_dividing_by_zero_refuses_the_whole_application
+* test_removing_either_contribution_recomposes_correctly<parameterized>
+    - params[0](<RefCounted#-9223371452957317870>)
+    - params[1](<RefCounted#-9223371452940540655>)
+    - params[2](<RefCounted#-9223371452923763440>)
+* test_within_one_effect_the_higher_modifier_index_wins
+* test_the_same_modifiers_as_instant_commit_to_base
+* test_the_same_modifiers_as_active_leave_the_base_alone
+* test_raising_the_base_recomposes_instead_of_dropping_the_buff
+* test_a_stale_current_value_is_repaired_without_signals
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_attribute_captures.gd
+[0m* test_a_snapshot_captures_the_named_actors_named_value<parameterized>
+    - params[0](<RefCounted#-9223371429670541829>)
+    - params[1](<RefCounted#-9223371429653764612>)
+    - params[2](<RefCounted#-9223371429636987395>)
+    - params[3](<RefCounted#-9223371429620210178>)
+* test_a_snapshot_does_not_change_after_the_source_moves_on
+* test_a_source_live_capture_tracks_the_source_as_it_changes
+* test_a_target_live_capture_tracks_the_target_as_it_changes
+* test_a_capture_reports_why_it_could_not_resolve<parameterized>
+    - params[0](<RefCounted#-9223371402072021159>)
+    - params[1](<RefCounted#-9223371402055243942>)
+    - params[2](<RefCounted#-9223371402038466725>)
+* test_a_non_finite_value_is_refused
+* test_an_execution_calculation_receives_already_resolved_captures
+* test_target_a_and_b_get_independent_snapshots_from_one_shared_source
+* test_a_failed_capture_refuses_the_whole_application
+[1m9/9 passed.
+[0m[4m
+
+res://test/unit/test_attribute_drafts.gd
+[0m* test_an_attribute_name_that_is_not_an_identifier_is_refused
+* test_a_legal_attribute_name_is_accepted
+* test_renaming_an_attribute_to_an_illegal_name_is_refused
+* test_a_set_name_that_is_not_an_identifier_is_refused
+* test_renaming_a_set_to_an_illegal_name_is_refused
+* test_a_mutation_reaches_disk_and_reads_back
+[1m6/6 passed.
+[0m[4m
+
+res://test/unit/test_attribute_evaluation.gd
+[0m* test_evaluation_stages_without_writing
+* test_a_staged_mutation_reports_requested_against_committed
+* test_contribution_mode_builds_contributions_and_no_base_writes
+* test_a_contribution_records_both_ordering_axes
+* test_base_mutation_mode_stages_writes_and_no_contributions
+* test_an_execution_calculation_stages_a_base_mutation
+* test_an_execution_calculation_can_read_the_target
+* test_an_execution_calculation_writing_an_unknown_attribute_fails
+* test_an_attribute_written_by_both_mechanisms_is_refused
+* test_the_two_mechanisms_may_write_different_attributes
+* test_an_ambiguous_effect_changes_nothing_when_applied
+* test_a_null_spec_reports_invalid_spec
+* test_a_zero_divisor_reports_division_by_zero
+* test_a_failed_evaluation_carries_no_staged_work
+[1m14/14 passed.
+[0m[4m
+
+res://test/unit/test_cooldown_state.gd
+[0m* test_an_ability_without_a_cooldown_is_never_on_one
+* test_a_cooldown_is_reported_in_its_own_unit<parameterized>
+    - params[0](<RefCounted#-9223371363064993199>)
+    - params[1](<RefCounted#-9223371363048215986>)
+* test_time_passing_lowers_the_reported_wait
+* test_an_endless_cooldown_tag_is_reported_as_infinite
+* test_the_longest_of_several_waits_is_the_one_reported
+* test_a_tag_named_twice_is_consulted_once
+* test_a_refreshed_cooldown_reports_the_new_time
+* test_removing_the_effect_makes_the_ability_ready_again
+* test_asking_for_the_state_changes_nothing
+[1m9/9 passed.
+[0m[4m
+
+res://test/unit/test_cost_preview.gd
+[0m* test_an_affordable_cost_is_affordable
+* test_a_cost_larger_than_the_base_is_not_affordable
+* test_a_temporary_buff_does_not_subsidise_a_durable_cost
+* test_a_preview_mutates_nothing
+* test_the_preview_agrees_with_the_commit
+[1m5/5 passed.
+[0m[4m
+
+res://test/unit/test_dialogic_bridge.gd
+[0m* test_binding_needs_a_node_an_asc_and_a_channel
+* test_binding_to_a_node_without_the_signal_is_refused
+* test_binding_to_a_dialogic_shaped_node_succeeds
+* test_binding_to_an_absent_installation_is_refused_quietly
+* test_unbinding_is_safe_before_after_and_twice
+* test_rebinding_does_not_leave_the_old_connection_behind
+* test_a_message_that_is_not_a_dictionary_is_ignored_without_complaint
+* test_a_dictionary_for_another_bridge_is_ignored_without_complaint
+* test_a_message_for_another_channel_is_ignored_without_complaint
+* test_a_message_without_a_channel_is_refused
+* test_a_message_naming_an_unknown_command_is_refused
+* test_a_message_carrying_an_invalid_tag_is_refused
+* test_a_message_carrying_a_non_numeric_magnitude_is_refused
+* test_a_send_event_reaches_the_ability_system
+* test_an_event_from_a_dialogue_can_wake_a_listening_ability
+* test_a_dialogue_can_add_and_remove_a_tag
+* test_nothing_arrives_after_unbinding
+* test_a_freed_bridge_disconnects_itself
+* test_the_integrations_carry_no_second_copy_of_the_tag_grammar
+[1m19/19 passed.
+[0m[4m
+
+res://test/unit/test_effect_context.gd
+[0m* test_the_instigator_arrives_intact
+* test_the_causer_defaults_to_the_instigator
+* test_a_distinct_causer_is_preserved
+* test_the_level_travels_with_the_spec
+* test_source_and_target_are_different_nodes
+* test_target_data_starts_fresh_and_empty_on_a_copy
+* test_ability_handle_defaults_null_and_survives_a_copy
+* test_source_object_survives_a_copy
+* test_one_payload_is_added_and_found_by_script
+* test_add_payload_refuses_null
+* test_multiple_payloads_all_survive_a_copy_in_order
+* test_copy_isolation_appending_to_one_payload_array_never_touches_the_other
+* test_a_payload_that_cannot_be_copied_fails_the_whole_application_copy
+* test_no_dictionary_domain_payload
+* test_execution_calculations_see_the_full_context
+* test_cue_params_carry_the_same_context
+* test_overflow_child_inherits_causer_and_ability_handle
+[1m17/17 passed.
+[0m[4m
+
+res://test/unit/test_effect_lifecycle.gd
+[0m* test_overkill_floors_the_base_instead_of_going_negative
+* test_healing_after_overkill_starts_from_zero
+* test_a_clamped_mutation_reports_requested_against_committed
+* test_healing_above_the_maximum_is_clamped_in_base
+* test_a_base_change_preserves_an_active_contribution
+* test_initialising_overrides_replaces_the_base_and_keeps_buffs
+* test_a_max_health_buff_raises_the_ceiling
+* test_losing_the_buff_discards_the_excess_permanently
+* test_cleanup_reverts_to_base_and_drops_everything
+* test_cleanup_is_idempotent
+* test_cleanup_announces_each_effect_exactly_once
+* test_refreshing_replaces_the_snapshot_and_keeps_one_instance
+* test_a_refresh_emits_neither_a_removal_nor_an_addition
+* test_a_refresh_restarts_the_duration
+* test_free_stacking_keeps_instances_independent
+[1m15/15 passed.
+[0m[4m
+
+res://test/unit/test_effect_pipeline.gd
+[0m* test_an_application_gate_refuses_then_allows<parameterized>
+    - params[0](<RefCounted#-9223371227538640287>)
+    - params[1](<RefCounted#-9223371227521863072>)
+* test_an_effect_can_purge_effects_granting_a_tag
+* test_an_instant_effect_registers_nothing_and_grants_no_tag
+* test_a_duration_effect_registers_and_grants
+* test_an_infinite_effect_does_not_expire
+* test_a_failed_multi_attribute_effect_changes_nothing_at_all
+* test_a_refusal_reports_its_typed_reason
+* test_writing_an_unknown_attribute_is_refused
+* test_an_effect_that_changes_nothing_emits_no_attribute_signal
+* test_one_signal_per_attribute_that_actually_moved
+* test_removal_announces_the_effect_once
+* test_removing_an_effect_twice_announces_it_once
+* test_removing_every_effect_while_iterating_the_handed_out_list_removes_them_all
+* test_mutating_the_handed_out_list_does_not_touch_the_ASC
+* test_an_effect_applied_from_a_source_records_its_instigator
+* test_effects_can_be_removed_by_their_source
+[1m16/16 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_ability_cost_resolver.gd
+[0m* test_a_null_asc_is_invalid
+* test_a_non_finite_level_is_invalid
+* test_an_empty_list_resolves_to_nothing_owed
+* test_a_null_entry_is_invalid
+* test_an_entry_with_no_amount_is_invalid
+* test_an_entry_with_no_target_attribute_is_invalid
+* test_an_absolute_entry_carrying_a_reference_is_invalid
+* test_a_percent_entry_missing_a_reference_is_invalid
+* test_one_bad_entry_invalidates_the_whole_list
+* test_status_ok_carries_a_usable_effect
+* test_insufficient_resources_still_carries_the_frozen_effect_and_entries
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_asset_validator.gd
+[0m* test_a_clean_effect_has_no_findings
+* test_null_effect_is_a_missing_reference
+* test_a_missing_magnitude_is_reported
+* test_a_valid_query_has_no_findings
+* test_an_empty_tag_in_a_query_is_reported
+* test_a_null_query_has_no_findings
+* test_effect_query_checks_all_four_tag_queries
+* test_a_clean_absolute_cost_has_no_findings
+* test_a_percentage_cost_missing_its_reference_attribute_is_reported
+* test_a_cost_missing_amount_and_target_reports_both
+* test_a_valid_ability_scene_has_no_findings
+* test_a_null_scene_is_reported_as_missing
+* test_an_ability_scene_with_a_bad_cost_surfaces_it
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_cues.gd
+[0m* test_params_carry_every_field_the_cue_needs
+* test_an_absent_location_is_distinguishable_from_the_origin
+* test_the_factory_builds_the_common_case
+* test_a_cue_receives_its_parameters_and_its_parent
+* test_finishing_reports_the_cue_and_its_tag
+* test_a_finished_cue_forgets_its_parameters
+* test_the_pool_starts_empty_for_an_unknown_tag
+* test_a_finished_cue_returns_to_its_bucket
+* test_a_bucket_will_not_hold_the_same_cue_twice
+* test_an_empty_bucket_answers_null_rather_than_guessing
+* test_the_asc_fills_in_the_target_when_the_caller_did_not
+* test_a_null_parameter_object_is_ignored
+* test_executed_defaults_to_the_legacy_play_cue_override
+* test_a_subclass_overriding_executed_never_falls_through_to_play_cue
+* test_persistent_cue_runs_on_active_then_while_active
+* test_persistent_cue_never_auto_destroys_while_active
+* test_end_persistent_calls_on_removed_and_reports_finished
+* test_a_stale_one_shot_timer_does_not_steal_a_reused_persistent_cue
+* test_effect_application_activates_exactly_one_persistent_cue_per_binding
+* test_removing_the_effect_pools_the_persistent_cue_exactly_once
+* test_two_effects_sharing_a_cue_tag_get_independent_handles
+* test_a_stack_reapplication_does_not_create_a_second_persistent_cue
+* test_inhibiting_the_effect_removes_its_persistent_cue
+* test_uninhibiting_activates_a_fresh_handle_not_the_old_one
+* test_cleanup_ends_persistent_cues_exactly_once
+* test_missing_registry_activation_returns_an_invalid_handle_without_crashing
+* test_cue_params_carry_an_opaque_handle_not_a_live_reference
+[1m27/27 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_ability_grants.gd
+[0m* test_granting_one_ability_makes_it_resolvable_on_the_target
+* test_granting_multiple_abilities_grants_all_of_them
+* test_an_invalid_ability_scene_refuses_the_whole_parent_application
+* test_one_bad_grant_rolls_back_every_grant_already_prepared
+* test_the_receipt_matches_exactly_what_was_granted
+* test_the_granted_specs_source_names_the_granting_effect
+* test_removal_policy_governs_whether_removal_cuts_off_a_running_activation<parameterized>
+    - params[0](<RefCounted#-9223371111826179868>)
+    - params[1](<RefCounted#-9223371111809402653>)
+* test_keep_after_effect_end_never_retires_the_ability
+* test_a_stack_grants_the_ability_exactly_once
+* test_removing_a_stack_retires_the_ability_exactly_once
+* test_cleanup_retires_every_active_effects_granted_abilities
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_chains.gd
+[0m* test_on_application_applies_the_child_to_the_same_target
+* test_on_application_respects_the_target_query
+* test_on_application_respects_the_source_query
+* test_natural_expiration_fires_its_own_chain_and_any_removal
+* test_premature_removal_fires_its_own_chain_and_any_removal_but_not_natural
+* test_asc_cleanup_fires_no_additional_effects_chain
+* test_the_child_copies_instigator_causer_and_source_tags
+* test_the_child_inherits_ability_handle_source_object_and_payloads
+* test_a_three_level_chain_applies_all_three
+* test_a_self_referencing_chain_stops_at_the_depth_limit
+* test_a_refused_child_leaves_the_committed_parent_untouched
+* test_a_stack_that_fully_expires_naturally_fires_the_chain
+* test_an_inhibited_parents_natural_expiration_still_fires_the_chain
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_components.gd
+[0m* test_components_run_in_declared_order
+* test_prepared_states_are_indexed_by_component_index
+* test_a_prepare_rejection_discards_earlier_states_in_reverse_order
+* test_an_evaluator_failure_discards_every_prepared_state
+* test_an_invalid_component_rejects_the_definition_before_can_apply_ever_runs
+* test_can_apply_allows_when_every_component_allows
+* test_a_refusal_at_any_preflight_stage_leaves_nothing_observable<parameterized>
+    - params[0](<RefCounted#-9223371001968968326>)
+    - params[1](<RefCounted#-9223371001952191109>)
+* test_asset_tags_are_not_granted_to_the_target
+* test_target_tags_are_granted_to_the_target
+* test_cleanup_removes_exactly_the_tags_components_granted
+* test_required_and_blocked_tags_are_conserved_via_the_query
+* test_chance_zero_always_refuses
+* test_chance_one_always_allows
+* test_chance_draws_from_the_shared_deterministic_rng
+* test_a_custom_requirement_can_refuse_an_application
+* test_ui_data_never_affects_runtime_behaviour
+* test_two_targets_share_one_definition_component_with_no_shared_runtime_state
+[1m17/17 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_execute_hooks.gd
+[0m* test_instant_pre
+* test_periodic_pre
+* test_execution_pre
+* test_duration_contribution_no_pre
+* test_reject_atomic
+* test_modify_proposal
+* test_nonfinite_modify_reject
+* test_post_after_commit
+* test_post_sees_committed
+* test_multiattribute_post_order_deterministic
+* test_no_duplicate_post_attribute_change_semantics
+* test_clamp_metadata
+* test_500_damage_heal_regression
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_handles_and_queries.gd
+[0m* test_handle_ids_are_monotonic_within_one_asc
+* test_an_invalid_handle_is_invalid_and_never_resolves
+* test_a_handle_from_another_asc_neither_matches_nor_resolves_here
+* test_get_resolves_the_active_effect_by_handle
+* test_remove_by_handle_removes_exactly_that_effect
+* test_cleanup_makes_every_handle_stop_resolving_without_recycling_ids
+* test_a_stale_handle_does_not_affect_a_new_effect
+* test_an_empty_query_matches_everything
+* test_effect_definition_filters_by_the_exact_asset
+* test_asset_tags_filter_by_the_effects_asset_tags_component
+* test_granted_tags_filter_by_what_the_effect_actually_grants
+* test_source_tags_filter_by_a_snapshot_taken_at_application
+* test_target_tags_are_read_live_from_the_owning_asc
+* test_source_node_filters_by_who_caused_the_application
+* test_modified_attribute_matches_a_standard_modifiers_target
+* test_modified_attribute_matches_an_executions_declared_output
+* test_multiple_conditions_are_combined_with_and
+* test_remove_by_query_snapshots_before_removing
+* test_duration_and_turn_queries_answer_by_handle
+* test_found_effects_and_handles_are_copies
+[1m20/20 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_immunities.gd
+[0m* test_no_immunity_lets_the_effect_through
+* test_a_matching_incoming_effect_is_refused_as_immune<parameterized>
+    - params[0](<RefCounted#-9223370851980655084>)
+    - params[1](<RefCounted#-9223370851913546216>)
+    - params[2](<RefCounted#-9223370851846437348>)
+* test_a_tag_sharing_only_a_string_prefix_does_not_match
+* test_a_source_tag_match_is_refused
+* test_a_granted_tag_match_is_refused
+* test_a_target_tag_condition_gates_the_immunity
+* test_an_effect_definition_match_is_refused_but_others_are_not
+* test_removing_the_immunity_effect_allows_the_application_again
+* test_an_immune_periodic_effect_is_never_registered
+* test_an_immune_effect_never_purges_other_active_effects
+* test_an_immune_effect_dispatches_no_events_and_plays_no_cues
+* test_the_shared_immunity_component_carries_no_mutable_state_between_targets
+[1m12/12 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_inhibition.gd
+[0m* test_an_effect_with_no_ongoing_query_starts_uninhibited
+* test_an_ongoing_query_already_unsatisfied_at_application_starts_inhibited
+* test_the_required_tag_inhibits_and_uninhibits_across_its_full_cycle
+* test_inhibit_uninhibit_never_emits_active_effect_added_or_removed
+* test_inhibition_changed_emits_exactly_once_per_real_transition
+* test_a_contribution_disappears_while_inhibited_and_reappears
+* test_target_granted_tags_disappear_while_inhibited_and_reappear
+* test_duration_continues_counting_down_while_inhibited
+* test_an_inhibited_effect_is_removed_normally_when_its_duration_expires
+* test_a_removal_query_removes_the_active_effect_when_it_matches
+* test_a_removal_query_already_matching_refuses_the_initial_application
+* test_a_self_oscillating_ongoing_query_stabilizes_inhibited_without_hanging
+WARNING: GodotGAS: ongoing-requirement reevaluation did not converge within 64 passes; leaving affected effects inhibited.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _freeze_as_inhibited_and_diagnose (res://addons/GodotGAS/effects/gameplay_effect_inhibition_runtime.gd:133)
+       [1] _reevaluate (res://addons/GodotGAS/effects/gameplay_effect_inhibition_runtime.gd:76)
+       [2] end_state_mutation (res://addons/GodotGAS/effects/gameplay_effect_inhibition_runtime.gd:40)
+       [3] set_attached (res://addons/GodotGAS/effects/gameplay_effect_inhibition_runtime.gd:182)
+       [4] initialize (res://addons/GodotGAS/effects/gameplay_effect_inhibition_runtime.gd:166)
+       [5] _commit (res://addons/GodotGAS/effects/gameplay_effect_runtime.gd:289)
+       [6] apply (res://addons/GodotGAS/effects/gameplay_effect_runtime.gd:197)
+       [7] apply_effect_spec_result (res://addons/GodotGAS/components/ability_system_component.gd:369)
+       [8] apply_effect_spec (res://addons/GodotGAS/components/ability_system_component.gd:375)
+       [9] apply (res://test/fixtures/test_effect_factory.gd:372)
+       [10] test_a_self_oscillating_ongoing_query_stabilizes_inhibited_without_hanging (res://test/unit/test_gameplay_effect_inhibition.gd:199)
+       [11] _run_test (res://addons/gut/gut.gd:622)
+       [12] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_periodic_policies_govern_what_happens_at_uninhibit<parameterized>
+    - params[0](<RefCounted#-9223370754018489815>)
+    - params[1](<RefCounted#-9223370754001712600>)
+    - params[2](<RefCounted#-9223370753984935385>)
+* test_cleanup_removes_an_inhibited_effect_cleanly
+* test_a_query_can_filter_by_inhibition_state
+[1m15/15 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_effect_stacking.gd
+[0m* test_stacking_type_none_creates_independent_active_effects
+* test_aggregate_by_target_joins_regardless_of_source
+* test_aggregate_by_source_joins_only_the_same_source
+* test_aggregate_by_source_keeps_two_sources_as_two_stacks
+* test_an_unlimited_stack_keeps_growing
+* test_a_limited_stack_stops_growing_at_its_limit
+* test_stack_changed_reports_the_exact_old_and_new_count
+* test_deny_overflow_application_refuses_past_the_limit
+* test_overflow_fires_the_configured_overflow_effects
+* test_clear_stack_on_overflow_removes_the_whole_stack
+* test_persistent_contribution_is_not_scaled_when_factor_is_false
+* test_persistent_contribution_is_scaled_when_factor_is_true
+* test_periodic_standard_modifier_is_not_scaled_when_factor_is_false
+* test_periodic_standard_modifier_is_scaled_when_factor_is_true
+* test_execution_calculation_is_never_auto_multiplied_by_stack_count
+* test_execution_calculation_can_read_stack_count_explicitly
+* test_modifier_recomposes_from_the_authored_magnitude_going_up_and_down
+* test_stack_duration_refresh_policy_governs_whether_reapplication_restarts_the_clock<parameterized>
+    - params[0](<RefCounted#-9223370652214341671>)
+    - params[1](<RefCounted#-9223370652197564456>)
+* test_stack_period_reset_policy_governs_whether_reapplication_restarts_the_clock<parameterized>
+    - params[0](<RefCounted#-9223370643238530961>)
+    - params[1](<RefCounted#-9223370643221753746>)
+* test_the_three_expiration_policies_govern_what_survives<parameterized>
+    - params[0](<RefCounted#-9223370633641963259>)
+    - params[1](<RefCounted#-9223370633625186044>)
+    - params[2](<RefCounted#-9223370633608408829>)
+* test_turn_based_expiration_uses_remaining_turns_not_seconds<parameterized>
+    - params[0](<RefCounted#-9223370618341142042>)
+    - params[1](<RefCounted#-9223370618324364827>)
+    - params[2](<RefCounted#-9223370618307587612>)
+* test_growing_a_stack_while_inhibited_updates_the_receipt_without_attaching
+* test_removing_a_stack_drops_its_tag_refcount_exactly_once
+* test_stack_count_is_readable_through_the_active_effect
+* test_cleanup_removes_a_grown_stack_cleanly
+* test_no_drift_after_a_long_stack_and_unstack_sequence
+[1m26/26 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_events.gd
+[0m* test_an_exact_tag_reaches_its_listener
+* test_a_child_reaches_a_listener_on_the_parent
+* test_a_deep_child_reaches_it_too
+* test_a_false_prefix_does_not_match
+* test_a_listener_does_not_hear_its_own_ancestor
+* test_the_payload_arrives_intact
+* test_an_empty_tag_is_not_dispatched
+* test_two_listeners_each_receive_once
+* test_a_listener_granted_during_dispatch_does_not_receive_this_event
+* test_dispatch_survives_a_listener_removing_another
+* test_an_effect_broadcasts_its_declared_event_tags
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_magnitudes.gd
+[0m* test_attribute_based_reads_a_snapshot_from_either_actor<parameterized>
+    - params[0](<RefCounted#-9223370555527244476>)
+    - params[1](<RefCounted#-9223370555510467259>)
+* test_attribute_based_applies_coefficient_pre_and_post_add
+* test_attribute_based_reports_why_its_capture_could_not_resolve
+* test_set_by_caller_reads_the_value_the_caller_supplied
+* test_a_required_set_by_caller_never_supplied_is_refused
+* test_an_optional_set_by_caller_falls_back_to_its_default
+* test_set_by_caller_is_isolated_per_target_copy
+* test_set_by_caller_is_sealed_once_evaluation_begins
+* test_a_custom_calculation_produces_its_own_value
+* test_a_failing_custom_calculation_refuses
+* test_a_non_finite_custom_result_is_refused
+* test_live_instant_resolves_fresh_each_time_without_a_binding
+* test_live_persistent_contribution_updates_when_its_capture_changes<parameterized>
+    - params[0](<RefCounted#-9223370523868637234>)
+    - params[1](<RefCounted#-9223370523835082800>)
+* test_snapshot_persistent_contribution_does_not_change
+* test_a_direct_live_self_cycle_is_rejected
+* test_an_indirect_live_cycle_does_not_hang_and_reports_it
+[1m16/16 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_scalable_float.gd
+[0m* test_without_a_curve_the_value_is_returned_unscaled
+* test_a_curve_multiplies_the_value_by_the_sampled_point
+* test_evaluate_does_not_mutate_the_curve
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_gameplay_tag_query.gd
+[0m* test_an_exact_tag_matches
+* test_a_descendant_tag_matches_its_ancestor
+* test_a_false_prefix_does_not_match
+* test_all_requires_every_condition
+* test_any_requires_one_condition
+* test_none_requires_no_condition
+* test_a_nested_expression_combines_its_children
+* test_the_worked_formula
+* test_an_empty_query_matches_anything
+* test_all_of_nothing_is_true
+* test_any_of_nothing_is_false
+* test_none_of_nothing_is_true
+* test_a_well_formed_query_validates
+* test_an_empty_query_validates
+* test_an_empty_tag_string_is_invalid
+* test_a_malformed_tag_is_invalid
+* test_a_cyclic_expression_is_invalid_and_does_not_recurse_forever
+* test_the_same_shared_child_reached_from_two_branches_is_not_a_cycle
+* test_matches_runtime_and_matches_tags_agree
+* test_evaluation_does_not_mutate_the_query_or_the_runtime
+* test_repeated_evaluation_is_deterministic
+[1m21/21 passed.
+[0m[4m
+
+res://test/unit/test_gas_runtime_snapshots.gd
+[0m* test_attribute_snapshot_reports_base_current_and_a_joined_contribution
+* test_inhibited_contributions_never_appear_attached
+* test_tag_snapshot_reports_count_and_granting_effect
+* test_effect_snapshot_maps_active_effect_fields
+* test_ability_snapshot_reports_effective_tags_and_cooldown
+* test_ability_snapshot_retains_the_last_activation_result
+* test_task_snapshot_reports_a_running_task
+* test_refusal_log_records_a_component_rejection_and_an_evaluation_failure
+* test_refusal_log_is_a_bounded_ring_buffer
+* test_refusal_log_disabled_records_nothing
+* test_runtime_snapshot_aggregates_every_domain
+* test_runtime_snapshot_of_null_asc_never_crashes
+[1m12/12 passed.
+[0m[4m
+
+res://test/unit/test_generated_gameplay_tags_sync.gd
+[0m* test_the_tracked_registry_loads_and_is_not_empty
+* test_the_generated_script_is_exactly_what_the_registry_renders
+* test_every_registry_tag_has_a_constant_and_no_others_do
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_gloot_bridge.gd
+[0m* test_binding_needs_a_slot_an_asc_and_a_catalogue
+* test_binding_to_a_node_that_is_not_a_slot_is_refused
+* test_a_catalogue_with_a_duplicate_prototype_is_refused
+* test_binding_to_a_slot_shaped_node_succeeds
+* test_equipping_a_known_item_grants_all_three_kinds
+* test_an_unknown_prototype_is_reported_rather_than_ignored
+* test_a_grant_whose_scene_is_not_an_ability_gives_nothing
+* test_a_grant_with_a_non_infinite_passive_gives_nothing
+* test_unequipping_removes_exactly_what_was_given
+* test_a_tag_another_source_also_holds_survives_unequipping
+* test_clearing_an_already_empty_slot_reports_nothing
+* test_swapping_items_takes_the_first_back_before_giving_the_second
+* test_unbinding_takes_back_whatever_was_worn
+* test_nothing_arrives_after_unbinding
+[1m14/14 passed.
+[0m[4m
+
+res://test/unit/test_integration_availability.gd
+[0m* test_none_of_the_three_addons_is_installed_here
+* test_an_absent_integration_has_no_runtime
+* test_a_missing_tree_is_answered_rather_than_crashed_on
+* test_the_three_integrations_are_looked_for_separately
+[1m4/4 passed.
+[0m[4m
+
+res://test/unit/test_modifier_magnitudes.gd
+[0m* test_an_add_and_a_multiply_on_one_attribute_keep_separate_magnitudes
+* test_two_adds_on_one_attribute_keep_separate_magnitudes
+* test_two_multiplies_on_one_attribute_keep_separate_magnitudes
+* test_mutating_one_modifier_leaves_the_other_alone
+* test_both_modifiers_of_one_effect_are_applied
+* test_two_adds_of_one_effect_both_count
+* test_an_invalid_index_is_recorded_rather_than_answered_with_zero
+* test_an_invalid_index_refuses_the_application_instead_of_weakening_it
+ERROR: GodotGAS: modifier index 9 is out of range for this effect; the application will be refused.
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] set_magnitude (res://addons/GodotGAS/effects/gameplay_effect_spec.gd:169)
+       [1] test_an_invalid_index_refuses_the_application_instead_of_weakening_it (res://test/unit/test_modifier_magnitudes.gd:113)
+       [2] _run_test (res://addons/gut/gut.gd:622)
+       [3] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_a_flat_magnitude_resolves_deterministically_from_the_level_alone
+* test_a_curve_scaled_magnitude_resolves_deterministically_from_the_level
+[1m10/10 passed.
+[0m[4m
+
+res://test/unit/test_periodic_effects.gd
+[0m* test_less_than_one_period_owes_nothing
+* test_the_first_tick_lands_exactly_at_one_period
+* test_a_long_frame_pays_every_tick_it_owes
+* test_many_small_frames_do_not_drift
+* test_a_negative_delta_is_refused
+ERROR: GodotGAS: refused a non-finite or negative delta of -5.0
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] advance_time (res://addons/GodotGAS/effects/gameplay_effect_scheduler.gd:37)
+       [1] _tick (res://test/unit/test_periodic_effects.gd:57)
+       [2] test_a_negative_delta_is_refused (res://test/unit/test_periodic_effects.gd:104)
+       [3] _run_test (res://addons/gut/gut.gd:622)
+       [4] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_a_non_finite_delta_is_refused
+ERROR: GodotGAS: refused a non-finite or negative delta of inf
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] advance_time (res://addons/GodotGAS/effects/gameplay_effect_scheduler.gd:37)
+       [1] _tick (res://test/unit/test_periodic_effects.gd:57)
+       [2] test_a_non_finite_delta_is_refused (res://test/unit/test_periodic_effects.gd:113)
+       [3] _run_test (res://addons/gut/gut.gd:622)
+       [4] _test_the_scripts (res://addons/gut/gut.gd:835)
+* test_a_duration_effect_expires_and_reverts
+* test_expiry_announces_the_removal_once
+* test_frames_do_not_advance_turns
+* test_one_advance_spends_one_turn
+* test_advancing_three_turns_spends_three
+* test_a_turn_based_effect_expires_on_its_last_turn
+* test_a_turn_based_periodic_ticks_once_per_turn
+* test_a_periodic_effect_contributes_nothing_to_the_aggregator
+* test_removing_a_periodic_effect_does_not_undo_its_ticks
+[1m15/15 passed.
+[0m[4m
+
+res://test/unit/test_phase3_vertical_scenarios.gd
+[0m* test_scenario_a_rpg_cast
+* test_scenario_b_stack_inhibit_immunity
+* test_scenario_c_equipment_ability_lifecycle
+* test_scenario_d_chained_effects_and_post_execute_event
+* test_scenario_e_stress_sequence_holds_every_invariant
+[1m5/5 passed.
+[0m[4m
+
+res://test/unit/test_phase_three_core_invariants.gd
+[0m* test_a_cleanser_whose_incoming_effect_fails_is_rolled_back
+* test_a_cleanser_that_succeeds_evaluates_against_the_post_purge_state
+* test_a_percentage_cost_composes_with_an_active_multiplier
+[1m3/3 passed.
+[0m[4m
+
+res://test/unit/test_quest_system_bridge.gd
+[0m* test_binding_needs_a_manager_and_an_asc
+* test_binding_to_a_node_that_is_not_a_manager_is_refused
+* test_two_bindings_for_one_quest_are_refused
+* test_a_binding_without_a_quest_id_is_refused
+* test_only_auto_completing_bindings_demand_the_manager_methods
+* test_each_of_the_three_moments_sends_its_own_event
+* test_an_empty_tag_says_nothing_at_that_moment
+* test_a_quest_nothing_binds_is_ignored
+* test_the_event_carries_the_quest_id_and_not_the_quest
+* test_an_objective_event_updates_a_quest_the_bridge_has_seen
+* test_a_more_specific_objective_event_still_counts
+* test_an_unseen_quest_is_not_advanced
+* test_auto_completion_marks_the_objective_and_completes_the_quest
+* test_a_completion_that_looks_like_progress_does_not_loop
+* test_progress_from_outside_completes_once_and_settles
+* test_unbinding_disconnects_both_directions
+* test_an_absent_quest_system_binds_quietly
+[1m17/17 passed.
+[0m[4m
+
+res://test/unit/test_randomized_regression.gd
+[0m* test_a_long_deterministic_sequence_holds_every_invariant
+* test_the_sequence_is_reproducible
+[1m2/2 passed.
+[0m[4m
+
+res://test/unit/test_smoke.gd
+[0m* test_gut_executes
+* test_attribute_data_can_be_instantiated
+* test_ability_system_component_can_be_instantiated
+* test_gameplay_cue_manager_autoload_exists_headless
+* test_gameplay_cue_manager_is_a_single_authority
+* test_no_interactive_editor_is_required
+* test_the_plugin_will_not_claim_an_autoload_the_project_declares
+* test_the_seeded_authoring_resources_load
+* test_the_generated_tag_constants_are_reachable_by_name
+[1m9/9 passed.
+[0m[4m
+
+res://test/unit/test_spec_isolation.gd
+[0m* test_a_copy_shares_the_definition_and_nothing_mutable
+* test_the_copy_carries_the_logical_origin
+* test_mutating_a_copy_is_invisible_to_the_original
+* test_two_targets_receive_independent_specs
+* test_mutating_one_target_runtime_state_leaves_the_other_alone
+* test_each_target_computes_against_its_own_attributes
+* test_ability_handle_and_payloads_reach_every_target_independently
+* test_a_target_whose_payload_cannot_be_copied_never_receives_the_effect
+* test_removing_one_targets_effect_leaves_the_other_running
+* test_the_attacker_hears_about_its_own_hit
+* test_the_defender_hears_that_it_was_hit
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_tag_queries.gd
+[0m* test_an_empty_requirement_is_satisfied
+* test_one_present_requirement_is_satisfied
+* test_one_missing_requirement_is_not_satisfied
+* test_all_present_requirements_are_satisfied
+* test_one_missing_out_of_several_fails_the_whole_query
+* test_an_empty_alternative_set_matches_nothing
+* test_any_matches_when_one_is_present
+* test_exact_matches_only_itself
+* test_hierarchical_matches_a_child
+* test_hierarchical_matches_the_tag_itself
+* test_a_deeper_query_is_not_answered_by_its_ancestor
+* test_a_prefix_without_a_separator_does_not_match
+* test_a_short_tag_is_not_a_prefix_of_a_longer_word
+* test_a_tag_applied_twice_survives_one_removal
+* test_clearing_drops_a_tag_whatever_its_count
+* test_removing_an_absent_tag_is_harmless
+* test_a_timed_tag_reports_the_seconds_it_has_left
+* test_a_tag_nothing_grants_has_no_time_left
+* test_a_permanent_tag_reports_that_it_never_ends
+* test_the_longest_grant_is_the_one_reported
+* test_a_turn_based_tag_is_counted_in_turns_not_seconds
+* test_a_timed_tag_has_no_turns
+* test_the_first_grant_announces_the_tag
+* test_a_second_grant_announces_only_the_count
+[1m24/24 passed.
+[0m[4m
+
+res://test/unit/test_tag_registry.gd
+[0m* test_each_segment_gets_a_capital_and_the_dots_are_kept
+* test_a_capital_inside_a_segment_survives
+* test_an_empty_segment_is_left_for_the_grammar_to_refuse
+* test_an_empty_tag_is_refused
+* test_a_tag_that_does_not_match_the_grammar_is_refused
+* test_a_duplicate_is_refused_after_formatting_not_before
+* test_has_tag_is_exact
+* test_child_tags_are_the_ones_under_the_separator
+* test_an_unknown_parent_has_no_children
+* test_removing_an_absent_tag_changes_nothing
+* test_the_static_validator_agrees_with_what_add_tag_accepts
+* test_the_static_validator_does_not_repair_what_format_tag_would
+* test_the_rendered_source_carries_the_constants_it_was_given
+* test_generation_reports_whether_it_actually_wrote
+GodotGAS: generated user://generated_tags_probe.gd with 1 constants.
+* test_an_anonymous_registry_does_not_regenerate_the_project_file
+[1m15/15 passed.
+[0m[4m
+
+res://test/unit/test_target_data.gd
+[0m* test_a_hit_becomes_a_typed_hit_of_its_own_space<parameterized>
+    - params[0](<RefCounted#-9223369015244593441>)
+    - params[1](<RefCounted#-9223369015227816224>)
+* test_a_mixed_dimension_hit_is_refused_rather_than_half_converted
+* test_a_hit_without_a_collider_node_is_refused
+* test_a_hit_missing_its_geometry_is_refused
+* test_a_refused_hit_adds_nothing_at_all
+* test_appending_a_node_reads_the_space_from_the_node<parameterized>
+    - params[0](<RefCounted#-9223369014724499745>)
+    - params[1](<RefCounted#-9223369014707722531>)
+* test_appending_a_node_with_no_space_is_accepted_without_inventing_one
+* test_appending_nothing_is_refused
+* test_an_overlap_reports_how_many_it_accepted
+* test_a_node_hit_twice_is_one_target_and_two_hits
+* test_hits_for_an_unknown_node_are_none
+* test_removing_a_target_removes_its_hits_too
+* test_mutating_what_was_handed_out_does_not_reach_the_collector
+[1m13/13 passed.
+[0m[4m
+
+res://test/unit/test_targeting_2d.gd
+[0m* test_a_trace_finds_the_body_in_its_way
+* test_a_trace_that_meets_nothing_finds_nothing
+* test_a_mask_that_excludes_the_layer_finds_nothing
+* test_an_area_is_met_only_when_the_request_asks_for_it
+* test_a_trace_keeps_the_point_and_the_normal_physics_gave_it
+* test_a_sweep_finds_everything_inside_it
+* test_one_actor_with_two_shapes_arrives_once
+* test_a_sweep_stops_at_the_limit_it_was_given
+* test_a_tag_rule_keeps_out_whoever_does_not_qualify<parameterized>
+    - params[0](<RefCounted#-9223369001856374869>)
+    - params[1](<RefCounted#-9223369001839597654>)
+* test_the_caster_is_left_out_of_its_own_sweep
+* test_something_with_no_ability_system_is_not_a_target
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_targeting_3d.gd
+[0m* test_a_trace_finds_the_body_in_its_way
+* test_a_trace_that_meets_nothing_finds_nothing
+* test_a_mask_that_excludes_the_layer_finds_nothing
+* test_an_area_is_met_only_when_the_request_asks_for_it
+* test_a_trace_keeps_the_point_and_the_normal_physics_gave_it
+* test_a_sweep_finds_everything_inside_it
+* test_one_actor_with_two_shapes_arrives_once
+* test_a_sweep_stops_at_the_limit_it_was_given
+* test_a_tag_rule_keeps_out_whoever_does_not_qualify<parameterized>
+    - params[0](<RefCounted#-9223368982159922876>)
+    - params[1](<RefCounted#-9223368982143145661>)
+* test_the_caster_is_left_out_of_its_own_sweep
+* test_something_with_no_ability_system_is_not_a_target
+[1m11/11 passed.
+[0m[4m
+
+res://test/unit/test_worked_example.gd
+[0m* test_the_worked_example_answers_exactly_as_stated
+[1m1/1 passed.
+[0m
+
+
+
+[33m==============================================
+[0m[33m= Run Summary
+[0m[33m==============================================
+[0m
+Totals
+------
+Scripts              56
+Tests               748
+Passing Tests       748
+Asserts           29945
+Time              2.859s
+
+
+[32m---- All tests passed! ----
+[0m
+ARHALIES_GUT_RESULT: PASS passed=29945 failed=0 pending=0 orphans=0
+WARNING: 23159 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 71 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

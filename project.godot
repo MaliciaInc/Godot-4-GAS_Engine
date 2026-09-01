@@ -10,11 +10,17 @@ config_version=5
 
 [application]
 
-config/name="Arhalies GAS"
+config/name="GAS_Engine"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
-GameplayCueManager="*res://addons/GodotGAS/managers/gameplay_cue_manager.gd"
+
+
+
+
+
+
+GameplayCueManager="*res://addons/GAS_Engine/managers/gameplay_cue_manager.gd"
 
 [debug]
 
@@ -36,4 +42,4 @@ gdscript/warnings/unsafe_void_return=2
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotGAS/plugin.cfg", "res://addons/gut/plugin.cfg")
+enabled=PackedStringArray("res://addons/GAS_Engine/plugin.cfg", "res://addons/gut/plugin.cfg")

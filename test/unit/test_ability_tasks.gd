@@ -106,7 +106,7 @@ func test_a_task_without_an_owner_is_refused() -> void:
 	assert_eq(_running(), 0, "so it was not taken")
 	# Said out loud as well: cancellation is addressed by ability, so a task
 	# without one would simply never be reached, and silence would hide that.
-	assert_push_error("GodotGAS: an ability task must name the ability that owns it.")
+	assert_push_error("GAS_Engine: an ability task must name the ability that owns it.")
 
 
 func test_a_task_that_succeeds_is_dropped() -> void:

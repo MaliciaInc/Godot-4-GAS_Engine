@@ -1,0 +1,2 @@
+RESULT: PASS
+ARHALIES_GUT_RESULT: PASS passed=29945 failed=0 pending=0 orphans=0

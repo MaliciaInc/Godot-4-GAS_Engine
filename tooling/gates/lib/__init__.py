@@ -1,1 +1,1 @@
-"""Shared, typed helpers for the Arhalies GAS quality gates."""
+"""Shared, typed helpers for the GAS_Engine quality gates."""

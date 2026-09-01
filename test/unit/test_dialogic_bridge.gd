@@ -23,7 +23,7 @@ const EVENT_TAG: StringName = &"Event.Dialogue.Accepted"
 const EVENT_PARENT: StringName = &"Event.Dialogue"
 const STATE_TAG: StringName = &"State.Sworn"
 const PROBE_TAG: StringName = &"Ability.Probe"
-const INTEGRATIONS_DIR: String = "res://addons/GodotGAS/integrations"
+const INTEGRATIONS_DIR: String = "res://addons/GAS_Engine/integrations"
 
 var fixture: ASCFixture = null
 var dialogic: FakeDialogic = null

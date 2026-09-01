@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arhalies GAS test-location quality gate.
+"""GAS_Engine test-location quality gate.
 
 Rejects test implementation hidden inside production source while recognizing
 the test files and directories the project actually uses.

@@ -6,12 +6,12 @@ ahead of Task 1 so a wrong pin could not block the bootstrap.
 
 Verified: 2026-08-30 (UTC), against the live upstream remotes.
 
-## GodotGAS
+## GAS_Engine
 
 ```text
 repository: https://github.com/yulrun/godot-gas
 pinned:     d1cb86de608050f3bc390064719e7d2830601047
-vendor to:  addons/GodotGAS/
+vendor to:  addons/GAS_Engine/
 ```
 
 | Check | Result |

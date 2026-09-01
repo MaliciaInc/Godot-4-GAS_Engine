@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Markdown reporting shared by every Arhalies GAS quality gate.
+"""Markdown reporting shared by every GAS_Engine quality gate.
 
 All four gates published near-identical reports, so every heading and every
 summary label existed three or four times over. The magic-string gate holds

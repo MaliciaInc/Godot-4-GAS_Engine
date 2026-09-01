@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arhalies GAS magic-string, format-template and hard-coded-colour gate.
+"""GAS_Engine magic-string, format-template and hard-coded-colour gate.
 
 Three concerns share one scan: literals repeated across files, format templates
 repeated across files, and colours hard-coded outside the theme layer.

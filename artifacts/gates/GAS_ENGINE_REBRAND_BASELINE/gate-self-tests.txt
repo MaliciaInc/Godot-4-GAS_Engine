@@ -1,0 +1,7 @@
+...........duplication-gate: ERROR: project root does not exist: C:\Users\Edward\AppData\Local\Temp\tmp08_x9tfb\absent
+..............................................................................................................................test-location-gate: ERROR: project root does not exist: C:\Users\Edward\AppData\Local\Temp\tmp92z0a8ik\absent
+.........................
+----------------------------------------------------------------------
+Ran 162 tests in 1.856s
+
+OK

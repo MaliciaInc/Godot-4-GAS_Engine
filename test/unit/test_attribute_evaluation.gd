@@ -9,7 +9,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
-const Evaluator = preload("res://addons/GodotGAS/effects/gameplay_effect_evaluator.gd")
+const Evaluator = preload("res://addons/GAS_Engine/effects/gameplay_effect_evaluator.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"

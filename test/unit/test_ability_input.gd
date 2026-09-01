@@ -84,7 +84,7 @@ func test_binding_an_ungranted_ability_is_refused() -> void:
 	)
 	# The refusal is also said out loud, so a designer who wired the scene
 	# wrong is told rather than left with a button that does nothing.
-	assert_push_error("GodotGAS: cannot bind an ability that was never granted to this ASC.")
+	assert_push_error("GAS_Engine: cannot bind an ability that was never granted to this ASC.")
 
 	asc.ability_local_input_pressed(SLOT)
 	assert_eq(stranger.activations, 0, "and the refusal is not cosmetic")

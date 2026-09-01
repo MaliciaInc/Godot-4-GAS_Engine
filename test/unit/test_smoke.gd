@@ -1,7 +1,7 @@
 ## Bootstrap smoke test.
 ##
 ## Proves that a clean checkout reaches a running test suite without anyone
-## opening the editor: GUT executes, the two core GodotGAS types instantiate,
+## opening the editor: GUT executes, the two core GAS_Engine types instantiate,
 ## and the GameplayCueManager autoload is present in a headless tree.
 ##
 ## Every declaration here is explicitly typed and no `:=` appears anywhere, as
@@ -10,7 +10,7 @@ extends GutTest
 
 const CUE_MANAGER_PATH: String = "/root/GameplayCueManager"
 
-const Plugin = preload("res://addons/GodotGAS/godot_gas_plugin.gd")
+const Plugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
 
 
 func test_gut_executes() -> void:
@@ -39,7 +39,7 @@ func test_gameplay_cue_manager_autoload_exists_headless() -> void:
 
 
 func test_gameplay_cue_manager_is_a_single_authority() -> void:
-	# project.godot declares the autoload directly, and the GodotGAS plugin is
+	# project.godot declares the autoload directly, and the GAS_Engine plugin is
 	# enabled alongside it. The plugin refuses to register a second time, which
 	# is what keeps this at exactly one - and this is the test that would notice
 	# if that refusal were ever dropped.
@@ -72,10 +72,10 @@ func test_the_plugin_will_not_claim_an_autoload_the_project_declares() -> void:
 
 func test_the_seeded_authoring_resources_load() -> void:
 	var cues: Resource = ResourceLoader.load(
-		GodotGasProjectSettings.get_registry_cue_path()
+		GASEngineProjectSettings.get_registry_cue_path()
 	)
 	var tags: Resource = ResourceLoader.load(
-		GodotGasProjectSettings.get_registry_tag_path()
+		GASEngineProjectSettings.get_registry_tag_path()
 	)
 	assert_true(cues is GameplayCueRegistry, "the seeded cue registry is a real registry")
 	assert_true(tags is GameplayTagRegistry, "and so is the seeded tag registry")

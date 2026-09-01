@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-# Integral verification runner for Arhalies GAS, step 1.5 of the Phase 1 plan.
+# Integral verification runner for GAS_Engine, step 1.5 of the Phase 1 plan.
 #
 # Every execution is synchronous. Nothing here starts a job, a background task
 # or a detached process, and no process is left orphaned: a stage that exceeds
@@ -33,7 +33,7 @@ $GateRoot = Join-Path $RepoRoot 'tooling/gates'
 $ReceiptRoot = Join-Path $RepoRoot ('artifacts/gates/' + $TaskId)
 $PythonExe = 'python'
 
-$PassBanner = 'ARHALIES_GAS_VERIFY_PASS'
+$PassBanner = 'GAS_ENGINE_VERIFY_PASS'
 $ResultPrefix = 'RESULT:'
 $PassWord = 'PASS'
 
@@ -45,11 +45,11 @@ $EngineEvidence = [ordered]@{
 
 function Get-TimeoutSeconds {
     # Stage timeout, overridable per environment. 300 s is the documented default.
-    $raw = $env:ARHALIES_VERIFY_TIMEOUT_SECONDS
+    $raw = $env:GAS_ENGINE_VERIFY_TIMEOUT_SECONDS
     if ([string]::IsNullOrWhiteSpace($raw)) { return 300 }
     $parsed = 0
     if (-not [int]::TryParse($raw, [ref] $parsed) -or $parsed -le 0) {
-        throw "ARHALIES_VERIFY_TIMEOUT_SECONDS must be a positive integer, got '$raw'"
+        throw "GAS_ENGINE_VERIFY_TIMEOUT_SECONDS must be a positive integer, got '$raw'"
     }
     return $parsed
 }
@@ -235,7 +235,9 @@ function Invoke-Verification {
         # to the editor's rewrite, or declaring an autoload a clean checkout
         # will not have. Both have happened here.
         @{ Stage = 'project-invariants'
-           Arguments = @('tooling/project_invariants.py') }
+           Arguments = @('tooling/project_invariants.py') },
+        @{ Stage = 'product-identity'
+           Arguments = @('tooling/product_identity.py') }
     ) + (Get-GateStages -ReceiptDirectory $ReceiptDirectory)
 
     foreach ($stage in $stages) {
@@ -278,6 +280,6 @@ if ($result -eq 0) {
     Write-Banner $PassBanner
 }
 else {
-    Write-Banner ('ARHALIES_GAS_VERIFY_FAIL (exit ' + $result + ')')
+    Write-Banner ('GAS_ENGINE_VERIFY_FAIL (exit ' + $result + ')')
 }
 exit $result

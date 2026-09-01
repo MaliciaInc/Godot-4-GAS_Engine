@@ -1,8 +1,8 @@
 # Third-party dependencies and notices
 
-Arhalies GAS is licensed under the **Arhalies GAS Community Use License 1.0** at the repository root. Third-party software and third-party source portions, where present, are not relicensed by the Arhalies GAS license and retain their own applicable terms.
+GAS_Engine is licensed under the **GAS_Engine Community Use License 1.0** at the repository root. Third-party software and third-party source portions, where present, are not relicensed by the GAS_Engine license and retain their own applicable terms.
 
-This file records third-party dependencies, compatibility targets, and notices separately from the license governing original Arhalies GAS material.
+This file records third-party dependencies, compatibility targets, and notices separately from the license governing original GAS_Engine material.
 
 ## Godot Engine
 
@@ -30,6 +30,7 @@ The current repository history and vendored source tree include material that or
 | Author | Matthew Janes (YulRun) |
 | Original license | MIT |
 | Historical vendored path | `addons/GodotGAS/` |
+| Current canonical product path | `addons/GAS_Engine/` |
 | Vendored on | 2026-08-30 |
 
 The applicable MIT notice is retained alongside any material for which that notice is required. This third-party notice does **not** make Arhalies GAS as a whole MIT-licensed and does not replace the root Arhalies GAS Community Use License.
@@ -51,11 +52,11 @@ As the Arhalies GAS codebase is independently rewritten and its repository paths
 
 GUT ships a different release per Godot minor version. v9.7.1 from its Godot 4.7 line is the version used by this repository.
 
-GUT is a third-party test dependency. Its MIT license applies to GUT itself, not to original Arhalies GAS source code.
+GUT is a third-party test dependency. Its MIT license applies to GUT itself, not to original GAS_Engine source code.
 
 ## Optional integration compatibility
 
-The following projects are **not bundled as core dependencies**. Arhalies GAS can operate without them. They are listed because optional integration bridges are tested against specific versions.
+The following projects are **not bundled as core dependencies**. GAS_Engine can operate without them. They are listed because optional integration bridges are tested against specific versions.
 
 ### Dialogic
 
@@ -97,9 +98,9 @@ The bridge uses QuestSystem's published signals and public update/completion sur
 
 The repository intentionally separates two categories:
 
-1. **Original Arhalies GAS material**: governed by the root `LICENSE`, the Arhalies GAS Community Use License 1.0, with modification rights available only through a separate Commercial Modification License.
+1. **Original GAS_Engine material**: governed by the root `LICENSE`, the GAS_Engine Community Use License 1.0, with modification rights available only through a separate Commercial Modification License.
 2. **Third-party material**: governed by the applicable third-party license accompanying that material or identified here.
 
-A third-party dependency using MIT does not convert original Arhalies GAS code to MIT. Conversely, the Arhalies GAS Community Use License does not remove rights or notices that apply to third-party code.
+A third-party dependency using MIT does not convert original GAS_Engine code to MIT. Conversely, the GAS_Engine Community Use License does not remove rights or notices that apply to third-party code.
 
 See `COMMERCIAL-LICENSE.md` for the paid modification licensing model covering rights MaliciaInc owns or is legally entitled to license.

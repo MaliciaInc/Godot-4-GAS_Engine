@@ -1,12 +1,12 @@
-ARHALIES GAS COMMUNITY USE LICENSE 1.0
+GAS_ENGINE COMMUNITY USE LICENSE 1.0
 
 Copyright (c) 2026 MaliciaInc. All rights reserved except as expressly granted below.
 
-This license applies to Arhalies GAS source code and other original material owned by MaliciaInc (the "Software"). Third-party material, if any, remains subject to its own license terms as identified in THIRD_PARTY.md or accompanying notices.
+This license applies to GAS_Engine source code and other original material owned by MaliciaInc (the "Software"). Third-party material, if any, remains subject to its own license terms as identified in THIRD_PARTY.md or accompanying notices.
 
 1. PURPOSE
 
-Arhalies GAS is source-available software. This license is intended to allow developers to use the unmodified Software freely in personal and commercial games while reserving modification, derivative-development, and framework-redistribution rights to the Licensor.
+GAS_Engine is source-available software. This license is intended to allow developers to use the unmodified Software freely in personal and commercial games while reserving modification, derivative-development, and framework-redistribution rights to the Licensor.
 
 This license is not an Open Source Initiative approved open-source license and must not be represented as one.
 
@@ -80,7 +80,7 @@ You are not required to disclose Your Game's proprietary source code merely beca
 
 8. OWNERSHIP
 
-Except for the limited rights expressly granted by this license, all right, title, and interest in the Software remain with the Licensor. No trademark, trade-name, logo, patent, or branding rights are granted except as necessary to make truthful nominative reference to Arhalies GAS.
+Except for the limited rights expressly granted by this license, all right, title, and interest in the Software remain with the Licensor. No trademark, trade-name, logo, patent, or branding rights are granted except as necessary to make truthful nominative reference to GAS_Engine.
 
 Third-party software is not relicensed by this document. Its original license terms continue to apply to that third-party material.
 
@@ -106,6 +106,6 @@ This document states the complete Community Use Grant for the Software. No contr
 
 14. VERSION
 
-License version: Arhalies GAS Community Use License 1.0.
+License version: GAS_Engine Community Use License 1.0.
 
 For modification, derivative-development, or framework-redistribution rights, see COMMERCIAL-LICENSE.md.

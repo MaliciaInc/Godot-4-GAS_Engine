@@ -28,7 +28,7 @@ POLICY = json.dumps({
     }
 }, indent=2)
 
-PRODUCTION_GD = "addons/GodotGAS/components/ability_system_component.gd"
+PRODUCTION_GD = "addons/GAS_Engine/components/ability_system_component.gd"
 
 ASC_WITH_HIDDEN_TEST = (
     "class_name AbilitySystemComponent\n"
@@ -295,20 +295,20 @@ class ScanErrorContract(GateCase):
     BROKEN = b"extends Node\n\nfunc test_damage() -> void:\n\tvar label: String = \"\xff\xfe\"\n"
 
     def test_unreadable_file_is_exit_two_without_the_flag(self) -> None:
-        self.write_bytes("addons/GodotGAS/broken.gd", self.BROKEN)
+        self.write_bytes("addons/GAS_Engine/broken.gd", self.BROKEN)
         code, payload = self.run_gate()
         self.assertEqual(code, 2)
         self.assertEqual(len(payload["scan_issues"]), 1)
-        self.assertIn("addons/GodotGAS/broken.gd", payload["scan_issues"][0])
+        self.assertIn("addons/GAS_Engine/broken.gd", payload["scan_issues"][0])
 
     def test_unreadable_file_is_tolerated_with_allow_scan_errors(self) -> None:
-        self.write_bytes("addons/GodotGAS/broken.gd", self.BROKEN)
+        self.write_bytes("addons/GAS_Engine/broken.gd", self.BROKEN)
         code, payload = self.run_gate("--allow-scan-errors")
         self.assertEqual(code, 0)
         self.assertEqual(len(payload["scan_issues"]), 1)
 
     def test_scan_error_outranks_a_real_violation(self) -> None:
-        self.write_bytes("addons/GodotGAS/broken.gd", self.BROKEN)
+        self.write_bytes("addons/GAS_Engine/broken.gd", self.BROKEN)
         self.write(PRODUCTION_GD, ASC_WITH_HIDDEN_TEST)
         code, payload = self.run_gate()
         self.assertEqual(code, 2)
@@ -356,13 +356,13 @@ class CliSurface(GateCase):
 
     def test_allow_inline_glob_exempts_a_production_file(self) -> None:
         self.write(PRODUCTION_GD, ASC_WITH_HIDDEN_TEST)
-        code, payload = self.run_gate("--allow-inline-glob", "addons/GodotGAS/**")
+        code, payload = self.run_gate("--allow-inline-glob", "addons/GAS_Engine/**")
         self.assert_clean(code, payload)
         self.assertEqual(payload["files_scanned"], 1)
 
     def test_exclude_glob_removes_the_file_from_discovery(self) -> None:
         self.write(PRODUCTION_GD, ASC_WITH_HIDDEN_TEST)
-        code, payload = self.run_gate("--exclude-glob", "addons/GodotGAS/**")
+        code, payload = self.run_gate("--exclude-glob", "addons/GAS_Engine/**")
         self.assert_clean(code, payload)
         self.assertEqual(payload["files_scanned"], 0)
 

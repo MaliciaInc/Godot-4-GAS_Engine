@@ -7,8 +7,8 @@
 extends GutTest
 
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
-const Validator = preload("res://addons/GodotGAS/editor/gameplay_asset_validator.gd")
-const Result = preload("res://addons/GodotGAS/editor/gameplay_asset_validation_result.gd")
+const Validator = preload("res://addons/GAS_Engine/editor/gameplay_asset_validator.gd")
+const Result = preload("res://addons/GAS_Engine/editor/gameplay_asset_validation_result.gd")
 
 const ATTACK: StringName = TestAttributeSet.ATTACK
 

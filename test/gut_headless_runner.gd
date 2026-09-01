@@ -12,7 +12,7 @@
 ## GUT is a vendored dependency, pinned byte-identical, and is not
 ## strictly typed, so every call across its boundary is an unsafe access under
 ## this project's policy. The suppression below is scoped to exactly that
-## boundary. Nothing in `addons/GodotGAS` or in the tests relies on it.
+## boundary. Nothing in `addons/GAS_Engine` or in the tests relies on it.
 ##
 ## @meta_license: MIT
 extends Node

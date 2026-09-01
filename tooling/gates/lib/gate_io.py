@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared infrastructure for the Arhalies GAS quality gates.
+"""Shared infrastructure for the GAS_Engine quality gates.
 
 Every gate needs the same four things: locate the repository root, read the
 frozen policy from `.quality-gates.json`, discover candidate source files, and
