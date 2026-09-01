@@ -22,13 +22,11 @@ static func validate_effect(effect: GameplayEffect) -> Array[Result]:
 		findings.append(Result.error(null, "", Result.Code.MISSING_REFERENCE))
 		return findings
 
-	for index: int in effect.components.size():
-		var component: GameplayEffectComponent = effect.components[index]
-		if component == null:
-			continue
-		var outcome: GameplayEffectComponentValidationResult = component.validate_definition(effect)
-		if not outcome.is_ok():
-			findings.append(Result.error(effect, "components[%d]" % index, Result.Code.INVALID_COMPONENT_DEFINITION))
+	# Through validate_components(), not a second copy of its loop. Both walked
+	# the same array asking the same question and building the same finding, and
+	# each is under the duplication gate's minimum unit size, so nothing was ever
+	# going to point out that the rule had two implementations.
+	findings.append_array(validate_components(effect.components, effect))
 
 	for index: int in effect.modifiers.size():
 		var modifier: GameplayEffectModifier = effect.modifiers[index]
