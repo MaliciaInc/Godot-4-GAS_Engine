@@ -3,10 +3,12 @@
 ##
 ## Reuses `gameplay_effect_application_finished`, the one signal every
 ## apply_*_result() call already emits - never a second one announcing the
-## same application. `GameplayTagQuery`... no: matching is
-## `GameplayEffectQuery.matches_incoming()`, the same evaluator T10's
-## immunities ask of a not-yet-active spec, asked here of one that just
-## finished instead.
+## same application.
+##
+## Matching is `GameplayEffectQuery.matches_incoming()`: the same evaluator
+## immunities ask of a not-yet-active spec, asked here of one that has just
+## finished instead. Not `GameplayTagQuery`, which answers about a tag set
+## rather than about an effect.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: MIT

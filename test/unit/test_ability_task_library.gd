@@ -89,6 +89,21 @@ func test_a_task_that_ended_during_start_can_still_be_waited_on() -> void:
 	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED, "and waiting on it returned")
 
 
+## The other task that can end inside `start()`, and the one the first sweep
+## for them missed: it finishes through a helper rather than calling `succeed()`
+## in `_on_start` directly. A query already at the result it was told to wait
+## for is satisfied the moment it is asked.
+func test_a_tag_query_already_at_its_desired_result_is_still_waitable() -> void:
+	var probe: ProbeAbility = _probe()
+	var task: AbilityTaskWaitTagQuery = AbilityTaskFactory.wait_tag_query(
+		probe, _query([SILENCED] as Array[StringName]), false
+	)
+	assert_true(task.is_finished(), "nothing holds the tag, so false was already true")
+
+	await task.completed()
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
+
+
 func test_wait_attribute_threshold_waits_for_the_comparison_to_hold() -> void:
 	target.set_base(ATTACK, 0.0)
 	var probe: ProbeAbility = _probe()
