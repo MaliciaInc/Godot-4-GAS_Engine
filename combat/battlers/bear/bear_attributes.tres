@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="BattlerAttributes" load_steps=11 format=3 uid="uid://bn4nqbuhq4ih8"]
+
+[ext_resource type="Script" path="res://src/combat/battlers/battler_attributes.gd" id="1_set"]
+[ext_resource type="Script" path="res://addons/GAS_Engine/attributes/attribute_data.gd" id="2_data"]
+
+[sub_resource type="Resource" id="Resource_health"]
+script = ExtResource("2_data")
+base_value = 100.0
+current_value = 100.0
+
+[sub_resource type="Resource" id="Resource_max_health"]
+script = ExtResource("2_data")
+base_value = 100.0
+current_value = 100.0
+
+[sub_resource type="Resource" id="Resource_energy"]
+script = ExtResource("2_data")
+base_value = 0.0
+current_value = 0.0
+
+[sub_resource type="Resource" id="Resource_max_energy"]
+script = ExtResource("2_data")
+base_value = 6.0
+current_value = 6.0
+
+[sub_resource type="Resource" id="Resource_attack"]
+script = ExtResource("2_data")
+base_value = 10.0
+current_value = 10.0
+
+[sub_resource type="Resource" id="Resource_defense"]
+script = ExtResource("2_data")
+base_value = 10.0
+current_value = 10.0
+
+[sub_resource type="Resource" id="Resource_speed"]
+script = ExtResource("2_data")
+base_value = 40.0
+current_value = 40.0
+
+[sub_resource type="Resource" id="Resource_hit_chance"]
+script = ExtResource("2_data")
+base_value = 100.0
+current_value = 100.0
+
+[sub_resource type="Resource" id="Resource_evasion"]
+script = ExtResource("2_data")
+base_value = 0.0
+current_value = 0.0
+
+[resource]
+script = ExtResource("1_set")
+health = SubResource("Resource_health")
+max_health = SubResource("Resource_max_health")
+energy = SubResource("Resource_energy")
+max_energy = SubResource("Resource_max_energy")
+attack = SubResource("Resource_attack")
+defense = SubResource("Resource_defense")
+speed = SubResource("Resource_speed")
+hit_chance = SubResource("Resource_hit_chance")
+evasion = SubResource("Resource_evasion")

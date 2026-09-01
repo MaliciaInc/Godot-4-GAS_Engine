@@ -71,9 +71,12 @@ a contract; what is behind it is new.
    ability activation loop.
 5. **UI** - reads the ASC's public signals; no polling, no private state.
 6. **Seams** - the field/cutscene entry points rewritten against the new arena.
-7. **Delete** - `src/combat/` old files and their authored resources, once
-   nothing points at them.
+Deletion is **not** a step at the end. It cannot be: two scripts may not declare
+the same `class_name`, so the moment the rebuilt `Battler` exists the old one has
+to be gone. Each piece replaces its predecessor as it lands, and the authored
+resources behind it are re-authored in the same commit. The plan originally put
+deletion last; Godot settled that.
 
-Step 7 is last on purpose. Deleting first would leave the project unopenable and
-every intermediate step unverifiable, and the whole reason this sandbox exists
-is that it can be run.
+The cost is that the project does not run cleanly between pieces. That is
+accepted deliberately: the alternative is an adapter keeping both models alive,
+which is exactly the legacy layer this rebuild exists to avoid.
