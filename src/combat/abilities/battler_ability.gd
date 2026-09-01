@@ -37,7 +37,32 @@ enum Scope {
 ## The ability's own accuracy, before the caster's `hit_chance` is applied.
 ## A hundred means the ability never misses of its own accord.
 @export_range(0.0, 100.0) var accuracy: float = 100.0
+
+## Energy this costs to use. Zero is free.
+@export_range(0.0, 10.0) var energy_cost: float = 0.0
 #endregion
+
+
+## Declare the cost so the engine can refuse an activation nobody can pay for.
+##
+## Built from the number above rather than authored beside it, for the reason
+## `_payload()` is: two ways to say what an ability costs is two places to look
+## when a battler pays the wrong amount.
+##
+## The engine holds the refusal. Nothing here checks whether the caster can
+## afford this - `commit_ability()` does, before any animation runs, which is
+## what makes an unaffordable action not happen rather than happen on credit.
+func _ready() -> void:
+	if energy_cost <= 0.0:
+		return
+	var amount: GameplayScalableFloat = GameplayScalableFloat.new()
+	amount.value = energy_cost
+
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.mode = GameplayAbilityCost.Mode.ABSOLUTE
+	cost.target_attribute = BattlerAttributes.ENERGY
+	cost.amount = amount
+	costs = [cost] as Array[GameplayAbilityCost]
 
 
 ## Filled by the arena before activation. An ability never goes looking for its

@@ -13,4 +13,5 @@ targets_allies = false
 targets_enemies = true
 accuracy = 65.0
 base_damage = 150.0
+energy_cost = 3.0
 icon = ExtResource("2_icon")

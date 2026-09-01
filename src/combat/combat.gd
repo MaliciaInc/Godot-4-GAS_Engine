@@ -13,6 +13,9 @@
 ## @meta_license: MIT
 class_name Combat extends CanvasLayer
 
+## What every standing battler gains at the top of a round.
+const ENERGY_PER_ROUND: float = 1.0
+
 var round_count: int = 0
 
 var _previous_music_track: AudioStream = null
@@ -70,6 +73,9 @@ func next_round() -> void:
 	round_count += 1
 	_intentions.clear()
 
+	for battler: Battler in _roster.get_standing(_roster.get_battlers()):
+		battler.asc.apply_gameplay_effect(_energy_tick())
+	
 	for battler: Battler in _roster.get_standing(_roster.get_enemy_battlers()):
 		if battler.ai == null:
 			continue
@@ -78,6 +84,33 @@ func next_round() -> void:
 			_intentions[battler] = choice
 
 	_ask_next_player()
+
+
+## The energy every standing battler gains at the top of a round.
+##
+## Applied as an effect rather than written onto the attribute, for the same
+## reason damage is: the pool's own ceiling clamps it, so a full battler stays
+## full instead of banking energy it could never spend.
+##
+## Without this, energy never leaves zero and any ability that costs anything is
+## permanently unusable - a cost with no income is not a cost, it is a disabled
+## button.
+func _energy_tick() -> GameplayEffect:
+	var amount: GameplayScalableFloat = GameplayScalableFloat.new()
+	amount.value = ENERGY_PER_ROUND
+
+	var magnitude: GameplayScalableMagnitude = GameplayScalableMagnitude.new()
+	magnitude.value = amount
+
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = BattlerAttributes.ENERGY
+	modifier.operation = GameplayEffectModifier.Operation.ADD
+	modifier.magnitude = magnitude
+
+	var effect: GameplayEffect = GameplayEffect.new()
+	effect.policy = GameplayEffect.DurationPolicy.INSTANT
+	effect.modifiers = [modifier] as Array[GameplayEffectModifier]
+	return effect
 
 
 ## Hand the cursor to the next player battler that has not declared yet.
