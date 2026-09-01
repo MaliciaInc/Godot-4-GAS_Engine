@@ -43,11 +43,18 @@ var _draft_tag: StringName = &""
 ## Temporary storage for the scene currently being mapped.
 var _draft_scene: PackedScene = null
 
-## Tracks the array index of the cue currently being edited (-1 if new).
-var _editing_index: int = -1
+## The cue currently being edited, or null when the form is adding a new one.
+##
+## The entry itself rather than its position in the registry. Deleting a cue
+## that sits before it shifts every later entry down one, and an index kept
+## across that points at a different cue than the one on screen: pressing
+## Save Changes then wrote the form over the wrong mapping, or ran off the
+## end of the array when the edited cue had been the last one.
+var _editing_entry: GameplayCueEntry = null
 
-## Tracks the array index of the cue staged for deletion.
-var _delete_index: int = -1
+## The cue the confirmation dialog is about to delete, held the same way and
+## for the same reason: the list is rebuilt between the click and the confirm.
+var _deleting_entry: GameplayCueEntry = null
 
 ## Dialog used to select a PackedScene file.
 var _scene_dialog: EditorFileDialog = null
@@ -317,15 +324,16 @@ func _on_add_mapping_pressed() -> void:
 		return
 		
 	# DUPLICATE CHECK: Prevent 1 tag having multiple scenes
-	for i: int in _registry.entries.size():
-		if i != _editing_index and _registry.entries[i].tag == _draft_tag:
+	for existing: GameplayCueEntry in _registry.entries:
+		if existing != _editing_entry and existing.tag == _draft_tag:
 			push_error("GAS_Engine: A cue is already mapped to '%s'. Only 1 Scene per Tag is allowed." % str(_draft_tag))
 			return
 		
-	if _editing_index >= 0:
-		var entry: GameplayCueEntry = _registry.entries[_editing_index]
-		entry.tag = _draft_tag
-		entry.scene = _draft_scene
+	# Still there: update it. Gone - the registry was reloaded under the form -
+	# the edit becomes an add rather than writing over whatever took its place.
+	if _editing_entry != null and _registry.entries.has(_editing_entry):
+		_editing_entry.tag = _draft_tag
+		_editing_entry.scene = _draft_scene
 	else:
 		var new_entry: GameplayCueEntry = GameplayCueEntry.new()
 		new_entry.tag = _draft_tag
@@ -340,11 +348,10 @@ func _on_add_mapping_pressed() -> void:
 
 
 ## Sets up the form fields to edit an existing cue mapping.
-func _on_edit_pressed(index: int) -> void:
-	if _registry == null:
+func _on_edit_pressed(entry: GameplayCueEntry) -> void:
+	if _registry == null or entry == null:
 		return
-	_editing_index = index
-	var entry: GameplayCueEntry = _registry.entries[index]
+	_editing_entry = entry
 	
 	_draft_tag = entry.tag
 	_draft_scene = entry.scene
@@ -360,11 +367,10 @@ func _on_edit_pressed(index: int) -> void:
 
 
 ## Prepares the deletion confirmation dialog for a specific row.
-func _on_delete_pressed(index: int) -> void:
-	if _registry == null:
+func _on_delete_pressed(entry: GameplayCueEntry) -> void:
+	if _registry == null or entry == null:
 		return
-	_delete_index = index
-	var entry: GameplayCueEntry = _registry.entries[index]
+	_deleting_entry = entry
 	
 	# Contextual popup showing what is being deleted
 	_delete_confirm_dialog.dialog_text = "Delete Mapping?\nTag: %s\nScene: %s" % [str(entry.tag), entry.scene.resource_path.get_file() if entry.scene else "None"]
@@ -375,22 +381,23 @@ func _on_delete_pressed(index: int) -> void:
 func _execute_delete() -> void:
 	if _registry == null:
 		return
-	if _delete_index < 0 or _delete_index >= _registry.entries.size():
+	if _deleting_entry == null or not _registry.entries.has(_deleting_entry):
 		return
 		
-	_registry.entries.remove_at(_delete_index)
+	var removed: GameplayCueEntry = _deleting_entry
+	_registry.entries.erase(removed)
 	ResourceSaver.save(_registry,  GASEngineProjectSettings.get_registry_cue_path())
 	
-	if _delete_index == _editing_index:
+	if removed == _editing_entry:
 		_reset_form()
 		
-	_delete_index = -1
+	_deleting_entry = null
 	_refresh_cue_list(_current_filter())
 
 
 ## Resets the data entry form back to its default state.
 func _reset_form() -> void:
-	_editing_index = -1
+	_editing_entry = null
 	_draft_tag = ""
 	_draft_scene = null
 	
@@ -415,11 +422,10 @@ func _refresh_cue_list(filter: String = "") -> void:
 		if not needle.is_empty() and not tag_str.to_lower().contains(needle):
 			continue
 
-		# The entry's index in the registry, not its position in the filtered
-		# list: Edit and Delete address the registry.
-		var index: int = _registry.entries.find(entry)
+		# The entry itself, not where it currently sits: the registry can be
+		# shorter by the time the button is pressed.
 		var row: CueRow.Built = CueRow.build(entry, _theme, TAG_ICON, SCENE_ICON)
-		row.edit_button.pressed.connect(_on_edit_pressed.bind(index))
-		row.delete_button.pressed.connect(_on_delete_pressed.bind(index))
+		row.edit_button.pressed.connect(_on_edit_pressed.bind(entry))
+		row.delete_button.pressed.connect(_on_delete_pressed.bind(entry))
 		_cue_list_vbox.add_child(row.card)
 #endregion
