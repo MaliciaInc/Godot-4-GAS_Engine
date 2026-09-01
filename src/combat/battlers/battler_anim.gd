@@ -70,13 +70,13 @@ func setup(battler: Battler, facing: Direction) -> void:
 	
 	direction = facing
 	
-	battler.health_depleted.connect(
-		func _on_battler_health_depleted() -> void:
+	battler.downed.connect(
+		func _on_battler_downed() -> void:
 			_anim.play("die")
 	)
-	battler.hit_received.connect(
-		func _on_battler_hit_received(value: int) -> void:
-			if value > 0: _anim.play("hurt")
+	battler.damaged.connect(
+		func _on_battler_damaged(_amount: float) -> void:
+			_anim.play("hurt")
 	)
 	battler.selection_toggled.connect(
 		func _on_battler_selection_toggled(value) -> void:

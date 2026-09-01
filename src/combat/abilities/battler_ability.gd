@@ -84,6 +84,9 @@ func _land() -> void:
 		if battler == null or battler.asc == null:
 			continue
 		if not _connects_with(battler):
+			# Told, not merely skipped: a miss the player cannot see reads as
+			# the ability doing nothing at all.
+			battler.evaded.emit()
 			continue
 		data.append_node(battler.asc)
 	if not data.get_target_nodes().is_empty():

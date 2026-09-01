@@ -24,6 +24,15 @@ signal downed
 ## Emitted when the cursor's claim on this battler changes.
 signal selection_toggled(selected: bool)
 
+## Health went down, and by how much. A positive number.
+signal damaged(amount: float)
+
+## Health went up, and by how much.
+signal healed(amount: float)
+
+## Something was aimed here and did not connect.
+signal evaded
+
 const GROUP: StringName = &"_COMBAT_BATTLER_GROUP"
 
 #region Tags
@@ -179,12 +188,25 @@ func act(handle: GameplayAbilityHandle, at: Array[Battler]) -> void:
 #endregion
 
 
+## The component is the only thing that knows a number moved; this turns that
+## into something the rest of the game can act on.
+##
+## Presentation reads these rather than the component's own signal, so nothing
+## has to be wired in the same frame the component is built - and nothing else
+## in the game has to know which attribute means "hurt".
 func _on_attribute_changed(
-	attribute_name: StringName, _old_value: float, new_value: float, _spec: GameplayEffectSpec
+	attribute_name: StringName, old_value: float, new_value: float, _spec: GameplayEffectSpec
 ) -> void:
-	if attribute_name != BattlerAttributes.HEALTH or new_value > 0.0:
+	if attribute_name != BattlerAttributes.HEALTH:
 		return
-	if is_downed():
+
+	var delta: float = new_value - old_value
+	if delta < 0.0:
+		damaged.emit(absf(delta))
+	elif delta > 0.0:
+		healed.emit(delta)
+
+	if new_value > 0.0 or is_downed():
 		return
 	# Tag first, signal second. A listener that reacts by re-targeting must not
 	# be able to see a battler that is at zero health and still reads as a legal
