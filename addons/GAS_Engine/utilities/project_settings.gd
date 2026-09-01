@@ -97,8 +97,9 @@ static func init_project_settings() -> void:
 	_init_editor_tag_property_editor()
 
 
-## Move every legacy `godot_gas/...` setting onto its `gas_engine/...` name, in
-## memory only, and report whether anything moved.
+## Move every setting named under LEGACY_PROJECT_SETTINGS_NAME onto its
+## PROJECT_SETTINGS_NAME equivalent, in memory only, and report whether
+## anything moved.
 ##
 ## The write used to live here. It is the caller's now because this is the one
 ## piece of the addon a test can exercise directly, and saving inside it flushed
