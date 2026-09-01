@@ -330,4 +330,22 @@ func test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else() ->
 	assert_not_null(instance.current_params, "the live cue is still playing")
 
 	manager.deactivate_persistent_cue(live, second_params)
+
+
+func test_a_detached_target_is_refused_rather_than_dereferenced() -> void:
+	# Valid, but never added to any tree. `Node.get_tree()` answers null for
+	# anything parented under it, and the one-shot path schedules its pooling
+	# timer through exactly that call - so parenting a cue here and playing it
+	# is a null dereference, and a cue that cannot be seen is worth less than
+	# the crash costs.
+	var detached: Node = Node.new()
+	var params: GameplayCueParams = CueProbe.params_for(IMPACT, detached)
+
+	manager.execute_cue(params)
+	assert_eq(detached.get_child_count(), 0, "no cue was parented under a detached target")
+
+	var handle: GameplayCueHandle = manager.activate_persistent_cue(params)
+	assert_false(handle.is_valid(), "and no persistent handle was handed out for one")
+
+	detached.free()
 #endregion

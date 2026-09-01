@@ -121,10 +121,25 @@ func deactivate_persistent_cue(handle: CueHandle, params: CueParams) -> void:
 
 ## Resolve the registry entry, take or instantiate the instance, and (re)parent
 ## it under the target - the setup both one-shot and persistent activation share.
+##
+## `is_inside_tree` is not redundant with `is_instance_valid`. A Node that was
+## never added to a tree is perfectly valid, and a cue parented under one is
+## outside the tree too - so its own `get_tree()` answers null, and
+## `GameplayCueNotify.execute_cue` schedules its pooling timer through exactly
+## that call. Playing a cue on a detached target was therefore a null
+## dereference that took the whole process down: "Cannot call method
+## 'create_timer' on a null value", which in a debug build stops at the
+## debugger and never returns.
+##
+## Refusing is the same contract a missing registry entry already has, and the
+## one this addon states for itself: gameplay stays correct with no cue to show
+## for it. A cue under a detached node could not have been seen anyway, and
+## would never have been pooled again either.
 func _resolve_and_parent(params: CueParams) -> CueNotify:
 	if (
 		params == null
 		or not is_instance_valid(params.target)
+		or not params.target.is_inside_tree()
 		or not _cue_scenes.has(params.cue_tag)
 	):
 		return null

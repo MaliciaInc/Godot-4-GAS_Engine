@@ -47,8 +47,21 @@ func execute_cue(params: CueParams) -> void:
 	if not auto_destroy:
 		return
 
+	# There is no tree to take a timer from when this node sits outside one,
+	# and `get_tree()` answers null rather than raising. The manager refuses a
+	# detached target before it ever gets here, so reaching this means a caller
+	# parented and played the cue itself; it says so rather than pooling on a
+	# schedule it has no way to keep.
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		push_warning(
+			"GAS_Engine: cue '" + String(gameplay_cue_tag)
+			+ "' played outside the scene tree; it will not auto-destroy."
+		)
+		return
+
 	var scheduled_id: int = _playback_id
-	var timer: SceneTreeTimer = get_tree().create_timer(destroy_delay)
+	var timer: SceneTreeTimer = tree.create_timer(destroy_delay)
 	timer.timeout.connect(_on_auto_destroy_elapsed.bind(scheduled_id))
 
 
