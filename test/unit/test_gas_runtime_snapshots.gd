@@ -93,6 +93,40 @@ func test_tag_snapshot_reports_count_and_granting_effect() -> void:
 	assert_eq(marked.count, 1)
 	assert_eq(marked.granting_effect_handles, [active.handle] as Array[GameplayEffectHandle])
 	assert_false(marked.is_activation_owned)
+
+
+## An inhibited effect is not granting anything, and the debugger exists to say
+## where a tag came from. Attribution read `granted_tags`, which stays populated
+## while inhibited because it is the receipt uninhibiting puts back - so a tag
+## held once by one effect was reported as granted by two, one of which was not
+## granting it at all. The count and the list contradicted each other on screen.
+func test_an_inhibited_effect_is_not_named_as_granting_a_tag() -> void:
+	var live: ActiveGameplayEffect = Factory.apply(
+		asc, Factory.granting(Factory.infinite([]), [&"Status.Marked"])
+	)
+	asc.add_tag(&"Status.Blessed")
+	Factory.apply(asc, Factory.with_ongoing_requirement(
+		Factory.granting(Factory.infinite([]), [&"Status.Marked"]), [&"Status.Blessed"]
+	))
+	asc.remove_tag(&"Status.Blessed")
+
+	var marked: GasTagSnapshot = _snapshot_of(&"Status.Marked")
+	assert_not_null(marked, "the tag is still held by the uninhibited effect")
+	if marked == null:
+		return
+	assert_eq(marked.count, 1, "one effect is actually granting it")
+	assert_eq(
+		marked.granting_effect_handles, [live.handle] as Array[GameplayEffectHandle],
+		"and that is the one named"
+	)
+
+
+## The tag with this name, or null when nothing holds it.
+func _snapshot_of(tag: StringName) -> GasTagSnapshot:
+	for snapshot: GasTagSnapshot in GasTagSnapshot.capture_all(asc):
+		if snapshot.tag == tag:
+			return snapshot
+	return null
 #endregion
 
 

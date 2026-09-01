@@ -10,10 +10,16 @@ class_name GasTagSnapshot extends RefCounted
 var tag: StringName = &""
 var count: int = 0
 
-## Active effects whose granted_tags name this exact tag - never inferred,
+## Active effects actually granting this exact tag right now - never inferred,
 ## only what the runtime itself can point to. Empty does not mean "nothing
 ## granted it": an ability's activation-owned tag has no ActiveGameplayEffect
 ## behind it at all, and this never invents one.
+##
+## An inhibited effect is left out. `granted_tags` stays populated while
+## inhibited - it is the receipt uninhibiting puts back - so reading it alone
+## named an effect that was granting nothing, and a tag one effect held came up
+## as granted by two. The count beside the list said one, which is the whole
+## point of a debugger reading badly.
 var granting_effect_handles: Array[GameplayEffectHandle] = []
 
 ## True while some currently-active ability instance holds this tag as one
@@ -33,7 +39,7 @@ static func capture_all(asc: AbilitySystemComponent) -> Array[GasTagSnapshot]:
 		snapshot.count = asc.tags.count(tag)
 		snapshot.is_activation_owned = owned_tags.has(tag)
 		for active: ActiveGameplayEffect in active_effects:
-			if active.granted_tags.has(tag):
+			if active.state_attached and active.granted_tags.has(tag):
 				snapshot.granting_effect_handles.append(active.handle)
 		snapshots.append(snapshot)
 	return snapshots
