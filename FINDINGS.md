@@ -269,6 +269,25 @@ before committing anything.
 
 ---
 
+# Milestones
+
+## 2026-09-01 — combat runs on GAS_Engine end to end
+
+A battle was played through: entered from the field, action menu, target
+selection, attacks resolved, battle won. No console errors.
+
+That is the first time the engine has been exercised by a game rather than by
+its own suite - the whole reason this sandbox exists. What it proves: attribute
+composition, ability activation and commit, effect application through
+`apply_effect_to_targets`, per-target accuracy, turn order read live from an
+attribute, defeat detection through a tag, and the AI asking the component what
+is legal instead of guessing.
+
+Not yet exercised, and worth aiming at next: energy costs (every authored
+ability costs 0, so the commit path has never refused), the `Focus` buff and
+therefore the contribution-and-withdrawal that justifies effects over
+arithmetic, evasion and misses, and losing a battle.
+
 # Closed
 
 ## GAS-001 — verified
