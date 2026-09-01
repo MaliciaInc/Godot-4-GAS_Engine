@@ -52,9 +52,10 @@ func active_effects() -> Array[ActiveGameplayEffect]:
 	return _active.duplicate()
 
 
-## The live array, for the scheduler alone: it walks backwards with a bounds
-## guard so a self/other removal mid-walk cannot skip one, and runs every
-## frame, so a copy here would be an allocation for nothing.
+## The live array, not a copy - the scheduler walks it every frame and a copy
+## would allocate for nothing. Whoever takes it must either not remove while
+## walking, or walk backwards by index; the purge transaction does the second,
+## the handle registry only reads. Anything else wants `active_effects()`.
 func live_active_effects() -> Array[ActiveGameplayEffect]:
 	return _active
 
