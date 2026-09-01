@@ -1,7 +1,7 @@
 ## Close the distance, hit, come back.
 ##
 ## @meta_license: MIT
-class_name MeleeAttackAbility extends BattlerAbility
+class_name MeleeAttackAbility extends DamageAbility
 
 ## How far in front of the target the caster stops. Far enough to read as a
 ## charge, near enough that the hit looks like contact.

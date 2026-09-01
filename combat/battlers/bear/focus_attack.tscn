@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/combat/abilities/empower_ability.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://combat/battlers/bear/icon_raise.svg" id="2_icon"]
+
+[node name="Focus" type="Node"]
+script = ExtResource("1_script")
+ability_name = "Focus"
+display_name = "Focus"
+description = "Increase Attack and Accuracy."
+scope = 0
+targets_allies = true
+targets_enemies = false
+added_value = 10.0
+icon = ExtResource("2_icon")

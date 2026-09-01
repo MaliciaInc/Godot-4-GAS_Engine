@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/combat/abilities/ranged_attack_ability.gd" id="1_script"]
+
+[node name="AreaAttack" type="Node"]
+script = ExtResource("1_script")
+ability_name = "Area Attack"
+display_name = "Area Attack"
+description = "A sweeping attack, hitting all enemy Battlers."
+scope = 2
+targets_allies = false
+targets_enemies = true
+base_damage = 999.0

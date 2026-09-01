@@ -34,9 +34,9 @@ enum Scope {
 @export var targets_enemies: bool = true
 @export_group("")
 
-## What this lands on whoever it reaches. Instant for a hit or a heal, timed for
-## anything that lingers.
-@export var payload: GameplayEffect = null
+## The ability's own accuracy, before the caster's `hit_chance` is applied.
+## A hundred means the ability never misses of its own accord.
+@export_range(0.0, 100.0) var accuracy: float = 100.0
 #endregion
 
 
@@ -76,13 +76,45 @@ func _perform() -> void
 ## The effect carries the numbers; this only says who. Which is why a subclass
 ## that changes how an ability *looks* never has to touch what it *does*.
 func _land() -> void:
-	if payload == null:
+	var effect: GameplayEffect = _payload()
+	if effect == null:
 		return
 	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
 	for battler: Battler in targets:
-		if battler != null and battler.asc != null:
-			data.append_node(battler.asc)
-	apply_effect_to_targets(payload, data)
+		if battler == null or battler.asc == null:
+			continue
+		if not _connects_with(battler):
+			continue
+		data.append_node(battler.asc)
+	if not data.get_target_nodes().is_empty():
+		apply_effect_to_targets(effect, data)
+
+
+## What this ability lands on whoever it reaches.
+##
+## Built from the ability's own declared numbers, and only from those. There is
+## deliberately no authored-resource alternative sitting beside it: two ways to
+## say what an ability does is two places to look when it does the wrong thing,
+## and the one that would have been hand-written in a .tres is the one nothing
+## can check.
+##
+## Null for an ability whose whole job is its choreography.
+func _payload() -> GameplayEffect:
+	return null
+
+
+## Whether this ability connects with one particular target.
+##
+## Rolled per target, not once for the whole swing: an area attack that hits
+## three enemies is three chances to be dodged, which is what makes evasion
+## worth having. Read live from both components, so a debuff to the caster's
+## aim or a buff to the target's footwork is felt on this swing.
+func _connects_with(target: Battler) -> bool:
+	if accuracy >= 100.0 and target.attribute(BattlerAttributes.EVASION) <= 0.0:
+		return true
+	var caster_aim: float = owner_asc.get_attribute_current(BattlerAttributes.HIT_CHANCE)
+	var chance: float = accuracy * (caster_aim / 100.0) - target.attribute(BattlerAttributes.EVASION)
+	return randf() * 100.0 < chance
 
 
 #region Choreography helpers

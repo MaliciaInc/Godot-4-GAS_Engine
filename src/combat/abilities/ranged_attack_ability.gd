@@ -4,7 +4,7 @@
 ## the apex, so the hit reads as the thing arriving, not as the caster touching.
 ##
 ## @meta_license: MIT
-class_name RangedAttackAbility extends BattlerAbility
+class_name RangedAttackAbility extends DamageAbility
 
 @export var travel_distance: float = 350.0
 @export var travel_time: float = 0.25

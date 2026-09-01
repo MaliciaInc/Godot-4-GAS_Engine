@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/combat/abilities/heal_ability.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://combat/battlers/squirrel/icon_first_aid.svg" id="2_icon"]
+
+[node name="Heal" type="Node"]
+script = ExtResource("1_script")
+ability_name = "Heal"
+display_name = "Heal"
+description = "A bandage can fix this..."
+scope = 1
+targets_allies = true
+targets_enemies = false
+heal_amount = 50.0
+icon = ExtResource("2_icon")
