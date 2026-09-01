@@ -13,10 +13,18 @@ PLUGIN_SCRIPT = ADDON_ROOT + "/gas_engine_plugin.gd"
 CUE_MANAGER = ADDON_ROOT + "/managers/gameplay_cue_manager.gd"
 PROJECT_SETTINGS = ADDON_ROOT + "/utilities/project_settings.gd"
 
+COMMAND_PARSER = ADDON_ROOT + "/integrations/dialogic/dialogic_gas_command_parser.gd"
+
+#: The list enumerated three separators and missed the fourth spelling: none at
+#: all. `Godot` + `GAS` was already here in exactly that concatenated form, so
+#: the shape was on the list's mind for one family and simply absent for the
+#: other - and one live instance was sitting behind the hole, in a wire protocol
+#: string a designer types into a Dialogic timeline.
 FORBIDDEN = (
     "Arhalies" + "_GAS",
     "Arhalies" + " GAS",
     "Arhalies" + "-GAS",
+    "Arhalies" + "GAS",
     "Godot" + "GAS",
     "godot" + "_gas",
     "addons/" + "Godot" + "GAS",
@@ -69,7 +77,7 @@ def occurrence_allowed(path: str, line_number: int, line: str) -> bool:
     if path == "THIRD_PARTY.md":
         text = Path(path).read_text(encoding="utf-8") if Path(path).is_file() else ""
         return line_number in third_party_legacy_lines(text)
-    if path == PROJECT_SETTINGS and "LEGACY_" in line:
+    if path in (PROJECT_SETTINGS, COMMAND_PARSER) and "LEGACY_" in line:
         return True
     if path == "tooling/gates/tests/test_product_identity.py":
         return True

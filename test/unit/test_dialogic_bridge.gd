@@ -150,6 +150,28 @@ func test_a_message_that_is_not_a_dictionary_is_ignored_without_complaint() -> v
 	assert_eq(rejected.size(), 0, "and nothing was reported as wrong")
 
 
+## The bridge answers to the product's current name and to the one it carried
+## before the rename. A timeline is authored content in somebody else's project:
+## renaming what they type is a change this addon absorbs, and quietly ceasing
+## to recognise what they already wrote is not.
+func test_the_bridge_answers_to_its_current_name_and_the_one_it_used_to_have() -> void:
+	assert_true(_bound())
+	assert_ne(
+		DialogicGasCommandParser.BRIDGE_NAME,
+		DialogicGasCommandParser.LEGACY_BRIDGE_NAME,
+		"the rename really happened"
+	)
+
+	dialogic.say(_message())
+	assert_eq(applied.size(), 1, "addressed by the current name")
+
+	var legacy: Dictionary = _message()
+	legacy[DialogicGasCommandParser.BRIDGE_KEY] = DialogicGasCommandParser.LEGACY_BRIDGE_NAME
+	dialogic.say(legacy)
+	assert_eq(applied.size(), 2, "and by the one it used to have")
+	assert_eq(rejected.size(), 0, "neither is a complaint")
+
+
 func test_a_dictionary_for_another_bridge_is_ignored_without_complaint() -> void:
 	assert_true(_bound())
 	var theirs: Dictionary = {}

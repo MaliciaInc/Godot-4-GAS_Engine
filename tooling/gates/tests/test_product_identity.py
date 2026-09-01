@@ -34,6 +34,18 @@ class ProductIdentityTests(unittest.TestCase):
         self.assertIn("Godot" + "GAS", joined)
         self.assertIn("godot" + "_gas", joined)
 
+    def test_every_separator_including_none_is_forbidden(self) -> None:
+        # The list enumerated underscore, space and hyphen and stopped there.
+        # `Godot` + `GAS` was already listed with no separator at all, so the
+        # spelling was on the list's mind for one family and simply missing for
+        # the other - and one live instance was sitting behind the hole, in a
+        # wire protocol string a designer types into a Dialogic timeline.
+        for separator in ("_", " ", "-", ""):
+            with self.subTest(separator=separator):
+                self.assertIn(
+                    "Arhalies" + separator + "GAS", product_identity.FORBIDDEN
+                )
+
     def test_positive_authorities_are_canonical_in_real_checkout(self) -> None:
         root = Path(__file__).resolve().parents[3]
         self.assertEqual(product_identity.authority_problems(root), [])

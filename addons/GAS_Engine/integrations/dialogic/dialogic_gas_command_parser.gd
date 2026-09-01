@@ -38,7 +38,18 @@ class Result extends RefCounted:
 
 
 ## The value a message must carry to be addressed to this bridge at all.
-const BRIDGE_NAME: String = "ArhaliesGAS"
+##
+## Taken from the product's own name rather than spelled again here: this is
+## the string a designer types into a Dialogic timeline, and it named the
+## product this addon used to be called.
+const BRIDGE_NAME: String = GASEngineProjectSettings.ADDON_NAME
+
+## What the bridge answered to before the product was renamed, still accepted.
+##
+## A timeline is authored content in somebody else's project. Renaming what
+## they have to type is a change this addon can absorb; silently ceasing to
+## recognise messages they already wrote is not.
+const LEGACY_BRIDGE_NAME: String = "ArhaliesGAS"
 
 const BRIDGE_KEY: StringName = &"bridge"
 const CHANNEL_KEY: StringName = &"channel"
@@ -63,7 +74,8 @@ static func parse(argument: Variant) -> Result:
 		result.error = Error.NOT_FOR_BRIDGE
 		return result
 	var message: Dictionary = argument
-	if _text(message, BRIDGE_KEY) != BRIDGE_NAME:
+	var addressed: String = _text(message, BRIDGE_KEY)
+	if addressed != BRIDGE_NAME and addressed != LEGACY_BRIDGE_NAME:
 		result.error = Error.NOT_FOR_BRIDGE
 		return result
 
