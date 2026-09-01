@@ -177,6 +177,8 @@ func _bucket_for(tag: StringName) -> PoolBucket:
 
 ## Called when a cue reports itself finished.
 func _on_cue_finished(cue_node: CueNotify, tag: StringName) -> void:
+	_forget_persistent(cue_node)
+
 	var parent: Node = cue_node.get_parent()
 	if parent != null:
 		parent.remove_child(cue_node)
@@ -184,6 +186,25 @@ func _on_cue_finished(cue_node: CueNotify, tag: StringName) -> void:
 	_set_cue_state(cue_node, false)
 	add_child(cue_node)
 	_bucket_for(tag).give(cue_node)
+
+
+## Drop any persistent registration the node still holds.
+##
+## `activate_persistent_cue` is the only writer of that map and
+## `deactivate_persistent_cue` was its only eraser, but a cue can leave the
+## active state a third way: `finish_cue()` is a documented override point and
+## nothing stops a persistent cue from reporting itself done through it. The
+## node was pooled while its id stayed registered, so the next activation to
+## take that instance out of the pool inherited a second, older handle - and
+## deactivating through the older one ended the newer playback. Confirmed:
+## `current_params` came back null on a cue that was still live.
+##
+## Keys are iterated from a copy, which `Dictionary.keys()` returns, so erasing
+## inside the loop is safe.
+func _forget_persistent(cue_node: CueNotify) -> void:
+	for id: int in _active_persistent_by_id.keys():
+		if _active_persistent_by_id[id] == cue_node:
+			_active_persistent_by_id.erase(id)
 
 
 ## Centralised lifecycle state. Handles process mode and visual toggling for
