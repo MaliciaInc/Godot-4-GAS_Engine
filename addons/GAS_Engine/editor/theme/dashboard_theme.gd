@@ -4,8 +4,9 @@
 ## same colour derivation and three chances for one of them to drift from the
 ## editor after a theme change.
 ##
-## Styleboxes are created once and mutated in place, so a re-sync updates every
-## control already holding one rather than leaving the old object behind.
+## Styleboxes are created at construction and mutated in place, so a control can
+## be styled before any colour is known and a later re-sync repaints it rather
+## than leaving the old object behind.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: MIT
@@ -70,6 +71,35 @@ var accent_html: String = ""
 var text_accent: Color = Color.WHITE
 
 
+## Every stylebox exists before anyone knows what colour it should be.
+##
+## `sync_from_editor()` has three ways to decline - outside the editor, no editor
+## theme, and the all-black theme a hot reload passes through - and it used to be
+## the only place these were created. A consumer that styled a control before the
+## first successful sync therefore handed Godot a null StyleBox, which it refuses
+## outright: the override never lands, the control silently keeps its default
+## look, and nothing restyles it afterwards. `TagManagerTab._ready()` does exactly
+## that - `configure_tree()` first, sync second - so its tag tree shipped without
+## the accent selection the other tabs have, and the editor logged two errors on
+## every startup.
+##
+## Building them here costs nothing and makes the order irrelevant, which is what
+## the in-place mutation was always for.
+func _init() -> void:
+	base_panel = _new_box(PANEL_RADIUS, PANEL_MARGIN)
+	dark_panel = _new_box(PANEL_RADIUS, PANEL_MARGIN)
+	header_panel = _new_box(HEADER_RADIUS, PANEL_MARGIN)
+	selection = _new_box(PANEL_RADIUS, SELECTION_MARGIN)
+	list_item = _new_box(LIST_ITEM_RADIUS, LIST_ITEM_MARGIN)
+
+
+static func _new_box(radius: int, margin: int) -> StyleBoxFlat:
+	var box: StyleBoxFlat = StyleBoxFlat.new()
+	box.set_content_margin_all(margin)
+	box.set_corner_radius_all(radius)
+	return box
+
+
 #region Synchronisation
 ## Read the editor theme and refresh every derived style.
 ##
@@ -97,12 +127,6 @@ func sync_from_editor() -> bool:
 		base_color.lightened(LIGHTEN_STEP) if is_dark else base_color.darkened(LIGHTEN_STEP)
 	)
 
-	base_panel = _ensure(base_panel, PANEL_RADIUS, PANEL_MARGIN)
-	dark_panel = _ensure(dark_panel, PANEL_RADIUS, PANEL_MARGIN)
-	header_panel = _ensure(header_panel, HEADER_RADIUS, PANEL_MARGIN)
-	selection = _ensure(selection, PANEL_RADIUS, SELECTION_MARGIN)
-	list_item = _ensure(list_item, LIST_ITEM_RADIUS, LIST_ITEM_MARGIN)
-
 	base_panel.bg_color = base_color
 	dark_panel.bg_color = dark_color
 	header_panel.bg_color = header_color
@@ -112,15 +136,6 @@ func sync_from_editor() -> bool:
 	)
 	return true
 
-
-## Reuse an existing box so controls already holding it see the new colours.
-func _ensure(existing: StyleBoxFlat, radius: int, margin: int) -> StyleBoxFlat:
-	if existing != null:
-		return existing
-	var box: StyleBoxFlat = StyleBoxFlat.new()
-	box.set_content_margin_all(margin)
-	box.set_corner_radius_all(radius)
-	return box
 #endregion
 
 
