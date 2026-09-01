@@ -22,6 +22,24 @@ const MIN_PREFIX: String = "min_"
 const INDENT: String = "\t"
 const NEWLINE: String = "\n"
 
+## The parameter every emitted hook matches on, and the prefix GDScript
+## wants on a parameter nothing reads. A generated file lands in the game's
+## own source tree under the game's own warning settings: a project that
+## raises `unused_parameter` to Error - an ordinary thing to do, and what
+## this addon does to itself for eight other warnings - would refuse to
+## parse a hook carrying one.
+const SUBJECT: String = "attribute_name"
+const MOVED_VALUE: String = "new_value"
+const UNUSED: String = "_"
+
+## The line both hooks open their body with, written whole rather than
+## composed from SUBJECT. `"match "` on its own is a bare keyword literal,
+## and the gates already see that word in the tooling, so composing it here
+## would make the pair a repeat of a word two unrelated files use for two
+## unrelated things. The emitted signature carries the subject the same way,
+## as a whole line with one hole in it.
+const MATCH_SUBJECT_LINE: String = "match attribute_name:"
+
 
 ## One drafted attribute: its name and its starting base value.
 class Attribute extends RefCounted:
@@ -81,7 +99,7 @@ static func _base_clamp(attributes: Array[Attribute]) -> String:
 	return _clamp_function(
 		attributes,
 		"## Guard the durable value.",
-		"func pre_attribute_base_change(attribute_name: StringName, proposed_base_value: float) -> float:",
+		"func pre_attribute_base_change(%s: StringName, proposed_base_value: float) -> float:",
 		"proposed_base_value"
 	)
 
@@ -90,22 +108,38 @@ static func _current_clamp(attributes: Array[Attribute]) -> String:
 	return _clamp_function(
 		attributes,
 		"## Guard the derived value.",
-		"func pre_attribute_change(attribute_name: StringName, proposed_current_value: float) -> float:",
+		"func pre_attribute_change(%s: StringName, proposed_current_value: float) -> float:",
 		"proposed_current_value"
 	)
 
 
 ## Emit a clamp that bounds every attribute which has a matching `max_` sibling.
+##
+## With nothing to bound, this used to emit `match attribute_name:` over a
+## lone `_: pass` - a branch that decides nothing, present only so the
+## parameter would count as read. The bare pass-through says the same thing
+## without a statement that never runs, and without the parameter a project
+## holding itself to `unused_parameter` would refuse to compile.
 static func _clamp_function(
 	attributes: Array[Attribute], doc: String, signature: String, value_name: String
 ) -> String:
-	var names: PackedStringArray = _names_of(attributes)
+	var branches: PackedStringArray = _clamp_branches(_names_of(attributes), value_name)
+	var subject: String = SUBJECT if not branches.is_empty() else UNUSED + SUBJECT
+
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append(doc)
-	lines.append(signature)
-	lines.append(INDENT + "match attribute_name:")
+	lines.append(signature % subject)
+	if not branches.is_empty():
+		lines.append(INDENT + MATCH_SUBJECT_LINE)
+		lines.append_array(branches)
+		lines.append("")
+	lines.append(INDENT + "return " + value_name)
+	return NEWLINE.join(lines) + NEWLINE
 
-	var matched: bool = false
+
+## One `match` case per bounded attribute, and nothing at all when none is.
+static func _clamp_branches(names: PackedStringArray, value_name: String) -> PackedStringArray:
+	var branches: PackedStringArray = PackedStringArray()
 	for name: String in names:
 		if _is_bound_name(name):
 			continue
@@ -114,56 +148,60 @@ static func _clamp_function(
 			continue
 		var lower: String = MIN_PREFIX + name
 		var floor_expression: String = lower + ".current_value" if names.has(lower) else "0.0"
-		lines.append(INDENT.repeat(2) + "&\"" + name + "\":")
-		lines.append(
+		branches.append(INDENT.repeat(2) + "&\"" + name + "\":")
+		branches.append(
 			INDENT.repeat(3) + "return clampf(" + value_name + ", " + floor_expression
 			+ ", " + upper + ".current_value)"
 		)
-		matched = true
-
-	if not matched:
-		lines.append(INDENT.repeat(2) + "_:")
-		lines.append(INDENT.repeat(3) + "pass")
-
-	lines.append("")
-	lines.append(INDENT + "return " + value_name)
-	return NEWLINE.join(lines) + NEWLINE
+	return branches
 
 
-## React to a bound moving. Both base and current are trimmed: trimming only the
-## current would leave the durable value holding more than the bound allows, and
-## it would reappear the moment the bound rose again.
+## React to a bound moving. Both base and current are trimmed: trimming only
+## the current would leave the durable value holding more than the bound
+## allows, and it would reappear the moment the bound rose again.
+##
+## With no bound to react to, every parameter of the emitted hook is unread.
+## They were named as if they were used, so a set drafted with no `max_` or
+## `min_` sibling anywhere - the ordinary shape of a first draft - generated
+## a file that raises UNUSED_PARAMETER, and one that a project raising that
+## warning to Error would not compile at all.
 static func _dependency_hook(attributes: Array[Attribute]) -> String:
-	var names: PackedStringArray = _names_of(attributes)
+	var branches: PackedStringArray = _dependency_branches(_names_of(attributes))
+	var used: bool = not branches.is_empty()
+	var subject: String = SUBJECT if used else UNUSED + SUBJECT
+	var moved: String = MOVED_VALUE if used else UNUSED + MOVED_VALUE
+
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("## React to a bound changing.")
 	lines.append(
 		"func post_attribute_change(" + NEWLINE
-		+ INDENT + "_asc: Node, attribute_name: StringName, _old_value: float, new_value: float"
-		+ NEWLINE + ") -> void:"
+		+ INDENT + "_asc: Node, " + subject + ": StringName, _old_value: float, "
+		+ moved + ": float" + NEWLINE + ") -> void:"
 	)
-	lines.append(INDENT + "match attribute_name:")
+	if not used:
+		lines.append(INDENT + "pass")
+		return NEWLINE.join(lines) + NEWLINE
 
-	var matched: bool = false
+	lines.append(INDENT + MATCH_SUBJECT_LINE)
+	lines.append_array(branches)
+	return NEWLINE.join(lines) + NEWLINE
+
+
+## One `match` case per bound, trimming the attribute it bounds.
+static func _dependency_branches(names: PackedStringArray) -> PackedStringArray:
+	var branches: PackedStringArray = PackedStringArray()
 	for name: String in names:
 		if _is_bound_name(name):
 			continue
 		if names.has(MAX_PREFIX + name):
-			lines.append(INDENT.repeat(2) + "&\"" + MAX_PREFIX + name + "\":")
-			lines.append(INDENT.repeat(3) + name + ".base_value = minf(" + name + ".base_value, new_value)")
-			lines.append(INDENT.repeat(3) + name + ".current_value = minf(" + name + ".current_value, new_value)")
-			matched = true
+			branches.append(INDENT.repeat(2) + "&\"" + MAX_PREFIX + name + "\":")
+			branches.append(INDENT.repeat(3) + name + ".base_value = minf(" + name + ".base_value, new_value)")
+			branches.append(INDENT.repeat(3) + name + ".current_value = minf(" + name + ".current_value, new_value)")
 		if names.has(MIN_PREFIX + name):
-			lines.append(INDENT.repeat(2) + "&\"" + MIN_PREFIX + name + "\":")
-			lines.append(INDENT.repeat(3) + name + ".base_value = maxf(" + name + ".base_value, new_value)")
-			lines.append(INDENT.repeat(3) + name + ".current_value = maxf(" + name + ".current_value, new_value)")
-			matched = true
-
-	if not matched:
-		lines.append(INDENT.repeat(2) + "_:")
-		lines.append(INDENT.repeat(3) + "pass")
-
-	return NEWLINE.join(lines) + NEWLINE
+			branches.append(INDENT.repeat(2) + "&\"" + MIN_PREFIX + name + "\":")
+			branches.append(INDENT.repeat(3) + name + ".base_value = maxf(" + name + ".base_value, new_value)")
+			branches.append(INDENT.repeat(3) + name + ".current_value = maxf(" + name + ".current_value, new_value)")
+	return branches
 
 
 static func _names_of(attributes: Array[Attribute]) -> PackedStringArray:
