@@ -208,7 +208,12 @@ func _is_immune_to(spec: GameplayEffectSpec) -> bool:
 
 ## Public: also called by GameplayEffectStackingRuntime, which needs to
 ## re-evaluate a spec against a stack's own application_order.
-func evaluate_spec(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvaluationResult:
+## `effect_handle` is null for the initial apply() evaluation (no handle
+## exists yet for any effect type); a periodic tick or a stack reapplication
+## passes the already-active effect's own handle.
+func evaluate_spec(
+	spec: GameplayEffectSpec, order: int, effect_handle: GameplayEffectHandle = null
+) -> GameplayEffectEvaluationResult:
 	var request: GameplayEffectEvaluator.Request = GameplayEffectEvaluator.Request.new()
 	request.spec = spec
 	request.attributes = attributes
@@ -216,6 +221,7 @@ func evaluate_spec(spec: GameplayEffectSpec, order: int) -> GameplayEffectEvalua
 	request.application_order = order
 	request.mode = _mode_for(spec)
 	request.source_asc = spec.source_asc
+	request.effect_handle = effect_handle
 	return GameplayEffectEvaluator.evaluate(request)
 
 
@@ -243,7 +249,8 @@ func _commit(
 ) -> ActiveGameplayEffect:
 	# Periodic writes nothing here - its modifiers are tick mutations, and
 	# committing now would double-deal a DoT's first tick.
-	if spec.period <= 0.0:
+	var commits_base: bool = spec.period <= 0.0
+	if commits_base:
 		for staged: AttributeBaseMutation in evaluation.base_mutations:
 			attributes.commit_base_write(staged)
 
@@ -266,6 +273,8 @@ func _commit(
 		inhibition.initialize(active)
 
 	recompose_and_emit(spec)
+	if commits_base:
+		notify_execute_hooks(evaluation.base_mutations)
 
 	if not is_instant and owner_asc != null:
 		owner_asc.active_effect_added.emit(active)
@@ -364,6 +373,18 @@ func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 			continue
 		if owner_asc != null:
 			owner_asc.emit_attribute_changed(mutation, source_spec)
+
+
+## Fires post_gameplay_effect_execute for every base mutation the evaluation
+## staged with execute_data - after recompose_and_emit, so a post hook always
+## sees every attribute already committed and recomposed. Public: also called
+## by GameplayEffectStackingRuntime after a reapplication, so a stack growth
+## or refresh's own base mutations get the identical post-commit treatment
+## without a second copy of this loop.
+func notify_execute_hooks(mutations: Array[AttributeBaseMutation]) -> void:
+	for staged: AttributeBaseMutation in mutations:
+		if staged.execute_data != null:
+			attributes.notify_gameplay_effect_execute(staged.execute_data)
 #endregion
 
 
@@ -409,7 +430,7 @@ func notify_received(spec: GameplayEffectSpec) -> void:
 ## scheduler, which owns when a tick is due.
 func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 	var spec: GameplayEffectSpec = active.spec
-	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, active.application_order)
+	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, active.application_order, active.handle)
 	if not evaluation.is_ok():
 		report_refusal(evaluation)
 		return
@@ -418,6 +439,7 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 		attributes.commit_base_write(staged)
 
 	recompose_and_emit(spec)
+	notify_execute_hooks(evaluation.base_mutations)
 	components.notify_executed(spec, active, owner_asc)
 	if owner_asc != null:
 		owner_asc.gameplay_effect_executed.emit(spec, active)

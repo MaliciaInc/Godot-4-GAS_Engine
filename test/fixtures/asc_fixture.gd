@@ -24,14 +24,17 @@ var attributes: TestAttributeSet = null
 ##
 ## The set is created here rather than authored as a Resource so each fixture
 ## gets its own instance; a shared Resource would let one test's damage show up
-## in the next.
-static func create(entity_name: String = "Entity") -> ASCFixture:
+## in the next. `attribute_set_script` lets a suite that needs to observe a
+## TestAttributeSet hook (e.g. recording pre/post_gameplay_effect_execute
+## calls) supply its own subclass instead - null keeps the plain default.
+static func create(entity_name: String = "Entity", attribute_set_script: GDScript = null) -> ASCFixture:
 	var fixture: ASCFixture = ASCFixture.new()
 
 	fixture.owner = Node.new()
 	fixture.owner.name = entity_name
 
-	fixture.attributes = AttributeSetScript.new()
+	var set_script: GDScript = attribute_set_script if attribute_set_script != null else AttributeSetScript
+	fixture.attributes = set_script.new()
 
 	fixture.asc = AbilitySystemComponent.new()
 	fixture.asc.name = String(AbilitySystemLocator.ASC_CHILD_NAME)

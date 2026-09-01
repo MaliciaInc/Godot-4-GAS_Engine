@@ -19,3 +19,9 @@ var requested_base_value: float = 0.0
 
 ## What the base clamp allows. This is the value that will actually be written.
 var committed_base_value: float = 0.0
+
+## Set only by stage_gameplay_effect_base_write - null for a plain
+## stage_base_write. Carries the pre/post execute-hook context through commit,
+## so the committing caller knows which mutations to fire post hooks for
+## without re-deriving "was this effect-driven" from anything else.
+var execute_data: GameplayEffectExecuteData = null

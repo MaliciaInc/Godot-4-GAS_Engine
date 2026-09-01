@@ -43,6 +43,27 @@ func post_attribute_change(
 	pass
 
 
+## Called during staging, before a GameplayEffect-driven base write (INSTANT,
+## a periodic tick, or an ExecCalc output) is clamped and committed - never
+## for a plain DURATION/INFINITE contribution, which this hook never sees.
+## Pure: no applying/removing effects, mutating tags, sending events, playing
+## cues or writing other attributes - a rejection here fails the whole
+## evaluation atomically, before anything commits, so the same override must
+## behave identically whether this runs as a preview or as the real commit.
+## May reject by returning false, or adjust the proposal via
+## data.set_proposed_base() before it reaches pre_attribute_base_change.
+func pre_gameplay_effect_execute(_data: GameplayEffectExecuteData) -> bool:
+	return true
+
+
+## Called once per executed base mutation, after the whole transaction
+## committed and recomposed - never during preview. Safe to start ordinary
+## gameplay reactions (death, a shield-break event, lifesteal) through normal
+## GAS APIs, but never by writing current_value directly.
+func post_gameplay_effect_execute(_data: GameplayEffectExecuteData) -> void:
+	pass
+
+
 ## Every attribute this set declares, by name. The runtime uses it to recompose
 ## dependent attributes without guessing at the set's property list.
 ##

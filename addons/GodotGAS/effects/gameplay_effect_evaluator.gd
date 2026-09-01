@@ -43,6 +43,11 @@ class Request extends RefCounted:
 	## that needs the instigator's ASC reads it from here rather than
 	## re-deriving it from a Node each has its own opinion about.
 	var source_asc: AbilitySystemComponent = null
+	## The active effect this evaluation belongs to, for
+	## GameplayEffectExecuteData.effect_handle - null for the initial
+	## apply() evaluation, since no handle exists yet at that point for any
+	## effect type.
+	var effect_handle: GameplayEffectHandle = null
 
 
 ## Evaluate a spec into staged base mutations and contributions.
@@ -182,7 +187,9 @@ static func _run_executions(request: Request) -> Dictionary[StringName, float]:
 	return merged
 
 
-## Turn execution deltas into staged base writes.
+## Turn execution deltas into staged base writes. Always routed through the
+## execute-hook - an ExecCalc output triggers pre/post regardless of the
+## containing effect's duration policy, unlike a standard modifier.
 static func _stage_execution_deltas(
 	request: Request,
 	execution_deltas: Dictionary[StringName, float],
@@ -201,12 +208,39 @@ static func _stage_execution_deltas(
 			return
 
 		var requested: float = request.attributes.get_base_value(attribute_name) + delta
-		var staged: AttributeBaseMutation = request.attributes.stage_base_write(attribute_name, requested)
-		if staged == null or not is_finite(staged.committed_base_value):
-			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
-			result.error_attribute_name = attribute_name
+		if not _stage_effect_mutation(request, attribute_name, requested, result):
 			return
-		result.base_mutations.append(staged)
+
+
+## Stage one attribute's effect-driven base write through
+## stage_gameplay_effect_base_write, appending to result.base_mutations on
+## success. False means result already carries the failure -
+## GAMEPLAY_EFFECT_EXECUTE_REJECTED for a pre-hook veto, the same as any other
+## refusal an evaluation can produce.
+static func _stage_effect_mutation(
+	request: Request, attribute_name: StringName, requested: float, result: GameplayEffectEvaluationResult
+) -> bool:
+	var data: GameplayEffectExecuteData = GameplayEffectExecuteData.new()
+	data.spec = request.spec
+	data.effect_handle = request.effect_handle
+	data.source_asc = request.source_asc
+	data.target_asc = request.owner_asc
+	data.attribute_name = attribute_name
+	data.requested_base = requested
+	data.proposed_base = requested
+
+	var staged: AttributeBaseMutation = request.attributes.stage_gameplay_effect_base_write(data)
+	if staged == null:
+		result.status = AttributeEvaluationResult.Status.GAMEPLAY_EFFECT_EXECUTE_REJECTED
+		result.error_attribute_name = attribute_name
+		return false
+	if not is_finite(staged.committed_base_value):
+		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+		result.error_attribute_name = attribute_name
+		return false
+
+	result.base_mutations.append(staged)
+	return true
 #endregion
 
 
@@ -299,13 +333,9 @@ static func _stage_modifier_base_mutations(
 			result.base_mutations.clear()
 			return
 
-		var staged: AttributeBaseMutation = request.attributes.stage_base_write(attribute_name, composed)
-		if staged == null or not is_finite(staged.committed_base_value):
-			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
-			result.error_attribute_name = attribute_name
+		if not _stage_effect_mutation(request, attribute_name, composed, result):
 			result.base_mutations.clear()
 			return
-		result.base_mutations.append(staged)
 
 
 ## The canonical order applied to one attribute using only THIS spec's modifiers.

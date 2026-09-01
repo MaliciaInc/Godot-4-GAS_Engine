@@ -34,6 +34,10 @@ enum Status {
 	## direct self-reference, refused outright rather than evaluated once and
 	## left to loop the moment anything reacts to it.
 	LIVE_MAGNITUDE_CYCLE,
+	## An AttributeSet's pre_gameplay_effect_execute vetoed one of this
+	## evaluation's base mutations - the whole evaluation fails atomically,
+	## the same as any other refusal here.
+	GAMEPLAY_EFFECT_EXECUTE_REJECTED,
 }
 
 var status: Status = Status.OK

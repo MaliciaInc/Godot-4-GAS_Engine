@@ -266,6 +266,27 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   cue script could reach in and mutate through. A missing registry entry
   degrades to no cue playing, never a gameplay failure, persistent
   activation included.
+- **Pre/Post GameplayEffect execute hooks**, narrower than the base clamp:
+  `AttributeSet.pre_gameplay_effect_execute`/`post_gameplay_effect_execute`
+  fire only for a base mutation an effect actually *executes* - INSTANT, a
+  periodic tick, an ExecCalc output - never for a plain DURATION/INFINITE
+  contribution, which never stages a base write at all.
+  `GameplayAttributeRuntime.stage_gameplay_effect_base_write()` shares its
+  clamp core with `stage_base_write()`, so `pre_attribute_base_change` runs
+  identically either way; only the execute-hook wrapping differs. The pre
+  hook is staged, not committed - pure, deterministic, no side effects, so a
+  preview and the commit that follows it run it identically - and may reject
+  (failing the whole evaluation atomically, before anything commits) or
+  rewrite the proposal through `GameplayEffectExecuteData.set_proposed_base()`,
+  which refuses a non-finite value rather than staging one. The post hook
+  runs once per executed mutation, strictly after that mutation's own
+  `recompose_and_emit()` - so it always sees attributes already committed and
+  recomposed - and never during preview.
+  `GameplayEffectStackingRuntime`'s own reapplication path
+  (`replace_stack_state()`/`_finish_reapplication()`/`_settle_expiring()`)
+  routes through the identical `GameplayEffectRuntime.notify_execute_hooks()`
+  helper `_commit()` and `run_periodic_tick()` use, rather than a second copy
+  of the post-commit loop.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

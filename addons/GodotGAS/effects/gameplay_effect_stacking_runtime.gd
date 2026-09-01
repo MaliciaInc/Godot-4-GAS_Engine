@@ -132,7 +132,7 @@ func _grow(existing: ActiveGameplayEffect, spec: GameplayEffectSpec) -> Gameplay
 
 	replace_stack_state(existing, spec, evaluation, new_count)
 	refresh_clocks_on_reapplication(existing)
-	_finish_reapplication(existing, spec)
+	_finish_reapplication(existing, spec, evaluation)
 	if effects.owner_asc != null and existing.handle != null:
 		effects.owner_asc.active_effect_stack_changed.emit(existing.handle, old_count, new_count)
 	return GameplayEffectApplicationResult.ok(spec, existing)
@@ -171,7 +171,7 @@ func _refresh_without_growing(existing: ActiveGameplayEffect, spec: GameplayEffe
 
 	replace_stack_state(existing, spec, evaluation, count)
 	refresh_clocks_on_reapplication(existing)
-	_finish_reapplication(existing, spec)
+	_finish_reapplication(existing, spec, evaluation)
 	if effects.owner_asc != null:
 		effects.owner_asc.active_effect_refreshed.emit(existing)
 	return GameplayEffectApplicationResult.ok(spec, existing)
@@ -240,6 +240,8 @@ func _settle_expiring(active: ActiveGameplayEffect, new_count: int) -> void:
 		reset_period_clock(active)
 
 	effects.recompose_and_emit(active.spec)
+	if active.spec.period <= 0.0:
+		effects.notify_execute_hooks(evaluation.base_mutations)
 	if new_count != old_count and effects.owner_asc != null and active.handle != null:
 		effects.owner_asc.active_effect_stack_changed.emit(active.handle, old_count, new_count)
 #endregion
@@ -251,7 +253,7 @@ func _settle_expiring(active: ActiveGameplayEffect, new_count: int) -> void:
 ## at - grown, unchanged at the ceiling, or one fewer after expiration.
 func _evaluate_at(spec: GameplayEffectSpec, existing: ActiveGameplayEffect, count: int) -> GameplayEffectEvaluationResult:
 	spec.stack_count = count
-	return effects.evaluate_spec(spec, existing.application_order)
+	return effects.evaluate_spec(spec, existing.application_order, existing.handle)
 
 
 func _evaluation_failure(
@@ -264,8 +266,12 @@ func _evaluation_failure(
 	)
 
 
-func _finish_reapplication(existing: ActiveGameplayEffect, spec: GameplayEffectSpec) -> void:
+func _finish_reapplication(
+	existing: ActiveGameplayEffect, spec: GameplayEffectSpec, evaluation: GameplayEffectEvaluationResult
+) -> void:
 	effects.recompose_and_emit(spec)
+	if spec.period <= 0.0:
+		effects.notify_execute_hooks(evaluation.base_mutations)
 	effects.components.notify_applied(spec, existing, effects.owner_asc)
 	effects.play_cues(spec.effect_def.get_application_cue_tags(), spec, existing.handle)
 	effects.dispatch_events(spec)
