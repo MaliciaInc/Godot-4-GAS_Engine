@@ -1,521 +1,318 @@
 # Arhalies GAS
 
-A Gameplay Ability System for Godot 4.7.2: attributes, effects, tags, abilities,
-events and cues, with the arithmetic pinned down and tested.
+**Arhalies GAS** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
 
-A fork of [GodotGAS](https://github.com/yulrun/godot-gas) (MIT, Matthew Janes /
-YulRun), rewritten deeply enough that it is no longer the same engine. It is the
-combat foundation of the RPG *Arhalies*, and it is built before the game.
+It is the gameplay-combat foundation of the *Arhalies* project and is developed as a reusable Godot addon in its own right.
 
-## Features
+> **License model:** use Arhalies GAS unmodified in personal or commercial games for free. Modifying Arhalies GAS itself, distributing modified versions, or creating a derivative framework requires a separate paid Commercial Modification License.
 
-- **Transactional ability commit.** Paying for an ability is one operation with
-  one outcome. Cooldowns go on first, the cost is charged second, and if the
-  charge fails the cooldowns are taken back off - an ability is never left on
-  cooldown for something the caster did not pay for. The result is a typed
-  value naming what happened, not a bare `false`.
-- **Absolute and percentage costs.** A cost is a fixed amount, or a percentage
-  of any attribute's base or current value - 10% of MaxMana, 5% of Health.current,
-  25% of Attack.base. A fraction is 0.0 to 1.0; anything outside that range is
-  refused, as is a non-finite one. Several costs on the same attribute are
-  aggregated into one charge before affordability is asked. A percentage is
-  resolved once, against the attributes as they stand, and the resulting amount
-  is what the commit charges - a buff that raises what an attribute shows never
-  creates durable funds a percentage can spend that were not there before it.
-  A multiplier, a divisor, an override or an execution calculation still cannot
-  express a cost: only an absolute amount or a percentage can.
-- **Cancellable ability tasks.** Waiting for a delay, an input, a gameplay
-  event or target data is a task the ability owns. Ending, cancelling or
-  removing the ability cancels every task it started, and a task reports
-  finishing exactly once whether it succeeded or was cancelled.
-- **Typed cooldown state.** How long an ability has left, in seconds or in
-  turns, answered by asking rather than by reading the tag stack. Asking
-  changes nothing.
-- **2D and 3D targeting.** Traces and overlaps in either space, converted once
-  at the physics boundary into typed hits. One actor wearing several colliders
-  arrives as one target, the caster is left out of its own sweep, and anything
-  without an ability system is not a target.
-- **Typed modifier magnitudes.** A modifier's "how much" is a
-  `GameplayScalableMagnitude` (a flat value, optionally scaled by a curve
-  against the effect's level), a `GameplayAttributeBasedMagnitude`
-  (`((captured + pre_add) * coefficient) + post_add`, from a source or target
-  attribute), a `GameplaySetByCallerMagnitude` (a value the caster supplies at
-  cast time, required or defaulted), or a `GameplayCustomMagnitude` (an
-  arbitrary calculation). An attribute-based magnitude may capture LIVE - a
-  persistent contribution then updates on its own as the captured attribute
-  moves, with a direct self-reference refused outright and an indirect
-  reaction cycle bounded so it cannot hang a frame.
-- **Effects are composed from components, not a growing bag of flags.**
-  `GameplayEffectComponent` is immutable authored data - target tags,
-  application tag requirements, chance to apply, a custom can-apply
-  requirement, UI data - never per-application state. Preflight
-  (`validate` → every `can_apply`) refuses before anything observable
-  happens; preparation is ephemeral and reversible; a rejection at either
-  stage discards everything already prepared, in reverse order.
-  `apply_effect_spec_result()`/`apply_gameplay_effect_result()` return one
-  typed `GameplayEffectApplicationResult`, with the F2 `ActiveGameplayEffect`
-  getters kept as thin wrappers over it.
-- **Active effects are addressed by handle, not by reference.**
-  `GameplayEffectHandle` identity is `(owner ASC, monotonic id)` - never
-  reused, never resolving on a different ASC even when the numeric id
-  matches. `GameplayEffectQuery` is a declarative, AND-combined filter (asset,
-  effect definition, granted/source/target tags, source actor, modified
-  attribute) used to find, count or remove active effects; target tags are
-  read live from the target ASC, source tags are a snapshot taken once at
-  application. `GameplayEffectRemoveOtherEffectsComponent` replaces the old
-  flat tag array with a query, resolved before the new effect is evaluated.
-- **Immunity moves to the target's own state.** A `GameplayEffectImmunity-
-  Component`, carried by an effect already active on the target, blocks any
-  incoming application its `GameplayEffectQuery` matches - asset/granted/
-  source tags, definition, modified attribute, and the target's own live
-  tags - before the incoming effect's own preflight, purge or evaluation
-  ever run. Fireball never has to know every ward that might stop it; the
-  ward declares what it stops. The first matching immunity wins; removing
-  it lets the same application through again.
-- **An active effect can stay registered but inhibited.**
-  `GameplayEffectTargetTagRequirementsComponent` gains `ongoing_query` and
-  `removal_query` alongside `application_query`. While `ongoing_query` fails,
-  the effect's contributions and granted tags detach - the clock, the
-  registration and the logical receipt of what it grants all survive - and
-  they reattach unchanged the moment it is satisfied again; no
-  `active_effect_added`/`removed` pair, one `active_effect_inhibition_changed`
-  per real transition. `removal_query` removes the effect outright, and
-  refuses application outright if already satisfied. A periodic effect's
-  `period_inhibition_policy` (`SKIP_MISSED_TICKS`, default;
-  `EXECUTE_IMMEDIATELY_ON_UNINHIBIT`; `RESET_PERIOD_ON_UNINHIBIT`) decides
-  what happens to ticks owed while inhibited. Reevaluation runs from
-  `GameplayEffectRuntime` alone, behind a reentrancy guard and a pass cap -
-  an effect whose own granted tag falsifies its own `ongoing_query` settles
-  inhibited rather than oscillating or hanging.
-- **Stacking has identity, limits and overflow**, replacing the old
-  FREE/REFRESH_DURATION pair. `stacking_type` (`NONE`,
-  `AGGREGATE_BY_SOURCE`, `AGGREGATE_BY_TARGET`) decides which applications
-  join one `ActiveGameplayEffect` instead of becoming independent ones;
-  `stack_limit_count` (unlimited at `<= 0`) caps how far a join can grow. A
-  reapplication always replaces the authoritative spec/contributions/tags
-  with its own - never an incremental delta - and `factor_in_stack_count`
-  decides whether a standard modifier's magnitude is scaled by the current
-  count (an execution calculation is never auto-scaled; it reads
-  `spec.stack_count` itself). Hitting the limit is overflow: it always
-  signals and fires `overflow_effects` on the same target,
-  `deny_overflow_application` refuses the join outright instead of
-  accepting it as a non-growing refresh, and `clear_stack_on_overflow` can
-  drop the whole stack afterward, independently of that. Overflow (and,
-  from Task 13, Additional Effects) specs carry a `chain_depth`, refused
-  past `GameplayEffectRuntime.MAX_EFFECT_CHAIN_DEPTH` so a cycle cannot
-  recurse forever. `stack_duration_refresh_policy`/`stack_period_reset_policy`
-  govern whether a successful reapplication restarts those clocks;
-  `stack_expiration_policy` (`CLEAR_ENTIRE_STACK`,
-  `REMOVE_SINGLE_STACK_AND_REFRESH_DURATION`, `REFRESH_DURATION`) decides
-  what a naturally-expiring clock does to the stack - always restarting it,
-  which is what tells a survived expiration apart from an ordinary
-  reapplication.
-- **Effects can chain other effects at declared lifecycle points, without a
-  script.** `GameplayEffectAdditionalEffectsComponent` applies
-  `GameplayEffectConditionalEffect` entries - each gated by an optional
-  `target_query`/`source_query`, every configured one required to match -
-  `on_application` once this effect's own application commits,
-  `on_natural_expiration`/`on_premature_removal`/`on_any_removal` once it is
-  removed. A typed `ActiveGameplayEffect.RemovalReason`
-  (`NATURAL_EXPIRATION`, `EXPLICIT`, `CLEANSE`, `SOURCE_REMOVED`,
-  `STACK_OVERFLOW`, `ASC_CLEANUP`) travels every removal path - the
-  scheduler, remove-by-handle/query, the cleanser, a stack overflow, GLoot
-  unequip - and decides which arrays fire; `ASC_CLEANUP` fires none. Every
-  child reuses the exact `chain_depth`/`MAX_EFFECT_CHAIN_DEPTH` guard
-  `overflow_effects` introduced, so a cycle refuses past the limit instead
-  of recursing forever, and a child's own refusal never undoes an already-
-  committed parent. `gameplay_effect_removal_finished(active_effect,
-  reason)` carries the reason to listeners; `active_effect_removed` keeps
-  emitting for every removal as the untyped legacy signal.
-- **Effects can grant abilities while they are active.**
-  `GameplayEffectGrantAbilitiesComponent` reuses Task 4's grant pipeline
-  exactly - `prepare_ability_grant` in `prepare_application()`,
-  `commit_prepared_grant` in `on_effect_applied()`, matching cleanup in
-  `discard_prepared()` - never a second validator. Each
-  `GameplayEffectAbilityGrant` names a scene, a `GameplayScalableFloat`
-  level, an input slot, and a `RemovalPolicy`:
-  `CANCEL_AND_REMOVE_ON_EFFECT_END` cuts a running activation off
-  immediately, `REMOVE_ON_ACTIVE_END` blocks new activations and waits for
-  the current one to finish, `KEEP_AFTER_EFFECT_END` never retires it. The
-  granted spec's source is a typed `GameplayAbilityEffectSource`, never a
-  bare `Variant`, naming the granting effect's own handle. A stack grants
-  once per active effect, never once per join - a component that reads
-  `GameplayEffectComponentApplyRequest.existing_active_effect` skips
-  re-preparing on a reapplication, and the stack runtime preserves its
-  state across the join instead of erasing it.
-- **Gameplay tag semantics are queries, not tag arrays.** `ability_tags` is
-  identity, combined with `spec.dynamic_tags` into one *effective tags* set
-  every other rule reads - never activation gating on its own.
-  `activation_required_query`/`activation_blocked_query` gate a single
-  activation; `activation_owned_tags` are granted once per definition on the
-  0→1 `active_count` edge and retired once on the 1→0 edge, never once per
-  `PER_EXECUTION` instance. A successful activation cancels every other
-  granted spec its `cancel_abilities_query` matches (never itself unless
-  `allow_self_cancel`), and is refused with `BLOCKED_BY_ACTIVE_ABILITY` -
-  never the generic `BLOCKED_TAG` - by another spec's `block_abilities_query`
-  or an uninhibited `GameplayEffectBlockAbilityTagsComponent` on an active
-  effect. `GameplayEffectCancelAbilityTagsComponent` reaches the identical
-  cancellation algorithm from the effect side, never a second one.
-  `target_required_query`/`target_blocked_query` gate `accepts_target()`,
-  enforced once inside `apply_effect_to_targets()` so nothing can reach a
-  target by skipping a UI check. Every rule is read from the frozen
-  `GameplayAbilityDefinitionSnapshot`, immune to a template edited after the
-  grant. `AbilityTagSemanticsRuntime` owns all of it as one collaborator, the
-  same shape as `AbilityInstancingRuntime`/`AbilityTaskRuntime`.
-- **An ability declares how it activates.** `activation_policy` (`MANUAL`,
-  `ON_GRANTED`, `ON_GAMEPLAY_EVENT`, `PASSIVE`) replaces the old implicit
-  "trigger tag means event ability" rule. `MANUAL` behaves like F2. `ON_GRANTED`
-  tries once when the spec registers, stays granted-but-idle on failure, and is
-  never auto-retried. `ON_GAMEPLAY_EVENT` abilities declare one or more
-  `GameplayAbilityEventTrigger`s - each an `event_query` matched hierarchically
-  against the dispatched tag, replacing the old singular `trigger_event_tag`.
-  `PASSIVE` is continuously reevaluated by `AbilityActivationPolicyRuntime`: it
-  starts the moment its `activation_required_query`/`activation_blocked_query`
-  allow, cancels the instant they stop (checked through
-  `active_requirements_error()`, which never answers `ALREADY_ACTIVE` or gates
-  on cost/cooldown - continuity is not a purchase), and can restart once its
-  conditions hold again. Reevaluation runs on every tag change, attribute
-  change, ability start/end and grant/remove, guarded by a reentrancy flag and
-  a 64-pass cap so a passive's own activation-owned tag reacting to itself
-  still converges in one call; a spec that already tried to (re)activate this
-  cycle is not retried again within the same cycle, so an ability whose
-  `_activate_ability()` completes synchronously starts once per external
-  trigger, not once per pass. `PASSIVE` + `PER_EXECUTION` is refused outright
-  at grant time - several automatic executions of one continuous state have no
-  stable meaning. `AbilityRuntime.abort_all()` suspends reevaluation for its
-  own duration and skips it entirely for `ASC_CLEANUP`, so a passive aborted by
-  a tearing-down ASC cannot restart itself an instant before its own removal.
-- **Activation by handle, and a lifecycle that never leaves a dead grant
-  behind.** `AbilityRuntime.try_activate(handle, context)` is the canonical
-  entry point - input, event routing and passives all call it - and returns
-  a `GameplayAbilityActivationResult` (a closed `Status`, the handle, the
-  instance) the instant activation *starts*, never waiting for
-  `_activate_ability()` to finish: a channelled ability reports `SUCCESS`
-  immediately and keeps running. `GameplayAbility._begin_runtime_activation()`
-  is the shared synchronous primitive both this and the compat
-  `GameplayAbility.try_activate()` wrapper start from; the compat wrapper
-  still blocks until its own instance ends, for every caller that already
-  relies on that. Two ASC signals mirror it: `ability_activated` the moment
-  a handle starts, `ability_runtime_ended` the moment it stops, superseding
-  the instance-only `ability_ended` for anything that only has a handle.
-  `remove_ability(handle, policy)` takes an `AbilityRemovalPolicy` -
-  `CANCEL_IMMEDIATELY` aborts and drops the spec now (marking it
-  `pending_remove` *before* aborting, so an ability that reacts to its own
-  cancellation - a passive's reevaluation, chief among them - can never
-  restart what is already being torn down); `AFTER_ACTIVE_END` (also
-  `remove_ability_on_end()`) lets the current run finish and retires the
-  spec the instant `active_count` returns to 0, immediately if it already
-  has - the same mechanism Task 14's `REMOVE_ON_ACTIVE_END` effect grants
-  use, never a second one. `give_and_activate_once()` composes `give_ability`
-  + `try_activate` + `remove_ability(..., AFTER_ACTIVE_END)`: never started
-  removes the spec on the spot, started marks it `pending_remove` before the
-  call even returns - so PENDING_REMOVAL, not a bespoke flag, is what stops
-  a second activation of the same handle, PER_EXECUTION included.
-- **A standard task library for observation and reactivity**, all
-  `AbilityTaskRuntime`-owned, none inventing a second async framework:
-  `AbilityTaskWaitAttributeChange`/`WaitAttributeThreshold` (five
-  comparisons, optional immediate trigger, no per-frame polling);
-  `WaitTagAdded`/`WaitTagRemoved` (hierarchical, the same rule every tag
-  match in this addon already uses) and `WaitTagQuery` for an arbitrary
-  `GameplayTagQuery` reaching a desired bool; `WaitGameplayEffectApplied`
-  (matches by `GameplayEffectQuery.matches_incoming()`, observes an INSTANT
-  success even with no active handle, and can stay `RUNNING` across several
-  matches when `trigger_once` is false); `WaitGameplayEffectRemoved` (by
-  exact handle or by query) and `WaitGameplayEffectStackChange`;
-  `WaitAbilityActivated`/`WaitAbilityEnded`, watching Task 17's own
-  `ability_activated`/`ability_runtime_ended`, by handle or by a
-  `GameplayTagQuery` over effective ability tags; `WaitConfirmCancel` (two
-  input ids, one `Decision` enum, no UI of its own);
-  `AbilityTaskRepeat` (runtime-driven, never a `SceneTreeTimer` - a large
-  delta pays owed repetitions from elapsed time, capped and carried as
-  backlog exactly the way `GameplayEffectScheduler` already paces periodic
-  ticks); `AbilityTaskPlayAnimationAndWait` (Godot-native, never an
-  AnimMontage reimplementation, `stop_on_cancel` defaulting false since the
-  `AnimationPlayer` may be shared). A new ASC signal,
-  `gameplay_effect_executed(spec, active_effect)`, extends the existing
-  application/execution protocol to periodic ticks specifically, rather than
-  a task inferring them from attribute changes. Every task with no place in
-  `AbilityTaskRuntime`'s dispatch protocol connects straight to the ASC
-  signal it needs and disconnects in `_on_finish()` - never a second bus.
-  Factories live in `AbilityTaskFactory`, called as
-  `AbilityTaskFactory.wait_tag_added(self, tag)` from inside an ability,
-  rather than fifteen more one-line wrappers on `GameplayAbility` itself.
-  Overlap detection was deliberately not built as its own task: it is
-  `wait_target_data()` plus the existing targeting pipeline, the one
-  physical boundary this addon already has for "who did a cast reach".
-- **Cues have a full cosmetic lifecycle**, not just one-shot playback.
-  `GameplayEffect.cues: Array[GameplayCueBinding]` replaces the old
-  `application_cue_tags`/`periodic_cue_tags` pair with one authoring route -
-  each binding names a tag and a `Type` (`EXECUTED_ON_APPLICATION`,
-  `EXECUTED_ON_PERIODIC`, `PERSISTENT`). `GameplayCueNotify` gains
-  `on_active()`/`while_active()`/`on_removed()` for the persistent case and
-  `executed()` for the one-shot case; `executed()` defaults to the F2 legacy
-  `play_cue()` virtual, so an existing subclass that only overrides that one
-  keeps working unchanged - `play_cue()` itself never calls `executed()`,
-  which would recurse for the new API and do nothing for the old one. A
-  PERSISTENT binding runs `on_active`/`while_active` the instant its active
-  effect becomes uninhibited and `on_removed` the instant it is inhibited or
-  removed - the same `state_attached` transition `GameplayEffectInhibitionRuntime`
-  already owns, never a second state machine - and is never auto-pooled on a
-  delay timer while running. `ActiveGameplayEffect.persistent_cue_handles`
-  is the receipt: one `GameplayCueHandle` per active effect per binding,
-  never once per stack join, never searched by tag (two effects may share
-  one). Uninhibiting always starts a fresh lifecycle activation with a new
-  handle, never the old one. `GameplayCueParams` carries a `effect_handle` -
-  an opaque `GameplayEffectHandle`, never the live `ActiveGameplayEffect` a
-  cue script could reach in and mutate through. A missing registry entry
-  degrades to no cue playing, never a gameplay failure, persistent
-  activation included.
-- **Pre/Post GameplayEffect execute hooks**, narrower than the base clamp:
-  `AttributeSet.pre_gameplay_effect_execute`/`post_gameplay_effect_execute`
-  fire only for a base mutation an effect actually *executes* - INSTANT, a
-  periodic tick, an ExecCalc output - never for a plain DURATION/INFINITE
-  contribution, which never stages a base write at all.
-  `GameplayAttributeRuntime.stage_gameplay_effect_base_write()` shares its
-  clamp core with `stage_base_write()`, so `pre_attribute_base_change` runs
-  identically either way; only the execute-hook wrapping differs. The pre
-  hook is staged, not committed - pure, deterministic, no side effects, so a
-  preview and the commit that follows it run it identically - and may reject
-  (failing the whole evaluation atomically, before anything commits) or
-  rewrite the proposal through `GameplayEffectExecuteData.set_proposed_base()`,
-  which refuses a non-finite value rather than staging one. The post hook
-  runs once per executed mutation, strictly after that mutation's own
-  `recompose_and_emit()` - so it always sees attributes already committed and
-  recomposed - and never during preview.
-  `GameplayEffectStackingRuntime`'s own reapplication path
-  (`replace_stack_state()`/`_finish_reapplication()`/`_settle_expiring()`)
-  routes through the identical `GameplayEffectRuntime.notify_execute_hooks()`
-  helper `_commit()` and `run_periodic_tick()` use, rather than a second copy
-  of the post-commit loop.
-- **`GameplayEffectContext` carries typed, opaque game metadata**, not a
-  Dictionary and not an infinite field list. `ability_handle`
-  (`GameplayAbilityHandle`, null outside any ability) and `source_object`
-  (the weapon/item behind an application, distinct from `causer`, which may
-  be a spawned projectile with no inventory identity) join instigator/causer/
-  target_data. `GameplayEffectContextPayload` is the abstract base a game
-  subclasses for its own schemas - weapon data, crit info, surface info,
-  Arhalies GAS invents none of them; `GameplayHitContextPayload` is the one
-  built-in, composing `GameplayTargetHit` rather than redeclaring its
-  fields. `add_payload()`/`find_payload()`/`has_payload_script()` address
-  payloads by `Script` identity, the GDScript reflection boundary, never a
-  string key. `create_application_copy()` preserves instigator/causer/
-  ability_handle/source_object as-is (the same real thing for every AoE
-  target) and deep-copies payloads one by one - target_data alone starts
-  fresh and empty per target, same as before. A payload that cannot be
-  copied fails the copy explicitly (returns null, which
-  `GameplayEffectSpec.create_application_copy()` propagates, which
-  `apply_effect_spec_to_target_result()`'s existing null-spec guard turns
-  into a clean refusal) rather than handing out a context silently missing
-  part of what the original carried. A system-generated child - an
-  Additional Effects reaction, an overflow effect - uses the new
-  `GameplayEffectContext.derive_child_context()` instead: a full application
-  copy when one succeeds, a bare instigator/causer context otherwise, since
-  losing one payload is preferable to losing the whole reaction. Both
-  `GameplayEffectChainRuntime._build_child()` and
-  `GameplayEffectStackingRuntime._apply_overflow_effects()` route through it
-  now, replacing two near-identical hand-built contexts that used to drop
-  causer, ability handle and every payload silently.
-- **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
+See [License](#license) for the exact distinction.
 
-## The arithmetic
+## Design goals
 
-For every attribute, exactly this, and nothing else may implement it:
+Arhalies GAS is built around a few non-negotiable rules:
+
+- deterministic gameplay state;
+- typed domain contracts instead of generic `Variant` / `Dictionary` APIs;
+- atomic effect application and ability costs;
+- explicit ownership of mutable runtime state;
+- predictable lifecycle behavior;
+- reusable 2D and 3D targeting;
+- strict failure instead of silent partial application;
+- testable gameplay rules that do not depend on editor state;
+- extension points for game-specific logic without modifying the framework itself.
+
+## Core systems
+
+### Abilities
+
+Abilities have explicit activation policies and a typed lifecycle.
+
+Supported behavior includes:
+
+- manual activation;
+- activation on grant;
+- gameplay-event activation;
+- passive abilities;
+- activation by stable ability handle;
+- cancellable ability tasks;
+- transactional costs and cooldown commits;
+- removal policies for active abilities;
+- gameplay-tag requirements, blocking, and cancellation;
+- target requirements enforced by the runtime rather than left to UI code.
+
+An activation returns a typed result describing what happened instead of collapsing every failure into a generic boolean.
+
+### Attributes
+
+Attributes separate durable base state from derived current state.
+
+The standard aggregation model is:
 
 ```text
 current = ((base + sum(ADD)) * product(MULTIPLY)) / product(DIVIDE)
 ```
 
-then the last applicable OVERRIDE, then the effective clamp.
+followed by the last applicable override and the effective clamp.
 
-**Base 10, with +10 and x2, is 40.** Not 30. Adds are summed before multipliers
-apply; multipliers compound with each other rather than becoming additive
-percentages, so x1.5 twice is x2.25.
+This means, for example, that a base value of `10`, an additive `+10`, and a multiplier of `x2` resolve to `40`, not `30`.
 
-`base_value` is the durable underlying value after permanent and instant
-changes, with no active contributions applied. `current_value` is what the base
-becomes once the active stack and the clamp are applied. It is derived, never a
-second source of truth.
+Base and effective-value clamps are separate hooks so temporary presentation constraints cannot silently corrupt durable state.
 
-### Last applied override wins
+### Gameplay effects
 
-Between effects, the OVERRIDE from the later application wins. Within one
-effect, the higher modifier index wins. Removing the winner makes the previous
-one visible again — an outranked override was never destroyed, only outranked.
+Gameplay effects support:
 
-### Two clamps, not one
+- instant, duration, infinite, periodic, and turn-aware behavior;
+- atomic evaluation and commit;
+- typed modifier magnitudes;
+- scalable values;
+- attribute-based magnitudes;
+- SetByCaller values;
+- custom magnitude calculations;
+- stacking policies and overflow behavior;
+- application, ongoing, and removal tag requirements;
+- effect immunity;
+- effect inhibition without destroying runtime identity;
+- chained additional effects;
+- granted abilities;
+- pre/post gameplay-effect execute hooks;
+- explicit removal reasons;
+- bounded effect-chain recursion.
 
-```gdscript
-pre_attribute_base_change(attribute_name, proposed_base_value)   # guards the durable value
-pre_attribute_change(attribute_name, proposed_current_value)     # guards the derived value
-```
+A failed application leaves no half-applied modifiers, tags, cues, registrations, or observable partial state behind.
 
-With only the second, 500 damage against 100 health leaves `base = -400` while
-the display clamps to 0, and a later heal of 30 arrives at 0 rather than 30.
+### Gameplay tags
 
-### Failure is atomic
+Gameplay tags are hierarchical and query-driven.
 
-An application either happens entirely or not at all. A division by zero, a
-non-finite value, an unknown attribute or an out-of-range modifier index refuses
-the whole thing: no attribute moves, no effect registers, no tag is granted, no
-cue plays, no event is dispatched, and no partial signal is emitted.
+They are used for:
 
-An attribute written by both an execution calculation and a standard modifier in
-one evaluation has no defined order, so it fails with
-`AMBIGUOUS_ATTRIBUTE_WRITE` rather than the engine picking one and being quietly
-wrong.
+- activation requirements;
+- ability identity;
+- cancellation and blocking;
+- effect requirements;
+- effect queries;
+- event routing;
+- target validation;
+- passive reevaluation;
+- gameplay-state observation.
 
-## What differs from upstream
+Tag semantics are centralized so different subsystems do not invent slightly different definitions of what a tag match means.
 
-- **Runtime specs are isolated per application and per target.** An AoE gives
-  each target its own spec and context; upstream passed one mutable spec to
-  every target.
-- **Attributes have a real aggregator.** Contributions are typed and
-  recomposition recomputes from scratch. Upstream applied a flat delta per
-  modifier and reversed it on removal, which is order-dependent and cannot
-  recover.
-- **Magnitudes are keyed by modifier index**, so an effect with `Attack +10` and
-  `Attack x2` keeps both. Upstream keyed by attribute name and the second
-  overwrote the first.
-- **A magnitude is a typed Resource, not a bare float plus an optional
-  Curve.** Attribute-based, SetByCaller and custom-calculation magnitudes
-  resolve once per evaluation and are cached for its duration, so a PERIODIC
-  tick never answers with a value an earlier tick resolved.
-- **Base and effective clamps are separate hooks.**
-- **Preview and commit share one evaluator**, so a cost prediction cannot
-  disagree with the payment it predicted.
-- **Periodic and turn lifecycles are tested**, and ticks derive from elapsed
-  time rather than a countdown, so a long frame pays every tick it owes.
-- **Events match hierarchically in one direction.** `Event.Damage` receives
-  `Event.Damage.Critical`, but not `Event.Damages`, and never its own ancestor.
-- **Event and cue payloads are typed**, not `Variant` and `Dictionary`.
-- **Target hits are typed**, converted once at the physics boundary.
-- **Networking is removed.** The behaviour of this release is local.
-- **GDScript strict typing is mandatory**: no `:=`, no `Variant` or `Dictionary`
-  as a domain contract, and eight warnings promoted to errors.
-- **Hard structural limits, enforced rather than intended**: 450 lines per
-  file, 120 per function, no repeated literal that could have been named,
-  no duplicated logic.
+### Targeting
 
-## Layout
+Arhalies GAS supports typed targeting in both **2D and 3D**.
 
-```text
-addons/GodotGAS/
-  abilities/       GameplayAbility, the transactional commit, typed results
-  abilities/tasks/ cancellable async ability tasks
-  attributes/      AttributeData, AttributeSet, the aggregator, typed results
-  components/      the ASC facade, ability runtime, tag runtime
-  cooldowns/       typed cooldown state
-  effects/         the pure evaluator, the effect runtime, the scheduler
-  effects/components/ GameplayEffectComponent and the ten concrete kinds
-  magnitudes/      typed modifier magnitudes: scalable, attribute-based,
-                   SetByCaller, custom calculations
-  events/          typed event data and hierarchical dispatch
-  cues/            typed cue params, pooling
-  gameplay_tag/    the tag registry and its one grammar
-  target_data/     typed hits and effect context
-  targeting/       ASC resolution and 2D/3D acquisition
-  integrations/    optional official bridges
-  managers/        the GameplayCueManager autoload
-  utilities/       project settings, the GDScript the generators emit
-  editor/          the dashboard
-addons/gut/        GUT v9.7.1, vendored and immutable
-godot_gas/         the tag and cue registries, and the constants generated
-                   from them
-test/              fixtures, the unit suite, the headless runner
-```
+The targeting boundary handles:
 
-The `AbilitySystemComponent` is a facade. Tags, attributes, effects, timing and
-abilities each live in their own runtime, so every piece of mutable state has
-exactly one owner.
+- traces;
+- overlaps;
+- target-data conversion;
+- duplicate collider resolution;
+- self-filtering;
+- ability-system resolution;
+- per-target application copies.
+
+One actor represented by several colliders resolves as one gameplay target rather than several accidental hits.
+
+### Gameplay cues
+
+Gameplay cues provide cosmetic feedback without making visual effects part of authoritative gameplay state.
+
+The cue system supports:
+
+- one-shot execution cues;
+- periodic cues;
+- persistent cue lifecycle;
+- typed cue parameters;
+- cue handles;
+- pooling;
+- effect-handle association;
+- clean activation and removal when effects become inhibited or active again.
+
+A missing cosmetic cue cannot invalidate gameplay application.
+
+### Ability tasks
+
+The task layer provides reusable asynchronous gameplay operations owned by an ability lifecycle.
+
+Examples include waiting for:
+
+- delays;
+- input;
+- target data;
+- gameplay events;
+- attribute changes and thresholds;
+- tag changes and tag queries;
+- gameplay-effect application/removal/stack changes;
+- ability activation/end;
+- confirmation or cancellation;
+- repeated runtime ticks;
+- animation completion.
+
+Ending or cancelling an ability cancels the tasks it owns, and each task completes exactly once.
+
+## Effect context
+
+`GameplayEffectContext` carries typed game metadata rather than an unrestricted dictionary.
+
+The built-in context can represent:
+
+- instigator;
+- causer;
+- ability handle;
+- source object;
+- typed target data;
+- extensible typed payload objects.
+
+Games can define their own context payload classes for information such as weapon metadata, critical-hit data, surfaces, combat provenance, or project-specific schemas without requiring those concepts to become permanent fields in Arhalies GAS.
 
 ## Optional integrations
 
-Three bridges ship with the addon: one for [Dialogic](
-https://github.com/dialogic-godot/dialogic), one for
-[GLoot](https://github.com/peter-kish/gloot), and one for
-[QuestSystem](https://github.com/shomykohai/quest-system).
+The addon contains optional integration bridges for:
 
-**The core works without any of them.** None of the three is included in this
-repository, none is a dependency, and nothing in the engine requires one to be
-installed. Each bridge detects whether its addon is actually present and
-validates the surface it needs before connecting to anything; on a project
-without that addon it declines quietly instead of failing.
+- **Dialogic**;
+- **GLoot**;
+- **QuestSystem**.
 
-Each bridge depends on the smallest published surface it can: a single signal,
-a single node shape. It does not reach into subsystems, internal pools or
-editor structure, so a release that changes those does not change this.
+None of them is required by the core runtime. The integrations are intentionally kept at narrow public API boundaries so installing one optional addon does not turn it into an architectural dependency of the gameplay system.
 
-The certified versions are in `THIRD_PARTY.md`. Later versions may well work,
-but only the certified ones are a guarantee of this release: compatibility was
-established by running these bridges against those exact commits, and a version
-that has not been through that is a reasonable expectation rather than a
-promise.
+Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
 
-## Running the tests
+## Runtime architecture
 
-Open the project in Godot and run the suite from the GUT panel against
-`res://test/unit`. Everything the suite needs is in this repository.
+The `AbilitySystemComponent` acts as a facade rather than a single god object.
 
-Let the first import finish before running it. A project that has never been
-imported has no global class cache, and GUT's own configuration needs one.
+Mutable responsibilities are separated into focused runtimes for areas such as:
 
-`test/gut_headless_runner.tscn` runs the same suite without the panel and writes
-its verdict to a file. It refuses two greens the assertions cannot see: a run
-where fewer scripts loaded than exist on disk, and a run that leaves orphan
-nodes behind. The verdict is timestamped, so a stale one cannot be read as a
-fresh pass.
+- abilities;
+- activation policy;
+- ability tasks;
+- attributes;
+- effects;
+- stacking;
+- effect chains;
+- gameplay tags;
+- cooldowns;
+- cues;
+- events;
+- targeting.
 
-## The autoload constraint
+The goal is simple: every important piece of mutable state should have one clear owner.
 
-Godot initialises autoloads before it has scanned the project for `class_name`
-declarations, so a global class name does not resolve inside an autoload or
-anything it preloads. In that closure a reference must be a `preload`:
+## Correctness model
 
-```gdscript
-const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
-```
+### Atomic failure
 
-A type annotation survives without the cache; an identifier does not. `->
-GameplayCueParams` parses where `GameplayCueParams.new()` fails with *Identifier
-not found* - which is why four scripts in that closure preload themselves under
-an alias and construct through it.
+An operation that cannot be evaluated correctly is refused rather than partially committed.
 
-None of this shows on a machine that has opened the project before, because
-`.godot/global_script_class_cache.cfg` already exists there. It shows on a fresh
-clone, and nowhere else, which is why it is written down here rather than
-left to be rediscovered.
+Examples include:
 
-Everywhere outside that closure, global class names are the right thing to use.
+- division by zero;
+- non-finite values;
+- invalid modifier references;
+- unknown attributes;
+- ambiguous writes;
+- invalid effect chains;
+- rejected application requirements.
 
-## How this is verified
+When evaluation fails, Arhalies GAS does not intentionally leave behind partial attribute mutations, active-effect registrations, granted tags, cues, or events.
 
-Every change is held to the same standards. They are written here rather than
-asserted, so they can be checked against the code:
+### Stable handles
 
-- no file over 450 lines and no function over 120;
-- no repeated literal that could have been named, and no duplicated logic;
-- every script under `addons/GodotGAS/` parses with the eight warnings above
-  promoted to errors;
-- the suite passes with zero failures and zero orphan nodes;
-- a checkout containing only the tracked files imports and runs that suite.
+Abilities and active effects are addressed by handles rather than relying on mutable object references as identity.
 
-The suite is here and is the part you can run yourself.
+This keeps runtime identity stable across systems such as removal, queries, stacking, granted abilities, tasks, and cues.
 
-## Strict typing
+### Strict typing
 
-`project.godot` promotes eight GDScript warnings to errors. Godot excludes
-`addons/` from warnings by default, which would exempt the entire engine - the
-engine lives in `addons/GodotGAS/` - and setting `exclude_addons=false`
-permanently is impossible, because the vendored GUT is not strictly typed and
-fails to parse under it, taking the suite with it.
+The project treats GDScript typing as an architectural constraint rather than editor decoration.
 
-So the project ships permissive and is verified strict: the flag is flipped,
-every engine script is validated, and it is flipped back. Neither mode weakens a
-warning. Only the trees they apply to differ.
+Domain contracts avoid generic dictionaries where a closed type can express the same rule more safely.
 
-## Licence and attribution
+## Verification
 
-MIT. See `LICENSE` for the upstream copyright and `THIRD_PARTY.md` for the
-pinned dependencies. This is a fork and is no longer byte-identical to upstream
-GodotGAS; it does not claim to be. `addons/gut` is unmodified and matches its
-pin.
+The repository contains an automated GUT test suite and a headless runner.
+
+The project is developed against structural and behavioral gates including:
+
+- strict parsing of framework scripts;
+- zero test failures;
+- zero orphan nodes after the suite;
+- reproducible fresh-project import behavior;
+- bounded file and function size;
+- duplicated-logic review;
+- deterministic gameplay arithmetic.
+
+The repository itself is the executable specification: important gameplay rules are expected to have tests rather than exist only as comments or documentation claims.
+
+## Using Arhalies GAS in a game
+
+Arhalies GAS is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
+
+Under the free Community Use License, you may build game-specific systems using techniques such as:
+
+- composition;
+- subclasses;
+- resources and authored data;
+- custom magnitude calculations;
+- typed context payloads;
+- adapters and integration scripts;
+- project-side ability/effect definitions;
+- public runtime APIs and signals.
+
+These forms of normal game development do not become paid merely because the resulting game is commercial.
+
+## License
+
+Arhalies GAS uses a **source-available dual licensing model**.
+
+### Community Use License: free
+
+The root [`LICENSE`](LICENSE) contains the **Arhalies GAS Community Use License 1.0**.
+
+It allows you to use the **unmodified** Arhalies GAS framework free of charge in:
+
+- personal games;
+- hobby projects;
+- prototypes and demos;
+- educational projects;
+- free games;
+- open-source games;
+- proprietary games;
+- commercial games.
+
+You may sell and commercially distribute a game that uses unmodified Arhalies GAS. You do **not** owe a royalty, revenue share, per-seat fee, or per-game fee merely because your game makes money.
+
+Your game's own source code does not have to become open source simply because it uses Arhalies GAS.
+
+### Commercial Modification License: paid
+
+A separate paid license is required if you want to exercise rights reserved by the Community Use License, including:
+
+- modifying Arhalies GAS source files;
+- distributing a modified version of Arhalies GAS;
+- maintaining an authorized modified framework branch under commercial terms;
+- creating or distributing a derivative framework based on copyrightable Arhalies GAS code;
+- redistributing Arhalies GAS as a standalone development product beyond the Community Use Grant.
+
+See [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md) for the commercial licensing model.
+
+**Commercial game does not mean commercial modification.**
+
+A studio can sell a game built with unmodified Arhalies GAS under the free Community Use License. The paid license applies when the studio wants to modify or derive from **Arhalies GAS itself**.
+
+### Source-available, not OSI open source
+
+Arhalies GAS source is publicly readable, but the Community Use License reserves modification and derivative-framework rights. For that reason, the project should be described as **source-available**, not as OSI-approved open source.
+
+### Third-party material
+
+Third-party software or historical third-party portions, where present, retain their own applicable license terms. Those notices are documented separately in `THIRD_PARTY.md` and do not make the root Arhalies GAS project MIT-licensed.
+
+## Copyright
+
+Copyright © 2026 MaliciaInc.
+
+Arhalies GAS and its original source code are distributed under the terms in [`LICENSE`](LICENSE). Modification and derivative-development rights beyond that grant require a separate written commercial agreement as described in [`COMMERCIAL-LICENSE.md`](COMMERCIAL-LICENSE.md).

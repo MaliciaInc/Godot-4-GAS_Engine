@@ -1,21 +1,111 @@
-MIT License
+ARHALIES GAS COMMUNITY USE LICENSE 1.0
 
-Copyright (c) 2026 Matthew Janes (https://www.YulRun.dev)
+Copyright (c) 2026 MaliciaInc. All rights reserved except as expressly granted below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to Arhalies GAS source code and other original material owned by MaliciaInc (the "Software"). Third-party material, if any, remains subject to its own license terms as identified in THIRD_PARTY.md or accompanying notices.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. PURPOSE
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Arhalies GAS is source-available software. This license is intended to allow developers to use the unmodified Software freely in personal and commercial games while reserving modification, derivative-development, and framework-redistribution rights to the Licensor.
+
+This license is not an Open Source Initiative approved open-source license and must not be represented as one.
+
+2. DEFINITIONS
+
+"Licensor" means MaliciaInc, the copyright owner of the Software.
+
+"You" means the individual or legal entity exercising rights under this license.
+
+"Game" means an interactive entertainment product, simulation, application, prototype, demo, educational game, or other end-user software product in which the Software is used as an internal gameplay system rather than offered as a standalone framework, library, addon, SDK, or development tool.
+
+"Unmodified Software" means the Software as distributed by the Licensor, except for configuration, data, resources, project settings, integrations through documented extension points, subclassing, composition, scripts outside the Software's own source files, and other ordinary game-side usage that does not alter the Software itself.
+
+"Modification" means any change to the Software's source code or covered files, including editing, rewriting, translating, refactoring, removing, replacing, or adding code inside those files.
+
+"Derivative Framework" means a framework, library, addon, SDK, development tool, or substantially similar reusable software component that incorporates, adapts, translates, or is based on copyrightable portions of the Software.
+
+3. COMMUNITY USE GRANT
+
+Subject to compliance with this license, the Licensor grants You a worldwide, royalty-free, non-exclusive license to:
+
+(a) download, inspect, and use the Unmodified Software;
+
+(b) include and use the Unmodified Software in an unlimited number of personal, educational, hobby, open-source, freeware, or commercial Games;
+
+(c) sell, license, publish, stream, demonstrate, and commercially exploit Games that use the Unmodified Software;
+
+(d) reproduce and distribute the Unmodified Software solely as an embedded or bundled component of a Game, including where the chosen engine or packaging format causes scripts or source files to remain inspectable by end users; and
+
+(e) create game-specific code, content, data, subclasses, adapters, and integrations around the Software through its public APIs and documented extension points, provided that the Software itself is not modified.
+
+No royalty, revenue share, per-seat fee, or per-game fee is owed for the rights granted in this Section 3.
+
+4. RIGHTS NOT GRANTED BY THE COMMUNITY LICENSE
+
+The Community Use Grant does not grant permission to:
+
+(a) modify the Software;
+
+(b) distribute, publish, sublicense, or make available a modified version of the Software;
+
+(c) create or distribute a Derivative Framework;
+
+(d) copy or incorporate substantial copyrightable portions of the Software into another framework, library, addon, SDK, or development tool;
+
+(e) redistribute or sell the Software as a standalone product or as part of a software-development asset pack, framework collection, template, toolkit, or competing reusable system;
+
+(f) remove or alter copyright, license, trademark, or attribution notices that are required to remain with the Software or with third-party material; or
+
+(g) represent Yourself or any modified or derivative product as being authored, endorsed, certified, or officially supported by MaliciaInc without written permission.
+
+The rights in this Section 4 are reserved. A separate Commercial Modification License from the Licensor is required before exercising them.
+
+5. HOSTING-PLATFORM FORKS
+
+A hosting platform may grant users limited technical rights to create a repository fork under that platform's own terms of service. To the extent such rights are granted independently by the hosting platform, this license does not attempt to revoke them.
+
+However, a platform fork does not by itself grant permission under this license to modify the Software, distribute a modified version, create a Derivative Framework, or commercially exploit the Software outside the Community Use Grant.
+
+6. COMMERCIAL MODIFICATION LICENSE
+
+Permission to modify the Software, distribute modified versions, create derivative framework versions, or exercise other rights reserved by Section 4 is available only under a separate paid Commercial Modification License issued by the Licensor.
+
+See COMMERCIAL-LICENSE.md for the licensing model. That document is informational and does not itself grant modification rights unless the Licensor and licensee enter into a separate written commercial license agreement.
+
+7. REDISTRIBUTION WITH GAMES
+
+When distributing the Unmodified Software as part of a Game, You may package, compress, encrypt, compile, export, or otherwise process the Game using normal engine and distribution tooling. Such mechanical packaging is not considered a Modification solely because the resulting representation differs from the source repository.
+
+You are not required to disclose Your Game's proprietary source code merely because the Game uses the Unmodified Software.
+
+8. OWNERSHIP
+
+Except for the limited rights expressly granted by this license, all right, title, and interest in the Software remain with the Licensor. No trademark, trade-name, logo, patent, or branding rights are granted except as necessary to make truthful nominative reference to Arhalies GAS.
+
+Third-party software is not relicensed by this document. Its original license terms continue to apply to that third-party material.
+
+9. TERMINATION
+
+Your rights under this license terminate automatically if You materially violate its terms. If the violation is curable, the Licensor may restore Your rights in writing after the violation has been fully cured. Termination does not affect licenses properly granted to end users for Games distributed before termination, provided those Games were distributed in compliance with this license at the time.
+
+10. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. YOU USE THE SOFTWARE AT YOUR OWN RISK.
+
+11. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOSS OF PROFITS, DATA, GOODWILL, OR BUSINESS, ARISING FROM OR RELATED TO THE SOFTWARE OR THIS LICENSE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+12. SEVERABILITY
+
+If any provision of this license is held unenforceable, that provision will be enforced to the maximum extent permitted and the remaining provisions will remain in effect.
+
+13. ENTIRE COMMUNITY LICENSE
+
+This document states the complete Community Use Grant for the Software. No contributor, distributor, hosting platform, README, issue, discussion, or informal communication may expand the rights granted here unless the Licensor does so in a separate written agreement.
+
+14. VERSION
+
+License version: Arhalies GAS Community Use License 1.0.
+
+For modification, derivative-development, or framework-redistribution rights, see COMMERCIAL-LICENSE.md.
