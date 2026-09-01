@@ -178,7 +178,7 @@ func specs() -> Array[GameplayAbilitySpec]:
 ## via AbilityInstancingRuntime.mark_pending_removal() - T14's own mechanism.
 func remove_ability(
 	handle: GameplayAbilityHandle,
-	policy: AbilityRemovalPolicy = AbilityRemovalPolicy.CANCEL_IMMEDIATELY
+	policy: AbilityRuntime.AbilityRemovalPolicy = AbilityRemovalPolicy.CANCEL_IMMEDIATELY
 ) -> bool:
 	var spec: GameplayAbilitySpec = get_spec(handle)
 	if spec == null:
@@ -256,7 +256,7 @@ func clear() -> void:
 
 #region Activation gate
 ## Whether a spec may activate, and why not - a reason, not a bare bool.
-func activation_error(spec: GameplayAbilitySpec) -> ActivationError:
+func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationError:
 	if spec == null or spec.definition == null:
 		return ActivationError.INTERNAL_ERROR
 	if spec.pending_remove:
@@ -306,7 +306,7 @@ func reevaluate_passives() -> void:
 
 
 ## See AbilityActivationPolicyRuntime.active_requirements_error().
-func active_requirements_error(spec: GameplayAbilitySpec) -> ActivationError:
+func active_requirements_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationError:
 	return policies.active_requirements_error(spec)
 
 

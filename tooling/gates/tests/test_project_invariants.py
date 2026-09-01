@@ -194,5 +194,87 @@ class UidPairingTests(unittest.TestCase):
         self.assertEqual(project_invariants.scripts_without_uid(REPO_ROOT), [])
 
 
+class ShadowableEnumTests(unittest.TestCase):
+    """A file-local enum used as a bare type annotation.
+
+    It binds to any global of that name in whatever project the addon is
+    installed into - an autoload or a class_name, either - so the file stops
+    parsing there and takes every dependent script with it. The addon cannot
+    see this in its own project, which is why it needs a static check.
+    """
+
+    def _addon(self, root: Path, name: str, body: str) -> None:
+        folder = root / project_invariants.ADDON_ROOT
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / name).write_text(body, encoding="utf-8")
+        (root / project_invariants.PROJECT_FILE).write_text(
+            sound_project_file(), encoding="utf-8"
+        )
+
+    def test_a_bare_annotation_is_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._addon(root, "thing.gd", (
+                "class_name Thing extends RefCounted\n"
+                "enum Mode { A, B }\n"
+                "var mode: Mode = Mode.A\n"
+            ))
+            found = project_invariants.shadowable_enum_annotations(root)
+        self.assertTrue(
+            any("Thing.Mode" in item for item in found),
+            "the qualified form has to be named in the report, got %r" % found,
+        )
+
+    def test_the_qualified_form_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._addon(root, "thing.gd", (
+                "class_name Thing extends RefCounted\n"
+                "enum Mode { A, B }\n"
+                "var mode: Thing.Mode = Thing.Mode.A\n"
+                "func f() -> Thing.Mode:\n"
+                "\treturn mode\n"
+            ))
+            self.assertEqual(project_invariants.shadowable_enum_annotations(root), [])
+
+    def test_a_match_branch_is_not_an_annotation(self) -> None:
+        # `match mode:` and `Mode.A:` on the next line put a colon, a newline
+        # and the enum name in a row. Reading that as an annotation was the
+        # check's own first bug: qualifying a branch label would be wrong.
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._addon(root, "thing.gd", (
+                "class_name Thing extends RefCounted\n"
+                "enum Mode { A, B }\n"
+                "var mode: Thing.Mode = Thing.Mode.A\n"
+                "func f() -> int:\n"
+                "\tmatch mode:\n"
+                "\t\tMode.A:\n"
+                "\t\t\treturn 1\n"
+                "\t\t_:\n"
+                "\t\t\treturn 0\n"
+            ))
+            self.assertEqual(project_invariants.shadowable_enum_annotations(root), [])
+
+    def test_a_file_with_no_class_name_is_told_to_alias_itself(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._addon(root, "editor_thing.gd", (
+                "extends EditorProperty\n"
+                "enum Shape { SINGLE, ARRAY }\n"
+                "var shape: Shape = Shape.SINGLE\n"
+            ))
+            found = project_invariants.shadowable_enum_annotations(root)
+        self.assertTrue(
+            any("preload" in item for item in found),
+            "with no class_name to qualify with, say so, got %r" % found,
+        )
+
+    def test_the_real_addon_qualifies_every_enum_annotation(self) -> None:
+        # The assertion the sandbox earned: a consumer project declaring an
+        # autoload named Transition could not compile the addon at all.
+        self.assertEqual(project_invariants.shadowable_enum_annotations(REPO_ROOT), [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@ enum Operator {
 	NONE,
 }
 
-@export var operator: Operator = Operator.ALL
+@export var operator: GameplayTagQueryExpression.Operator = Operator.ALL
 
 ## Each is a condition: the target must hold this tag or a descendant of it.
 @export var tags: Array[StringName] = []

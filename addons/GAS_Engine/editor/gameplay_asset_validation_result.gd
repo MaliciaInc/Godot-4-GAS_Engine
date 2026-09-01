@@ -26,17 +26,17 @@ enum Code {
 	SCENE_MISSING,
 }
 
-var severity: Severity = Severity.ERROR
+var severity: GameplayAssetValidationResult.Severity = Severity.ERROR
 ## The Resource/PackedScene this finding is about - never the whole asset
 ## tree, so a caller can select exactly what failed.
 var asset: Object = null
 ## Dotted path to the offending field, e.g. "modifiers[2].magnitude" -
 ## advisory for a human, never parsed back into domain logic.
 var field: String = ""
-var code: Code = Code.OK
+var code: GameplayAssetValidationResult.Code = Code.OK
 
 
-static func error(asset: Object, field: String, code: Code) -> GameplayAssetValidationResult:
+static func error(asset: Object, field: String, code: GameplayAssetValidationResult.Code) -> GameplayAssetValidationResult:
 	var result: GameplayAssetValidationResult = GameplayAssetValidationResult.new()
 	result.severity = Severity.ERROR
 	result.asset = asset
@@ -45,7 +45,7 @@ static func error(asset: Object, field: String, code: Code) -> GameplayAssetVali
 	return result
 
 
-static func warning(asset: Object, field: String, code: Code) -> GameplayAssetValidationResult:
+static func warning(asset: Object, field: String, code: GameplayAssetValidationResult.Code) -> GameplayAssetValidationResult:
 	var result: GameplayAssetValidationResult = error(asset, field, code)
 	result.severity = Severity.WARNING
 	return result

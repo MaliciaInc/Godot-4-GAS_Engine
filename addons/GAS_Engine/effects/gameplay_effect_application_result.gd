@@ -26,7 +26,7 @@ enum Status {
 	CHAIN_DEPTH_EXCEEDED,
 }
 
-var status: Status = Status.SUCCESS
+var status: GameplayEffectApplicationResult.Status = Status.SUCCESS
 var spec: GameplayEffectSpec = null
 var active_effect: ActiveGameplayEffect = null
 ## Null for a refusal and for an INSTANT success - the durable public
@@ -49,7 +49,7 @@ static func ok(spec: GameplayEffectSpec, active_effect: ActiveGameplayEffect) ->
 
 
 static func failure(
-	failure_status: Status,
+	failure_status: GameplayEffectApplicationResult.Status,
 	spec: GameplayEffectSpec = null,
 	evaluation_status: AttributeEvaluationResult.Status = AttributeEvaluationResult.Status.OK,
 	error_attribute_name: StringName = &""

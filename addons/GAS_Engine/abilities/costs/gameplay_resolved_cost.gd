@@ -19,7 +19,7 @@ enum Status {
 	INSUFFICIENT_RESOURCES,
 }
 
-var status: Status = Status.OK
+var status: GameplayResolvedCost.Status = Status.OK
 
 ## One entry per declared cost, in declaration order. Populated on OK and on
 ## INSUFFICIENT_RESOURCES; empty on every structural failure, because a

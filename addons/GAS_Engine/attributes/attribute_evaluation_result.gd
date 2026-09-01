@@ -40,7 +40,7 @@ enum Status {
 	GAMEPLAY_EFFECT_EXECUTE_REJECTED,
 }
 
-var status: Status = Status.OK
+var status: AttributeEvaluationResult.Status = Status.OK
 
 ## The aggregated value before the effective clamp is applied.
 var raw_value: float = 0.0

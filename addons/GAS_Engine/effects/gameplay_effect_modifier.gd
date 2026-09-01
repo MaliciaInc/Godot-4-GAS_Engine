@@ -24,7 +24,7 @@ enum Operation {
 @export var attribute_name: StringName = &""
 
 ## How the math should be applied.
-@export var operation: Operation = Operation.ADD
+@export var operation: GameplayEffectModifier.Operation = Operation.ADD
 
 ## How much: a GameplayScalableMagnitude for the flat-or-curve case, or one
 ## of the other GameplayMagnitude kinds for a captured, caster-supplied or

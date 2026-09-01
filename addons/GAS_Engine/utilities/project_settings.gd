@@ -25,6 +25,14 @@ enum EditorTagsTagEditorPropertyMatchType {
 ## The addon's display name, as the editor and the plugin registry know it.
 const ADDON_NAME: String = "GAS_Engine"
 
+## This script's own type, preloaded rather than named.
+##
+## This file is in the GameplayCueManager autoload's parse-time closure, and an
+## autoload is parsed before Godot has scanned the project for class_name
+## declarations - so the global name does not resolve there, not even this
+## file's own. Its enum is qualified through this alias for the same reason.
+const Self = preload("res://addons/GAS_Engine/utilities/project_settings.gd")
+
 const PROJECT_SETTINGS_NAME: String = "gas_engine"
 
 const LEGACY_PROJECT_SETTINGS_NAME: String = "godot_gas"
@@ -52,7 +60,7 @@ const PROJECT_SETTINGS_NAME_INTERNAL_CUE_MANAGER_OWNED: String = (
 
 const DEFAULT_TAG_PROPERTY_EDITOR_ENABLE: bool = true
 const DEFAULT_TAG_PROPERTY_EDITOR_MATCH_ON: String = "gas_tag,gas_tags"
-const DEFAULT_TAG_PROPERTY_EDITOR_MATCH_TYPE: EditorTagsTagEditorPropertyMatchType = EditorTagsTagEditorPropertyMatchType.SUFFIX
+const DEFAULT_TAG_PROPERTY_EDITOR_MATCH_TYPE: Self.EditorTagsTagEditorPropertyMatchType = EditorTagsTagEditorPropertyMatchType.SUFFIX
 
 const DEFAULT_PATH: String = "res://gas_engine"
 const DEFAULT_PATH_ATTRIBUTES_DRAFT_CONFIG_FILE: String = DEFAULT_PATH + "/attributes_draft.cfg"
@@ -210,7 +218,7 @@ static func get_editor_tag_property_editor_match_on() -> PackedStringArray:
 	return match_on_list.split(",", false)
 
 
-static func get_editor_tag_property_editor_match_type() -> EditorTagsTagEditorPropertyMatchType:
+static func get_editor_tag_property_editor_match_type() -> Self.EditorTagsTagEditorPropertyMatchType:
 	var raw: int = _setting_or_default(
 		PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_TYPE, DEFAULT_TAG_PROPERTY_EDITOR_MATCH_TYPE
 	)

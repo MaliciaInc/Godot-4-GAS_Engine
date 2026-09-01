@@ -21,7 +21,7 @@ enum Mode {
 	PERCENT_OF_CURRENT,
 }
 
-@export var mode: Mode = Mode.ABSOLUTE
+@export var mode: GameplayAbilityCost.Mode = Mode.ABSOLUTE
 
 ## The attribute this entry actually spends.
 @export var target_attribute: StringName = &""

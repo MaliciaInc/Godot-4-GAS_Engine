@@ -19,4 +19,4 @@ enum RemovalPolicy {
 @export var level: GameplayScalableFloat = null
 
 @export var input_id: int = -1
-@export var removal_policy: RemovalPolicy = RemovalPolicy.CANCEL_AND_REMOVE_ON_EFFECT_END
+@export var removal_policy: GameplayEffectAbilityGrant.RemovalPolicy = RemovalPolicy.CANCEL_AND_REMOVE_ON_EFFECT_END

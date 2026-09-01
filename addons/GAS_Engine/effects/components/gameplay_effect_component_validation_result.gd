@@ -12,7 +12,7 @@ enum Status {
 	INVALID_COMPONENT,
 }
 
-var status: Status = Status.OK
+var status: GameplayEffectComponentValidationResult.Status = Status.OK
 var component: GameplayEffectComponent = null
 var reason: String = ""
 

@@ -28,7 +28,7 @@ var _counts: Dictionary[StringName, int] = {}
 
 #region Mutation
 ## Increment a tag's reference count, adding it at 1 if absent.
-func add(tag: StringName) -> Change:
+func add(tag: StringName) -> GameplayTagRuntime.Change:
 	if tag == &"":
 		return Change.NONE
 	if _counts.has(tag):
@@ -39,7 +39,7 @@ func add(tag: StringName) -> Change:
 
 
 ## Decrement a tag's reference count, removing it at zero.
-func remove(tag: StringName) -> Change:
+func remove(tag: StringName) -> GameplayTagRuntime.Change:
 	if not _counts.has(tag):
 		return Change.NONE
 	_counts[tag] -= 1
@@ -50,7 +50,7 @@ func remove(tag: StringName) -> Change:
 
 
 ## Drop a tag whatever its count. Used by a cleanse, not by normal removal.
-func clear(tag: StringName) -> Change:
+func clear(tag: StringName) -> GameplayTagRuntime.Change:
 	if not _counts.has(tag):
 		return Change.NONE
 	_counts.erase(tag)

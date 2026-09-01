@@ -197,6 +197,14 @@
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
       },
       {
+        "literal": "res://addons/GAS_Engine/utilities/project_settings.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. So the reference must be a preload, and preload takes a literal. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs to qualify its EditorTagsTagEditorPropertyMatchType enum - a bare enum annotation binds to any global of that name in a consumer's project, and its own class name is an unresolvable identifier at that point, so neither the bare form nor the class-qualified one is available here."
+      },
+      {
+        "literal": "res://addons/GAS_Engine/gameplay_tag/gameplay_tag_editor_property.gd",
+        "reason": "A different reason from the autoload-closure entries above, and worth not collapsing into them: this file declares no class_name at all, so its `enum Shape` has no owner to be qualified with. A bare `Shape` annotation binds to whatever global named Shape a consumer's project happens to declare - the defect the sandbox found with Transition - so the enum needs an owner, and a self-preload is the only one available to a file with no class name. Two sites: the inspector plugin that preloads it, and that self-preload."
+      },
+      {
         "literal": "duplication",
         "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
       },

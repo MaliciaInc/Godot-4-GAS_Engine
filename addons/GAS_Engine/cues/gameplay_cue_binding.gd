@@ -19,4 +19,4 @@ enum Type {
 }
 
 @export var cue_tag: StringName = &""
-@export var type: Type = Type.EXECUTED_ON_APPLICATION
+@export var type: GameplayCueBinding.Type = Type.EXECUTED_ON_APPLICATION

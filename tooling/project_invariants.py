@@ -40,6 +40,13 @@ commits the script with no .uid at all, and every checkout then invents its own
 id for it. Only the first half was checked, and the second half is how a test
 script added from a shell reached main.
 
+Fifth, and the one a consumer hits rather than us: a file-local `enum X` used as
+a bare type annotation binds to any global named `X` instead - an autoload or a
+`class_name`, either - in whatever project the addon is installed into. The
+enum still wins for value access in the same statement, so the error reads as a
+type mismatch against a name the file never mentions. The addon cannot see this
+in its own project, because the collision only exists in a consumer's.
+
     python tooling/project_invariants.py [--project-root .]
 
 Exit 0 when the project file is sound, 1 when it is not.
@@ -256,6 +263,50 @@ def scripts_without_uid(root: Path) -> list[str]:
     return found
 
 
+#: A type annotation position: after `:` or `->`, optionally inside Array[...].
+#:
+#: Horizontal whitespace only. `\s` crosses newlines, which made a `match x:`
+#: whose next line is `Enum.VALUE:` read as an annotation - the enum name is
+#: there, but as a branch label, and qualifying it would be wrong.
+BARE_ANNOTATION = r"(?::|->)[^\S\n]*(?:Array\[)?[^\S\n]*%s\b"
+
+ENUM_DECLARATION = re.compile(r"^enum\s+(\w+)\s*\{", re.MULTILINE)
+
+
+def shadowable_enum_annotations(root: Path) -> list[str]:
+    """Addon enums used as a bare type annotation in the file declaring them.
+
+    Qualifying costs nothing and is already the convention elsewhere in the
+    addon; leaving one bare makes the whole file - and everything that depends
+    on it - fail to parse in any project that happens to declare a global of
+    that name. The names at stake are ordinary words like State, Status, Type
+    and Mode, so this is not a contract a consumer could be asked to honour.
+    """
+    found: list[str] = []
+    for path in sorted((root / ADDON_ROOT).rglob("*.gd")):
+        text = path.read_text(encoding="utf-8")
+        body = code_only(text)
+        relative = path.relative_to(root).as_posix()
+        for match in ENUM_DECLARATION.finditer(body):
+            name = match.group("name") if "name" in match.groupdict() else match.group(1)
+            uses = re.findall(BARE_ANNOTATION % re.escape(name), body)
+            if not uses:
+                continue
+            owner = DECLARES_CLASS.search(body)
+            qualified = (
+                "%s.%s" % (owner.group("name"), name) if owner is not None
+                else "a `const Alias = preload(...)` of this file, then Alias.%s" % name
+            )
+            found.append(
+                "%s uses its own `enum %s` as a bare type annotation %d time(s). "
+                "In a project that declares any global named %s - an autoload or a "
+                "class_name - the annotation binds to that global instead and this "
+                "file stops parsing, taking every dependent script with it. Write "
+                "%s." % (relative, name, len(uses), name, qualified)
+            )
+    return found
+
+
 def problems(root: Path) -> list[str]:
     path = root / PROJECT_FILE
     if not path.is_file():
@@ -293,6 +344,7 @@ def problems(root: Path) -> list[str]:
     found.extend(global_class_dependencies(root, text))
     found.extend(orphaned_uid_files(root))
     found.extend(scripts_without_uid(root))
+    found.extend(shadowable_enum_annotations(root))
     return found
 
 

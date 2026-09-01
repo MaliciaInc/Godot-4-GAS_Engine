@@ -17,7 +17,7 @@ enum InhibitionFilter {
 @export var source_tags: GameplayTagQuery = null
 @export var target_tags: GameplayTagQuery = null
 @export var modified_attribute: StringName = &""
-@export var inhibition: InhibitionFilter = InhibitionFilter.ANY
+@export var inhibition: GameplayEffectQuery.InhibitionFilter = InhibitionFilter.ANY
 
 ## Filters by who caused the application. Runtime-only: never authored on
 ## the Resource, set by whoever builds the query at the call site.

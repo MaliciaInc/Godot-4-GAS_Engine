@@ -47,7 +47,7 @@ enum PeriodInhibitionPolicy {
 
 @export_category("Effect Rules")
 ## How long this effect persists on the target.
-@export var policy: DurationPolicy = DurationPolicy.INSTANT
+@export var policy: GameplayEffect.DurationPolicy = DurationPolicy.INSTANT
 ## The lifespan of the effect in seconds. Only used if policy is DURATION.
 @export_range(0.0, 9999.0, 0.1, "or_greater") var duration: float = 0.0: 
 	set(value): 
@@ -56,7 +56,7 @@ enum PeriodInhibitionPolicy {
 ## Note: For Turn-Based effects, set this to 1.0 to tell the system it is a DoT, not a Buff.
 @export_range(0.0, 999.0, 0.1, "or_greater") var period: float = 0.0
 ## What ticks owed while this effect is inhibited do to the periodic clock.
-@export var period_inhibition_policy: PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS
+@export var period_inhibition_policy: GameplayEffect.PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS
 
 @export_category("Turn Based Settings")
 ## How many turns this effect lasts (only used if policy is TURN_BASED).
@@ -68,7 +68,7 @@ enum PeriodInhibitionPolicy {
 ## Identity two applications must share to join one stack. NONE means every
 ## application is its own independent active effect - the whole category
 ## below does not apply.
-@export var stacking_type: StackingType = StackingType.NONE
+@export var stacking_type: GameplayEffect.StackingType = StackingType.NONE
 ## <= 0 is unlimited. Reaching this count is not itself a failure - see
 ## deny_overflow_application.
 @export var stack_limit_count: int = 0
@@ -86,11 +86,11 @@ enum PeriodInhibitionPolicy {
 ## application overflows this stack's limit.
 @export var overflow_effects: Array[GameplayEffect] = []
 ## Whether a successful reapplication restarts the DURATION clock.
-@export var stack_duration_refresh_policy: StackDurationRefreshPolicy = StackDurationRefreshPolicy.NEVER
+@export var stack_duration_refresh_policy: GameplayEffect.StackDurationRefreshPolicy = StackDurationRefreshPolicy.NEVER
 ## Whether a successful reapplication restarts the periodic clock.
-@export var stack_period_reset_policy: StackPeriodResetPolicy = StackPeriodResetPolicy.NEVER
+@export var stack_period_reset_policy: GameplayEffect.StackPeriodResetPolicy = StackPeriodResetPolicy.NEVER
 ## What happens to the stack when its clock runs out.
-@export var stack_expiration_policy: StackExpirationPolicy = StackExpirationPolicy.CLEAR_ENTIRE_STACK
+@export var stack_expiration_policy: GameplayEffect.StackExpirationPolicy = StackExpirationPolicy.CLEAR_ENTIRE_STACK
 
 @export_category("Cue Management")
 ## One authoring route, not two arrays that could disagree: each binding
