@@ -18,7 +18,7 @@ enum Status {
 	NON_FINITE_VALUE,
 }
 
-var status: Status = Status.OK
+var status: AttributeCaptureResult.Status = Status.OK
 var value: float = 0.0
 
 

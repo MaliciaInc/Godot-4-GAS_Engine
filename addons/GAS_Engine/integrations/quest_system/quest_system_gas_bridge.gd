@@ -158,7 +158,7 @@ func _on_completed(quest: Object) -> void:
 	_forward(quest, Moment.COMPLETED)
 
 
-func _forward(quest: Object, moment: Moment) -> void:
+func _forward(quest: Object, moment: QuestSystemGasBridge.Moment) -> void:
 	var quest_id: int = _quest_id_of(quest)
 	if quest_id <= 0:
 		return
@@ -193,7 +193,7 @@ func _forward(quest: Object, moment: Moment) -> void:
 	quest_event_forwarded.emit(quest_id, tag)
 
 
-func _tag_for(binding: QuestGasBinding, moment: Moment) -> StringName:
+func _tag_for(binding: QuestGasBinding, moment: QuestSystemGasBridge.Moment) -> StringName:
 	if moment == Moment.AVAILABLE:
 		return binding.available_event_tag
 	if moment == Moment.ACCEPTED:

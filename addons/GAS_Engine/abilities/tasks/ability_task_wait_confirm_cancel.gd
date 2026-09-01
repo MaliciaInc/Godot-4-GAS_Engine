@@ -18,7 +18,7 @@ enum Decision {
 var confirm_input_id: int = -1
 var cancel_input_id: int = -1
 
-var decision: Decision = Decision.CONFIRMED
+var decision: AbilityTaskWaitConfirmCancel.Decision = Decision.CONFIRMED
 
 
 static func create(

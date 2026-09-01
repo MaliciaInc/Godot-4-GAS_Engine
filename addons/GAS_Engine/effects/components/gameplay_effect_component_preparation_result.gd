@@ -10,7 +10,7 @@ enum Status {
 	REJECTED,
 }
 
-var status: Status = Status.OK
+var status: GameplayEffectComponentPreparationResult.Status = Status.OK
 var state: GameplayEffectComponentState = null
 var reason: String = ""
 

@@ -11,7 +11,7 @@ enum Status {
 	INVALID_TAG,
 }
 
-var status: Status = Status.OK
+var status: GameplayTagQueryValidationResult.Status = Status.OK
 
 ## The offending tag, for INVALID_TAG. Empty otherwise.
 var invalid_tag: StringName = &""

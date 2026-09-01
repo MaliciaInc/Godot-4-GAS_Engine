@@ -28,7 +28,7 @@ enum Status {
 	RESOURCES_CHANGED_DURING_COMMIT,
 }
 
-var status: Status = Status.SUCCESS
+var status: AbilityCommitResult.Status = Status.SUCCESS
 
 ## The cooldowns this commit started, in the order it applied them. Empty on
 ## every failure, including one that had already started some: a commit that

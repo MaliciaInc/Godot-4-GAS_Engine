@@ -18,7 +18,7 @@ enum Type {
 	REMOVE_TAG,
 }
 
-var type: Type = Type.SEND_EVENT
+var type: DialogicGasCommand.Type = Type.SEND_EVENT
 
 ## Which ability system this was addressed to. A scene can have several bridges
 ## listening to the same dialogue bus, and each answers only for its own.

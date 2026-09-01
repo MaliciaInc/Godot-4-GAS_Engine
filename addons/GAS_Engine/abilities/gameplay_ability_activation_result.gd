@@ -24,7 +24,7 @@ enum Status {
 	ACTIVATION_FAILED,
 }
 
-var status: Status = Status.SPEC_NOT_FOUND
+var status: GameplayAbilityActivationResult.Status = Status.SPEC_NOT_FOUND
 var handle: GameplayAbilityHandle = null
 var instance: GameplayAbility = null
 

@@ -24,7 +24,7 @@ const Hit = preload("res://addons/GAS_Engine/target_data/gameplay_target_hit.gd"
 enum SpaceKind { TWO_D, THREE_D }
 
 var collider: Node = null
-var space_kind: SpaceKind = SpaceKind.THREE_D
+var space_kind: Hit.SpaceKind = SpaceKind.THREE_D
 
 var position_2d: Vector2 = Vector2.ZERO
 var normal_2d: Vector2 = Vector2.ZERO

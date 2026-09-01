@@ -30,7 +30,7 @@ enum Policy {
 	LIVE,
 }
 
-@export var actor: Actor = Actor.SOURCE
+@export var actor: GameplayAttributeCaptureDefinition.Actor = Actor.SOURCE
 @export var attribute_name: StringName = &""
-@export var value: Value = Value.CURRENT
-@export var policy: Policy = Policy.SNAPSHOT
+@export var value: GameplayAttributeCaptureDefinition.Value = Value.CURRENT
+@export var policy: GameplayAttributeCaptureDefinition.Policy = Policy.SNAPSHOT

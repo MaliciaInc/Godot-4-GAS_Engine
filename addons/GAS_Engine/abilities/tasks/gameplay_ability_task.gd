@@ -41,13 +41,13 @@ enum CancelReason {
 
 
 ## Emitted exactly once, on success and on cancellation alike.
-signal finished(task: GameplayAbilityTask, succeeded: bool, reason: CancelReason)
+signal finished(task: GameplayAbilityTask, succeeded: bool, reason: GameplayAbilityTask.CancelReason)
 
 ## The ability this task belongs to. Cancellation is addressed by ability, so a
 ## task without one cannot be reached and is refused at registration.
 var owner_ability: GameplayAbility = null
 
-var state: State = State.CREATED
+var state: GameplayAbilityTask.State = State.CREATED
 
 
 ## What this task is actually waiting for - a tag, an attribute, a handle -
@@ -80,7 +80,7 @@ func succeed() -> void:
 
 ## End without success. Legal from CREATED as well as RUNNING, because an ASC
 ## torn down between registration and start still has to release the task.
-func cancel(reason: CancelReason) -> void:
+func cancel(reason: GameplayAbilityTask.CancelReason) -> void:
 	if state != State.CREATED and state != State.RUNNING:
 		return
 	state = State.CANCELLED

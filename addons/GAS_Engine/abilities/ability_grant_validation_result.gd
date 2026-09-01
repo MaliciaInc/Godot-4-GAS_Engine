@@ -12,7 +12,7 @@ enum Status {
 	INVALID_DEFINITION,
 }
 
-var status: Status = Status.OK
+var status: AbilityGrantValidationResult.Status = Status.OK
 
 
 func is_ok() -> bool:

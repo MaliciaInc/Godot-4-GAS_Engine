@@ -20,6 +20,15 @@ extends EditorProperty
 
 
 ## The id of the per-leaf delete button, distinct from any other button column.
+## This script's own type, preloaded rather than named.
+##
+## The file declares no `class_name`, so its `enum Shape` has no owner to
+## qualify it with - and a bare `Shape` annotation binds to any global named
+## Shape in whatever project this addon is installed into, not to the enum
+## below. The alias gives the enum an owner to be written through. Same idiom
+## as GameplayTargetHit's own `Hit`.
+const Self = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_editor_property.gd")
+
 const DELETE_BUTTON_ID: int = 1
 const DELETE_TOOLTIP: String = "Delete from Registry"
 
@@ -83,7 +92,7 @@ func _exit_tree() -> void:
 
 #region Reading and writing the edited property
 ## The shape of the value currently in the property.
-func _shape_of(value: Variant) -> Shape:
+func _shape_of(value: Variant) -> Self.Shape:
 	if value is PackedStringArray:
 		return Shape.PACKED
 	if value is Array:
@@ -133,7 +142,7 @@ func _as_tag(raw: Variant) -> StringName:
 
 
 ## Emit `tags` back in the shape the property was authored with.
-func _publish(tags: Array[StringName], shape: Shape) -> void:
+func _publish(tags: Array[StringName], shape: Self.Shape) -> void:
 	var property: StringName = get_edited_property()
 	match shape:
 		Shape.PACKED:
@@ -175,7 +184,7 @@ func _on_registry_changed() -> void:
 	if value == null:
 		return
 
-	var shape: Shape = _shape_of(value)
+	var shape: Self.Shape = _shape_of(value)
 	var before: Array[StringName] = _read_tags(value)
 	var surviving: Array[StringName] = []
 	for tag: StringName in before:
@@ -294,7 +303,7 @@ func _on_tree_item_edited() -> void:
 	var value: Variant = _edited_value()
 	if value == null:
 		return
-	var shape: Shape = _shape_of(value)
+	var shape: Self.Shape = _shape_of(value)
 	var checked: bool = item.is_checked(0)
 	var tags: Array[StringName] = _read_tags(value)
 
@@ -332,7 +341,7 @@ func _on_tree_button_clicked(
 	# second write announcing the same edit twice.
 	var value: Variant = _edited_value()
 	if value != null:
-		var shape: Shape = _shape_of(value)
+		var shape: Self.Shape = _shape_of(value)
 		var tags: Array[StringName] = _read_tags(value)
 		if tags.has(tag):
 			tags.erase(tag)

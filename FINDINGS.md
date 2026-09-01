@@ -30,8 +30,8 @@ run again.
 
 ## GAS-001 — a file-local enum loses its name to a host project's autoload · **BLOCKER**
 
-**Status:** `OPEN`
-**Severity:** blocker - the addon does not compile at all in this project
+**Status:** `VERIFIED IN SANDBOX` — fixed on main at `ad10a2b`, re-deployed here
+**Severity:** was a blocker - the addon did not compile at all in this project
 **Where:** `addons/GAS_Engine/abilities/tasks/ability_task_wait_input.gd:13,19,22,31,35,39`
 
 ### Repro
@@ -271,4 +271,41 @@ before committing anything.
 
 # Closed
 
-_None yet._
+## GAS-001 — verified
+
+Fixed on `main` at `ad10a2b`, closed as a class rather than as one name: all 45
+bare enum annotations across 34 files are qualified, and `project_invariants.py`
+now fails the build when any addon enum is used as a bare annotation. Two files
+qualify through a self-preload instead of a class name and say why - one is in
+the autoload's parse closure where a global name does not resolve, the other
+declares no `class_name` at all.
+
+Re-deployed into this branch from `main` and verified **in the running game**,
+not only by the validator:
+
+```gdscript
+var asc := AbilitySystemComponent.new()          # the class that would not compile
+var t := AbilityTaskWaitInput.Transition.RELEASED # the shadowed enum
+get_tree().current_scene.add_child(asc)           # a real tree, real _ready
+```
+
+```text
+ASC instanciado: true
+AbilityTaskWaitInput.Transition.RELEASED = 1
+autoload Transition sigue siendo: CanvasLayer
+GameplayCueManager en el arbol: true
+runtimes cableados tras _ready: true
+tags iniciales: 0, efectos activos: 0
+```
+
+The third line is the one worth keeping: the game's own `Transition` autoload is
+still a `CanvasLayer`, unchanged. The addon stopped taking the name rather than
+the game giving it up - which is what "agnostic of the game" had to mean.
+
+The eight scripts that previously reported `Failed to compile depended scripts`
+- ability_task_runtime, ability_runtime, ability_system_component,
+gameplay_effect, the cancel-tags component, the cost resolver, project_settings
+and the tag editor property - all validate clean here.
+
+Suite on `main`: 30192 assertions, 0 failures, 0 orphans. Unchanged, as expected
+- qualifying an annotation changes no behaviour.

@@ -20,7 +20,7 @@ enum Comparison {
 var target_asc: AbilitySystemComponent = null
 var attribute_name: StringName = &""
 var threshold: float = 0.0
-var comparison: Comparison = Comparison.GREATER_OR_EQUAL
+var comparison: AbilityTaskWaitAttributeThreshold.Comparison = Comparison.GREATER_OR_EQUAL
 var trigger_immediately_if_already_true: bool = false
 
 var matched_value: float = 0.0
@@ -30,7 +30,7 @@ static func create(
 	ability: GameplayAbility,
 	attribute: StringName,
 	threshold_value: float,
-	comparison_op: Comparison,
+	comparison_op: AbilityTaskWaitAttributeThreshold.Comparison,
 	trigger_immediately: bool = false
 ) -> AbilityTaskWaitAttributeThreshold:
 	var task: AbilityTaskWaitAttributeThreshold = AbilityTaskWaitAttributeThreshold.new()

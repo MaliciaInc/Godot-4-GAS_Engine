@@ -37,7 +37,7 @@ class Request extends RefCounted:
 	var spec: GameplayEffectSpec = null
 	var attributes: GameplayAttributeRuntime = null
 	var owner_asc: AbilitySystemComponent = null
-	var mode: Mode = Mode.CONTRIBUTION
+	var mode: GameplayEffectEvaluator.Mode = Mode.CONTRIBUTION
 	var application_order: int = 0
 	## Populated from `spec.source_asc`. A magnitude or execution calculation
 	## that needs the instigator's ASC reads it from here rather than

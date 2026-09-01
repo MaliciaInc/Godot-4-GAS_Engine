@@ -16,10 +16,10 @@ enum Transition {
 }
 
 var input_id: int = -1
-var transition: Transition = Transition.PRESSED
+var transition: AbilityTaskWaitInput.Transition = Transition.PRESSED
 
 
-static func create(ability: GameplayAbility, slot: int, wanted: Transition) -> AbilityTaskWaitInput:
+static func create(ability: GameplayAbility, slot: int, wanted: AbilityTaskWaitInput.Transition) -> AbilityTaskWaitInput:
 	var task: AbilityTaskWaitInput = AbilityTaskWaitInput.new()
 	task.owner_ability = ability
 	task.input_id = slot
@@ -36,6 +36,6 @@ func handle_input_released(released_id: int) -> void:
 
 
 ## The slot and the direction both have to match, and nothing else does.
-func _answer(slot: int, arrived: Transition) -> void:
+func _answer(slot: int, arrived: AbilityTaskWaitInput.Transition) -> void:
 	if slot == input_id and arrived == transition:
 		succeed()

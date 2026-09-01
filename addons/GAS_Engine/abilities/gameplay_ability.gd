@@ -32,13 +32,13 @@ signal ability_ended(was_cancelled: bool)
 @export var ability_name: String = ""
 
 ## Frozen at grant time, same as instancing_policy.
-@export var activation_policy: ActivationPolicy = ActivationPolicy.MANUAL
+@export var activation_policy: GameplayAbility.ActivationPolicy = ActivationPolicy.MANUAL
 
 ## Identity, not activation gating - effective tags are these plus dynamic_tags.
 @export var ability_tags: Array[StringName] = []
 
 ## Read once at grant time into the frozen definition - editing after does nothing.
-@export var instancing_policy: InstancingPolicy = InstancingPolicy.PER_ACTOR
+@export var instancing_policy: GameplayAbility.InstancingPolicy = InstancingPolicy.PER_ACTOR
 
 @export var ability_level: float = 1.0
 

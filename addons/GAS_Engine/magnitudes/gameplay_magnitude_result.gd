@@ -20,7 +20,7 @@ enum Status {
 	NON_FINITE_VALUE,
 }
 
-var status: Status = Status.OK
+var status: GameplayMagnitudeResult.Status = Status.OK
 var value: float = 0.0
 
 
@@ -34,7 +34,7 @@ static func ok(resolved_value: float) -> GameplayMagnitudeResult:
 	return result
 
 
-static func failure(failure_status: Status) -> GameplayMagnitudeResult:
+static func failure(failure_status: GameplayMagnitudeResult.Status) -> GameplayMagnitudeResult:
 	var result: GameplayMagnitudeResult = GameplayMagnitudeResult.new()
 	result.status = failure_status
 	return result
