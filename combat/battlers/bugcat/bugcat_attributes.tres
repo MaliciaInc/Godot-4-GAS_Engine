@@ -1,27 +1,7 @@
-[gd_resource type="Resource" script_class="BattlerAttributes" load_steps=11 format=3 uid="uid://chuarvle06xxf"]
+[gd_resource type="Resource" script_class="BattlerAttributes" format=3 uid="uid://chuarvle06xxf"]
 
-[ext_resource type="Script" path="res://src/combat/battlers/battler_attributes.gd" id="1_set"]
-[ext_resource type="Script" path="res://addons/GAS_Engine/attributes/attribute_data.gd" id="2_data"]
-
-[sub_resource type="Resource" id="Resource_health"]
-script = ExtResource("2_data")
-base_value = 50.0
-current_value = 50.0
-
-[sub_resource type="Resource" id="Resource_max_health"]
-script = ExtResource("2_data")
-base_value = 50.0
-current_value = 50.0
-
-[sub_resource type="Resource" id="Resource_energy"]
-script = ExtResource("2_data")
-base_value = 0.0
-current_value = 0.0
-
-[sub_resource type="Resource" id="Resource_max_energy"]
-script = ExtResource("2_data")
-base_value = 6.0
-current_value = 6.0
+[ext_resource type="Script" uid="uid://c5ws3tix8remi" path="res://src/combat/battlers/battler_attributes.gd" id="1_set"]
+[ext_resource type="Script" uid="uid://dapo84yjxq6qh" path="res://addons/GAS_Engine/attributes/attribute_data.gd" id="2_data"]
 
 [sub_resource type="Resource" id="Resource_attack"]
 script = ExtResource("2_data")
@@ -33,20 +13,36 @@ script = ExtResource("2_data")
 base_value = 10.0
 current_value = 10.0
 
-[sub_resource type="Resource" id="Resource_speed"]
+[sub_resource type="Resource" id="Resource_energy"]
+script = ExtResource("2_data")
+
+[sub_resource type="Resource" id="Resource_evasion"]
+script = ExtResource("2_data")
+base_value = 15.0
+current_value = 15.0
+
+[sub_resource type="Resource" id="Resource_health"]
 script = ExtResource("2_data")
 base_value = 50.0
 current_value = 50.0
 
 [sub_resource type="Resource" id="Resource_hit_chance"]
 script = ExtResource("2_data")
-base_value = 0.0
-current_value = 0.0
 
-[sub_resource type="Resource" id="Resource_evasion"]
+[sub_resource type="Resource" id="Resource_max_energy"]
 script = ExtResource("2_data")
-base_value = 15.0
-current_value = 15.0
+base_value = 6.0
+current_value = 6.0
+
+[sub_resource type="Resource" id="Resource_max_health"]
+script = ExtResource("2_data")
+base_value = 50.0
+current_value = 50.0
+
+[sub_resource type="Resource" id="Resource_speed"]
+script = ExtResource("2_data")
+base_value = 50.0
+current_value = 50.0
 
 [resource]
 script = ExtResource("1_set")

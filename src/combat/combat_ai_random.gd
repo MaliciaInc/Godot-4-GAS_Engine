@@ -1,46 +1,76 @@
-## The base class responsible for AI-controlled Battlers.
+## An opponent that picks something it can actually do, at random.
 ##
-## For now, this simply selects a random [BattlerAction] and picks a random target, if one is
-## available.
+## Deliberately shallow - it exists so a fight has an opponent, not so the
+## opponent is clever. What matters is that it asks the engine what is legal
+## rather than deciding for itself: an ability it cannot afford, one on
+## cooldown, or one blocked by a tag it is carrying is refused by the component,
+## and the AI simply does not see it as a choice.
+##
+## @meta_license: MIT
 class_name CombatAI extends Node
 
-## Defines the max number of loops that the controller will search for a valid action. If no valid
-## action has been found after this number of iterations, the AI Battler will pass its turn.
-const ITERATION_MAX: = 60
+## One decision: what to use, and on whom.
+class Choice extends RefCounted:
+	var handle: GameplayAbilityHandle = null
+	var targets: Array[Battler] = []
+
+	func is_valid() -> bool:
+		return handle != null and handle.is_valid() and not targets.is_empty()
 
 
-## This controller randomly chooses an action from the Battler's [member Battler.actions] and then
-## randomly chooses a target.
-func select_action(source: Battler) -> void:
-	# Keep track of how many times the controller has tried to find a valid action. In the event
-	# that the controller fails ITERATION_MAX times, it will cease searching for an action.
-	# We do this because it is possible that the designer may create a scenario where there are
-	# no valid actions to choose, in which case the AI would loop forever finding a valid action.
-	var iteration_counter = 0
-	
-	if not source.actions.is_empty():
-		while iteration_counter < ITERATION_MAX:
-			# Randomly choose an action.
-			var action_index: = randi() % source.actions.size()
-			
-			var selected_action: = source.actions[action_index]
-			var action: BattlerAction = selected_action.duplicate()
-			action.battler_roster = selected_action.battler_roster
-			action.source = selected_action.source
-			
-			# Randomly choose a target.
-			var possible_targets: = action.get_possible_targets()
-			var targets: Array[Battler] = []
-			if action.targets_all():
-				targets = possible_targets
-			else:
-				var target_index: = randi() % possible_targets.size()
-				targets.append(possible_targets[target_index])
-			
-			# If there are valid targets, register the action and exit the search loop.
-			if not targets.is_empty():
-				action.cached_targets = targets
-				source.cached_action = action
-				return
-			
-			iteration_counter += 1
+## Choose for `source`, or return an invalid choice if it can do nothing.
+##
+## No retry loop and no iteration cap. The old design guessed at random and gave
+## up after a fixed number of misses, which meant a battler with exactly one
+## legal action could still be told it had none. This enumerates what is legal
+## and picks from that, so "nothing to do" means it, and one option is always
+## found.
+func choose(source: Battler, roster: BattlerRoster) -> Choice:
+	var choice: Choice = Choice.new()
+	if source == null or source.asc == null or source.is_downed():
+		return choice
+
+	var affordable: Array[GameplayAbilityHandle] = []
+	for handle: GameplayAbilityHandle in source.granted:
+		var spec: GameplayAbilitySpec = source.asc.ability_runtime.get_spec(handle)
+		if spec == null:
+			continue
+		if source.asc.ability_runtime.can_activate(spec):
+			affordable.append(handle)
+
+	if affordable.is_empty():
+		return choice
+
+	choice.handle = affordable[randi() % affordable.size()]
+	choice.targets = _pick_targets(source, roster, choice.handle)
+	return choice
+
+
+func _pick_targets(
+	source: Battler, roster: BattlerRoster, handle: GameplayAbilityHandle
+) -> Array[Battler]:
+	var spec: GameplayAbilitySpec = source.asc.ability_runtime.get_spec(handle)
+	var ability: BattlerAbility = spec.per_actor_instance as BattlerAbility if spec != null else null
+	if ability == null:
+		return []
+
+	var candidates: Array[Battler] = []
+	match ability.scope:
+		BattlerAbility.Scope.SELF:
+			return [source] as Array[Battler]
+		_:
+			if ability.targets_allies:
+				candidates.append_array(roster.get_standing(
+					roster.get_player_battlers() if source.is_player else roster.get_enemy_battlers()
+				))
+			if ability.targets_enemies:
+				candidates.append_array(roster.get_standing(
+					roster.get_enemy_battlers() if source.is_player else roster.get_player_battlers()
+				))
+
+	candidates = candidates.filter(func _targetable(b: Battler) -> bool: return b.is_targetable())
+	if candidates.is_empty():
+		return []
+	if ability.scope == BattlerAbility.Scope.ALL:
+		return candidates
+	return [candidates[randi() % candidates.size()]] as Array[Battler]

@@ -1,75 +1,62 @@
-## The BattlerRoster provides easy access to combat participants.
+## Who is in this fight, and on which side.
 ##
-## The roster is a central means of accessing all the [Battler]s in a combat, providing utility
-## methods to filter them for a number of criteria (player, enemy, is_alive, etc.).
+## The roster answers questions about sides and about who is still standing.
+## It deliberately does not answer "whose turn is it" or "has this one chosen
+## yet": a turn is a thing the arena runs, and a roster that also tracked turn
+## intent would be a second place for the fight's state to live.
 ##
-## Note that Battlers must be a descendent (though not necessarily a direct child) of the roster
-## to be included in combat.
+## @meta_license: MIT
 @icon("icon_turn_queue.png")
 class_name BattlerRoster extends Node
 
 
-## Returns all Battlers existing in the current combat.
 func get_battlers() -> Array[Battler]:
 	var battler_list: Array[Battler] = []
 	battler_list.assign(find_children("*", "Battler"))
 	return battler_list
 
 
-## Returns all existing player Battlers.
 func get_player_battlers() -> Array[Battler]:
 	return get_battlers().filter(
-		func _filter_players(battler: Battler):
+		func _filter_players(battler: Battler) -> bool:
 			return battler.is_player
 	)
 
 
-## Returns all existing Battlers that are opposed to the player.
 func get_enemy_battlers() -> Array[Battler]:
 	return get_battlers().filter(
-		func _filter_enemies(battler: Battler):
+		func _filter_enemies(battler: Battler) -> bool:
 			return not battler.is_player
 	)
 
 
-## Filter an array of Battlers to return only whose health points are currently greater than 0.
-func find_live_battlers(battlers: Array[Battler]) -> Array[Battler]:
-	return battlers.filter(func(battler: Battler): return battler.stats.health > 0)
-
-
-## Filter an array of Battlers to find those who are active but do not yet have a cached action (see
-## [member Battler.cached_action]).
-func find_battlers_needing_actions(battlers: Array[Battler]) -> Array[Battler]:
-	return battlers.filter(
-		func _filter_actors(actor: Battler) -> bool:
-			return actor.is_active and actor.cached_action == null
+## Everyone still in the fight.
+##
+## Asked of the battler, which asks its component - never of a health number
+## read from somewhere else. `State.Downed` goes on before anything is told a
+## battler fell, so this can never report someone as standing who is already out.
+func get_standing(side: Array[Battler]) -> Array[Battler]:
+	return side.filter(
+		func _filter_standing(battler: Battler) -> bool:
+			return not battler.is_downed()
 	)
 
 
-## Filter an array of Battlers to find those who may take an action. That is, they are active (see
-## [member Battler.is_active]) and have a cached action ready (see [member Battler.cached_action]).
-func find_ready_to_act_battlers(battlers: Array[Battler]) -> Array[Battler]:
-	return battlers.filter(
-		func _filter_actors(actor: Battler) -> bool:
-			return actor.is_active and actor.cached_action != null
-	)
+## True once one whole side is out.
+func is_side_defeated(side: Array[Battler]) -> bool:
+	return get_standing(side).is_empty()
 
 
-## Returns true if all the specified battlers are inactive.
-func are_battlers_defeated(battlers: Array[Battler]) -> bool:
-	for battler in battlers:
-		if battler.is_active:
-			return false
-	
-	return true
+## Turn order, fastest first. Read live from each battler's `speed`, so a haste
+## effect applied this round is felt in the next ordering rather than at reload.
+func in_turn_order() -> Array[Battler]:
+	var ordered: Array[Battler] = get_standing(get_battlers())
+	ordered.sort_custom(Battler.sort_by_speed)
+	return ordered
 
 
 func _to_string() -> String:
-	var battlers: = get_battlers()
-	battlers.sort_custom(Battler.sort)
-
-	#var msg: = "\n%s (CombatTurnQueue) - round %d" % [name, round_count]
-	var msg: = "\n%s - BattlerRoster" % name
-	for battler in battlers:
-		msg += "\n\t" + battler.to_string()
+	var msg: String = "\n%s - BattlerRoster" % name
+	for battler: Battler in in_turn_order():
+		msg += "\n\t%s%s" % [battler.name, " - DOWNED" if battler.is_downed() else ""]
 	return msg
