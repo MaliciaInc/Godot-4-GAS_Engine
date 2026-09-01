@@ -187,6 +187,56 @@ func test_cleanup_stops_a_running_passive_without_restarting_it() -> void:
 
 	target.asc.cleanup()
 	assert_false(is_instance_valid(spec.per_actor_instance) and spec.per_actor_instance.is_active)
+
+
+## The suspension around teardown was a flag, and a flag is not a depth.
+##
+## `abort_all` raises it, aborts everything, and lowers it. Aborting fires
+## `ability_ended`, which is a public signal a game listens to - "the caster
+## died, stop everything" is an ordinary handler - and a handler that reaches
+## `abort_all` again lowers the flag on its way out while the outer teardown is
+## still running. The nested call then asks for a passive reevaluation with
+## nothing suspended, and the passive the ASC is in the middle of destroying
+## starts itself up again.
+func test_a_nested_abort_cannot_restart_a_passive_mid_teardown() -> void:
+	# Both are PASSIVE so both come up running at grant time. `try_activate()`
+	# on a channelling ability never returns - it awaits an `ability_ended` that
+	# is precisely what channelling does not do - so nothing here awaits it.
+	var first: ChannelingAbility = ChannelingAbility.new()
+	first.ability_tags = [&"Ability.NestedAbortTrigger"]
+	first.activation_policy = GameplayAbility.ActivationPolicy.PASSIVE
+	var first_spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, first)
+	assert_true(first_spec.per_actor_instance.is_active, "the first one is running")
+
+	var passive: ChannelingAbility = ChannelingAbility.new()
+	passive.ability_tags = [&"Ability.NestedAbortPassive"]
+	passive.activation_policy = GameplayAbility.ActivationPolicy.PASSIVE
+	var passive_spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, passive)
+	assert_true(passive_spec.per_actor_instance.is_active, "the passive is running before teardown")
+
+	# A game's own reaction to something ending: tear the rest down too.
+	var nested: Array[bool] = [false]
+	target.asc.ability_runtime_ended.connect(
+		func(
+			_handle: GameplayAbilityHandle,
+			_instance: GameplayAbility,
+			_was_cancelled: bool,
+			_reason: GameplayAbilityTask.CancelReason
+		) -> void:
+			if nested[0]:
+				return
+			nested[0] = true
+			target.asc.ability_runtime.abort_all()
+	)
+
+	target.asc.cleanup()
+
+	assert_true(nested[0], "the nested teardown really happened")
+	assert_false(
+		is_instance_valid(passive_spec.per_actor_instance)
+			and passive_spec.per_actor_instance.is_active,
+		"the passive stayed down through the whole teardown"
+	)
 #endregion
 
 

@@ -231,8 +231,8 @@ func _retire(spec: GameplayAbilitySpec) -> void:
 func abort_all(
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
 ) -> void:
-	# A passive aborted below must not restart mid-loop - see .suspended.
-	policies.suspended = true
+	# A passive aborted below must not restart mid-loop - see begin_suspension().
+	policies.begin_suspension()
 	for spec: GameplayAbilitySpec in _specs.duplicate():
 		var instance: GameplayAbility = spec.per_actor_instance
 		if instance != null and is_instance_valid(instance) and instance.is_active:
@@ -241,7 +241,7 @@ func abort_all(
 			if is_instance_valid(execution) and execution.is_active:
 				execution.abort_ability(reason)
 	tasks.cancel_all(reason)
-	policies.suspended = false
+	policies.end_suspension()
 	# ASC_CLEANUP: everything is about to be cleared, never reevaluated.
 	if reason != GameplayAbilityTask.CancelReason.ASC_CLEANUP:
 		policies.request_reevaluation()

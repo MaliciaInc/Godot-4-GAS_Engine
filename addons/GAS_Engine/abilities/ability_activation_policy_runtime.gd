@@ -19,10 +19,33 @@ const MAX_PASSIVE_REEVALUATION_PASSES: int = 64
 
 var ability_runtime: AbilityRuntime = null
 
-## Set by AbilityRuntime.abort_all() around its own teardown loop: a passive
-## just aborted for ASC_CLEANUP must not restart itself before the ASC that
-## owns it finishes tearing down.
-var suspended: bool = false
+## How many teardowns are holding reevaluation off right now.
+##
+## AbilityRuntime.abort_all() holds one around its own loop: a passive just
+## aborted must not restart itself before the ASC that owns it has finished
+## tearing down.
+##
+## A depth, not a flag. Aborting fires `ability_ended` and
+## `ability_runtime_ended`, which are public signals a game listens to - "the
+## caster died, stop everything" is an ordinary handler - and a handler that
+## reaches `abort_all` again lowered the flag on its way out while the outer
+## teardown was still running. The nested call then asked for a reevaluation
+## with nothing suspended, and the passive the ASC was in the middle of
+## destroying started itself up again.
+var _suspension_depth: int = 0
+
+
+## Hold reevaluation off for the duration of a teardown.
+func begin_suspension() -> void:
+	_suspension_depth += 1
+
+
+func end_suspension() -> void:
+	_suspension_depth = maxi(_suspension_depth - 1, 0)
+
+
+func is_suspended() -> bool:
+	return _suspension_depth > 0
 
 var _reevaluating: bool = false
 var _dirty: bool = false
@@ -60,7 +83,7 @@ func _activate_once(spec: GameplayAbilitySpec) -> void:
 ## Something that could change a passive's eligibility happened: tags,
 ## attributes, another ability's active_count, or a grant/remove.
 func request_reevaluation() -> void:
-	if suspended:
+	if is_suspended():
 		return
 	if _reevaluating:
 		_dirty = true
