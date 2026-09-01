@@ -34,6 +34,8 @@ var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntim
 var stacking: GameplayEffectStackingRuntime = GameplayEffectStackingRuntime.new()
 ## Fires GameplayEffectAdditionalEffectsComponent's application/removal chains.
 var chain: GameplayEffectChainRuntime = GameplayEffectChainRuntime.new()
+## Bounded history of recent refusals, for the runtime debugger alone.
+var refusal_log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
 
 ## Overflow_effects and Additional Effects are refused past this depth, so a
 ## cycle cannot recurse forever.
@@ -127,17 +129,17 @@ func tag_turns_remaining(tag: StringName) -> int:
 ## refusal at any stage is total.
 func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if spec == null or spec.effect_def == null:
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
 
 	if spec.chain_depth > MAX_EFFECT_CHAIN_DEPTH:
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.CHAIN_DEPTH_EXCEEDED, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.CHAIN_DEPTH_EXCEEDED, spec)
 
 	if _is_immune_to(spec):
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.IMMUNE, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.IMMUNE, spec)
 
 	var effect: GameplayEffect = spec.effect_def
 	if not components.validate_all(effect).is_ok():
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_DEFINITION, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.INVALID_DEFINITION, spec)
 
 	# Detected before the rest of preflight: which path this application
 	# takes - fresh active effect or a join onto an existing stack - decides
@@ -148,11 +150,11 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	var request: GameplayEffectComponentApplyRequest = components.build_request(spec, owner_asc)
 	request.existing_active_effect = stack_candidate
 	if not components.can_apply_all(request).is_allowed():
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
 
 	var prepared_states: Array[GameplayEffectComponentState] = []
 	if not components.prepare_all(request, prepared_states):
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.COMPONENT_REJECTED, spec)
 	spec.set_prepared_component_states(prepared_states)
 
 	# Runs before evaluation so the new math sees the state it will land in,
@@ -165,9 +167,12 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	if not spec.capture_target_attributes(owner_asc):
 		purge.rollback()
 		components.discard_for(spec)
-		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
+		return _refuse(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
 
 	if stack_candidate != null:
+		# GameplayEffectStackingRuntime logs its own refusals - report_refusal()
+		# for an evaluation failure, refusal_log.record() directly for
+		# STACK_OVERFLOW_DENIED - so this never has to know which one it got.
 		var stack_result: GameplayEffectApplicationResult = stacking.apply_to_existing(stack_candidate, spec)
 		if stack_result.is_ok():
 			purge.commit()
@@ -237,9 +242,20 @@ static func _mode_for(spec: GameplayEffectSpec) -> GameplayEffectEvaluator.Mode:
 
 
 func report_refusal(evaluation: GameplayEffectEvaluationResult) -> void:
+	refusal_log.record(GameplayEffectApplicationResult.failure(
+		GameplayEffectApplicationResult.Status.EVALUATION_FAILED, null, evaluation.status, evaluation.error_attribute_name
+	))
 	if owner_asc == null:
 		return
 	owner_asc.effect_application_refused.emit(evaluation.status, evaluation.error_attribute_name)
+
+
+## Builds and logs one refusal result in the same place, so it can never
+## drift from what the caller actually returns.
+func _refuse(status: GameplayEffectApplicationResult.Status, spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
+	var result: GameplayEffectApplicationResult = GameplayEffectApplicationResult.failure(status, spec)
+	refusal_log.record(result)
+	return result
 
 
 ## Write everything the evaluation staged, in the one order that keeps the

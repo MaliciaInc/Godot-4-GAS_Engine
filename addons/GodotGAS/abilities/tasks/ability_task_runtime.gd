@@ -43,6 +43,12 @@ func active_count() -> int:
 	return _tasks.size()
 
 
+## Every task currently running, as a copy - for the runtime debugger, the
+## same reason active_effects()/specs() are copies elsewhere.
+func active_tasks() -> Array[GameplayAbilityTask]:
+	return _tasks.duplicate()
+
+
 ## Drop a finished task once, and stop listening to it.
 func _on_task_finished(
 	task: GameplayAbilityTask, _succeeded: bool, _reason: GameplayAbilityTask.CancelReason

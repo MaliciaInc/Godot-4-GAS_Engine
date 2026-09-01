@@ -24,6 +24,13 @@ const CueParams = preload("res://addons/GodotGAS/cues/gameplay_cue_params.gd")
 const CueHandle = preload("res://addons/GodotGAS/cues/gameplay_cue_handle.gd")
 const PoolBucket = preload("res://addons/GodotGAS/cues/gameplay_cue_pool_bucket.gd")
 
+## Where every caller outside this file's own closure finds this autoload -
+## `get_node_or_null(AUTOLOAD_NODE_PATH)`, never the bare global identifier,
+## since a caller that may run before the singleton exists (or, for the
+## runtime debugger, one that must never assume a running game is even
+## attached) needs a null it can check rather than a resolution error.
+const AUTOLOAD_NODE_PATH: NodePath = ^"/root/GameplayCueManager"
+
 ## Dormant instances, one bucket per cue tag.
 var _pool: Dictionary[StringName, PoolBucket] = {}
 

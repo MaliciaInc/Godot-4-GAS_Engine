@@ -50,6 +50,14 @@ var owner_ability: GameplayAbility = null
 var state: State = State.CREATED
 
 
+## What this task is actually waiting for - a tag, an attribute, a handle -
+## for the runtime debugger alone. The default, empty, costs nothing and
+## every task written before this existed still works; override it in a
+## subclass that has something worth naming.
+func debug_description() -> String:
+	return ""
+
+
 #region Lifecycle
 ## Begin waiting. Only a CREATED task starts, and starting only moves it to
 ## RUNNING - it never reports a result.

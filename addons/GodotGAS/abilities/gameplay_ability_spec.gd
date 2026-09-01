@@ -33,3 +33,10 @@ var per_actor_instance: GameplayAbility = null
 
 ## Empty in Phase 3. Reserved for PER_EXECUTION.
 var active_instances: Array[GameplayAbility] = []
+
+## The outcome of this spec's own most recent try_activate() call, retained
+## for the runtime debugger alone - "why didn't Fireball activate" answered
+## by reading this rather than requiring a listener already connected to
+## AbilitySystemComponent.ability_activation_failed at the moment it fired.
+## Never gameplay authority: nothing reads this to decide anything.
+var last_activation_result: GameplayAbilityActivationResult = null

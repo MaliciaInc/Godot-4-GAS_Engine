@@ -29,6 +29,7 @@ func try_activate(
 	var error: AbilityRuntime.ActivationError = ability_runtime.activation_error(spec)
 	if error != AbilityRuntime.ActivationError.NONE:
 		result.status = _translate(error)
+		spec.last_activation_result = result
 		if ability_runtime.owner_asc != null:
 			ability_runtime.owner_asc.ability_activation_failed.emit(spec.per_actor_instance, error)
 		return result
@@ -36,11 +37,13 @@ func try_activate(
 	var instance: GameplayAbility = ability_runtime.instancing.instance_for_activation(spec)
 	if instance == null:
 		result.status = GameplayAbilityActivationResult.Status.ACTIVATION_FAILED
+		spec.last_activation_result = result
 		return result
 
 	result.instance = instance
 	instance._begin_runtime_activation(context)
 	result.status = GameplayAbilityActivationResult.Status.SUCCESS
+	spec.last_activation_result = result
 	if ability_runtime.owner_asc != null:
 		ability_runtime.owner_asc.ability_activated.emit(handle, instance)
 	return result

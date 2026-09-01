@@ -271,7 +271,7 @@ func dispatch_effect_events(spec: GameplayEffectSpec) -> void:
 func _cue_manager() -> CueManagerScript:
 	if not is_inside_tree():
 		return null
-	return get_node_or_null("/root/GameplayCueManager") as CueManagerScript
+	return get_node_or_null(GameplayCueManager.AUTOLOAD_NODE_PATH) as CueManagerScript
 
 
 ## Play a one-shot cue on this entity through the global manager.

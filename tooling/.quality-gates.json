@@ -20,6 +20,11 @@
         "glob": "addons/GodotGAS/effects/gameplay_effect_spec.gd",
         "max_lines": 470,
         "reason": "Task 21 made create_application_copy() propagate a context-payload copy failure as an explicit null spec rather than silently continuing with context=null - a real correctness fix (apply_effect_spec_to_target_result()'s existing null-spec guard is what turns it into a proper refusal), not new surface area. The file is already dense with one-paragraph-per-field 'why' documentation; trimming further would cut the documentation this project treats as load-bearing rather than the five lines of guard logic the fix actually needed. Set with the same small headroom T9's raise used, not re-litigated per task."
+      },
+      {
+        "glob": "addons/GodotGAS/effects/gameplay_effect_runtime.gd",
+        "max_lines": 480,
+        "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task."
       }
     ],
     "function_parameter_allowlist": [

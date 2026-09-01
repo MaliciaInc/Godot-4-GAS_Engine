@@ -152,6 +152,7 @@ func _handle_overflow(existing: ActiveGameplayEffect, spec: GameplayEffectSpec) 
 	var result: GameplayEffectApplicationResult
 	if effect.deny_overflow_application:
 		result = GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.STACK_OVERFLOW_DENIED, spec)
+		effects.refusal_log.record(result)
 	else:
 		result = _refresh_without_growing(existing, spec)
 
