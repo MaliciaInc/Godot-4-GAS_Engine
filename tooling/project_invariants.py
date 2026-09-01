@@ -9,6 +9,11 @@ paragraph explaining why it is there. Nothing noticed until the strict-typing
 pass refused to start, and had the pass not checked, the strict verification
 would have applied to nothing and reported PASS.
 
+The same rewrite drops any setting whose value equals the engine default, so
+all nine warning lines are checked, not only the exclusion. Checking one of
+them let the other eight - the typing contract itself - go missing under a
+green gate.
+
 The MCP servers inject their own autoload into project.godot on launch. Its
 script is gitignored, so committing that line ships a project that declares an
 autoload nobody who clones the repository has. Headless Godot initialises every
@@ -50,6 +55,31 @@ PROJECT_FILE = "project.godot"
 #: Godot excludes addons/** from warnings unless this is present, which would
 #: exempt the whole engine. tooling/strict_typing_pass.py flips it and back.
 EXCLUDE_ADDONS_LINE = "gdscript/warnings/exclude_addons=true"
+
+#: The whole GDScript warning contract, not just the exclusion above.
+#:
+#: Godot writes project.godot back without any setting whose value equals the
+#: engine default, so a rewrite drops these lines rather than changing them -
+#: exactly the way it drops the comments. This was checking one of the nine and
+#: calling the file sound: deleting `inference_on_variant=2` by hand and running
+#: the check printed "project.godot is sound", which is the whole typing
+#: contract of section 2 silently reduced to eight-ninths of itself with a green
+#: gate over it.
+#:
+#: The list is declared here rather than read out of the file being checked. A
+#: gate that takes its expectation from its subject agrees with whatever it
+#: finds and can never fail.
+STRICT_WARNING_LINES: tuple[str, ...] = (
+    EXCLUDE_ADDONS_LINE,
+    "gdscript/warnings/untyped_declaration=2",
+    "gdscript/warnings/inferred_declaration=2",
+    "gdscript/warnings/inference_on_variant=2",
+    "gdscript/warnings/unsafe_property_access=2",
+    "gdscript/warnings/unsafe_method_access=2",
+    "gdscript/warnings/unsafe_cast=2",
+    "gdscript/warnings/unsafe_call_argument=2",
+    "gdscript/warnings/unsafe_void_return=2",
+)
 
 AUTOLOAD_SECTION = re.compile(r"^\[autoload\]$", re.MULTILINE)
 SECTION = re.compile(r"^\[[^\]]+\]$", re.MULTILINE)
@@ -208,12 +238,15 @@ def problems(root: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     found: list[str] = []
 
-    if EXCLUDE_ADDONS_LINE not in text:
-        found.append(
-            "%s is missing %r. Opening the Godot editor rewrites this file and "
-            "drops its comments; restore it with `git checkout -- %s` before "
-            "committing." % (PROJECT_FILE, EXCLUDE_ADDONS_LINE, PROJECT_FILE)
-        )
+    for required in STRICT_WARNING_LINES:
+        if required not in text:
+            found.append(
+                "%s is missing %r. Opening the Godot editor - or running the "
+                "project - rewrites this file, dropping its comments and every "
+                "setting that matches an engine default; restore it with "
+                "`git checkout -- %s` before committing."
+                % (PROJECT_FILE, required, PROJECT_FILE)
+            )
 
     tracked = tracked_files(root)
     for entry in AUTOLOAD_ENTRY.finditer(autoload_block(text)):
