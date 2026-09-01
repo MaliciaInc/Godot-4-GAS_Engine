@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# project-invariants now checks both directions of the script/.uid pair
+# loc ceiling for gameplay_effect_runtime.gd and two declared test mirrors
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T19:49:56Z
-# commit-previo: 12694c5307b3efc15da5b6d59ee30689c747183d
+# date-utc: 2026-09-01T20:19:06Z
+# commit-previo: 15ac0bde489ea24539d66198def75936cdb26ee7
 # files: 23
-8f00e293944ec2ca9b2148372ad81fa493d9000c5fe4082feffbb28fb6c15119  tooling/.quality-gates.json
+84e6f32c352b045e0ffa53501193360779e8e417421a828f73111c186285f9ac  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json

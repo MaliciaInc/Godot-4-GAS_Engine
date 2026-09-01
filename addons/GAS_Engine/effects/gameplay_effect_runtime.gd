@@ -334,17 +334,31 @@ func remove(
 	if owner_asc != null:
 		owner_asc.active_effect_removed.emit(active)
 		owner_asc.gameplay_effect_removal_finished.emit(active, reason)
+	discard_receipts(active)
 
 
-## Drop an effect's tags/contributions without recomposing, then clear its
-## receipt. Separated from `remove()` so a bulk removal can detach everything
-## first and recompose once. If already detached (inhibited), the receipt
-## was never applied - only clearing it.
+## Drop an effect's tags/contributions from the owner without recomposing.
+## Separated from `remove()` so a bulk removal can detach everything first and
+## recompose once. If already detached (inhibited), nothing was applied.
+##
+## The receipts themselves are not cleared here - see `discard_receipts()`.
 func _detach(active: ActiveGameplayEffect) -> void:
 	if active.state_attached:
 		inhibition.set_attached(active, false)
 	components.notify_removed(active.spec, active, owner_asc)
 	handles.forget(active)
+
+
+## Empty an effect's receipts, once every observer has been told it is gone.
+##
+## This ran inside `_detach()`, which happens before the removal is announced,
+## so every subscriber of `active_effect_removed` and
+## `gameplay_effect_removal_finished` was handed an effect that had already
+## forgotten what it granted - and a GameplayEffectQuery filtering on
+## `granted_tags` cannot match that, which is precisely what
+## `AbilityTaskFactory.wait_gameplay_effect_removed_matching()` asks of it.
+## Ordering only: the receipts are still emptied, just after the announcement.
+func discard_receipts(active: ActiveGameplayEffect) -> void:
 	active.granted_tags.clear()
 	active.component_states.clear()
 	active.contributed_modifiers.clear()
@@ -388,11 +402,14 @@ func cleanup() -> void:
 	_active.clear()
 
 	recompose_and_emit(null)
-	if owner_asc == null:
-		return
+	if owner_asc != null:
+		for active: ActiveGameplayEffect in removed:
+			owner_asc.active_effect_removed.emit(active)
+			owner_asc.gameplay_effect_removal_finished.emit(active, ActiveGameplayEffect.RemovalReason.ASC_CLEANUP)
+	# Discarded whether or not there was an owner to announce it to: an ASC
+	# torn down without one still has to leave its effects empty-handed.
 	for active: ActiveGameplayEffect in removed:
-		owner_asc.active_effect_removed.emit(active)
-		owner_asc.gameplay_effect_removal_finished.emit(active, ActiveGameplayEffect.RemovalReason.ASC_CLEANUP)
+		discard_receipts(active)
 #endregion
 
 

@@ -23,8 +23,8 @@
       },
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_runtime.gd",
-        "max_lines": 480,
-        "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task."
+        "max_lines": 500,
+        "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task. Raised from 480 to 500 when the removal announcement was fixed: clearing an effect's receipts was split out of _detach() into discard_receipts() so it runs AFTER active_effect_removed/gameplay_effect_removal_finished rather than before, which is what lets a subscriber - AbilityTaskFactory.wait_gameplay_effect_removed_matching() among them - filter the removed effect on granted_tags at all. Seventeen lines: a four-line function, its 'why', and the three call sites that now discard explicitly. The doc block was already cut to the half that a reader reordering these calls back would need."
       }
     ],
     "function_parameter_allowlist": [
@@ -371,6 +371,16 @@
         "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:create",
         "right": "addons/GAS_Engine/cues/gameplay_cue_params.gd:for_target",
         "reason": "Two unrelated two-field constructors - a task naming its confirm/cancel input slots, a cue param naming its instigator/target - that happen to share the shape of `var x = X.new(); x.a = a; x.b = b; return x`. Coincidence of shape, not of purpose: merging them would couple an ability task to a cue's authoring surface for no reason either was written."
+      },
+      {
+        "left": "test/unit/test_ability_task_library.gd:test_wait_ability_activated_matches_by_handle",
+        "right": "test/unit/test_ability_task_library.gd:test_wait_ability_ended_matches_by_handle",
+        "reason": "The mirror of the production pair already declared above, one level up. AbilityTaskWaitAbilityActivated and AbilityTaskWaitAbilityEnded watch two different ASC signals - ability_activated and ability_runtime_ended - through the same filter, and the one way to prove either is: grant a watcher, a bystander and a watched ability, build the task, activate the bystander (must not wake it), activate the watched (must wake it). Both tests exist because each pair had exactly one half covered and the other half none at all, so collapsing them would put one of the two signals back to having no test - which is the defect these were written to close, not a shape to dodge."
+      },
+      {
+        "left": "test/unit/test_ability_task_library.gd:test_wait_ability_ended_matches_by_tag_query",
+        "right": "test/unit/test_ability_task_library.gd:test_wait_ability_activated_matches_by_tag_query",
+        "reason": "The same pairing on the GameplayTagQuery half of both tasks, and the same reason: two different signals resolved through the same effective_ability_tags() filter, each needing its own proof. The by-query pair is worth keeping separate from the by-handle pair above for a further reason - the query path resolves the ended ability's tags through its spec, which the handle path never touches, so a spec that stops resolving would fail exactly one of the two."
       },
       {
         "left": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:*",

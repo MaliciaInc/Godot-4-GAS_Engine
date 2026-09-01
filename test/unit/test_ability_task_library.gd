@@ -209,6 +209,39 @@ func test_wait_gameplay_effect_removed_matches_by_handle() -> void:
 	assert_eq(task.removal_reason, ActiveGameplayEffect.RemovalReason.EXPLICIT)
 
 
+## `wait_gameplay_effect_removed_matching()`: the third pair whose query half
+## was never exercised.
+func test_wait_gameplay_effect_removed_matches_by_query() -> void:
+	var no_modifiers: Array[GameplayEffectModifier] = []
+	var watched: ActiveGameplayEffect = EffectFactory.apply(
+		target.asc, EffectFactory.granting(EffectFactory.infinite(no_modifiers), [BUFF])
+	)
+	var effect_query: GameplayEffectQuery = GameplayEffectQuery.new()
+	effect_query.granted_tags = _query([BUFF])
+	var probe: ProbeAbility = _probe(&"Ability.TaskLibraryRemovedByQuery")
+	var task: AbilityTaskWaitGameplayEffectRemoved = AbilityTaskFactory.wait_gameplay_effect_removed_matching(
+		probe, effect_query
+	)
+
+	var other: ActiveGameplayEffect = EffectFactory.apply(target.asc, EffectFactory.infinite(no_modifiers))
+	target.asc.remove_active_effect(other)
+	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "an effect the query does not match is not it")
+
+	# What a subscriber sees WHILE it is told. Reading after the call returns
+	# would find the receipts already emptied, proving nothing about order.
+	var seen_tags: Array[int] = []
+	target.asc.gameplay_effect_removal_finished.connect(
+		func(active: ActiveGameplayEffect, _reason: ActiveGameplayEffect.RemovalReason) -> void:
+			seen_tags.append(active.granted_tags.size())
+	)
+	target.asc.remove_active_effect(watched)
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
+	assert_eq(seen_tags, [1] as Array[int], "the subscriber still knew what it granted")
+	assert_true(watched.granted_tags.is_empty(), "and the receipt is emptied all the same")
+	assert_same(task.matched_active_effect, watched)
+	assert_eq(task.removal_reason, ActiveGameplayEffect.RemovalReason.EXPLICIT)
+
+
 func test_wait_gameplay_effect_stack_change_reports_old_and_new() -> void:
 	var effect: GameplayEffect = EffectFactory.infinite([])
 	effect.stacking_type = GameplayEffect.StackingType.AGGREGATE_BY_SOURCE
@@ -247,17 +280,63 @@ func test_wait_ability_activated_matches_by_handle() -> void:
 	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
 
 
+## A ProbeAbility that does not channel ends inside `try_activate()`, so one
+## call is both halves of this: the watched ability activates and ends.
 func test_wait_ability_ended_matches_by_tag_query() -> void:
 	var watcher: ProbeAbility = _probe(&"Ability.TaskLibraryEndWatcher")
 	var bystander: ProbeAbility = _probe(&"Ability.TaskLibraryEndBystander")
 	var watched: ProbeAbility = ProbeAbility.build(&"Ability.TaskLibraryEndWatched")
-	AbilityFactory.give(target.asc, watched)
+	var watched_spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, watched)
 	var task: AbilityTaskWaitAbilityEnded = AbilityTaskFactory.wait_ability_ended_matching(
 		watcher, _query([&"Ability.TaskLibraryEndWatched"])
 	)
 
 	target.asc.ability_runtime.try_activate(bystander.get_ability_handle())
 	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "an unrelated ability ending is not the watched one")
+
+	# This half was missing: the test was named for a match and only proved a
+	# non-match, so `succeed()` was never reached down the query path.
+	target.asc.ability_runtime.try_activate(watched_spec.handle)
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
+	assert_true(task.matched_handle.same_as(watched_spec.handle), "and it says which one ended")
+
+
+## The other half of the pair: `wait_ability_ended()` had no caller, no test.
+func test_wait_ability_ended_matches_by_handle() -> void:
+	var watcher: ProbeAbility = _probe(&"Ability.TaskLibraryEndHandleWatcher")
+	var bystander: ProbeAbility = _probe(&"Ability.TaskLibraryEndHandleBystander")
+	var watched: ProbeAbility = ProbeAbility.build(&"Ability.TaskLibraryEndHandleWatched")
+	var watched_spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, watched)
+	var task: AbilityTaskWaitAbilityEnded = AbilityTaskFactory.wait_ability_ended(
+		watcher, watched_spec.handle
+	)
+
+	target.asc.ability_runtime.try_activate(bystander.get_ability_handle())
+	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "another ability ending is not this handle")
+
+	target.asc.ability_runtime.try_activate(watched_spec.handle)
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
+	assert_false(task.was_cancelled, "it ended of its own accord")
+
+
+## `wait_ability_activated_matching()` had none either; only its by-handle half.
+func test_wait_ability_activated_matches_by_tag_query() -> void:
+	var watcher: ProbeAbility = _probe(&"Ability.TaskLibraryActWatcher")
+	var bystander: ProbeAbility = _probe(&"Ability.TaskLibraryActBystander")
+	var watched: ProbeAbility = ProbeAbility.build(&"Ability.TaskLibraryActWatched")
+	var watched_spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, watched)
+	var task: AbilityTaskWaitAbilityActivated = AbilityTaskFactory.wait_ability_activated_matching(
+		watcher, _query([&"Ability.TaskLibraryActWatched"])
+	)
+
+	target.asc.ability_runtime.try_activate(bystander.get_ability_handle())
+	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "a tag the query does not want is not a match")
+
+	target.asc.ability_runtime.try_activate(watched_spec.handle)
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED)
+	# The granted instance, not the local one: giving an ability packs it into
+	# a scene and instantiates a fresh copy, freeing what was passed in.
+	assert_same(task.matched_instance, watched_spec.per_actor_instance, "it says which one started")
 #endregion
 
 

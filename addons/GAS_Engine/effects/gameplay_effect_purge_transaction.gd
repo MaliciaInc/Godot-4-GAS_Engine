@@ -126,13 +126,14 @@ func commit() -> void:
 			owner_asc.emit_attribute_changed(mutation, null)
 	for active: ActiveGameplayEffect in _removed:
 		_runtime.components.notify_removed(active.spec, active, owner_asc)
-		active.granted_tags.clear()
-		active.component_states.clear()
-		active.contributed_modifiers.clear()
 		_runtime.chain.fire_on_removal(active, ActiveGameplayEffect.RemovalReason.CLEANSE)
 		if owner_asc != null:
 			owner_asc.active_effect_removed.emit(active)
 			owner_asc.gameplay_effect_removal_finished.emit(active, ActiveGameplayEffect.RemovalReason.CLEANSE)
+		# After the announcement, for the reason GameplayEffectRuntime
+		# .discard_receipts() gives: a subscriber is handed an effect that
+		# still knows what it granted.
+		_runtime.discard_receipts(active)
 
 
 ## The incoming effect failed. Put every purged effect back exactly as found -
