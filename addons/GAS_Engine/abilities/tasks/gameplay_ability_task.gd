@@ -90,15 +90,36 @@ func cancel(reason: CancelReason) -> void:
 
 func is_finished() -> bool:
 	return state == State.SUCCEEDED or state == State.CANCELLED
+
+
+## Wait for this task to end, whether or not it already has.
+##
+## `await task.finished` is the obvious spelling and it has a trap. A task can
+## end inside `start()` - a threshold already crossed, an animation the player
+## does not have - and `AbilityTaskRuntime.register()` starts it before the
+## caller is handed the reference back. Awaiting a signal that has already
+## fired waits for the next one, and a task fires exactly once, so the ability
+## stops there and never resumes.
+##
+## This is the same wait without the trap, and it keeps the promise this class
+## opens with: a caller is woken up however the task ended, including when it
+## ended before the caller could ask.
+func completed() -> void:
+	if is_finished():
+		return
+	await finished
 #endregion
 
 
 #region Subclass hooks
 ## Override to begin whatever this task waits on.
 ##
-## Do not finish from here. The runtime registers and connects before it starts
-## a task, so finishing inside `start` is survivable - but a task that reports
-## before it has begun is describing something that never happened.
+## Finishing from here is allowed but is the awkward case: the runtime registers
+## and connects before it starts a task, so the ending is not lost - but the
+## caller does not hold the task yet, so `await task.finished` would wait for an
+## emission that has already happened. A subclass that can end during `start()`
+## - a threshold already crossed, an animation that does not exist - is why
+## `completed()` exists, and why callers should use it.
 func _on_start() -> void:
 	pass
 

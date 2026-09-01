@@ -66,6 +66,29 @@ func test_wait_attribute_threshold_triggers_immediately_when_already_true() -> v
 	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED, "already past the threshold at start")
 
 
+## A task that ended before the caller held it must still be waitable.
+##
+## `AbilityTaskRuntime.register()` starts a task before handing it back, so one
+## that ends inside `start()` has already emitted `finished` by the time the
+## ability has a reference. Awaiting that signal waits for the next emission and
+## a task emits exactly once - the ability would stop there and never resume,
+## which is the opposite of what GameplayAbilityTask promises about being woken
+## up however the task ended.
+##
+## If `completed()` were wrong this test would hang rather than fail, which is
+## why it also asserts the state after the wait rather than only reaching it.
+func test_a_task_that_ended_during_start_can_still_be_waited_on() -> void:
+	target.set_base(ATTACK, 20.0)
+	var probe: ProbeAbility = _probe()
+	var task: AbilityTaskWaitAttributeThreshold = AbilityTaskFactory.wait_attribute_threshold(
+		probe, ATTACK, 10.0, AbilityTaskWaitAttributeThreshold.Comparison.GREATER_OR_EQUAL, true
+	)
+	assert_true(task.is_finished(), "it ended before this line ran")
+
+	await task.completed()
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED, "and waiting on it returned")
+
+
 func test_wait_attribute_threshold_waits_for_the_comparison_to_hold() -> void:
 	target.set_base(ATTACK, 0.0)
 	var probe: ProbeAbility = _probe()
