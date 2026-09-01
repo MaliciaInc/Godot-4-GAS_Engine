@@ -50,6 +50,15 @@ SEALED_GLOBS = (
 )
 
 SEPARATOR = "  "
+
+#: `.gitattributes` declares `* text=auto eol=lf`, so every checkout of every
+#: sealed file is LF and the seal is a hash of LF bytes. A working copy can
+#: still end up with CRLF - an editor configured for it, or a script writing
+#: text on Windows without `newline="\n"` - and hashing that seals bytes no
+#: clean checkout will ever produce: the seal then verifies on the machine
+#: that wrote it and reports POLICY_DRIFT on every other one, at stage one of
+#: verification, before a single gate has run. It has happened.
+CRLF = b"\r\n"
 COMMENT = "#"
 DRIFT = "POLICY_DRIFT"
 
@@ -66,6 +75,21 @@ def sealed_files(root: Path) -> list[str]:
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def line_ending_problems(root: Path, names: list[str]) -> list[str]:
+    """Sealed files whose bytes on disk are not the bytes git hands out."""
+    found: list[str] = []
+    for relative in names:
+        path = root / relative
+        if not path.is_file():
+            continue
+        if CRLF in path.read_bytes():
+            found.append(
+                relative + " has CRLF line endings; this repository declares LF, "
+                "so a seal over these bytes drifts on every clean checkout"
+            )
+    return found
 
 
 def read_seal(path: Path) -> tuple[dict[str, str], list[str]]:
@@ -103,6 +127,10 @@ def check(root: Path, reasons: list[str]) -> bool:
     hashes, _ = read_seal(path)
     present = set(sealed_files(root))
 
+    # Before the hashes, because a CRLF working copy explains a "changed"
+    # line that no edit accounts for.
+    reasons.extend(line_ending_problems(root, sorted(present | set(hashes))))
+
     for relative, expected in sorted(hashes.items()):
         full = root / relative
         if not full.is_file():
@@ -122,6 +150,13 @@ def write(root: Path, note: str) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     previous = current_commit(root)
     files = sealed_files(root)
+
+    refused = line_ending_problems(root, files)
+    if refused:
+        print("%s: refusing to seal" % DRIFT, file=sys.stderr)
+        for reason in refused:
+            print("  " + reason, file=sys.stderr)
+        return 1
 
     lines = [
         COMMENT + " Policy seal over the gates, their library, the runner and the policy files.",

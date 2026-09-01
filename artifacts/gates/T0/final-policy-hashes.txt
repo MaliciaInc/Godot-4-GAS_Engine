@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# product-identity forbids the concatenated legacy spelling too; the Dialogic bridge name carries the canonical product name with the old one still accepted
+# resealed over LF bytes; the previous seal recorded CRLF working copies that no clean checkout produces, and seal_policy.py now refuses to hash them
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T17:25:10Z
-# commit-previo: 09299f4dfa97d2f95406da7f182f7a5f3148a199
+# date-utc: 2026-09-01T17:30:02Z
+# commit-previo: 47b4e82a24005eba3502894357c012a72908d143
 # files: 23
 9e0d77f90842a4896cdf80a98ebfd23695d295249ddef70b4a3a9f4642074ecd  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
@@ -28,8 +28,8 @@ f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/
 5049d71c49ec0f0323ca82e8e4aa48ab2d58537f4adf3a825d61a7670e83fbbe  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
-89cd88c0436c012525379362377bc03b6bfae2a89df72c698d3bbbf6163422a7  tooling/product_identity.py
-ae35e59f277e6f1351622ebbab26494af100432ab88864227bc1c381d334b814  tooling/project_invariants.py
-f58c969ddeb06a5c222baa735fd91dabe57604799a243bdd4dc4cdc8aca4e2ee  tooling/seal_policy.py
+031af0ce46e2ba5a6513ab093117053ff7ce03178d66366b301146220be222c8  tooling/product_identity.py
+d2435ae0d452b4978ddb5138245df6a787a51e3034c8aed33caa82634d8fdf98  tooling/project_invariants.py
+fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
 5d462e78928dbfeb8fabd321b5576d7b282a2a0d13b6609782230a4f22e0eccf  tooling/verify.ps1
