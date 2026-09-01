@@ -86,7 +86,14 @@ var debug_draw := false
 
 
 func _ready() -> void:
-	debug_draw = DialogicUtil.autoload().PortraitContainers.debug_draw
+	# `DialogicUtil.autoload()` returns null in the editor by its own contract -
+	# `if Engine.is_editor_hint(): return null` - and this is a @tool script, so
+	# `_ready()` runs there too. Dereferencing it was an error on every editor
+	# open. The debug overlay simply keeps its default when there is no autoload
+	# to ask; it is a runtime setting.
+	var dialogic: DialogicGameHandler = DialogicUtil.autoload()
+	if dialogic != null:
+		debug_draw = dialogic.PortraitContainers.debug_draw
 	match mode:
 		PositionModes.POSITION:
 			add_to_group('dialogic_portrait_con_position')
