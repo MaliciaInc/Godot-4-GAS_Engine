@@ -62,6 +62,17 @@ redistribution here relies on them.
 `addons/GAS_Engine` is MIT, MaliciaInc - see `addons/GAS_Engine/LICENSE`.
 `addons/dialogic` ships with the base game under its own licence.
 
+## First import after a fresh clone
+
+Dialogic rewrites `project.godot` the first time the project is imported with no
+`.godot/` present, emptying its own character and timeline directories. It is a
+one-time artifact - see `FINDINGS.md` SBX-002. Let the editor finish importing,
+then:
+
+```bash
+git checkout -- project.godot
+```
+
 ## Status
 
 Wiring in progress. The base game's own turn-based combat is being replaced by

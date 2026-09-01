@@ -23,3 +23,5 @@ func _set(property, what):
 		else:
 			name_label_root.show()
 		return true
+	# Not handled here - Godot then does its own property assignment.
+	return false
