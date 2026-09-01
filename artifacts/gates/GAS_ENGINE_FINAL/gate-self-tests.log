@@ -1,0 +1,19 @@
+RESULT: PASS
+stage:      gate-self-tests
+command:    python -m unittest discover -s tooling/gates/tests -p test_*.py
+started:    2026-09-01T15:46:16.2209433Z
+ended:      2026-09-01T15:46:17.6175294Z
+duration_s: 1.397
+exit_code:  0
+
+--- stdout ---
+
+--- stderr ---
+...........duplication-gate: ERROR: project root does not exist: C:\Users\Edward\AppData\Local\Temp\tmpox_cmg10\absent
+.................................................................................................................................test-location-gate: ERROR: project root does not exist: C:\Users\Edward\AppData\Local\Temp\tmptbs28x9z\absent
+.........................
+----------------------------------------------------------------------
+Ran 165 tests in 1.283s
+
+OK
+

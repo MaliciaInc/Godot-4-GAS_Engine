@@ -13,6 +13,8 @@
 ## @meta_license: MIT
 class_name GasCueSnapshot extends RefCounted
 
+const CueManagerScript = preload("res://addons/GAS_Engine/managers/gameplay_cue_manager.gd")
+
 var persistent_handle: GameplayCueHandle = null
 var tag: StringName = &""
 var target: Node = null
@@ -30,7 +32,7 @@ static func capture_all(asc: AbilitySystemComponent) -> Array[GasCueSnapshot]:
 	# get_node_or_null, never the bare autoload identifier - the same guard
 	# AbilitySystemComponent's own _cue_manager() uses, for an asc that may
 	# be outside the tree by the time a debugger snapshot reads it.
-	var manager: Node = asc.get_node_or_null(GameplayCueManager.AUTOLOAD_NODE_PATH) if asc.is_inside_tree() else null
+	var manager: Node = asc.get_node_or_null(CueManagerScript.AUTOLOAD_NODE_PATH) if asc.is_inside_tree() else null
 	for active: ActiveGameplayEffect in asc.effects.active_effects():
 		var effect: GameplayEffect = active.get_effect_def()
 		if effect == null or active.persistent_cue_handles.is_empty():

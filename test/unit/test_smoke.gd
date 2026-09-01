@@ -11,6 +11,7 @@ extends GutTest
 const CUE_MANAGER_PATH: String = "/root/GameplayCueManager"
 
 const Plugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
+const GasEnginePlugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
 
 
 func test_gut_executes() -> void:
@@ -92,3 +93,83 @@ func test_the_generated_tag_constants_are_reachable_by_name() -> void:
 		&"Example.Ability.Arrow.Shoot",
 		"a seeded tag completes to the tag it was generated from"
 	)
+
+
+func test_gas_engine_project_settings_use_the_canonical_namespace() -> void:
+	assert_eq(GASEngineProjectSettings.ADDON_NAME, "GAS_Engine")
+	assert_eq(GASEngineProjectSettings.PROJECT_SETTINGS_NAME, "gas_engine")
+	assert_eq(GASEngineProjectSettings.DEFAULT_PATH, "res://gas_engine")
+
+
+func test_legacy_default_paths_migrate_to_gas_engine_defaults() -> void:
+	var current: String = (
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
+	)
+	var suffix: String = current.substr(GASEngineProjectSettings.PROJECT_SETTINGS_NAME.length())
+	var legacy: String = GASEngineProjectSettings.LEGACY_PROJECT_SETTINGS_NAME + suffix
+
+	var previous_current: Variant = ProjectSettings.get_setting(current, null)
+	var previous_legacy: Variant = ProjectSettings.get_setting(legacy, null)
+
+	ProjectSettings.set_setting(current, null)
+	ProjectSettings.set_setting(
+		legacy,
+		GASEngineProjectSettings.LEGACY_DEFAULT_PATH + "/gameplay_tags.gd"
+	)
+
+	GASEngineProjectSettings.init_project_settings()
+
+	var migrated_value: Variant = ProjectSettings.get_setting(current)
+	assert_true(migrated_value is String, "the migrated setting is a String")
+	if migrated_value is String:
+		var migrated_string: String = migrated_value
+		assert_eq(migrated_string, "res://gas_engine/gameplay_tags.gd")
+	assert_false(ProjectSettings.has_setting(legacy))
+
+	ProjectSettings.set_setting(current, previous_current)
+	ProjectSettings.set_setting(legacy, previous_legacy)
+
+
+func test_legacy_custom_path_is_preserved_during_namespace_migration() -> void:
+	var current: String = (
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY
+	)
+	var suffix: String = current.substr(GASEngineProjectSettings.PROJECT_SETTINGS_NAME.length())
+	var legacy: String = GASEngineProjectSettings.LEGACY_PROJECT_SETTINGS_NAME + suffix
+
+	var previous_current: Variant = ProjectSettings.get_setting(current, null)
+	var previous_legacy: Variant = ProjectSettings.get_setting(legacy, null)
+
+	ProjectSettings.set_setting(current, null)
+	ProjectSettings.set_setting(legacy, "res://my_game/custom_tags.tres")
+
+	GASEngineProjectSettings.init_project_settings()
+
+	var migrated_value: Variant = ProjectSettings.get_setting(current)
+	assert_true(migrated_value is String, "the preserved setting is a String")
+	if migrated_value is String:
+		var migrated_string: String = migrated_value
+		assert_eq(migrated_string, "res://my_game/custom_tags.tres")
+	assert_false(ProjectSettings.has_setting(legacy))
+
+	ProjectSettings.set_setting(current, previous_current)
+	ProjectSettings.set_setting(legacy, previous_legacy)
+
+
+func test_plugin_autoload_policy_recognizes_only_the_exact_canonical_path() -> void:
+	var setting_name: String = "autoload/" + GasEnginePlugin.CUE_MANAGER_NAME
+	var previous: Variant = ProjectSettings.get_setting(setting_name, null)
+
+	ProjectSettings.set_setting(
+		setting_name,
+		"*" + GasEnginePlugin.CUE_MANAGER_PATH
+	)
+	assert_true(GasEnginePlugin._autoload_points_to_gas_engine())
+
+	ProjectSettings.set_setting(
+		setting_name,
+		"*res://my_game/custom_gameplay_cue_manager.gd"
+	)
+	assert_false(GasEnginePlugin._autoload_points_to_gas_engine())
+
+	ProjectSettings.set_setting(setting_name, previous)

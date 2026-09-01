@@ -199,6 +199,70 @@
       {
         "literal": "duplication",
         "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
+      },
+      {
+        "literal": "--project-root",
+        "reason": "product_identity.py is a standalone script with its own argparse, spelled independently of gate_io.py's shared CLI helper - it is not one of the gates that helper serves, so it cannot import the constant without importing the gates' own CLI plumbing for a script that isn't one."
+      },
+      {
+        "literal": ".gd",
+        "reason": "A GDScript file extension in languages.py's per-language table (comment/block style, for the LOC and duplication gates) and in product_identity.py's own flat text-suffix set (which files are worth scanning for legacy identity strings). Unrelated purposes; the table is not a general file-extension allowlist."
+      },
+      {
+        "literal": ".godot",
+        "reason": "The engine cache directory suffix in gate_io.py's default exclusions and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": ".import",
+        "reason": "Godot's per-asset import-metadata extension in gate_io.py's default exclusions and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": ".json",
+        "reason": "A file extension in run_gate.py's report-writer and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": ".md",
+        "reason": "A file extension in run_gate.py's report-writer and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": ".ps1",
+        "reason": "A file extension in languages.py's per-language table and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": ".py",
+        "reason": "A file extension in languages.py's per-language table and in product_identity.py's own text-suffix set. Unrelated purposes."
+      },
+      {
+        "literal": "addons/GAS_Engine",
+        "reason": "The addon root path, spelled in product_identity.py's own ADDON_ROOT constant and independently in project_invariants.py's own project.godot check. The identity firewall cannot import project_invariants.py's constant without coupling two gates that check different files for different reasons."
+      },
+      {
+        "literal": "addons/gut/",
+        "reason": "The vendored test dependency's root, spelled in product_identity.py's own skip-prefix list and in project_invariants.py's own exclusion. Two independent scans of two different things, both needing to skip the same vendored tree."
+      },
+      {
+        "literal": "artifacts/gates/",
+        "reason": "The gate-receipt root, spelled in product_identity.py's own skip-prefix list and in tooling/verify.ps1's receipt path. A Python constant is not importable from PowerShell."
+      },
+      {
+        "literal": "GAS_Engine",
+        "reason": "The canonical product name, spelled in product_identity.py's own PRODUCT constant and in the addon's own ADDON_NAME constant in project_settings.gd. The identity firewall that verifies the addon's naming cannot import a constant from the addon it is verifying."
+      },
+      {
+        "literal": "ls-files",
+        "reason": "The git subcommand, spelled in product_identity.py's own subprocess call and in gate_io.py's own git helper. product_identity.py is a standalone script, not one of the gates gate_io.py serves."
+      },
+      {
+        "literal": "project.godot",
+        "reason": "The engine config filename, spelled in product_identity.py's own authority check and in project_invariants.py's own check. Two independent scripts checking the same file for different, unrelated properties."
+      },
+      {
+        "literal": "res://",
+        "reason": "The Godot resource-path prefix, spelled in product_identity.py's forbidden-vocabulary list and in project_invariants.py's own path checks. Unrelated purposes."
+      },
+      {
+        "literal": "tooling/product_identity.py",
+        "reason": "product_identity.py's own path, spelled once inside itself to exclude itself from its own tracked-file scan, and once in tooling/verify.ps1's stage-argument list. A Python constant is not importable from PowerShell."
       }
     ],
     "allow_globs": [],
@@ -262,6 +326,11 @@
         "left": "test/unit/test_gameplay_effect_stacking.gd:test_the_three_expiration_policies_govern_what_survives",
         "right": "test/unit/test_gameplay_effect_stacking.gd:test_turn_based_expiration_uses_remaining_turns_not_seconds",
         "reason": "Task 12's own doc lists these as two separate required tests: the same three StackExpirationPolicy values answering the identical question once for a DURATION effect's seconds and once for a TURN_BASED effect's remaining_turns - the parallel exists specifically to prove the policies never convert one unit into the other. Merging them into one parametrized test would hide that a duration-clock bug and a turn-clock bug are two distinct regressions this suite needs to catch independently."
+      },
+      {
+        "left": "test/unit/test_smoke.gd:test_legacy_default_paths_migrate_to_gas_engine_defaults",
+        "right": "test/unit/test_smoke.gd:test_legacy_custom_path_is_preserved_during_namespace_migration",
+        "reason": "The GAS_Engine rebrand's own migration test requirement lists these as two separate cases: the same _migrate_legacy_project_settings() call answering the identical question once for a legacy setting still holding the old default path (it must translate to the new default) and once for a legacy setting holding a project-chosen custom path (it must survive untouched). Merging them into one parametrized test would hide that 'the default moved' and 'a custom path is not the default's problem' are two distinct regressions this suite needs to catch independently."
       },
       {
         "left": "test/unit/*.gd:_*_cases",
