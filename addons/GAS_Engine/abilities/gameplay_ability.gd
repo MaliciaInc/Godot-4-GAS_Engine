@@ -246,6 +246,19 @@ func abort_ability(
 
 ## Stays granted: ending is not un-granting. `is_active` clears first, since
 ## cancelling a task can resume a coroutine that would otherwise double-emit.
+## Wait until this ability is done, and return at once if it already is.
+##
+## `try_activate()` returns when activation BEGINS, so an ability that refuses -
+## or has nothing to do - has already ended by the time a caller sees the result.
+## Awaiting `ability_ended` then waits for a signal that will not fire again, and
+## the caller stops there for good. The counterpart of
+## `GameplayAbilityTask.completed()`, for the same reason.
+func completed() -> void:
+	if not is_active:
+		return
+	await ability_ended
+
+
 func end_ability(
 	was_cancelled: bool = false,
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ENDED

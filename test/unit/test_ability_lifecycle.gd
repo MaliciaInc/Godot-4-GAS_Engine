@@ -373,3 +373,46 @@ func test_discarding_a_refused_preparation_twice_is_safe() -> void:
 	target.asc.ability_runtime.discard_prepared_grant(prepared)
 	assert_true(prepared.consumed)
 #endregion
+
+
+#region Waiting for an ability that already ended
+## `try_activate()` returns when activation BEGINS, so an ability that refuses -
+## or simply has nothing to do - runs, fails and ends inside that same call.
+## A caller that then awaits its end is awaiting a signal that already fired.
+##
+## The task library solved this for tasks with `completed()`; an ability had no
+## counterpart, so every game holding a handle had to hand-roll the race guard.
+## The sandbox hit it: a battler awaiting `ability_runtime_ended` after a refused
+## activation stopped the battle on that battler's turn, permanently.
+func test_completed_returns_at_once_when_the_ability_already_ended() -> void:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.EndsInsideActivation")
+	probe.succeeds = false
+	var spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, probe)
+	var instance: ProbeAbility = spec.per_actor_instance as ProbeAbility
+
+	target.asc.ability_runtime.try_activate(spec.handle)
+	assert_false(instance.is_active, "it ran and ended inside try_activate")
+
+	# Without the guard this waits forever and the suite never reports.
+	await instance.completed()
+	assert_eq(instance.activations, 1, "it came back, and it did run")
+
+
+func test_completed_waits_for_an_ability_that_is_still_running() -> void:
+	# The other half: the guard must not turn every wait into a no-op.
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.StillRunning")
+	var spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, probe)
+	var instance: ProbeAbility = spec.per_actor_instance as ProbeAbility
+	# Set on the granted instance, not on the template: `channels` is not
+	# exported, so it does not survive the pack-then-instantiate round trip
+	# that granting an ability performs. The fixture says so; this test
+	# forgot, and failed for its own reason rather than the product's.
+	instance.channels = true
+
+	target.asc.ability_runtime.try_activate(spec.handle)
+	assert_true(instance.is_active, "a channelled ability is still open")
+
+	instance.channel_gate.emit()
+	await instance.completed()
+	assert_false(instance.is_active, "and completed() returned once it closed")
+#endregion

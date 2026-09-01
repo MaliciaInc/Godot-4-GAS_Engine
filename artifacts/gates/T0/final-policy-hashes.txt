@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# enum qualification invariant plus its two necessary self-preloads
+# GameplayAbility.completed(): awaiting an ability that already ended
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T22:34:50Z
-# commit-previo: 66ceb1cc848828f128e82137e1fad4ddd0f8ac0f
+# date-utc: 2026-09-01T23:53:49Z
+# commit-previo: ad10a2b5ebba6c65eea705bb0ca92c7161f9bea0
 # files: 23
-13bc1443cf77bec70647e3ee08b91fee2f6ac8ca3c5fd1cedc20c0ddc6ba1bf8  tooling/.quality-gates.json
+fe65c5bb2a1e11b24b21c3c2b1f3fa8011ce993e783cc8e142f8544974ce64d4  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json
