@@ -306,6 +306,18 @@ static func _build_contributions(
 			result.contributions.clear()
 			return
 
+		# An operation outside the enum entirely - a resource written by another
+		# version, or set from code. `_compose()` has a `_:` branch for it, but that
+		# runs long after the effect is registered, so the refusal has nowhere to go
+		# and the attribute silently stops recomposing for EVERY effect, not just
+		# this one. Refused here, beside its two siblings, so no contribution ever
+		# carries one.
+		if not GameplayEffectModifier.Operation.values().has(modifier.operation):
+			result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
+			result.error_attribute_name = modifier.attribute_name
+			result.contributions.clear()
+			return
+
 		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
 		contribution.attribute_name = modifier.attribute_name
 		contribution.operation = modifier.operation

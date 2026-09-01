@@ -167,3 +167,62 @@ func test_a_live_magnitude_reading_another_attribute_is_allowed() -> void:
 	)
 	assert_true(result.is_ok())
 #endregion
+
+
+#region Unknown modifier operation
+## The `_:` branch of the operation match, in both the evaluator and the
+## composer. It only fires for an Operation value neither knows - which a
+## designer cannot author, but a migration that renumbers the enum, or a
+## resource saved by a newer version of the addon, can produce. A guard for a
+## state that "cannot happen" is exactly the kind nothing exercises.
+func test_a_modifier_carrying_an_unknown_operation_is_refused() -> void:
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = ATTACK
+	modifier.operation = 99 as GameplayEffectModifier.Operation
+	modifier.magnitude = EffectFactory.scalable_magnitude(5.0)
+
+	var before: float = target.current_of(ATTACK)
+	var result: GameplayEffectApplicationResult = EffectFactory.apply_result(
+		target.asc, EffectFactory.infinite([modifier] as Array[GameplayEffectModifier])
+	)
+
+	assert_false(result.is_ok(), "an operation nothing can apply is not applied")
+	assert_almost_eq(target.current_of(ATTACK), before, 0.0001, "and nothing was written")
+	assert_eq(target.asc.effects.active_count(), 0, "and it is not registered")
+
+	# The damage the refusal prevents: a contribution carrying an unknown
+	# operation makes `_compose()` bail on the first one it meets, so the
+	# attribute stops recomposing for EVERY effect - not just the malformed
+	# one. A perfectly ordinary effect applied afterwards has to still work.
+	var ordinary: ActiveGameplayEffect = EffectFactory.apply(
+		target.asc, EffectFactory.infinite([EffectFactory.add(ATTACK, 7.0)] as Array[GameplayEffectModifier])
+	)
+	assert_not_null(ordinary)
+	assert_almost_eq(target.current_of(ATTACK), before + 7.0, 0.0001, "the attribute still composes")
+#endregion
+
+
+#region Capture that never resolves
+## A magnitude reading an attribute the target does not have. The capture
+## fails, and the whole application fails with it rather than treating the
+## missing attribute as zero.
+func test_a_magnitude_capturing_an_attribute_that_does_not_exist_is_refused() -> void:
+	var magnitude: GameplayAttributeBasedMagnitude = GameplayAttributeBasedMagnitude.new()
+	magnitude.capture = EffectFactory.capture_definition(
+		GameplayAttributeCaptureDefinition.Actor.TARGET, ABSENT
+	)
+
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = ATTACK
+	modifier.operation = GameplayEffectModifier.Operation.ADD
+	modifier.magnitude = magnitude
+
+	var before: float = target.current_of(ATTACK)
+	var result: GameplayEffectApplicationResult = EffectFactory.apply_result(
+		target.asc, EffectFactory.infinite([modifier] as Array[GameplayEffectModifier])
+	)
+
+	assert_false(result.is_ok())
+	assert_almost_eq(target.current_of(ATTACK), before, 0.0001)
+	assert_eq(target.asc.effects.active_count(), 0)
+#endregion
