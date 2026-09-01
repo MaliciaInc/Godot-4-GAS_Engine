@@ -125,6 +125,22 @@ func test_two_colliders_on_one_actor_are_charged_once() -> void:
 	assert_almost_eq(victim.base_of(HEALTH), 90.0, TOLERANCE, "hit once, not twice")
 
 
+## Task 21: apply_effect_to_targets() sets context.ability_handle to the
+## casting ability's own handle before the per-target loop runs, and
+## GameplayEffectContext.create_application_copy() carries it into every
+## target's own copy.
+func test_the_effects_context_carries_the_casting_abilitys_handle() -> void:
+	var victim: ASCFixture = _victim("Victim")
+	victim.set_base(HEALTH, 100.0)
+
+	var result: GameplayTargetApplicationResult = ability.apply_effect_to_targets(
+		_damage(), _targets([victim.owner])
+	)
+
+	assert_eq(result.applied_effects.size(), 1)
+	assert_eq(result.applied_effects[0].spec.context.ability_handle, ability.get_ability_handle())
+
+
 func test_a_target_that_refuses_is_reported_as_refused() -> void:
 	var victim: ASCFixture = _victim("Immune")
 	victim.set_base(HEALTH, 100.0)

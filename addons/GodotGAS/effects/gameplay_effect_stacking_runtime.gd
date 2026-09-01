@@ -178,18 +178,18 @@ func _refresh_without_growing(existing: ActiveGameplayEffect, spec: GameplayEffe
 
 
 ## Applied to the same target as the incoming spec, with source/context
-## derived from it. A child's own failure - refusal, or CHAIN_DEPTH_EXCEEDED
-## once nesting runs too deep - never corrupts the stack that overflowed.
+## derived from it via GameplayEffectContext.derive_child_context() - the
+## same fallback GameplayEffectChainRuntime._build_child() uses. A child's
+## own failure - refusal, or CHAIN_DEPTH_EXCEEDED once nesting runs too deep
+## - never corrupts the stack that overflowed.
 func _apply_overflow_effects(effect: GameplayEffect, incoming_spec: GameplayEffectSpec) -> void:
 	if effects.owner_asc == null:
 		return
 	for overflow_effect: GameplayEffect in effect.overflow_effects:
 		if overflow_effect == null:
 			continue
-		var instigator: Node = incoming_spec.context.instigator if incoming_spec.context != null else null
-		var child: GameplayEffectSpec = GameplayEffectSpec.new(
-			overflow_effect, GameplayEffectContext.new(instigator), incoming_spec.level
-		)
+		var context: GameplayEffectContext = GameplayEffectContext.derive_child_context(incoming_spec.context)
+		var child: GameplayEffectSpec = GameplayEffectSpec.new(overflow_effect, context, incoming_spec.level)
 		child.source_asc = incoming_spec.source_asc
 		child.chain_depth = incoming_spec.chain_depth + 1
 		effects.owner_asc.apply_effect_spec_result(child)

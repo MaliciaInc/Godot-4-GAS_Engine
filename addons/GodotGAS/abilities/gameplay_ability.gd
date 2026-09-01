@@ -321,7 +321,7 @@ func apply_effect_to_targets(
 	var avatar: Node = owner_asc.get_effect_target()
 	var context: GameplayEffectContext = GameplayEffectContext.new(avatar, avatar)
 	context.target_data = target_data
-
+	context.ability_handle = get_ability_handle()
 	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, get_ability_level())
 	var reached: Array[int] = []
 	var unreachable: Array[int] = []

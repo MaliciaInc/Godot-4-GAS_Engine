@@ -287,6 +287,34 @@ combat foundation of the RPG *Arhalies*, and it is built before the game.
   routes through the identical `GameplayEffectRuntime.notify_execute_hooks()`
   helper `_commit()` and `run_periodic_tick()` use, rather than a second copy
   of the post-commit loop.
+- **`GameplayEffectContext` carries typed, opaque game metadata**, not a
+  Dictionary and not an infinite field list. `ability_handle`
+  (`GameplayAbilityHandle`, null outside any ability) and `source_object`
+  (the weapon/item behind an application, distinct from `causer`, which may
+  be a spawned projectile with no inventory identity) join instigator/causer/
+  target_data. `GameplayEffectContextPayload` is the abstract base a game
+  subclasses for its own schemas - weapon data, crit info, surface info,
+  Arhalies GAS invents none of them; `GameplayHitContextPayload` is the one
+  built-in, composing `GameplayTargetHit` rather than redeclaring its
+  fields. `add_payload()`/`find_payload()`/`has_payload_script()` address
+  payloads by `Script` identity, the GDScript reflection boundary, never a
+  string key. `create_application_copy()` preserves instigator/causer/
+  ability_handle/source_object as-is (the same real thing for every AoE
+  target) and deep-copies payloads one by one - target_data alone starts
+  fresh and empty per target, same as before. A payload that cannot be
+  copied fails the copy explicitly (returns null, which
+  `GameplayEffectSpec.create_application_copy()` propagates, which
+  `apply_effect_spec_to_target_result()`'s existing null-spec guard turns
+  into a clean refusal) rather than handing out a context silently missing
+  part of what the original carried. A system-generated child - an
+  Additional Effects reaction, an overflow effect - uses the new
+  `GameplayEffectContext.derive_child_context()` instead: a full application
+  copy when one succeeds, a bare instigator/causer context otherwise, since
+  losing one payload is preferable to losing the whole reaction. Both
+  `GameplayEffectChainRuntime._build_child()` and
+  `GameplayEffectStackingRuntime._apply_overflow_effects()` route through it
+  now, replacing two near-identical hand-built contexts that used to drop
+  causer, ability handle and every payload silently.
 - **Optional official bridges** for Dialogic, GLoot and QuestSystem. See below.
 
 ## The arithmetic

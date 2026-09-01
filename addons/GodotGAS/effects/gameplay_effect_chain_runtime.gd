@@ -68,15 +68,12 @@ func _matches(conditional: GameplayEffectConditionalEffect, parent_spec: Gamepla
 	return true
 
 
-## Carries instigator, causer, source ASC and source tags forward; the
+## Carries instigator, causer, ability handle, source object and context
+## payloads forward via GameplayEffectContext.derive_child_context() - the
 ## target is whatever this application copy resolves for itself when
-## applied - never the parent's own target_data payload.
+## applied, never the parent's own target_data payload.
 func _build_child(child_effect: GameplayEffect, parent_spec: GameplayEffectSpec) -> GameplayEffectSpec:
-	var parent_context: GameplayEffectContext = parent_spec.context
-	var context: GameplayEffectContext = GameplayEffectContext.new(
-		parent_context.instigator if parent_context != null else null,
-		parent_context.causer if parent_context != null else null
-	)
+	var context: GameplayEffectContext = GameplayEffectContext.derive_child_context(parent_spec.context)
 	var child: GameplayEffectSpec = GameplayEffectSpec.new(child_effect, context, parent_spec.level)
 	child.source_asc = parent_spec.source_asc
 	child.source_tags_snapshot = parent_spec.source_tags_snapshot.duplicate()

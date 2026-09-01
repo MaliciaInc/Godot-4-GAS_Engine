@@ -143,6 +143,44 @@ func test_the_child_copies_instigator_causer_and_source_tags() -> void:
 	assert_eq(child.get_instigator(), source.owner)
 	assert_eq(child.spec.source_asc, source.asc)
 	assert_true(child.spec.source_tags_snapshot.has(&"Class.Mage"))
+
+
+## Task 21: ability handle, source object and context payloads carry into an
+## Additional Effects child the same way instigator/causer already do -
+## GameplayEffectChainRuntime._build_child() routes through
+## GameplayEffectContext.create_application_copy() rather than
+## reconstructing a bare context by hand.
+func test_the_child_inherits_ability_handle_source_object_and_payloads() -> void:
+	var probe: GameplayEffect = Factory.infinite([])
+	var parent_effect: GameplayEffect = Factory.with_additional_effects(
+		Factory.infinite([]), [Factory.conditional_effect(probe)]
+	)
+
+	var handle: GameplayAbilityHandle = GameplayAbilityHandle.new()
+	handle.owner_instance_id = 1
+	handle.id = 1
+	var weapon: Node = Node.new()
+	add_child_autofree(weapon)
+	var payload: GameplayHitContextPayload = GameplayHitContextPayload.new()
+	payload.hit = GameplayTargetHit.new()
+
+	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
+	context.ability_handle = handle
+	context.source_object = weapon
+	context.add_payload(payload)
+	var parent_spec: GameplayEffectSpec = GameplayEffectSpec.new(parent_effect, context)
+
+	target.asc.apply_effect_spec_result(parent_spec)
+	var child: ActiveGameplayEffect = null
+	for active: ActiveGameplayEffect in target.asc.get_active_effects():
+		if active.get_effect_def() == probe:
+			child = active
+
+	assert_not_null(child, "the child registered")
+	assert_eq(child.spec.context.ability_handle, handle)
+	assert_eq(child.spec.context.source_object, weapon)
+	assert_eq(child.spec.context.payloads.size(), 1)
+	assert_ne(child.spec.context.payloads[0], payload, "deep-copied, not shared")
 #endregion
 
 

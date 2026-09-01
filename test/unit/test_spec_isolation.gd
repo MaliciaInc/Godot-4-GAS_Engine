@@ -16,6 +16,13 @@ const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"
 const CRITICAL: StringName = &"Hit.Critical"
 
+## A payload whose create_application_copy() deliberately fails - the only
+## way to exercise "a payload that cannot be copied".
+class UncopyablePayload extends GameplayEffectContextPayload:
+	func create_application_copy() -> GameplayEffectContextPayload:
+		return null
+
+
 var source: ASCFixture = null
 var target_a: ASCFixture = null
 var target_b: ASCFixture = null
@@ -128,6 +135,38 @@ func test_each_target_computes_against_its_own_attributes() -> void:
 
 	assert_almost_eq(target_a.current_of(ATTACK), 40.0, TOLERANCE, "(10 + 10) * 2")
 	assert_almost_eq(target_b.current_of(ATTACK), 220.0, TOLERANCE, "(100 + 10) * 2")
+
+
+func test_ability_handle_and_payloads_reach_every_target_independently() -> void:
+	var handle: GameplayAbilityHandle = GameplayAbilityHandle.new()
+	handle.owner_instance_id = 1
+	handle.id = 1
+	var payload: GameplayHitContextPayload = GameplayHitContextPayload.new()
+	payload.hit = GameplayTargetHit.new()
+
+	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
+	context.ability_handle = handle
+	context.add_payload(payload)
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(Factory.infinite([Factory.add(ATTACK, 10.0)]), context)
+
+	var applied_a: ActiveGameplayEffect = source.asc.apply_effect_spec_to_target(spec, target_a.asc)
+	var applied_b: ActiveGameplayEffect = source.asc.apply_effect_spec_to_target(spec, target_b.asc)
+
+	assert_eq(applied_a.spec.context.ability_handle, handle, "both targets get the same logical handle")
+	assert_eq(applied_b.spec.context.ability_handle, handle)
+	assert_ne(applied_a.spec.context.payloads[0], applied_b.spec.context.payloads[0], "but distinct payload copies")
+	assert_ne(
+		applied_a.spec.context.payloads[0], payload, "and neither is the one the caller built"
+	)
+
+
+func test_a_target_whose_payload_cannot_be_copied_never_receives_the_effect() -> void:
+	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner)
+	context.add_payload(UncopyablePayload.new())
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(Factory.infinite([Factory.add(ATTACK, 10.0)]), context)
+
+	var applied: ActiveGameplayEffect = source.asc.apply_effect_spec_to_target(spec, target_a.asc)
+	assert_null(applied, "the application copy failed explicitly, so nothing was applied")
 
 
 func test_removing_one_targets_effect_leaves_the_other_running() -> void:

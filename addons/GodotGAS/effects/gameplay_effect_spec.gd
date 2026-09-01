@@ -1,13 +1,12 @@
 ## One application of a GameplayEffect: the immutable definition plus all the
 ## runtime state that belongs to this application and no other.
 ##
-## Two upstream defects are fixed here. Runtime magnitudes were keyed by
-## attribute name, so `Attack ADD +10` and `Attack MULTIPLY 2` shared one slot
-## and the second overwrote the first - the key is now the modifier's index
-## inside `effect_def.modifiers`, stable for the spec's life. And one spec was
-## handed to several targets, so an AoE let target A's evaluation change what
-## target B received - `create_application_copy()` gives each target its own,
-## sharing only the immutable definition.
+## Fixes an upstream defect: runtime magnitudes were keyed by attribute name,
+## so `Attack ADD +10` and `Attack MULTIPLY 2` shared one slot and the second
+## overwrote the first - the key is now the modifier's index inside
+## `effect_def.modifiers`, stable for the spec's life. `create_application_copy()`
+## gives each AoE target its own spec, sharing only the immutable definition -
+## see that method for what a copy shares and what it does not.
 ##
 ## @meta_addon: GodotGAS, Arhalies fork
 ## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
@@ -225,9 +224,15 @@ func get_set_by_caller(tag: StringName) -> GameplayMagnitudeResult:
 ##
 ## The contract: the definition is shared, the context is a separate
 ## runtime instance, dynamic tags and magnitudes are duplicated, and anything
-## accumulated for the previous target starts clean. Nothing mutable is shared,
-## so writing to this copy cannot be observed through the original.
+## accumulated for the previous target starts clean. Nothing mutable is
+## shared, so writing to this copy cannot be observed through the original.
+## Null propagates from a context whose own copy failed (an uncopyable
+## payload) - apply_effect_spec_result() already refuses a null spec.
 func create_application_copy() -> GameplayEffectSpec:
+	var context_copy: GameplayEffectContext = context.create_application_copy() if context != null else null
+	if context != null and context_copy == null:
+		return null
+
 	var copy: GameplayEffectSpec = GameplayEffectSpec.new()
 	copy.effect_def = effect_def
 	copy.level = level
@@ -236,7 +241,7 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.remaining_turns = remaining_turns
 	copy.period = period
 	copy.chain_depth = chain_depth
-	copy.context = context.create_application_copy() if context != null else null
+	copy.context = context_copy
 	copy.dynamic_tags = dynamic_tags.duplicate()
 	copy.source_tags_snapshot = source_tags_snapshot.duplicate()
 	copy._runtime_magnitude_overrides = _runtime_magnitude_overrides.duplicate()
