@@ -33,7 +33,16 @@ func matches_tags(tags: Array[StringName]) -> bool:
 	if is_empty():
 		return true
 	var visiting: Array[GameplayTagQueryExpression] = []
-	return _matches(root, tags, visiting)
+	# A cycle is a corrupted definition, not a condition, so it fails the whole
+	# query rather than contributing a `false` to whatever operator it sits
+	# under. Contributing was the bug: NONE over a set of falses is satisfied,
+	# so a corrupted graph read as a gate the target had passed - the opposite
+	# of the "satisfies nothing" this class opens by promising. Reported through
+	# a one-element array, the way this codebase already writes out of a nested
+	# call, rather than by giving _matches a third answer.
+	var cycled: Array[bool] = [false]
+	var matched: bool = _matches(root, tags, visiting, cycled)
+	return matched and not cycled[0]
 
 
 ## Whether this is a legal definition: no empty or malformed tag, and no
@@ -51,7 +60,8 @@ func validate() -> GameplayTagQueryValidationResult:
 static func _matches(
 	expression: GameplayTagQueryExpression,
 	tags: Array[StringName],
-	visiting: Array[GameplayTagQueryExpression]
+	visiting: Array[GameplayTagQueryExpression],
+	cycled: Array[bool]
 ) -> bool:
 	if expression == null:
 		return true
@@ -59,6 +69,7 @@ static func _matches(
 	# subexpression - those are only ever revisited from a sibling branch,
 	# never while still inside their own evaluation.
 	if visiting.has(expression):
+		cycled[0] = true
 		return false
 	visiting.append(expression)
 
@@ -66,7 +77,7 @@ static func _matches(
 	for tag: StringName in expression.tags:
 		results.append(GameplayTagRuntime.tag_set_has(tags, tag))
 	for child: GameplayTagQueryExpression in expression.expressions:
-		results.append(_matches(child, tags, visiting))
+		results.append(_matches(child, tags, visiting, cycled))
 
 	visiting.pop_back()
 	return _combine(expression.operator, results)

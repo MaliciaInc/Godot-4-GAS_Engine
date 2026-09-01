@@ -173,6 +173,25 @@ func test_a_cyclic_expression_is_invalid_and_does_not_recurse_forever() -> void:
 	assert_false(query.matches_tags([]))
 
 
+## The same cycle, under NONE.
+##
+## GameplayTagQuery opens by promising that a cyclic graph "is treated as
+## satisfying nothing". The cycle answered `false` and that `false` was then
+## combined like any other condition - and NONE over a set of falses is
+## satisfied. So a corrupted graph read as a gate the target had passed, which
+## is the opposite of nothing, and only the ALL-rooted case was ever asserted.
+func test_a_cyclic_expression_under_none_still_satisfies_nothing() -> void:
+	var left: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	left.operator = GameplayTagQueryExpression.Operator.NONE
+	var right: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	left.expressions = [right]
+	right.expressions = [left]
+	var query: GameplayTagQuery = _query(left)
+
+	assert_eq(query.validate().status, GameplayTagQueryValidationResult.Status.CYCLIC_EXPRESSION)
+	assert_false(query.matches_tags([]), "a corrupted graph is not a gate anyone passes")
+
+
 func test_the_same_shared_child_reached_from_two_branches_is_not_a_cycle() -> void:
 	var shared: GameplayTagQueryExpression = _leaf(GameplayTagQueryExpression.Operator.ALL, [A])
 	var root: GameplayTagQueryExpression = _node(
