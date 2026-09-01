@@ -11,7 +11,9 @@ class_name MeleeAttackAbility extends DamageAbility
 
 func _perform() -> void:
 	# Stop on the near side of the target, whichever side that is.
-	var target_x: float = targets[0].position.x
 	var caster: Battler = owner_asc.get_parent() as Battler
+	if caster == null or targets.is_empty():
+		return
+	var target_x: float = targets[0].position.x
 	var offset: Vector2 = Vector2(target_x - caster.position.x - reach * _facing(), 0.0)
 	await _lunge(offset, travel_time, travel_time)

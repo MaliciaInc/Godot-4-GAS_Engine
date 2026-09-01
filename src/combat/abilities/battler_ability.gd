@@ -165,6 +165,12 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 	out_tween.tween_property(caster, "position", origin + offset, out_time)
 	await out_tween.finished
 
+	# Two awaits, and a battle can end across either. A caster freed with the
+	# arena while its own swing is still in the air would be asked to tween
+	# home, which is a crash rather than a missing animation.
+	if not is_instance_valid(caster):
+		return
+
 	_land()
 
 	var back_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
