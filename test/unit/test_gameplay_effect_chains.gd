@@ -65,6 +65,45 @@ func test_on_application_respects_the_target_query() -> void:
 	assert_almost_eq(target.current_of(ATTACK), base + 3.0, TOLERANCE, "now it matches")
 
 
+## A source can despawn while its effect is still on the target - the whole
+## reason `source_tags_snapshot` exists - and a removal chain then asks its
+## source query about an ASC that is gone.
+##
+## Nothing had covered that, and the guard it rests on is not obvious: the
+## chain asks `source_asc == null`, and whether that answers true for a freed
+## Node is a fact about Godot rather than about this code. It does - a Variant
+## holding an Object reports null once the object is gone - so the query
+## simply cannot be satisfied and no child applies. Asserted below rather than
+## assumed, because the neighbouring hazard is real: *assigning* a freed
+## instance to a typed property is what stops Godot 4.7.2 at the debugger, and
+## GameplayLiveMagnitudeRegistry had to be taught the difference.
+func test_a_removal_chain_survives_the_source_having_despawned() -> void:
+	var child: GameplayEffect = Factory.infinite([Factory.add(ATTACK, 3.0)])
+	var parent: GameplayEffect = Factory.with_additional_effects(
+		Factory.infinite([]), [], [], [],
+		[Factory.conditional_effect(child, null, _tag_query([&"Class.Mage"]))]
+	)
+	source.asc.add_tag(&"Class.Mage")
+	var active: ActiveGameplayEffect = Factory.apply(target.asc, parent, source.owner)
+	var base: float = target.current_of(ATTACK)
+
+	var departing: Node = source.owner
+	source = null
+	departing.free()
+
+	assert_eq(
+		active.spec.source_asc, null,
+		"a freed ASC reads as null, which is what the chain's own guard relies on"
+	)
+
+	target.asc.effects.remove(active)
+
+	assert_almost_eq(
+		target.current_of(ATTACK), base, TOLERANCE,
+		"the source query cannot be satisfied by an actor that is gone, so no child applied"
+	)
+
+
 func test_on_application_respects_the_source_query() -> void:
 	var child: GameplayEffect = Factory.infinite([Factory.add(ATTACK, 3.0)])
 	var parent: GameplayEffect = Factory.with_additional_effects(
