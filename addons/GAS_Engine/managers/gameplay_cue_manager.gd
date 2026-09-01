@@ -114,13 +114,19 @@ func deactivate_persistent_cue(handle: CueHandle, params: CueParams) -> void:
 		return
 	var cue_instance: CueNotify = _active_persistent_by_id[handle.id]
 	_active_persistent_by_id.erase(handle.id)
+	if not is_instance_valid(cue_instance):
+		return
 	cue_instance.end_persistent(params)
 
 
 ## Resolve the registry entry, take or instantiate the instance, and (re)parent
 ## it under the target - the setup both one-shot and persistent activation share.
 func _resolve_and_parent(params: CueParams) -> CueNotify:
-	if params == null or params.target == null or not _cue_scenes.has(params.cue_tag):
+	if (
+		params == null
+		or not is_instance_valid(params.target)
+		or not _cue_scenes.has(params.cue_tag)
+	):
 		return null
 
 	var cue_instance: CueNotify = _get_or_create_cue(params.cue_tag)

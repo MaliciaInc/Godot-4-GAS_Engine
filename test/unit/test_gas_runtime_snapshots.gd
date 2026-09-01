@@ -206,6 +206,29 @@ func test_refusal_log_disabled_records_nothing() -> void:
 	Factory.apply_result(asc, Factory.instant([Factory.divide(ATTACK, 0.0)]))
 	assert_true(asc.effects.refusal_log.recent().is_empty())
 	restore_error_reporting()
+
+
+func test_refusal_log_shrinks_immediately_when_capacity_is_reduced() -> void:
+	var log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
+	for index: int in 5:
+		var result: GameplayEffectApplicationResult = GameplayEffectApplicationResult.new()
+		result.status = GameplayEffectApplicationResult.Status.COMPONENT_REJECTED
+		log.record(result)
+	assert_eq(log.recent().size(), 5)
+
+	log.capacity = 2
+	assert_eq(log.recent().size(), 2)
+	assert_eq(log.recent()[0].order, 3)
+	assert_eq(log.recent()[1].order, 4)
+
+
+func test_refusal_log_capacity_zero_retains_nothing() -> void:
+	var log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
+	log.capacity = 0
+	var result: GameplayEffectApplicationResult = GameplayEffectApplicationResult.new()
+	result.status = GameplayEffectApplicationResult.Status.COMPONENT_REJECTED
+	log.record(result)
+	assert_true(log.recent().is_empty())
 #endregion
 
 

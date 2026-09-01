@@ -30,7 +30,7 @@ static func create(
 
 
 func _on_start() -> void:
-	if player == null or not player.has_animation(animation):
+	if not is_instance_valid(player) or not player.has_animation(animation):
 		cancel(GameplayAbilityTask.CancelReason.MANUAL)
 		return
 	player.animation_finished.connect(_on_animation_finished)
@@ -38,7 +38,7 @@ func _on_start() -> void:
 
 
 func _on_finish() -> void:
-	if player == null:
+	if not is_instance_valid(player):
 		return
 	if player.animation_finished.is_connected(_on_animation_finished):
 		player.animation_finished.disconnect(_on_animation_finished)

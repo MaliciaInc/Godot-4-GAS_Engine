@@ -287,6 +287,36 @@ func test_a_stale_one_shot_timer_does_not_steal_a_reused_persistent_cue() -> voi
 	assert_not_null(
 		cue.current_params, "the stale one-shot timer must not finish the persistent reuse"
 	)
+
+
+func test_deactivate_persistent_cue_tolerates_target_freed_first() -> void:
+	var target_node: Node = Node.new()
+	add_child(target_node)
+
+	var params: GameplayCueParams = _params()
+	params.target = target_node
+	var handle: GameplayCueHandle = manager.activate_persistent_cue(params)
+	assert_true(handle.is_valid())
+
+	target_node.free()
+	manager.deactivate_persistent_cue(handle, params)
+
+	assert_false(manager._active_persistent_by_id.has(handle.id))
+
+
+func test_persistent_cue_rejects_an_invalid_target_reference() -> void:
+	var target_node: Node = Node.new()
+	add_child(target_node)
+
+	var params: GameplayCueParams = _params()
+	# Assigned while still valid, then freed: Godot 4.7.2 hangs the process
+	# when a freed instance is assigned directly into a typed Node property,
+	# which is not the behavior under test here.
+	params.target = target_node
+	target_node.free()
+	var handle: GameplayCueHandle = manager.activate_persistent_cue(params)
+
+	assert_false(handle.is_valid())
 #endregion
 
 

@@ -58,11 +58,13 @@ func add_tag(tag_string: String) -> String:
 	if has_tag(new_tag):
 		return ERROR_PREFIX + "Tag '" + formatted_tag + "' already exists."
 
+	var previous_tags: Array[StringName] = tags.duplicate()
 	tags.append(new_tag)
 	tags.sort_custom(_compare_tags)
-
 	emit_changed()
-	_persist()
+
+	if not _persist(previous_tags):
+		return ERROR_PREFIX + "Could not persist tag '" + formatted_tag + "'."
 	return formatted_tag
 
 
@@ -125,22 +127,40 @@ func _compare_tags(left: StringName, right: StringName) -> bool:
 ## does not regenerate the project's constants: doing so would replace every
 ## constant in the project with whatever that copy happened to hold. Only the
 ## registry that lives on disk speaks for the project.
-func _persist() -> bool:
+func _persist(previous_tags: Array[StringName]) -> bool:
 	if resource_path.is_empty():
 		return true
-	var saved: bool = ResourceSaver.save(self, resource_path) == OK
-	if not saved:
+
+	var save_error: Error = ResourceSaver.save(self, resource_path)
+	if save_error != OK:
+		tags.assign(previous_tags)
+		emit_changed()
 		push_error(SAVE_FAILED % resource_path)
-	return GameplayTagGenerator.generate_tags_file(tags) and saved
+		return false
+
+	if GameplayTagGenerator.generate_tags_file(tags):
+		return true
+
+	tags.assign(previous_tags)
+	emit_changed()
+
+	var rollback_registry_error: Error = ResourceSaver.save(self, resource_path)
+	var rollback_generated: bool = GameplayTagGenerator.generate_tags_file(tags)
+	if rollback_registry_error != OK or not rollback_generated:
+		push_error(
+			"GameplayTagRegistry: rollback failed after generated tag script write failure."
+		)
+	return false
 
 
 ## Remove an exact tag.
-func remove_tag(tag_name: StringName) -> void:
+func remove_tag(tag_name: StringName) -> bool:
 	if not has_tag(tag_name):
-		return
+		return false
+	var previous_tags: Array[StringName] = tags.duplicate()
 	tags.erase(tag_name)
 	emit_changed()
-	_persist()
+	return _persist(previous_tags)
 #endregion
 
 

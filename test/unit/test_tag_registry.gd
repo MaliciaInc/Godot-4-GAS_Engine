@@ -24,6 +24,14 @@ func after_each() -> void:
 	registry = null
 
 
+func expect_engine_error() -> void:
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.NOTHING
+
+
+func restore_error_reporting() -> void:
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.FAILURE
+
+
 #region Formatting
 ## Casing is normalised per segment, not per tag.
 func test_each_segment_gets_a_capital_and_the_dots_are_kept() -> void:
@@ -212,4 +220,50 @@ func test_an_anonymous_registry_does_not_regenerate_the_project_file() -> void:
 		before,
 		"the project's constants were left exactly as they were"
 	)
+
+
+func test_add_tag_rolls_back_registry_when_generated_script_write_fails() -> void:
+	var setting_name: String = (
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
+	)
+	var previous_output: Variant = ProjectSettings.get_setting(
+		setting_name, GASEngineProjectSettings.DEFAULT_PATH_TAGS_GENERATED_SCRIPT
+	)
+	var blocked_output: String = "user://gas_engine_blocked_generated_output"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(blocked_output))
+	ProjectSettings.set_setting(setting_name, blocked_output)
+
+	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
+	registry.tags = [&"State.Ready"]
+	var registry_path: String = "user://gas_engine_atomic_tag_registry.tres"
+	assert_eq(ResourceSaver.save(registry, registry_path), OK)
+	# ResourceSaver.save() does not stamp resource_path onto the resource in
+	# this Godot version, and _persist() treats an empty resource_path as
+	# "nothing to do" - without this, the write failure below is never
+	# reached and the test cannot exercise the rollback it names.
+	registry.resource_path = registry_path
+
+	expect_engine_error()
+	var result: String = registry.add_tag("State.Burning")
+	# GUT checks should_test_fail_from_errors() once, after the whole test
+	# function returns - by then treat_push_error_as has already been reset
+	# by restore_error_reporting(). Marking each error handled here is what
+	# actually keeps it from failing the test, regardless of that ordering.
+	@warning_ignore_start("unsafe_cast")
+	var tracker: GutErrorTracker = GutUtils.get_error_tracker() as GutErrorTracker
+	@warning_ignore_restore("unsafe_cast")
+	var current_errors: Array = tracker.get_current_test_errors()
+	for tracked_error: GutTrackedError in current_errors:
+		tracked_error.handled = true
+	restore_error_reporting()
+	assert_true(result.begins_with(GameplayTagRegistry.ERROR_PREFIX))
+	assert_eq(registry.tags, [&"State.Ready"])
+
+	var reloaded: GameplayTagRegistry = load(registry_path) as GameplayTagRegistry
+	assert_not_null(reloaded)
+	assert_eq(reloaded.tags, [&"State.Ready"])
+
+	ProjectSettings.set_setting(setting_name, previous_output)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(registry_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(blocked_output))
 #endregion

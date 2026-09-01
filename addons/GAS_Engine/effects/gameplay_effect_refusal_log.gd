@@ -10,7 +10,10 @@ class_name GameplayEffectRefusalLog extends RefCounted
 const DEFAULT_CAPACITY: int = 32
 
 var enabled: bool = true
-var capacity: int = DEFAULT_CAPACITY
+var capacity: int = DEFAULT_CAPACITY:
+	set(value):
+		capacity = maxi(value, 0)
+		_trim_to_capacity()
 
 var _records: Array[GameplayEffectRefusalRecord] = []
 var _next_order: int = 0
@@ -24,7 +27,11 @@ func record(result: GameplayEffectApplicationResult) -> void:
 	entry.order = _next_order
 	_next_order += 1
 	_records.append(entry)
-	if _records.size() > capacity:
+	_trim_to_capacity()
+
+
+func _trim_to_capacity() -> void:
+	while _records.size() > capacity:
 		_records.remove_at(0)
 
 

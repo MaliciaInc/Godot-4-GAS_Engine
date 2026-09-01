@@ -71,7 +71,11 @@ static func generate_tags_file(tags: Array[StringName]) -> bool:
 		return false
 
 	file.store_string(render_tags_source(tags))
+	var write_error: Error = file.get_error()
 	file.close()
+	if write_error != OK:
+		push_error(WRITE_FAILED % output_path)
+		return false
 	print(GENERATED_REPORT % [output_path, tags.size()])
 	return true
 

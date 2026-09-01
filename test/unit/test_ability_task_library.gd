@@ -286,6 +286,19 @@ func test_play_animation_and_wait_cancel_does_not_stop_a_shared_player_by_defaul
 
 	task.cancel(GameplayAbilityTask.CancelReason.MANUAL)
 	assert_true(player.is_playing(), "stop_on_cancel defaults false - a shared player is not stopped")
+
+
+func test_play_animation_and_wait_cancel_tolerates_a_freed_player() -> void:
+	var player: AnimationPlayer = _player_with_animation(&"cast")
+	var probe: ProbeAbility = _probe()
+	var task: AbilityTaskPlayAnimationAndWait = AbilityTaskFactory.play_animation_and_wait(
+		probe, player, &"cast", true
+	)
+
+	player.free()
+	task.cancel(GameplayAbilityTask.CancelReason.MANUAL)
+
+	assert_eq(task.state, GameplayAbilityTask.State.CANCELLED)
 #endregion
 
 

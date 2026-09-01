@@ -14,12 +14,6 @@ config/name="GAS_Engine"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
-
-
-
-
-
-
 GameplayCueManager="*res://addons/GAS_Engine/managers/gameplay_cue_manager.gd"
 
 [debug]
