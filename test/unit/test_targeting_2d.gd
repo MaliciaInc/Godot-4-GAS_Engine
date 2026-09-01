@@ -229,6 +229,21 @@ func test_the_caster_is_left_out_of_its_own_sweep() -> void:
 	assert_eq(found.get_target_nodes(), [other] as Array[Node], "everyone but the caster")
 
 
+## A sweep with no filter is not a trace with no filter.
+##
+## A trace reports whatever it struck; a sweep answers by actor, and the actor
+## is whoever the ability system belongs to, so scenery stays out either way.
+## The caster does not: leaving it out is the filter's job, and there is no
+## filter to ask. Both were true and only one of them was written down.
+func test_a_sweep_with_no_filter_still_answers_by_actor() -> void:
+	var caster: StaticBody2D = _actor("Caster", ORIGIN, LAYER_ONE)
+	_scenery("Wall", NEAR, LAYER_ONE)
+	await _settle()
+
+	var found: Array[Node] = _sweep(null, _asc_of(caster)).get_target_nodes()
+	assert_eq(found, [caster] as Array[Node], "the wall is not a target, the caster is")
+
+
 func test_something_with_no_ability_system_is_not_a_target() -> void:
 	_scenery("Wall", NEAR, LAYER_ONE)
 	await _settle()

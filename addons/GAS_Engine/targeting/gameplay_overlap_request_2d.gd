@@ -22,4 +22,12 @@ var collide_with_bodies: bool = true
 ## On for a sweep more often than for a trace, but still the caller's decision.
 var collide_with_areas: bool = false
 
+## Optional, and its absence does NOT mean what it means on a trace. A trace
+## with no filter reports whatever it hit; a sweep with no filter still keeps
+## only what has an ability system, because a sweep answers by actor and the
+## actor is who the ability system belongs to. Scenery inside the circle is
+## not a target, with or without one - see GameplayTargetingService._take_sweep.
+##
+## Without a filter the caster is also included: excluding it is
+## GameplayTargetFilter.exclude_source's job, and there is no filter to ask.
 var filter: GameplayTargetFilter = null
