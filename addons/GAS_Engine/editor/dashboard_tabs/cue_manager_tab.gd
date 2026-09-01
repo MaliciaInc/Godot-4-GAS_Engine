@@ -11,8 +11,6 @@
 @icon("res://addons/GAS_Engine/icons/gas_engine_asc.svg")
 extends Control
 
-## Addon project settings.
-
 ## Icon used to represent gameplay tags.
 const TAG_ICON: Texture2D = preload("res://addons/GAS_Engine/icons/gas_engine_tags.svg")
 
@@ -23,6 +21,13 @@ const CUES_ICON_PATH: String = "res://addons/GAS_Engine/icons/gas_engine_cues.sv
 ## Placeholders shown on the edit form while a mapping is half-built.
 const NO_SCENE_SELECTED: String = "No Scene Selected"
 const SELECT_TAG_PROMPT: String = "Select Tag..."
+
+## Shown when the registry cannot be written: the list on screen and the file on
+## disk have parted company, and only saying so lets the user act on it.
+const SAVE_FAILED_TITLE: String = "Could Not Save Cue Registry"
+const SAVE_FAILED_MESSAGE: String = (
+	"The cue registry at %s could not be written, so this change lives only in memory and will be gone when the project reloads."
+)
 
 ## Shown when the user acts on a registry the project does not have. A fresh
 ## checkout has none, so this is reachable the first time the dashboard opens.
@@ -340,11 +345,24 @@ func _on_add_mapping_pressed() -> void:
 		new_entry.scene = _draft_scene
 		_registry.entries.append(new_entry)
 		
-	ResourceSaver.save(_registry, GASEngineProjectSettings.get_registry_cue_path())
+	_persist_registry()
 	_reset_form()
 	
 	# Refresh with the current filter so the list does not visually reset.
 	_refresh_cue_list(_current_filter())
+
+
+## Write the registry, and say so when it does not land. The result used to be
+## dropped at both call sites, so a failed save left the list showing a mapping
+## that was not on disk and would come back on the next load, silently - the
+## failure GameplayTagRegistry already refuses to make when it persists a tag.
+func _persist_registry() -> void:
+	var path: String = GASEngineProjectSettings.get_registry_cue_path()
+	var save_error: Error = ResourceSaver.save(_registry, path)
+	if save_error == OK:
+		return
+	push_error(SAVE_FAILED_MESSAGE % path + " (" + error_string(save_error) + ")")
+	DashboardDialogs.show_message(self, SAVE_FAILED_MESSAGE % path, SAVE_FAILED_TITLE)
 
 
 ## Sets up the form fields to edit an existing cue mapping.
@@ -386,7 +404,7 @@ func _execute_delete() -> void:
 		
 	var removed: GameplayCueEntry = _deleting_entry
 	_registry.entries.erase(removed)
-	ResourceSaver.save(_registry,  GASEngineProjectSettings.get_registry_cue_path())
+	_persist_registry()
 	
 	if removed == _editing_entry:
 		_reset_form()
