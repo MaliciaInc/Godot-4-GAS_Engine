@@ -117,6 +117,35 @@ func _connects_with(target: Battler) -> bool:
 	return randf() * 100.0 < chance
 
 
+## Everyone this ability could legally be aimed at right now.
+##
+## One implementation, asked by both the opponent picking at random and the
+## player's targeting cursor. Two would be two chances for the cursor to offer
+## a target the AI considers illegal, or the reverse.
+func possible_targets(roster: BattlerRoster) -> Array[Battler]:
+	var caster: Battler = owner_asc.get_parent() as Battler
+	if caster == null:
+		return []
+	if scope == BattlerAbility.Scope.SELF:
+		return [caster] as Array[Battler]
+
+	var found: Array[Battler] = []
+	if targets_allies:
+		found.append_array(
+			roster.get_player_battlers() if caster.is_player else roster.get_enemy_battlers()
+		)
+	if targets_enemies:
+		found.append_array(
+			roster.get_enemy_battlers() if caster.is_player else roster.get_player_battlers()
+		)
+	return found.filter(func _targetable(b: Battler) -> bool: return b.is_targetable())
+
+
+## Whether this ability takes everyone it can reach rather than one of them.
+func takes_everyone() -> bool:
+	return scope == BattlerAbility.Scope.ALL
+
+
 #region Choreography helpers
 ## Step out to `offset` from where the caster stands, and come back.
 ##

@@ -54,23 +54,12 @@ func _pick_targets(
 	if ability == null:
 		return []
 
-	var candidates: Array[Battler] = []
-	match ability.scope:
-		BattlerAbility.Scope.SELF:
-			return [source] as Array[Battler]
-		_:
-			if ability.targets_allies:
-				candidates.append_array(roster.get_standing(
-					roster.get_player_battlers() if source.is_player else roster.get_enemy_battlers()
-				))
-			if ability.targets_enemies:
-				candidates.append_array(roster.get_standing(
-					roster.get_enemy_battlers() if source.is_player else roster.get_player_battlers()
-				))
-
-	candidates = candidates.filter(func _targetable(b: Battler) -> bool: return b.is_targetable())
+	# Asked of the ability, which is the same question the player's targeting
+	# cursor asks it. Answering it here as well would be a second implementation
+	# free to disagree with the one the player sees.
+	var candidates: Array[Battler] = ability.possible_targets(roster)
 	if candidates.is_empty():
 		return []
-	if ability.scope == BattlerAbility.Scope.ALL:
+	if ability.takes_everyone():
 		return candidates
 	return [candidates[randi() % candidates.size()]] as Array[Battler]

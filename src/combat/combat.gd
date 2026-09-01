@@ -1,42 +1,30 @@
-## The Combat class manages combat logic from beginning to end.
+## One battle, from the transition in to the results dialogue.
 ##
-## The battle is composed from several components which should all be wrapped up in a [CombatArena].
-## The Combat class instantiates the arena as a child before instantiating the player battlers and
-## assigning them as descendants of the arena's [BattlerRoster].[br][br]
+## A round has two halves: everyone declares what they intend, then the
+## intentions resolve in speed order. The arena holds those intentions, and it
+## is the only thing that does - a battler asked to act is told what to use and
+## on whom, and does not remember having chosen.
 ##
-## The combat logic follows the pattern set by early JRPGs, where each combat round includes two
-## phases:
-## [br]	1) Action selection: each Battler selects an action, AI battlers followed by the player.
-## [br]	2) Action execution: the Battlers carry out their selected actions.[br][br]
-## If the player and enemy sides are both still alive, combat procedes to the next round. Combat
-## logic may be illustrated as follows:[br][br]
-## [method setup] combat with a [CombatArena] (usually triggered by
-## [signal FieldEvents.combat_triggered]).
-## [br]	- Begin new combat round
-## [br]		- AI Battlers select their actions.
-## [br]		- Until all player Battlers have a [member Battler.cached_action]:
-## [br]			- The next player Battler selects their action via the [UICombat].
-## [br]			- If all player Battlers have a [member Battler.cached_action], move to action
-## execution.
-## [br][br]		- For each Battler with a cached action (sorted by speed):
-## [br]			- [method Battler.act]
-## [br]		- If player and enemy Battlers are still alive, go to the next round.[br]
-## [method shutdown] combat, cleaning up combat objects
-## [br]	- Emit the [signal CombatEvents.combat_finished] signal.
+## That single ownership is why the turn loop is short. There is no "has this
+## one chosen yet" to keep in sync across a cached action on the battler, a
+## queue here and a filter on the roster; there is one dictionary, and it
+## empties as the round resolves.
+##
+## @meta_license: MIT
 class_name Combat extends CanvasLayer
 
-## Tracks which combat round is currently being played. Every round, all active [Battler]s will get
-## a turn to act.
 var round_count: int = 0
 
-# Keep track of what music track was playing previously, and return to it once combat has finished.
 var _previous_music_track: AudioStream = null
+var _roster: BattlerRoster = null
 
-# A reference to 
-@onready var _battler_roster: BattlerRoster
-@onready var _combat_container: = $CenterContainer as CenterContainer
-@onready var _transition_delay_timer: = $UI/TransitionDelay as Timer
-@onready var _ui: = $UI as UICombat
+## What each battler intends this round. Emptied as each intention resolves, so
+## an empty dictionary is exactly "this round is over".
+var _intentions: Dictionary[Battler, CombatAI.Choice] = {}
+
+@onready var _combat_container: CenterContainer = $CenterContainer as CenterContainer
+@onready var _transition_delay_timer: Timer = $UI/TransitionDelay as Timer
+@onready var _ui: UICombat = $UI as UICombat
 
 
 func _ready() -> void:
@@ -44,202 +32,161 @@ func _ready() -> void:
 	FieldEvents.combat_triggered.connect(setup)
 
 
-## Begin a combat. Takes a PackedScene as its only parameter, expecting it to be a CombatState 
-## object once instantiated.
-## This is normally a response to [signal FieldEvents.combat_triggered].
+#region Setup
 func setup(arena: PackedScene) -> void:
 	await Transition.cover(0.2)
 	show()
 
-	var new_arena := arena.instantiate()
-	assert(
-		new_arena != null,
-		"Failed to initiate combat. Provided 'arena' arugment is not a CombatArena."
-	)
-
-	var combat_arena: CombatArena = new_arena
+	var combat_arena: CombatArena = arena.instantiate() as CombatArena
+	assert(combat_arena != null, "Failed to start combat: that scene is not a CombatArena.")
 	_combat_container.add_child(combat_arena)
-	_battler_roster = combat_arena.get_battler_roster()
-	
-	# Wait a frame for the arena and its children (VFX, Battlers, etc.) to be ready.
+	_roster = combat_arena.get_battler_roster()
+
+	# One frame, so every battler's `_ready` has built its component before
+	# anything asks it for an attribute.
 	await get_tree().process_frame
-	
-	_ui.setup(_battler_roster)
+	_ui.setup(_roster)
+	# The UI reports what the player chose; turning a choice into a turn is
+	# this arena's job, so it listens rather than the UI reaching in.
+	if not _ui.declaration_made.is_connected(declare):
+		_ui.declaration_made.connect(declare)
 
 	_previous_music_track = Music.get_playing_track()
 	Music.play(combat_arena.music)
-
 	CombatEvents.combat_initiated.emit()
 
-	# Before starting combat itself, reveal the screen again.
-	# The Transition.clear() call is deferred since it follows on the heels of cover(), and needs a
-	# frame to allow everything else to respond to Transition.finished.
 	Transition.clear.call_deferred(0.2)
 	await Transition.finished
-	
-	# Fade in the combat UI elements.
 	_ui.animation.play("fade_in")
 	await _ui.animation.animation_finished
-	
-	# Begin the combat logic. The turn queue takes over from here.
+
 	round_count = 0
 	next_round.call_deferred()
+#endregion
 
 
-# Moves combat to the next round. At the beginning of the round, all Battlers will choose an action.
+#region Declaring
 func next_round() -> void:
 	round_count += 1
-	
-	# First of all, let enemy (necessarily AI) battlers pick their actions.
-	for battler in _battler_roster.find_live_battlers(_battler_roster.get_enemy_battlers()):
-		if battler.ai != null:
-			battler.ai.select_action(battler)
-	
-	# Secondly, allow player Battlers to pick their action.
-	# This will be iterative as the player selects and cancels their choices. The turn queue will
-	# move to the action phase once all player Battlers have an action selected.
-	_select_next_player_action()
+	_intentions.clear()
+
+	for battler: Battler in _roster.get_standing(_roster.get_enemy_battlers()):
+		if battler.ai == null:
+			continue
+		var choice: CombatAI.Choice = battler.ai.choose(battler, _roster)
+		if choice.is_valid():
+			_intentions[battler] = choice
+
+	_ask_next_player()
 
 
-# Player Battlers select their actions by repeatedly calling _select_next_player_action. The method
-# looks for player Battlers who have no cached action and prioritizes those further up in the scene
-# tree. This allows the player to go "backwards" and "forwards" between Battlers, choosing actions
-# and cancelling them as needed.
-# At this point, all AI Battlers should have a cached actoin.
-# Once all Battlers have an action cached (see Battler.cached_action), _select_next_player_action
-# calls _next_turn to move into the second phase.
-func _select_next_player_action() -> void:
-	# Find any remaining player Battlers that need an action selected.
-	var player_battlers: = _battler_roster.get_player_battlers()
-	var remaining_battlers: = _battler_roster.find_battlers_needing_actions(player_battlers)
-	
-	# If there are no player Battlers needing actions, move on to the second phase of a round:
-	# taking action!
-	if remaining_battlers.is_empty():
-		# De-select the last Battler that was receiving orders.
+## Hand the cursor to the next player battler that has not declared yet.
+func _ask_next_player() -> void:
+	var waiting: Array[Battler] = _roster.get_standing(_roster.get_player_battlers()).filter(
+		func _undeclared(battler: Battler) -> bool:
+			return not _intentions.has(battler)
+	)
+	if waiting.is_empty():
 		CombatEvents.player_battler_selected.emit(null)
-		_play_next_action.call_deferred()
-		return
-	
-	# If there are player Battlers needing cached actions, pick the first one and allow it to search
-	# for an action using either its AI controller (if present) or player input.
-	var next_player_battler: Battler = remaining_battlers.front()
-	
-	# When the player selects an action (or presses 'back'), the current Battler needs to move back
-	# to its rest position before moving on to the next battler, hence the await call below.
-	next_player_battler.action_cached.connect(
-		(func _on_selected_battler_action_cached(battler: Battler) -> void:
-			# Check to see if the player cancelled action selection (pressed "back" from the
-			# UIActionMenu). If so, the player wishes to reissue orders for the previous Battler.
-			# If there IS a previous Battler, remove its cached action.
-			if battler.cached_action == null:
-				var battlers: = _battler_roster.get_player_battlers()
-				var index: = battlers.find(battler)
-				if index > 0:
-					var previous_battler: Battler = battlers[index-1]
-					previous_battler.cached_action = null
-			
-			await battler.anim.move_to_rest(0.15)
-			_select_next_player_action()
-			).bind(next_player_battler), 
-		CONNECT_DEFERRED | CONNECT_ONE_SHOT)
-	
-	await next_player_battler.anim.move_forward(0.15)
-	
-	# Activate the player UI elements for the currently selected battler.
-	CombatEvents.player_battler_selected.emit(next_player_battler)
-
-
-# The second phase of combat has each Battler act in order of speed. This is done by repeatedly
-# calling _next_turn until no active Battlers have a cached action waiting to be executed.
-func _play_next_action() -> void:
-	# Check for battle end conditions, that one side has been downed.
-	if _battler_roster.are_battlers_defeated(_battler_roster.get_player_battlers()):
-		_on_combat_finished.call_deferred(false)
-		return
-	elif _battler_roster.are_battlers_defeated(_battler_roster.get_enemy_battlers()):
-		_on_combat_finished.call_deferred(true)
+		_resolve_next.call_deferred()
 		return
 
-	# Check for an active Battler. If neither side has lost yet there are no active actors, it's
-	# time to start the next round.
-	var next_actor: = _get_next_actor()
-	if next_actor == null:
+	var next_battler: Battler = waiting.front()
+	await next_battler.anim.move_forward(0.15)
+	CombatEvents.player_battler_selected.emit(next_battler)
+
+
+## Called by the UI once a player battler has picked.
+##
+## Declaring is all this does. Nothing resolves until everyone has declared,
+## which is what makes speed decide the order rather than who chose first.
+func declare(battler: Battler, choice: CombatAI.Choice) -> void:
+	if not choice.is_valid():
+		return
+	_intentions[battler] = choice
+	await battler.anim.move_to_rest(0.15)
+	_ask_next_player()
+#endregion
+
+
+#region Resolving
+func _resolve_next() -> void:
+	if _roster.is_side_defeated(_roster.get_player_battlers()):
+		_finish.call_deferred(false)
+		return
+	if _roster.is_side_defeated(_roster.get_enemy_battlers()):
+		_finish.call_deferred(true)
+		return
+
+	var actor: Battler = _next_actor()
+	if actor == null:
 		next_round()
 		return
-	
-	# Connect to the actor's turn_finished signal. The actor is guaranteed to emit the signal,
-	# even if it will be freed at the end of this frame.
-	# However, we'll call_defer the next turn, since the current actor may have been downed on its
-	# turn and we need a frame to process the change.
-	next_actor.turn_finished.connect(_play_next_action, CONNECT_DEFERRED | CONNECT_ONE_SHOT)
-	next_actor.act()
+
+	var choice: CombatAI.Choice = _intentions[actor]
+	# Withdrawn before the ability runs, not after. A battler killed earlier
+	# this round still has an intention on file, and resolving one after the
+	# fact would let a corpse swing.
+	_intentions.erase(actor)
+
+	actor.turn_finished.connect(_resolve_next, CONNECT_DEFERRED | CONNECT_ONE_SHOT)
+	actor.act(choice.handle, choice.targets)
 
 
-func _get_next_actor() -> Battler:
-	var battlers: = _battler_roster.get_battlers()
-	var ready_to_act_battlers: = _battler_roster.find_ready_to_act_battlers(battlers)
-	if ready_to_act_battlers.is_empty():
+## The fastest battler still holding an intention.
+##
+## Read live from `speed`, so a haste landed earlier in this same round changes
+## who moves next inside it.
+func _next_actor() -> Battler:
+	var pending: Array[Battler] = []
+	for battler: Battler in _intentions:
+		if not battler.is_downed():
+			pending.append(battler)
+	if pending.is_empty():
 		return null
-	
-	ready_to_act_battlers.sort_custom(Battler.sort)
-	return ready_to_act_battlers.front()
+	pending.sort_custom(Battler.sort_by_speed)
+	return pending.front()
+#endregion
 
 
-func _on_combat_finished(is_player_victory: bool) -> void:
-	# Fade out the combat UI elements.
+#region Ending
+func _finish(is_player_victory: bool) -> void:
 	_ui.animation.play("fade_out")
 	await _ui.animation.animation_finished
-	await _display_combat_results_dialog(is_player_victory)
-	
-	_battler_roster = null
-	
-	# Wait a short period of time and then fade the screen to black.
+	await _show_results(is_player_victory)
+
+	_intentions.clear()
+	_roster = null
+
 	_transition_delay_timer.start()
 	await _transition_delay_timer.timeout
 	await Transition.cover(0.2)
 	hide()
-	
-	# Clean up the combat arena.
-	for child in _combat_container.get_children():
+	for child: Node in _combat_container.get_children():
 		child.free()
 
 	Music.play(_previous_music_track)
 	_previous_music_track = null
-
-	# Whatever object started the combat will now be responsible for flow of the game. In
-	# particular, the screen is still covered, so the combat-starting object will want to 
-	# decide what to do now that the outcome of the combat is known.
 	CombatEvents.combat_finished.emit(is_player_victory)
 
 
-## Displays a series of dialogue bubbles using Dialogic with information about the combat's outcome.
-func _display_combat_results_dialog(is_player_victory: bool):
-	var player_party_leader_name: = _battler_roster.get_player_battlers()[0].name
-
-	var timeline_events: Array[String]
-	if is_player_victory:
-		timeline_events = _get_victory_message_events(player_party_leader_name)
-	else:
-		timeline_events = _get_loss_message_events(player_party_leader_name)
-
-	var combat_rewards_timeline: DialogicTimeline = DialogicTimeline.new()
-	combat_rewards_timeline.events = timeline_events
-	Dialogic.start_timeline(combat_rewards_timeline)
+func _show_results(is_player_victory: bool) -> void:
+	var leader_name: String = _roster.get_player_battlers()[0].name
+	var timeline: DialogicTimeline = DialogicTimeline.new()
+	timeline.events = (
+		_victory_events(leader_name) if is_player_victory else _loss_events(leader_name)
+	)
+	Dialogic.start_timeline(timeline)
 	await Dialogic.timeline_ended
 
 
-# These two functions are placeholders for future logic for deciding combat outcomes.
-func _get_victory_message_events(leader_name: String) -> Array[String]:
-	var events: Array[String] = [
-		"%s's party won the battle!" % leader_name
-	]
-	events.append("You wanted to find some coins, but animals have no pockets to carry them.")
-	return events
-	
+func _victory_events(leader_name: String) -> Array[String]:
+	return [
+		"%s's party won the battle!" % leader_name,
+		"You wanted to find some coins, but animals have no pockets to carry them.",
+	] as Array[String]
 
-func _get_loss_message_events(leader_name: String) -> Array[String]:
-	var events: Array[String] = [
-		"%s's party lost the battle!" % leader_name
-	]
-	return events
+
+func _loss_events(leader_name: String) -> Array[String]:
+	return ["%s's party lost the battle!" % leader_name] as Array[String]
+#endregion

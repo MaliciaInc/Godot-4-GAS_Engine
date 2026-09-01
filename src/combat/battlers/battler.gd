@@ -149,21 +149,29 @@ static func sort_by_speed(a: Battler, b: Battler) -> bool:
 
 
 #region Turn
-## Resolve one ability, whatever it costs and however long it takes.
+## Resolve one ability against the targets the arena chose for it.
 ##
-## The cost is not deducted here. An ability commits its own cost through the
-## engine, which is what makes an unaffordable action a refusal rather than a
-## battler quietly going into debt.
-func act(handle: GameplayAbilityHandle, context: GameplayEffectContext = null) -> void:
+## The cost is not deducted here. An ability commits its own through the engine,
+## which is what makes an unaffordable action a refusal rather than a battler
+## quietly going into debt. And the targets are handed in rather than found: an
+## ability that picked its own could not be aimed by a player.
+func act(handle: GameplayAbilityHandle, at: Array[Battler]) -> void:
 	if asc == null or is_downed():
 		turn_finished.emit()
 		return
+
+	var spec: GameplayAbilitySpec = asc.ability_runtime.get_spec(handle)
+	var ability: BattlerAbility = spec.per_actor_instance as BattlerAbility if spec != null else null
+	if ability == null:
+		turn_finished.emit()
+		return
+	ability.targets = at
 
 	asc.add_tag(ACTING)
 	# Handle-keyed activation lives on the ability runtime by the component's
 	# own stated design: the facade carries the instance-shaped conveniences,
 	# the runtime carries the handle-shaped ones.
-	var result: GameplayAbilityActivationResult = asc.ability_runtime.try_activate(handle, context)
+	var result: GameplayAbilityActivationResult = asc.ability_runtime.try_activate(handle)
 	if result.is_ok():
 		await asc.ability_runtime_ended
 	asc.remove_tag(ACTING)
