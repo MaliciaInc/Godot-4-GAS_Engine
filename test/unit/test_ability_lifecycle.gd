@@ -308,3 +308,68 @@ func test_a_second_cleanup_still_stops_an_ability_granted_since_the_first() -> v
 	)
 	assert_true(target.asc.ability_runtime.specs().is_empty(), "and emptied the registry")
 #endregion
+#region Grant refusals
+## Every AbilityGrantValidationResult.Status but OK, none of which any test
+## named. Each is a path `prepare_ability_grant()` takes and then has to clean
+## up after itself: the suite fails on a single orphan node, so these also
+## prove the instance it made was freed rather than leaked.
+func _plain_scene() -> PackedScene:
+	var node: Node = Node.new()
+	node.name = "NotAnAbility"
+	var scene: PackedScene = PackedScene.new()
+	assert_eq(scene.pack(node), OK, "packing the stand-in root")
+	node.free()
+	return scene
+
+
+func test_a_missing_scene_is_refused_by_name() -> void:
+	var prepared: PreparedAbilityGrant = target.asc.ability_runtime.prepare_ability_grant(
+		null, 1.0, -1, null
+	)
+	assert_eq(prepared.validation.status, AbilityGrantValidationResult.Status.SCENE_MISSING)
+	assert_false(prepared.validation.is_ok())
+	assert_null(prepared.probe, "nothing was instantiated to clean up")
+
+	assert_false(target.asc.ability_runtime.give_ability(null).is_valid())
+	assert_eq(target.asc.ability_runtime.specs().size(), 0, "and nothing was registered")
+
+
+func test_a_scene_whose_root_is_not_an_ability_is_refused_and_freed() -> void:
+	var prepared: PreparedAbilityGrant = target.asc.ability_runtime.prepare_ability_grant(
+		_plain_scene(), 1.0, -1, null
+	)
+	assert_eq(
+		prepared.validation.status,
+		AbilityGrantValidationResult.Status.ROOT_NOT_GAMEPLAY_ABILITY
+	)
+	# The instance it made is freed on this path, not handed back - so there is
+	# nothing for discard_prepared_grant() to release, and no orphan either.
+	assert_null(prepared.probe)
+
+
+func test_a_passive_that_asks_for_per_execution_is_refused_and_freed() -> void:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.LifecyclePassivePerExecution")
+	probe.activation_policy = GameplayAbility.ActivationPolicy.PASSIVE
+	probe.instancing_policy = GameplayAbility.InstancingPolicy.PER_EXECUTION
+
+	var prepared: PreparedAbilityGrant = target.asc.ability_runtime.prepare_ability_grant(
+		EffectFactory.ability_scene(probe), 1.0, -1, null
+	)
+	assert_eq(
+		prepared.validation.status, AbilityGrantValidationResult.Status.INVALID_DEFINITION,
+		"a continuous state has no stable meaning as several per-execution instances"
+	)
+	assert_null(prepared.probe)
+
+
+## `give_ability()` discards whatever a refused preparation made, and
+## `discard_prepared_grant()` is idempotent - so calling it again after the
+## refusal has already been handled must not double-free.
+func test_discarding_a_refused_preparation_twice_is_safe() -> void:
+	var prepared: PreparedAbilityGrant = target.asc.ability_runtime.prepare_ability_grant(
+		_plain_scene(), 1.0, -1, null
+	)
+	target.asc.ability_runtime.discard_prepared_grant(prepared)
+	target.asc.ability_runtime.discard_prepared_grant(prepared)
+	assert_true(prepared.consumed)
+#endregion
