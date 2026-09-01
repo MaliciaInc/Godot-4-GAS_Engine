@@ -288,6 +288,35 @@ ability costs 0, so the commit path has never refused), the `Focus` buff and
 therefore the contribution-and-withdrawal that justifies effects over
 arithmetic, evasion and misses, and losing a battle.
 
+# Checked and not defects
+
+Recorded because a question asked and answered is worth as much as a bug found,
+and because the next person to wonder should not have to re-measure.
+
+## `can_activate(get_spec(handle))` with a stale handle
+
+The obvious line a consumer writes, and it is safe: `get_spec()` returns null
+for a handle that no longer resolves, and `activation_error(null)` returns
+INTERNAL_ERROR rather than dereferencing it. No crash, and `can_activate`
+answers false.
+
+## Handle to instance takes two steps
+
+Getting the ability behind a handle is `get_spec(handle).per_actor_instance`
+with a null check at each step, and this sandbox writes it in five places.
+Ergonomics, not a defect - and the component states plainly that handle-keyed
+operations live on the runtime while the facade carries the instance-shaped
+conveniences. Noted rather than changed: inventing a shortcut against a stated
+design is worse than the five lines.
+
+## The paths a played battle has not reached are covered by the suite
+
+Both of the behaviours the playthrough could not exercise are already pinned on
+main: an unaffordable cost reports INSUFFICIENT_RESOURCES and starts no
+cooldown, and a buff's contribution withdrawn on expiry lands "exactly back to
+base, no float drift". What a playtest would add is confirmation that this game
+wires them correctly - not evidence about the engine.
+
 # Closed
 
 ## GAS-002 — no safe way to await an ability that may already have ended
