@@ -135,6 +135,69 @@ for f in $(find addons/GAS_Engine -name '*.gd'); do
 done | sort -u
 ```
 
+### Attribution — is this the addon's defect or the game's?
+
+Asked deliberately, because the rule is that `main` stays agnostic of any game
+and the game is built on the addon, never the reverse. If the game were at
+fault, the game is what gets fixed. Measured in an isolated project with
+neither the addon nor the game present - one autoload, four scripts:
+
+| Probe | Declares | Annotation | Result |
+|---|---|---|---|
+| A | `enum Transition` + autoload `Transition` exists | bare `Transition` | **fails** |
+| B | same | `BQualified.Transition` | passes |
+| C | `enum Zzzz`, no global by that name | bare `Zzzz` | passes |
+| D | `enum ScreenTransition` + **`class_name ScreenTransition`** exists | bare | **fails** |
+
+Confirmed by the engine at runtime, not only by the validator:
+
+```text
+Debugger Break, Reason: 'Parser Error: Cannot assign a value of type
+  ABare.Transition to variable "transition" with specified type ScreenTransition.'
+*Frame 0 - res://a_bare_with_autoload.gd:3
+```
+
+Two facts come out of this that the original write-up did not have:
+
+1. **It is not autoloads.** Probe D shows a plain `class_name` in the consumer's
+   project shadows a file-local enum exactly the same way. Any global does.
+2. **The shadowing is annotation-only.** In probe A the right-hand side still
+   resolved to `ABare.Transition` - the enum wins for value access and loses for
+   the type annotation, in the same statement. That asymmetry is why the message
+   reads as a type mismatch against a name the file never mentions.
+
+**Verdict: this is GAS_Engine's defect, not the game's.** Four reasons, in order
+of weight:
+
+- **The addon does not own the name.** `Transition` here is
+  `AbilityTaskWaitInput.Transition` - a file-local implementation detail. The
+  addon declares no `class_name` called `Transition`, `State`, `Status`, `Mode`,
+  `Type`, `Shape`, `Actor` or `Value`. It never claimed the global name, so the
+  game did not take anything from it.
+- **The game cannot honour a contract that was never published.** Staying safe
+  would mean avoiding all 44 internal enum names - among them `State`, `Status`,
+  `Type`, `Mode`, `Value`, `Actor`, `Code`, `Change`, `Operation`. The addon's
+  README publishes no such list, and no README could: those are the most
+  ordinary words in game code. A consumer cannot avoid names it cannot see.
+- **The addon already knows the right form.** `gameplay_ability.gd:423,427,431`
+  writes `AbilityTaskWaitInput.Transition`, qualified. Qualifying is already the
+  convention; `ability_task_wait_input.gd` is the file that departs from it,
+  inside its own declaration file, where the bare name felt safe.
+- **This is what "agnostic" has to mean.** An addon is agnostic when nothing a
+  consumer does inside their own namespace can break it. One that works only
+  while the consumer avoids 44 specific words is not agnostic - it imposes a
+  naming contract it never stated and cannot enforce.
+
+The case where the game *would* be at fault is a real one and worth naming: if a
+game collided with something GAS_Engine publishes globally - `class_name
+GameplayAbility`, `GameplayEffect`, `AbilitySystemComponent` - then the game
+renames, because the addon owns those names and says so. That is not this.
+
+Cost of each direction, for completeness: qualifying the annotation is a
+three-line internal change that makes the addon robust for every consumer
+forever. The alternative asks every consumer, forever, to avoid words like
+`State` and `Type`.
+
 ### Suggested shape of the fix (for `main`, not here)
 
 Qualify the annotation with its declaring class - `AbilityTaskWaitInput.Transition`
