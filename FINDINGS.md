@@ -290,6 +290,27 @@ arithmetic, evasion and misses, and losing a battle.
 
 # Closed
 
+## GAS-002 — no safe way to await an ability that may already have ended
+
+**Status:** `FIXED ON MAIN 321a020` — deployed here, awaiting a played battle
+
+`try_activate()` returns when activation BEGINS. An ability that refuses - an
+unaffordable cost, nothing left to aim at - runs, fails and finishes inside that
+same call, so its end has already been announced by the time the caller reads
+the result. Awaiting it then waits for something that will not happen again.
+
+The addon offered no counterpart to `GameplayAbilityTask.completed()`, so every
+consumer had to hand-roll the race guard. This sandbox hand-rolled it and only
+noticed because the rebuilt combat was swept the way the addon is; a played
+battle could not have found it, because every authored ability costs zero energy
+and no activation has ever been refused.
+
+`GameplayAbility.completed()` now returns at once for an ability that has ended
+and awaits `ability_ended` otherwise. The battler uses it, and no longer watches
+`ability_runtime_ended` for every ability on the component when it cares about
+one.
+
+
 ## GAS-001 — verified
 
 Fixed on `main` at `ad10a2b`, closed as a class rather than as one name: all 45

@@ -181,14 +181,12 @@ func act(handle: GameplayAbilityHandle, at: Array[Battler]) -> void:
 	# own stated design: the facade carries the instance-shaped conveniences,
 	# the runtime carries the handle-shaped ones.
 	var result: GameplayAbilityActivationResult = asc.ability_runtime.try_activate(handle)
-	# `try_activate` returns the moment activation BEGINS, not when it ends. An
-	# ability that refuses - an unaffordable cost, nothing left to aim at -
-	# finishes inside that same call, so `ability_runtime_ended` has already
-	# fired by the time we get here. Awaiting it then waits forever and the
-	# battle stops on that battler's turn. Asking whether it is still running
-	# is the difference between waiting for something and waiting for nothing.
-	if result.is_ok() and ability.is_active:
-		await asc.ability_runtime_ended
+	# `completed()` returns at once for an ability that already ended, which is
+	# the case whenever activation is refused - an unaffordable cost, nothing
+	# left to aim at. The engine owns that guard now, so this waits for the
+	# one thing it cares about instead of watching every ability on the ASC.
+	if result.is_ok():
+		await ability.completed()
 	asc.remove_tag(ACTING)
 	turn_finished.emit()
 #endregion
