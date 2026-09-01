@@ -64,11 +64,24 @@ static func is_registry_tag_list(object: Object, name: String) -> bool:
 
 
 ## Whether a property name looks like a tag, per the configured match rule.
+##
+## Each needle is trimmed and lowered to meet the name, which is already
+## lowered. The list is read from a text setting, so it arrives however somebody
+## typed it: writing it the ordinary way - `gas_tag, gas_tags` - used to drop
+## every needle after the first, because " gas_tags" is not a suffix of
+## anything, and any needle in mixed case was dropped outright. No error, no
+## picker, and nothing to suggest the setting was the reason.
+##
+## A needle that is nothing but spaces claims no property. Empty, under PREFIX
+## or ANYWHERE, would match every string field in the inspector.
 static func matches_tag_naming(name: String) -> bool:
 	var lowered: String = name.to_lower()
 	var match_type: int = GASEngineProjectSettings.get_editor_tag_property_editor_match_type()
 	for needle: String in GASEngineProjectSettings.get_editor_tag_property_editor_match_on():
-		if _matches_one(lowered, needle, match_type) :
+		var cleaned: String = needle.strip_edges().to_lower()
+		if cleaned.is_empty():
+			continue
+		if _matches_one(lowered, cleaned, match_type):
 			return true
 	return false
 
