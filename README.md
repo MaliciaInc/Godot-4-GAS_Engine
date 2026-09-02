@@ -247,6 +247,31 @@ The project is developed against structural and behavioral gates including:
 
 The repository itself is the executable specification: important gameplay rules are expected to have tests rather than exist only as comments or documentation claims.
 
+### Verified in a real game
+
+A suite proves a framework against itself. It cannot prove that a game built on
+the framework behaves, and several of this engine's defects were found exactly
+there - invisible to thirty thousand assertions, and plain the first time a game
+used the engine for real.
+
+So the engine is also driven through a complete integration: a turn-based RPG
+whose combat system is built on GAS_Engine and nothing else. An automated probe
+plays real battles from a fixed seed, through the same seams a player goes
+through, and records what the engine did at the top of every round.
+
+| Checked | Observed |
+| --- | --- |
+| Attribute isolation | Three battlers built from one authored `AttributeSet`. Damaging one left it at `0/50` and the other two at `50/50`. |
+| Ability cost | Refused as `INSUFFICIENT_RESOURCES` while the resource was short, allowed on the round it arrived. |
+| Attribute clamping | A heal on a wounded battler stopped exactly at the ceiling instead of overflowing it. |
+| Downed targets | A defeated battler left the target set and could not be aimed at again. |
+| Cross-battle persistence | Authored resources were not written through. A second battle began from the authored values, not from the first battle's damage. |
+| Turn-based cooldown | Refused as `ON_COOLDOWN` for exactly the declared number of turns - including a round where the cost was affordable and the refusal stood - then allowed. |
+
+The engine emitted no errors across the run. The probe, the arenas and the
+transcript live on the `godot-open-rpg_GAS_Engine` branch, and the seed is
+recorded so a run can be repeated and disagreed with.
+
 ## Using GAS_Engine in a game
 
 GAS_Engine is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
