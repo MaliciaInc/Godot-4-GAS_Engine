@@ -103,7 +103,11 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 
 #region Configuration
 @export_category("State Management")
-@export var attribute_sets: Array[AttributeSet] = []
+@export var attribute_sets: Array[AttributeSet] = []:
+	set(value):
+		attribute_sets = value
+		if is_node_ready():
+			_adopt_attribute_sets()
 
 ## When false, this ASC deep-copies its attribute sets on ready so two entities
 ## sharing a Resource do not share their stats. Matches Unreal's default.
@@ -124,19 +128,15 @@ var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
 #region Lifecycle
 func _ready() -> void:
-	_isolate_attribute_sets()
 	_wire_runtimes()
-	attributes.initialize()
+	_adopt_attribute_sets()
 
 
-## Give this entity its own copy of each set unless sharing was asked for.
-## Without this, two enemies built from one Resource share one health pool.
-func _isolate_attribute_sets() -> void:
-	if share_attributes:
-		return
-	for index: int in attribute_sets.size():
-		if attribute_sets[index] != null:
-			attribute_sets[index] = attribute_sets[index].duplicate(true)
+## Hand the assigned sets to the attribute runtime, which isolates them unless
+## told to share. Run at ready and on every later assignment, because a game
+## building its actors in code hands these over after _ready has run.
+func _adopt_attribute_sets() -> void:
+	attributes.set_attribute_sets(attribute_sets, not share_attributes)
 
 
 func _wire_runtimes() -> void:

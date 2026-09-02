@@ -365,6 +365,24 @@ ungated, and both look exactly like an ability behaving correctly. A test reads
 `from_probe()` and fails when anything it captures is missing from the list, so
 the guard cannot rot back into the silence it exists to end.
 
+## GAS-004 — attribute sets handed over after _ready were dropped in silence
+
+**Status:** `FIXED ON MAIN 3ba3233` — deployed here
+
+A component given its sets after it was running kept neither of the things
+`_ready()` does with them: the runtime held the array it was wired with, so new
+sets were never read, and isolation was skipped, so two components handed the
+same authored resource shared one pool of health.
+
+This sandbox never hit it, and only because its battler happens to assign
+`attribute_sets` before `add_child`. Nothing would have said so had it done the
+reverse - and a game that builds its actors in code naturally does the reverse.
+The shared-pool half is the one that would have shipped: it looks like a working
+game until the whole party dies at once.
+
+Found by asking what ordering the engine requires and does not enforce - the
+same question that produced GAS-003.
+
 # Checked and not defects
 
 Recorded because a question asked and answered is worth as much as a bug found,
