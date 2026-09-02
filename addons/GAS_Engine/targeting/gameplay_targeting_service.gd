@@ -72,7 +72,10 @@ static func overlap_2d(
 	query.collide_with_bodies = request.collide_with_bodies
 	query.collide_with_areas = request.collide_with_areas
 
-	_take_sweep(found, world.direct_space_state.intersect_shape(query), source_asc, request.filter)
+	var hits: Array[Dictionary] = world.direct_space_state.intersect_shape(
+		query, maxi(request.max_results, 1)
+	)
+	_take_sweep(found, hits, source_asc, request.filter)
 	return found
 
 
@@ -93,7 +96,10 @@ static func overlap_3d(
 	query.collide_with_bodies = request.collide_with_bodies
 	query.collide_with_areas = request.collide_with_areas
 
-	_take_sweep(found, world.direct_space_state.intersect_shape(query), source_asc, request.filter)
+	var hits: Array[Dictionary] = world.direct_space_state.intersect_shape(
+		query, maxi(request.max_results, 1)
+	)
+	_take_sweep(found, hits, source_asc, request.filter)
 	return found
 #endregion
 

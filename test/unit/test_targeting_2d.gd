@@ -251,3 +251,18 @@ func test_something_with_no_ability_system_is_not_a_target() -> void:
 	var found: GameplayAbilityTargetData = _sweep(GameplayTargetFilter.new())
 	assert_false(found.has_targets(), "physics found it, but nothing there can receive an effect")
 #endregion
+
+
+## Godot intersect_shape answers 32 colliders by default and says nothing when
+## it stops there - a ceiling nobody wrote, applied before the sweep has even
+## worked out who is a target.
+func test_a_sweep_is_not_capped_by_the_ceiling_nobody_wrote() -> void:
+	var crowd: int = 40
+	for index: int in crowd:
+		_actor("Crowd%d" % index, ORIGIN + Vector2(float(index) * 4.0, 0.0), LAYER_ONE)
+	await _settle()
+
+	assert_eq(
+		_sweep().get_target_nodes().size(), crowd,
+		"every actor in reach was found, not the first thirty-two"
+	)
