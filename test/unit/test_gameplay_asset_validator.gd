@@ -132,3 +132,32 @@ func test_an_ability_scene_with_a_bad_cost_surfaces_it() -> void:
 	var findings: Array[Result] = Validator.validate_ability_scene(scene)
 	assert_true(findings.size() >= 2, "missing amount and missing target attribute, at least")
 #endregion
+
+
+#region Empty slots
+## An author clicks Add Element and leaves the row empty. Everything
+## downstream steps over it, so the tool that exists to catch what was left
+## unfinished is the only one that can say so - and for three of these four
+## arrays it stepped over it too.
+func test_an_empty_row_in_an_authored_array_is_reported() -> void:
+	var effect: GameplayEffect = Factory.instant([Factory.add(ATTACK, 1.0)])
+	effect.modifiers.append(null)
+	effect.components.append(null)
+
+	var findings: Array[Result] = Validator.validate_effect(effect)
+
+	assert_eq(findings.size(), 2, "the empty modifier row and the empty component row")
+	for finding: Result in findings:
+		assert_eq(finding.code, Result.Code.MISSING_REFERENCE, finding.field)
+
+
+func test_an_empty_cost_row_is_reported() -> void:
+	# The one that costs the most: an ability whose only cost row is empty is
+	# free, and looked clean.
+	var findings: Array[Result] = Validator.validate_costs(
+		[null] as Array[GameplayAbilityCost]
+	)
+	assert_eq(findings.size(), 1)
+	assert_eq(findings[0].code, Result.Code.MISSING_REFERENCE)
+	assert_eq(findings[0].field, "costs[0]", "and says which row")
+#endregion

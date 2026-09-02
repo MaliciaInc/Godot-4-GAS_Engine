@@ -30,8 +30,10 @@ static func validate_effect(effect: GameplayEffect) -> Array[Result]:
 
 	for index: int in effect.modifiers.size():
 		var modifier: GameplayEffectModifier = effect.modifiers[index]
-		if modifier != null:
-			findings.append_array(validate_magnitude(modifier.magnitude, effect, "modifiers[%d].magnitude" % index))
+		if modifier == null:
+			findings.append(_empty_slot(effect, "modifiers[%d]" % index))
+			continue
+		findings.append_array(validate_magnitude(modifier.magnitude, effect, "modifiers[%d].magnitude" % index))
 	return findings
 #endregion
 
@@ -104,6 +106,7 @@ static func validate_costs(costs: Array[GameplayAbilityCost], asset: Object = nu
 	for index: int in costs.size():
 		var cost: GameplayAbilityCost = costs[index]
 		if cost == null:
+			findings.append(_empty_slot(asset, "costs[%d]" % index))
 			continue
 		var target: Object = asset if asset != null else cost
 		if cost.amount == null:
@@ -128,12 +131,28 @@ static func validate_components(components: Array[GameplayEffectComponent], effe
 	for index: int in components.size():
 		var component: GameplayEffectComponent = components[index]
 		if component == null:
+			findings.append(_empty_slot(effect, "components[%d]" % index))
 			continue
 		var outcome: GameplayEffectComponentValidationResult = component.validate_definition(effect)
 		if not outcome.is_ok():
 			var reported_asset: Object = effect if effect != null else component
 			findings.append(Result.error(reported_asset, "components[%d]" % index, Result.Code.INVALID_COMPONENT_DEFINITION))
 	return findings
+#endregion
+
+
+#region Empty slots
+## A row an author added and left empty. The inspector's Add Element leaves
+## one, every reader downstream skips it, and the effect or ability quietly
+## does less than it looks like it does - an ability whose one cost row is
+## empty is free, which is how a real game shipped a free ability for a whole
+## session.
+##
+## Reported for the same reason validate_magnitude() already reports a null
+## magnitude: this is the tool that exists to find what a designer left
+## unfinished, and three of its four authored arrays were stepping over it.
+static func _empty_slot(asset: Object, field: String) -> Result:
+	return Result.error(asset, field, Result.Code.MISSING_REFERENCE)
 #endregion
 
 
