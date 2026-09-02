@@ -269,6 +269,30 @@ before committing anything.
 
 ---
 
+## SBX-003 — the choreography ran on a clock the engine does not own · **FIXED**
+
+`BattlerAbility._pause()` waited on `tree.create_timer(seconds).timeout`. That is
+the one thing `AbilityTaskWaitDelay` was written to refuse, and its doc says why:
+a tree timer keeps its own clock, so it answers to a different authority than the
+effect scheduler running beside it.
+
+The consequence here was not cosmetic. `Battler.act()` awaits
+`ability.completed()`, so a cancelled ability ends the turn - but the body stayed
+suspended on the tree timer, woke up afterwards, and called `_land()`. **A swing
+cancelled mid-air still applied its payload, into a fight that had already moved
+on.** The `is_instance_valid(caster)` guards covered only the freed-node case.
+
+Fixed with the ability's own `wait_delay()`, which is registered through
+`register_ability_task()` and therefore cancelled with the ability, and with an
+`is_active` check after each tween - a tween finishes on its own clock too.
+
+**Not an engine defect, and worth saying why.** The first read of this was that
+`AbilityTaskFactory` is missing `wait_delay` - four of its seventeen task classes
+have no factory entry. They are all reachable on `GameplayAbility` itself
+(`wait_delay`, `wait_input_pressed`, `wait_input_released`, `wait_gameplay_event`,
+`wait_target_data`), which is the surface the engine's own tests use. The engine
+was complete; the game had simply not used it.
+
 # Milestones
 
 ## 2026-09-01 — combat runs on GAS_Engine end to end

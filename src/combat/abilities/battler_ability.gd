@@ -216,8 +216,8 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 		return
 	var origin: Vector2 = caster.position
 
-	await _pause(windup)
-	if not is_instance_valid(caster):
+	var winding: bool = await _pause(windup)
+	if not winding or not is_instance_valid(caster):
 		return
 
 	var out_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -227,33 +227,49 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 	# Two awaits, and a battle can end across either. A caster freed with the
 	# arena while its own swing is still in the air would be asked to tween
 	# home, which is a crash rather than a missing animation.
-	if not is_instance_valid(caster):
+	#
+	# `is_active` for the other ending: a tween finishes on its own clock, so
+	# an ability cancelled mid-swing wakes up here and would land its payload
+	# into a fight whose turn is already over.
+	if not is_active or not is_instance_valid(caster):
 		return
 
 	_land()
-	await _pause(impact_hold)
-	if not is_instance_valid(caster):
+	var holding: bool = await _pause(impact_hold)
+	if not holding or not is_instance_valid(caster):
 		return
 
 	var back_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	back_tween.tween_property(caster, "position", origin, back_time)
 	await back_tween.finished
+	if not is_active or not is_instance_valid(caster):
+		return
 	await _pause(recovery)
 
 
-## A deliberate beat.
+## A deliberate beat, counted on the engine's clock.
 ##
 ## The rewrite dropped these and the fight read as hurried: every phase ran
 ## straight into the next with nothing between them. Exported rather than
 ## sprinkled as bare numbers, so a hit can be retimed without reading the
 ## choreography, and named for what each is for rather than how long it lasts.
-func _pause(seconds: float) -> void:
+##
+## Through the ability's own `wait_delay()`, not a SceneTreeTimer - which is
+## what this used, and what AbilityTaskWaitDelay was written to refuse. A tree
+## timer keeps its own clock: it goes on counting after the ability that owns
+## the beat has been cancelled, and the swing wakes up to land its payload into
+## a fight that already moved on. The engine's task is cancelled with the
+## ability and answers to the same clock the effect scheduler does.
+##
+## Returns whether the beat was served or cut short.
+func _pause(seconds: float) -> bool:
 	if seconds <= 0.0:
-		return
-	var tree: SceneTree = owner_asc.get_tree() if owner_asc != null else null
-	if tree == null:
-		return
-	await tree.create_timer(seconds).timeout
+		return is_active
+	var task: AbilityTaskWaitDelay = wait_delay(seconds)
+	if task == null:
+		return false
+	await task.completed()
+	return task.state == GameplayAbilityTask.State.SUCCEEDED
 
 
 ## Which way the first target lies, as -1 or 1. Zero targets is not a case here:
