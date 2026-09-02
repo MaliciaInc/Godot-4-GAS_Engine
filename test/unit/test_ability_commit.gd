@@ -384,10 +384,8 @@ func test_a_cost_written_after_the_grant_is_reported_not_swallowed() -> void:
 
 	assert_true(commit.is_ok(), "priced from the definition, which has no costs")
 	# The probe fixture leaves `ability_name` empty, so the report falls back to
-	# the node name - which is the tag with its dots replaced.
-	assert_push_error(
-		"ability 'Ability_LateCost' carries 1 cost(s) the engine will not charge"
-	)
+	# the node name - the tag with its dots replaced.
+	assert_push_error("ability 'Ability_LateCost' was given costs after it was granted")
 
 
 func test_an_ability_whose_costs_match_its_definition_says_nothing() -> void:
@@ -398,4 +396,24 @@ func test_an_ability_whose_costs_match_its_definition_says_nothing() -> void:
 
 	instance.commit_ability()
 	assert_push_error_count(0, "nothing drifted, so nothing to say")
+## The list of captured fields is hand-kept, and a hand-kept list that falls
+## behind `from_probe()` puts this check back in the silence it exists to end -
+## a field added to the capture and forgotten here drifts unreported forever.
+func test_every_captured_field_is_watched_for_drift() -> void:
+	var source: String = FileAccess.get_file_as_string(
+		"res://addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd"
+	)
+	var captured: Array[String] = []
+	for line: String in source.split("
+"):
+		var stripped: String = line.strip_edges()
+		if stripped.begins_with("snapshot.") and stripped.contains(" = probe."):
+			captured.append(stripped.substr(9, stripped.find(" =") - 9))
+
+	assert_false(captured.is_empty(), "the capture was found at all")
+	for field: String in captured:
+		assert_true(
+			GameplayAbilityDefinitionSnapshot.CAPTURED_FIELDS.has(StringName(field)),
+			"`%s` is captured from the probe but nothing watches it for drift" % field
+		)
 #endregion

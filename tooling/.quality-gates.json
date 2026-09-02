@@ -210,6 +210,14 @@
         "reason": "A different reason from the autoload-closure entries above, and worth not collapsing into them: this file declares no class_name at all, so its `enum Shape` has no owner to be qualified with. A bare `Shape` annotation binds to whatever global named Shape a consumer's project happens to declare - the defect the sandbox found with Transition - so the enum needs an owner, and a self-preload is the only one available to a file with no class name. Two sites: the inspector plugin that preloads it, and that self-preload."
       },
       {
+        "literal": "activation_required_query",
+        "reason": "The same property named for two different jobs. GameplayAbilityDefinitionSnapshot lists it among the fields it captures, so drift on it can be reported; the asset validator uses it as the human-facing field path on a finding. Unifying them would mean naming all seventeen captured fields as constants to share two, which makes the capture list read worse than the repetition does - and the validator's label is a message to a designer, not a property lookup, so tying it to the lookup would couple two things that only look alike."
+      },
+      {
+        "literal": "activation_blocked_query",
+        "reason": "The same property named for two different jobs. GameplayAbilityDefinitionSnapshot lists it among the fields it captures, so drift on it can be reported; the asset validator uses it as the human-facing field path on a finding. Unifying them would mean naming all seventeen captured fields as constants to share two, which makes the capture list read worse than the repetition does - and the validator's label is a message to a designer, not a property lookup, so tying it to the lookup would couple two things that only look alike."
+      },
+      {
         "literal": "duplication",
         "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
       },

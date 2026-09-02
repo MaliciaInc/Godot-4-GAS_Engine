@@ -88,7 +88,7 @@ var is_active: bool = false
 ## Whether this activation has already paid. One activation charges once.
 var _committed: bool = false
 
-var _reported_cost_drift: bool = false
+var _reported_drift: bool = false
 
 ## What _run_activation() resolved to - read after try_activate() awaits `ability_ended`.
 var _last_activation_succeeded: bool = false
@@ -161,10 +161,10 @@ func commit_ability() -> AbilityCommitResult:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
 
-	# The snapshot froze these costs, so it is what can tell when this instance
-	# stopped agreeing with them. Said once: the mistake is a wiring one.
-	if not _reported_cost_drift:
-		_reported_cost_drift = GameplayAbilityDefinitionSnapshot.report_cost_drift(
+	# The snapshot froze this ability's authoring, so it is what can tell when
+	# this instance stopped agreeing with it. Said once: it is a wiring mistake.
+	if not _reported_drift:
+		_reported_drift = GameplayAbilityDefinitionSnapshot.report_drift(
 			self, current_spec.definition)
 
 	# current_spec is guaranteed non-null. Every step after reads
