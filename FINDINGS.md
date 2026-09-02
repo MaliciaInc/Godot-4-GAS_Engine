@@ -302,6 +302,25 @@ ability costs 0, so the commit path has never refused), the `Focus` buff and
 therefore the contribution-and-withdrawal that justifies effects over
 arithmetic, evasion and misses, and losing a battle.
 
+## 2026-09-01 — the engine's refusal, verified by playing it
+
+Baloo's energy and Punch's availability, round by round, from screenshots:
+
+| Round | Energy | Punch |
+|---|---|---|
+| 1 | 1 | dimmed |
+| 2 | 2 | dimmed |
+| 3 | 3 | full brightness, usable |
+
+That is `INSUFFICIENT_RESOURCES` refusing an activation, the action menu asking
+the engine rather than deciding for itself, and the answer reaching the player.
+The last of the paths flagged as never-exercised. Battle won, no console errors.
+
+Worth keeping in mind about what this took: the cost was silently free for one
+whole session, and the only reason anyone noticed is that a screenshot showed a
+bright button next to one energy. A green console said nothing, and neither
+would any number of clean runs - the ability worked, it simply worked for free.
+
 ## 2026-09-01 — a screenshot proved a cost was never charged
 
 Play showed `Punch` offered at full brightness on round one, with one energy
