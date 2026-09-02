@@ -252,3 +252,162 @@ func _statement_for(entry: ComposerCatalog.Entry) -> String:
 		given.append("value_%d" % position)
 	return "	%s(%s)" % [entry.type_id, ", ".join(given)]
 #endregion
+
+
+#region COMPOSER_STABLE
+const SCRATCH: String = "user://composer_stable_%d.gd"
+const AN_ABILITY: String = """extends GameplayAbility
+
+@export var burning: GameplayEffect
+
+
+func _activate_ability() -> bool:
+	var level: float = get_ability_level()
+	owner_asc.apply_gameplay_effect(burning, owner_asc, level)
+	end_ability()
+	return true
+"""
+
+
+func _laid_out(source: String, path: String) -> Dictionary[StringName, Vector2i]:
+	return ComposerLayout.arrange(ComposerReader.read(source, path))
+
+
+## The same file draws the same way twice.
+##
+## The layout is worked out again on every open - there is nowhere it could be
+## remembered - so it has to land in the same place, or a person's graph
+## rearranges itself between one look and the next for no reason they can see.
+func test_the_same_file_draws_the_same_way_on_two_openings() -> void:
+	for name: String in REPRESENTABLE:
+		var path: String = REFERENCE % name
+		var source: String = FileAccess.get_file_as_string(path)
+
+		assert_eq(
+			_laid_out(source, path), _laid_out(source, path),
+			"%s lands where it landed" % name
+		)
+
+
+## Adding a statement at the end does not move what was already there.
+##
+## The thing that makes a graph worth looking at twice. A layout that reshuffles
+## on every addition is one nobody builds a mental picture of.
+func test_adding_a_statement_at_the_end_moves_nothing_that_was_there() -> void:
+	var path: String = REFERENCE % "timed_buff"
+	var source: String = FileAccess.get_file_as_string(path)
+	var before: Dictionary[StringName, Vector2i] = _laid_out(source, path)
+
+	var lines: PackedStringArray = source.split("
+")
+	var body: ComposerSpan = ComposerSubset.body_span(lines)
+	var after: Dictionary[StringName, Vector2i] = _laid_out(
+		ComposerEdits.insert_after(source, body.last_line, "	abort_ability()"), path
+	)
+
+	for id: StringName in before:
+		assert_true(after.has(id), "%s is still drawn" % id)
+		var moved: Vector2i = after[id]
+		assert_eq(moved, before[id], "%s did not move" % id)
+
+
+## Opening, editing and saving leaves a file GDScript can still compile.
+##
+## Not "reads back as the same graph" - loaded. The Composer writing something
+## that parses in its own reader but not in Godot would be a tool that quietly
+## breaks the build.
+func test_opening_editing_and_saving_leaves_the_file_compiling() -> void:
+	var path: String = SCRATCH % 1
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	out.store_string(AN_ABILITY)
+	out.close()
+
+	var doc: ComposerDocument = ComposerDocument.new()
+	doc.open(AN_ABILITY, path)
+	var node: ComposerNode = doc.graph().nodes[1]
+	node.fields[0].display = "freezing"
+	node.dirty = true
+	var printed: ComposerWriter.Result = ComposerWriter.apply(
+		doc.graph(), doc.printed(), false
+	)
+	assert_null(doc.commit(printed.text), "the edit was taken")
+	assert_null(doc.save(), "and saved")
+
+	assert_true(
+		FileAccess.get_file_as_string(path).contains("freezing"), "the edit is on disk"
+	)
+	assert_not_null(load(path) as GDScript, "and Godot still compiles it")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Nothing undo or redo can reach is something the writer would refuse.
+##
+## Every text in the history was accepted by the same door, so this should hold
+## by construction - which is exactly why it is worth checking: a claim that
+## holds by construction is one nobody notices breaking.
+func test_nothing_in_the_history_is_a_graph_the_writer_would_refuse() -> void:
+	var path: String = SCRATCH % 2
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	out.store_string(AN_ABILITY)
+	out.close()
+
+	var doc: ComposerDocument = ComposerDocument.new()
+	doc.open(AN_ABILITY, path)
+	var body: ComposerSpan = ComposerSubset.body_span(doc.printed().split("
+"))
+	doc.insert("	abort_ability()", body.last_line)
+	doc.remove([doc.graph().nodes[0].span] as Array[ComposerSpan])
+
+	for _step: int in 3:
+		doc.undo()
+		_assert_writable(doc)
+	for _step: int in 3:
+		doc.redo()
+		_assert_writable(doc)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+func _assert_writable(doc: ComposerDocument) -> void:
+	var printed: ComposerWriter.Result = ComposerWriter.apply(doc.graph(), doc.printed())
+	assert_true(printed.is_ok(), "the writer takes it: %s" % [
+		printed.refusal.message if printed.refusal != null else ""
+	])
+	assert_eq(printed.text, doc.printed(), "and prints it back unchanged")
+
+
+## The Composer never reaches a running game.
+##
+## Not a promise about export filters, which belong to whoever ships the game -
+## a fact about this addon: nothing outside the editor folder names anything
+## inside it, so there is no path by which a running game loads any of it.
+func test_nothing_in_the_runtime_names_anything_in_the_editor() -> void:
+	var editor_classes: Array[String] = []
+	for described: Dictionary in ProjectSettings.get_global_class_list():
+		var declared: String = described["class"]
+		var where: String = described["path"]
+		if where.begins_with("res://addons/GAS_Engine/editor/"):
+			editor_classes.append(declared)
+	assert_gt(editor_classes.size(), 10, "there is an editor to keep out")
+
+	for described: Dictionary in ProjectSettings.get_global_class_list():
+		var where: String = described["path"]
+		if not where.begins_with("res://addons/GAS_Engine/") or where.contains("/editor/"):
+			continue
+		var source: String = FileAccess.get_file_as_string(where)
+		for declared: String in editor_classes:
+			assert_false(
+				_uses(source, declared),
+				"%s does not reach %s" % [where.get_file(), declared]
+			)
+
+
+## Named as code rather than mentioned in a comment.
+static func _uses(source: String, declared: String) -> bool:
+	for line: String in source.split("
+"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		if line.contains(declared):
+			return true
+	return false
+#endregion

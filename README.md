@@ -205,6 +205,45 @@ None of them is required by the core runtime. The integrations are intentionally
 
 Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
 
+## Ability Composer
+
+The Composer is a visual editor for abilities that is a **view of the code**, not a second way to author them. There is no JSON, no cached graph, no `.tres`, no interpreter: the `.gd` file is the ability, and the canvas is read out of it every time it is opened. Opening an ability and saving it without changing anything gives the file back byte for byte, comments and formatting included.
+
+Open it from **Project → Tools → Ability Composer**, which draws whatever ability the script editor currently has open. The `Code` chip takes you back to the same file as text.
+
+### What it can draw
+
+An ability body is drawn when every line of it is one of these:
+
+- a call to an engine method, with whatever it takes between its brackets;
+- an assignment — to a local with a written type, or to a property;
+- `await`, on an ability task or on a signal;
+- `if` / `elif` / `else`;
+- `match`, over an enum;
+- `return`;
+- `super()`;
+- `pass`.
+
+Everything else opens **read-only**, with the line and the reason on the Output panel. This is not an error in your file — it is the Composer saying it cannot draw something, and declining to touch a file it does not fully understand:
+
+- `for` and `while` — a loop has no single place on a canvas;
+- an inline `func` or `lambda` — code the graph cannot show;
+- `assert` and `breakpoint` — a debugger statement has no node;
+- `continue` and `break` — loop keywords;
+- two calls side by side, such as `open() + shut()` — neither one is the statement.
+
+A local must carry a written type. `var level := 1.0` is refused where `var level: float = 1.0` is drawn, because a port shows the type of what flows through it and inferring one here would let the canvas and the file disagree until somebody ran the game.
+
+### What is on the palette
+
+Every public method of `GameplayAbility`, `AbilitySystemComponent`, `GameplayTargetingService`, `AbilityTaskFactory` and `GameplayAbilityTargetData`, read from those scripts rather than listed anywhere. A method added to the engine appears the next time the editor starts; one that is renamed takes its node with it.
+
+A game can offer calls of its own through `ComposerCatalog.register(method, group, script, suspends)`, and they are admitted on exactly the same terms the engine's own are. There are no privileged nodes: every node prints as its own call and reads back the same way, so a custom one needs a signature and nothing else.
+
+### It never reaches a running game
+
+Nothing outside `addons/GAS_Engine/editor/` names anything inside it, so there is no path by which a running game loads any part of the Composer. That is checked by the test suite rather than promised here.
+
 ## Runtime architecture
 
 The `AbilitySystemComponent` acts as a facade rather than a single god object.
