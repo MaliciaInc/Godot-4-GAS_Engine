@@ -61,15 +61,47 @@ func _illegal_names() -> Array[String]:
 	return ["max health", "2nd_wind", "crit-chance", "attack!", " leading", ""] as Array[String]
 
 
+## Legal characters, illegal names: every one of these passes
+## is_valid_identifier and none of them survives `var <name>:`.
+func _reserved_names() -> Array[String]:
+	return ["class", "func", "signal", "var", "self", "null", "in", "is"] as Array[String]
+
+
 #region Attribute names
-func test_an_attribute_name_that_is_not_an_identifier_is_refused() -> void:
+## Two ways for a name to be one the generator could not emit, and one
+## refusal. Characters GDScript will not take inside a name, and words it
+## will not take as one.
+func test_an_attribute_name_the_generator_could_not_emit_is_refused() -> void:
 	drafts.create_set(SET_NAME)
-	for name: String in _illegal_names():
+	for name: String in _illegal_names() + _reserved_names():
 		assert_false(
 			drafts.add_attribute(SET_NAME, name, AttributeSetDrafts.Entry.of(1.0)),
-			"'" + name + "' cannot be an identifier in the generated script"
+			"'" + name + "' cannot be the name in the generated `var <name>:`"
 		)
-	assert_eq(drafts.attribute_names(SET_NAME).size(), 0, "and none of them were stored")
+	assert_eq(drafts.attribute_names(SET_NAME).size(), 0, "and none were stored")
+
+	# Renaming into one is the same mistake arriving later.
+	drafts.add_attribute(SET_NAME, ATTRIBUTE, AttributeSetDrafts.Entry.of(1.0))
+	assert_false(drafts.rename_attribute(SET_NAME, ATTRIBUTE, "class"))
+
+
+func test_a_name_that_only_looks_reserved_is_accepted() -> void:
+	# The counterweight: refusing too much costs a designer a word they could
+	# have had. GDScript takes all five of these as member names, which is why
+	# the list was verified against the parser rather than written from memory.
+	drafts.create_set(SET_NAME)
+	for name: String in ["match", "when", "range", "min", "max"] as Array[String]:
+		assert_true(
+			drafts.add_attribute(SET_NAME, name, AttributeSetDrafts.Entry.of(1.0)),
+			"'" + name + "' reads like a keyword and is not one"
+		)
+
+
+func test_a_set_named_for_a_reserved_word_is_still_accepted() -> void:
+	# The asymmetry is deliberate: a set is emitted as
+	# `class_name <name>AttributeSet`, and the suffix carries even `class`
+	# into a legal identifier. Refusing it here would cost a name for nothing.
+	assert_true(drafts.create_set("class"), "the suffix makes it legal")
 
 
 func test_a_legal_attribute_name_is_accepted() -> void:

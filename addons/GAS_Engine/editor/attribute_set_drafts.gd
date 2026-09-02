@@ -211,12 +211,43 @@ func put(set_name: String, key: String, value: Entry) -> void:
 	_save()
 
 
+## The words GDScript will not take after `var`, so the generated
+## `@export var <name>: AttributeData` would not parse.
+##
+## is_valid_identifier() is a rule about what a name is made of, not about what
+## the parser accepts as one: every word here passes it, and `class` is the one
+## a real game reaches for.
+##
+## Verified against the parser rather than transcribed from a keyword list,
+## which is how `match`, `when`, `range`, `min` and `max` stayed legal - they
+## read like keywords and GDScript takes all five as member names. Over-refusing
+## costs a designer a word for nothing.
+##
+## Set names need no such list: they are emitted as `class_name <name>AttributeSet`
+## and the suffix carries even `class` into a legal identifier.
+##
+## One string rather than a list of literals, because it is one datum - the
+## reserved-word table - and thirty-seven separate literals collide with the
+## gates own grammar tables, which list the same words for the same reason and
+## cannot share a constant across two languages.
+const RESERVED_MEMBER_NAMES: String = (
+	"and as assert await break breakpoint class class_name const continue elif "
+	+ "else enum extends false for func if in is namespace not null or pass "
+	+ "preload return self signal static super trait true var void while yield"
+)
+
+
+## Whether GDScript would take this as the name of a generated member.
+func _is_usable_member_name(name: String) -> bool:
+	return name.is_valid_identifier() and not RESERVED_MEMBER_NAMES.split(" ").has(name)
+
+
 ## Add a new attribute. Returns false when the name is unusable or taken.
 ##
 ## The name is written into `@export var <name>: AttributeData`, so it has to be
 ## something GDScript will accept.
 func add_attribute(set_name: String, key: String, value: Entry) -> bool:
-	if not key.is_valid_identifier() or has_attribute(set_name, key):
+	if not _is_usable_member_name(key) or has_attribute(set_name, key):
 		return false
 	put(set_name, key, value)
 	return true
@@ -226,7 +257,7 @@ func add_attribute(set_name: String, key: String, value: Entry) -> bool:
 ## name is unusable, reserved or taken.
 func rename_attribute(set_name: String, old_key: String, new_key: String) -> bool:
 	if (
-		not new_key.is_valid_identifier()
+		not _is_usable_member_name(new_key)
 		or new_key == INITIALISED_KEY
 		or has_attribute(set_name, new_key)
 	):
