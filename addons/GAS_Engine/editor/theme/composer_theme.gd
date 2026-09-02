@@ -185,17 +185,25 @@ static func glow_rect(texture: GradientTexture2D) -> TextureRect:
 
 
 #region Diagnostics
-## One colour per severity, and a node's state resolves to a severity before it
-## gets here. Two functions mapping two enums to colours are two things that can
-## drift; one is a fact.
+## How a severity looks, as two tables rather than two match statements.
+##
+## Indexed by the enum, so the order here IS ComposerGraph.Severity's order and
+## a severity added without a colour or a mark is a missing entry rather than a
+## silent fall-through to whatever the default branch happened to be. A test
+## holds the two lengths against the enum.
+##
+## Two branching functions were the alternative, and they were the same shape
+## twice - which is how a card's dot and its Output row end up disagreeing about
+## one fact.
+const SEVERITY_COLORS: Array[Color] = [TEXT_FAINT, WARNING, ERROR, TEXT_DIM]
+const SEVERITY_MARKS: Array[String] = ["•", "▲", "■", "■"]
+
+
 static func severity_color(severity: ComposerGraph.Severity) -> Color:
-	match severity:
-		ComposerGraph.Severity.WARNING:
-			return WARNING
-		ComposerGraph.Severity.ERROR:
-			return ERROR
-		ComposerGraph.Severity.NOT_REPRESENTABLE:
-			return TEXT_DIM
-		_:
-			return TEXT_FAINT
+	return SEVERITY_COLORS[int(severity)]
+
+
+## The glyph that opens an Output row. Same table, same order.
+static func severity_mark(severity: ComposerGraph.Severity) -> String:
+	return SEVERITY_MARKS[int(severity)]
 #endregion
