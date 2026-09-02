@@ -343,6 +343,21 @@ without a reason, which reads as the game ignoring them. Unavailable entries are
 dimmed now, and still legible, because a player deciding what to save energy for
 is reading them.
 
+## GAS-003 — a cost written after the grant was swallowed in silence
+
+**Status:** `FIXED ON MAIN 440a5d8` — deployed here
+
+The behaviour was correct and documented: granting freezes the definition, the
+commit prices from it, and costs assigned to a running instance are ignored.
+What was missing is that nothing said so. This sandbox shipped a free ability
+for a whole session on exactly that, and a screenshot caught it rather than any
+log - the ability worked, it simply worked for free.
+
+`GameplayAbilityDefinitionSnapshot.report_cost_drift()` now pushes an error
+naming the ability and both counts. Once per instance, through the error channel
+alone: a game that wired up no listener is still told, and two ways to learn the
+same thing is the shape this codebase keeps removing.
+
 # Checked and not defects
 
 Recorded because a question asked and answered is worth as much as a bug found,

@@ -61,3 +61,58 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.shared_cooldown_effects = probe.shared_cooldown_effects.duplicate()
 	snapshot.shared_cooldown_tags = probe.shared_cooldown_tags.duplicate()
 	return snapshot
+
+
+## Report an instance whose `costs` are not the ones this definition will charge.
+##
+## Capturing on grant is deliberate: a definition free to drift afterwards would
+## let two battlers holding the same ability disagree about what it costs. What
+## was not deliberate is the silence around it. Costs assigned to a running
+## instance are ignored, so an ability whose cost never arrived is simply free -
+## and a clean log looks exactly like a correct one. A real game shipped a free
+## ability for a whole session before a screenshot caught it.
+##
+## Lives here rather than on GameplayAbility because this is the class that did
+## the freezing and already documents it; the ability only knows it was frozen.
+##
+## Returns whether it reported, so the caller can say it once per instance - the
+## mistake is a wiring one, and repeating it every commit buries the first
+## report under the hundredth.
+static func report_cost_drift(
+	ability: GameplayAbility, definition: GameplayAbilityDefinitionSnapshot
+) -> bool:
+	if definition == null or _same_costs(ability.costs, definition.costs):
+		return false
+
+	# Parenthesised before the format: `%` binds tighter than `+`, so without it
+	# the arguments reach only the last fragment and every placeholder before it
+	# survives into the message as literal text.
+	var template: String = (
+		"GAS_Engine: ability '%s' carries %d cost(s) the engine will not charge. "
+		+ "Its definition was captured when the ability was granted and holds %d; "
+		+ "costs assigned after that point are ignored. Set them before the grant - "
+		+ "an exported property's setter runs early enough, `_ready()` does not."
+	)
+	var message: String = template % [
+		ability.ability_name if ability.ability_name != "" else ability.name,
+		ability.costs.size(),
+		definition.costs.size(),
+	]
+	# One channel, not two. A signal beside this would be a second way to learn
+	# the same thing, and the engine's own error channel is where a wiring
+	# mistake belongs - it reaches a game that wired up nothing at all.
+	push_error(message)
+	return true
+
+
+## Identity, not value: this definition holds a duplicated array of the very same
+## cost resources, so a matching pair is the same objects in the same order.
+static func _same_costs(
+	mine: Array[GameplayAbilityCost], theirs: Array[GameplayAbilityCost]
+) -> bool:
+	if mine.size() != theirs.size():
+		return false
+	for index: int in mine.size():
+		if mine[index] != theirs[index]:
+			return false
+	return true

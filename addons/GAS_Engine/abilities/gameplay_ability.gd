@@ -88,6 +88,8 @@ var is_active: bool = false
 ## Whether this activation has already paid. One activation charges once.
 var _committed: bool = false
 
+var _reported_cost_drift: bool = false
+
 ## What _run_activation() resolved to - read after try_activate() awaits `ability_ended`.
 var _last_activation_succeeded: bool = false
 
@@ -158,6 +160,12 @@ func commit_ability() -> AbilityCommitResult:
 	if _committed:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
 		return result
+
+	# The snapshot froze these costs, so it is what can tell when this instance
+	# stopped agreeing with them. Said once: the mistake is a wiring one.
+	if not _reported_cost_drift:
+		_reported_cost_drift = GameplayAbilityDefinitionSnapshot.report_cost_drift(
+			self, current_spec.definition)
 
 	# current_spec is guaranteed non-null. Every step after reads
 	# resolved.absolute_effect, never the definition's costs again.
@@ -249,10 +257,9 @@ func abort_ability(
 ## Wait until this ability is done, and return at once if it already is.
 ##
 ## `try_activate()` returns when activation BEGINS, so an ability that refuses -
-## or has nothing to do - has already ended by the time a caller sees the result.
-## Awaiting `ability_ended` then waits for a signal that will not fire again, and
-## the caller stops there for good. The counterpart of
-## `GameplayAbilityTask.completed()`, for the same reason.
+## or has nothing to do - has already ended by the time a caller sees the
+## result, and awaiting `ability_ended` then waits for what will not fire
+## again. The counterpart of `GameplayAbilityTask.completed()`.
 func completed() -> void:
 	if not is_active:
 		return
