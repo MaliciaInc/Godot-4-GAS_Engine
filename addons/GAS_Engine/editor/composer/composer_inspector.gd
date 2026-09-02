@@ -1,12 +1,17 @@
-## The selected node, edited by hand.
+## The selected node, and where its values are typed.
 ##
 ## Collapsible, because a wide graph wants the width back and this panel is only
 ## worth its column while something is selected. The grip sits on its own edge so
 ## the control is where the thing it controls is.
 ##
-## Shows the same fields the card shows, in the same words: a value that is
-## absent reads `not connected` here too, because both ask the field rather than
-## deciding for themselves.
+## Shows the same fields the card shows, in the same words and the same colours:
+## a value that is absent reads `not connected` here too, and in the same red,
+## because both ask the field rather than deciding for themselves.
+##
+## Not every value can be typed. One that arrives on a cable is whatever the
+## statement above produced, and a box offering to change it would be offering
+## something that cannot be done - so it is shown as what feeds it instead. The
+## node answers which is which; this only draws the answer.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: MIT
@@ -16,11 +21,18 @@ const TITLE: String = "INSPECTOR"
 const NOTHING_SELECTED: String = "Nothing selected"
 const OPEN_MARK: String = "›"
 const SHUT_MARK: String = "‹"
-const ROW_PITCH: float = 70.0
 
 signal collapsed_changed(collapsed: bool)
 
+## A value somebody typed. Carries where it goes rather than what it is, so the
+## panel never has to hold a reference to the graph it is drawing.
+signal value_edited(node_id: StringName, position: int, written: String)
+
+const WIRED_MARK: String = "⌄ "
+
 var _collapsed: bool = false
+var _shown: ComposerNode = null
+var _may_write: bool = false
 var _body: VBoxContainer = null
 var _grip: Button = null
 var _width: float = 0.0
@@ -51,7 +63,9 @@ func _ready() -> void:
 ##
 ## An empty panel and a panel showing nothing look the same, and one of them is
 ## a bug. Saying it removes the question.
-func show_node(node: ComposerNode) -> void:
+func show_node(node: ComposerNode, may_write: bool = false) -> void:
+	_shown = node
+	_may_write = may_write
 	for child: Node in _body.get_children():
 		child.queue_free()
 
@@ -67,27 +81,77 @@ func show_node(node: ComposerNode) -> void:
 	_body.add_child(
 		ComposerPanel.label(node.title, ComposerTheme.TEXT, ComposerTheme.FONT_TITLE)
 	)
-	for field: ComposerNode.Field in node.fields:
-		_body.add_child(_field_block(field))
+	for position: int in node.fields.size():
+		_body.add_child(_field_block(node, position))
 
 
-func _field_block(field: ComposerNode.Field) -> Control:
+func _field_block(node: ComposerNode, position: int) -> Control:
+	var field: ComposerNode.Field = node.fields[position]
 	var block: VBoxContainer = ComposerPanel.column(ComposerTheme.S1)
 	block.add_child(
 		ComposerPanel.label(
 			field.label, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_LABEL
 		)
 	)
-
-	var absent: bool = not field.is_satisfied()
 	block.add_child(
-		ComposerPanel.slot(
-			ComposerCard.MISSING_LABEL if absent else field.display,
-			ComposerTheme.WARNING if absent else ComposerTheme.TEXT,
-			_width - ComposerTheme.S4 * 2.0
-		)
+		_box(node, position) if _may_write and node.may_edit(field) else _read_only(field)
 	)
 	return block
+
+
+## A value that cannot be typed, shown as what it is.
+##
+## An absent one is drawn in the colour the Output panel gives it, which is the
+## colour of an error - the file will not compile without it. Amber here and red
+## there, over one fact, is how a person concludes their ability still runs.
+func _read_only(field: ComposerNode.Field) -> Control:
+	var absent: bool = not field.is_satisfied()
+	var wired: bool = field.source == ComposerNode.ValueSource.WIRED
+	var text: String = field.display
+	if absent:
+		text = ComposerCard.MISSING_LABEL
+	elif wired:
+		text = WIRED_MARK + field.display
+
+	var tint: Color = ComposerTheme.TEXT
+	if absent:
+		tint = ComposerTheme.severity_color(ComposerGraph.Severity.ERROR)
+	elif wired:
+		tint = ComposerTheme.TEXT_DIM
+	return ComposerPanel.slot(text, tint, _width - ComposerTheme.S4 * 2.0)
+
+
+## A value somebody can type over.
+##
+## Committed when the box is left or the line is submitted, not on every
+## keystroke: a graph that redrew itself per character would fight the person
+## typing, and a save is the only thing that reaches the file anyway.
+func _box(node: ComposerNode, position: int) -> Control:
+	var written: LineEdit = LineEdit.new()
+	written.text = node.fields[position].display
+	written.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
+	written.add_theme_stylebox_override(
+		DashboardTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
+	)
+	written.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT)
+	written.add_theme_font_size_override(
+		DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
+	)
+	written.text_submitted.connect(
+		func _submitted(text: String) -> void: _commit(node.id, position, text)
+	)
+	written.focus_exited.connect(
+		func _left() -> void: _commit(node.id, position, written.text)
+	)
+	return written
+
+
+func _commit(node_id: StringName, position: int, written: String) -> void:
+	if not _may_write or _shown == null or _shown.id != node_id:
+		return
+	if _shown.fields[position].display == written:
+		return
+	value_edited.emit(node_id, position, written)
 
 
 #region Collapsing

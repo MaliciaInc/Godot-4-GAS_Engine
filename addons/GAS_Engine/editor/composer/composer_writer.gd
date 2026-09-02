@@ -118,13 +118,13 @@ static func print_body(graph: ComposerGraph) -> PackedStringArray:
 static func apply(graph: ComposerGraph, source: String) -> Result:
 	var result: Result = Result.new()
 	if graph == null or not graph.is_editable():
-		result.refusal = _refuse("a file this tool cannot draw is not one it may write")
+		result.refusal = refuse("a file this tool cannot draw is not one it may write")
 		return result
 
 	var lines: PackedStringArray = source.split("\n")
 	var span: ComposerSpan = ComposerSubset.body_span(lines)
 	if not span.is_valid():
-		result.refusal = _refuse("no %s() to write into" % ComposerSubset.ENTRY_POINT)
+		result.refusal = refuse("no %s() to write into" % ComposerSubset.ENTRY_POINT)
 		return result
 
 	var spliced: String = _splice(lines, span, print_body(graph))
@@ -160,12 +160,12 @@ static func _verify(
 ) -> ComposerGraph.Diagnostic:
 	var reread: ComposerGraph = ComposerReader.read(text, path)
 	if not reread.is_editable():
-		return _refuse("the text this produced cannot be read back: %s" % reread.blocked_reason())
+		return refuse("the text this produced cannot be read back: %s" % reread.blocked_reason())
 
 	var wanted: String = signature(graph)
 	var got: String = signature(reread)
 	if wanted != got:
-		return _refuse("what this produced is not what it was given")
+		return refuse("what this produced is not what it was given")
 	return null
 
 
@@ -204,7 +204,8 @@ static func signature(graph: ComposerGraph) -> String:
 	return "|".join(parts) + "#" + "|".join(wires)
 
 
-static func _refuse(message: String) -> ComposerGraph.Diagnostic:
+## Say no, in the one shape everything that reads a refusal already knows.
+static func refuse(message: String) -> ComposerGraph.Diagnostic:
 	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
 	found.severity = ComposerGraph.Severity.ERROR
 	found.message = message

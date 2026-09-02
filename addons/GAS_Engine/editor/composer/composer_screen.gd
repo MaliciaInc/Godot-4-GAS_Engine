@@ -18,6 +18,12 @@ class_name ComposerScreen extends Control
 const CODE_TAB: String = "Code"
 const COMPOSER_TAB: String = "Ability Composer"
 const NO_ABILITY: String = "No ability open"
+const NOTHING_TO_SAVE: String = "no ability is open"
+## Borrowed: a path that holds nothing is one fact, and a second spelling of it
+## is a second thing to keep true.
+const NO_FILE: String = ComposerCatalog.NO_SCRIPT
+const NOT_WRITABLE: String = "%s cannot be written to"
+const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"
 const PICKER_MARK: String = "⌄"
 
 const TOP_BAR: float = 54.0
@@ -65,6 +71,7 @@ func _ready() -> void:
 	# panel to one that has not been made yet reads as done and is not.
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_output.row_picked.connect(_on_row_picked)
+	_inspector.value_edited.connect(_on_value_edited)
 
 	resized.connect(_arrange)
 	_arrange()
@@ -157,13 +164,94 @@ static func _ability_name(graph: ComposerGraph) -> String:
 ## something up. The first is the one nearest the start of the graph.
 func _on_selection_changed(picked: Array[StringName]) -> void:
 	_inspector.show_node(
-		_graph.find_node(picked[0]) if not picked.is_empty() and _graph != null else null
+		_graph.find_node(picked[0]) if not picked.is_empty() and _graph != null else null,
+		_graph != null and _graph.is_editable()
 	)
 
 
 ## A row in the Output panel is a place in the graph, not just a message.
 func _on_row_picked(node_id: StringName, _line: int) -> void:
 	_canvas.reveal(node_id)
+
+
+## A typed value reaches the model, and everything that draws the model is asked
+## again.
+##
+## Redrawn rather than patched. The card's text, the dot on it and the rows in
+## the Output panel all come from one pass over the graph, and reaching in to
+## change one of them is how the three start disagreeing about the same node.
+func _on_value_edited(node_id: StringName, position: int, written: String) -> void:
+	if _graph == null or not _graph.is_editable():
+		return
+	var node: ComposerNode = _graph.find_node(node_id)
+	if node == null or position < 0 or position >= node.fields.size():
+		return
+	# Asked here and not only where the box was drawn. The panel does not offer
+	# one for a value that arrives on a cable, but a guard that lives only in the
+	# thing that draws the control is a guard the next caller walks straight
+	# past - and this is the door every one of them comes through.
+	if not node.may_edit(node.fields[position]):
+		return
+
+	node.fields[position].display = written
+	# A value somebody typed is a written one, whatever it was before. An
+	# argument that was missing has just been supplied, and leaving it marked
+	# absent would have the validator strip it back out on the next pass.
+	node.fields[position].source = ComposerNode.ValueSource.LITERAL
+	node.dirty = true
+
+	ComposerValidator.apply(_graph)
+	var held: Array[StringName] = _canvas.picked()
+	await show_graph(_graph)
+	if not held.is_empty():
+		_canvas.reveal(held[0])
+
+
+## Write the graph back to the file it came from.
+##
+## Everything goes through `ComposerWriter.apply`, which prints the body, reads
+## it back and compares before anything reaches the disk. A save that would not
+## read back as the graph it came from is refused, and the file is left exactly
+## as it was - the one promise this tool cannot break and still be worth having.
+##
+## The file is re-read afterwards rather than assumed. Spans move when a line
+## changes length, and a second save built on the first save's spans would
+## splice into the wrong place.
+func save() -> ComposerWriter.Result:
+	var result: ComposerWriter.Result = ComposerWriter.Result.new()
+	if _graph == null:
+		result.refusal = ComposerWriter.refuse(NOTHING_TO_SAVE)
+		return result
+
+	var path: String = _graph.source_path
+	if not FileAccess.file_exists(path):
+		result.refusal = ComposerWriter.refuse(NO_FILE % path)
+		return result
+
+	result = ComposerWriter.apply(_graph, FileAccess.get_file_as_string(path))
+	if not result.is_ok():
+		return result
+
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if out == null:
+		result.refusal = ComposerWriter.refuse(NOT_WRITABLE % path)
+		return result
+	out.store_string(result.text)
+	out.close()
+
+	await show_graph(ComposerReader.read(result.text, path))
+	return result
+
+
+## Ctrl+S, the way every other editor in the world spells it.
+func _shortcut_input(event: InputEvent) -> void:
+	var key: InputEventKey = event as InputEventKey
+	if key == null or not key.pressed or key.keycode != KEY_S or not key.ctrl_pressed:
+		return
+	accept_event()
+	var result: ComposerWriter.Result = await save()
+	if not result.is_ok():
+		push_error(SAVE_REFUSED % result.refusal.message)
 
 
 func canvas() -> ComposerCanvas:

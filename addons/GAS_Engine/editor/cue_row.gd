@@ -73,7 +73,7 @@ static func _label_column(
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	# Without this the label paints the editor's faint text background inside
 	# the card, which reads as a second nested panel.
-	label.add_theme_stylebox_override(DashboardTheme.RICH_TEXT_STYLEBOX, StyleBoxEmpty.new())
+	label.add_theme_stylebox_override(DashboardTheme.NORMAL_STYLEBOX, StyleBoxEmpty.new())
 	label.text = _describe(entry, theme, tag_icon, scene_icon)
 
 	column.add_child(label)

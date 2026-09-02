@@ -102,6 +102,24 @@ var carried: PackedStringArray = PackedStringArray()
 ## disagree about what a statement is.
 var entry: ComposerCatalog.Entry = null
 
+## Whether a person may type into `field`.
+##
+## Some values are editable and some are not, and the two reasons live in two
+## places - which is why the question is asked in one. A value that arrives on a
+## cable is not typed anywhere: it is whatever the statement above produced, and
+## a box offering to change it would be offering something that cannot be done.
+## And a statement this cannot print back - a branch, a return, a wait on a
+## signal - must not be edited at all, because the writer would have to rebuild
+## it from a model that never held it.
+##
+## The third condition is the graph's, not the node's: a file outside the subset
+## opens read-only, and nothing in it may be touched.
+func may_edit(field: Field) -> bool:
+	if type_id.is_empty():
+		return false
+	return field.source != ComposerNode.ValueSource.WIRED
+
+
 ## Everything the statement says before the call: `var found: Node2D = ` in
 ## `var found: Node2D = pick_target()`, empty for a statement that is only a
 ## call.
