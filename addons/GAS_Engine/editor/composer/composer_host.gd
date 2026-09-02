@@ -29,6 +29,11 @@ const NOT_AN_ABILITY: String = "%s does not extend GameplayAbility"
 class Opened extends RefCounted:
 	var graph: ComposerGraph = null
 
+	## The file as it was read. The screen holds it and builds everything from
+	## it, so handing over only the graph would leave the one thing an edit has
+	## to change back on disk where nobody is looking at it.
+	var source: String = ""
+
 	## Why it was not opened, or empty. The graph is null exactly when this is
 	## not - one question, one answer, so a caller cannot check the wrong one.
 	var refusal: String = ""
@@ -61,7 +66,8 @@ static func open(path: String) -> Opened:
 	# Read from the file rather than from the loaded script: the two differ the
 	# moment somebody has typed in the script editor without saving, and drawing
 	# the older of the two would show a graph of code that is no longer there.
-	result.graph = ComposerReader.read(FileAccess.get_file_as_string(path), path)
+	result.source = FileAccess.get_file_as_string(path)
+	result.graph = ComposerReader.read(result.source, path)
 	return result
 
 

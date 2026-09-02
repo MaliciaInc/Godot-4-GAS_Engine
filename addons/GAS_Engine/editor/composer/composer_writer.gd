@@ -37,6 +37,30 @@ class Result extends RefCounted:
 
 
 #region Printing
+## The line a call from the palette becomes, in the file it is being put into.
+##
+## A call has to be written on the thing it is a method of, and which thing that
+## is depends on the file: on the ability itself it is written bare, on the
+## ability system it is written on the property that holds one, and on a class
+## with static methods it is written on the class. Read from the file rather
+## than assumed, because a game's ability may name its own things differently.
+##
+## Empty when there is nothing to write - no entry, or nothing in the file that
+## the call could be made on. Guessing a receiver would produce a line that does
+## not compile, put there by the tool rather than by the person.
+static func call_for(entry: ComposerCatalog.Entry, path: String) -> String:
+	if entry == null:
+		return ""
+	var receiver: String = ComposerTypes.name_reaching(entry.source, path)
+	var written: String = String(entry.type_id)
+	if not receiver.is_empty():
+		written = "%s.%s" % [receiver, written]
+	var call: String = "%s()" % written
+	if entry.awaits:
+		call = AWAIT_MARK + call
+	return TAB + call
+
+
 ## One statement, rebuilt from the model.
 ##
 ## Used only for a node someone edited. Everything else keeps the text it came

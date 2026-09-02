@@ -83,9 +83,8 @@ func _open(source: String, tag: int) -> ComposerGraph:
 	out.store_string(source)
 	out.close()
 
-	var graph: ComposerGraph = ComposerReader.read(source, path)
-	await screen.show_graph(graph)
-	return graph
+	await screen.open(source, path)
+	return screen.graph()
 
 
 func _applied(graph: ComposerGraph) -> ComposerNode:
@@ -187,8 +186,8 @@ func test_only_the_values_that_can_be_typed_are_changed() -> void:
 ## turn it into a real argument, or the next pass strips it back out and the
 ## person watches what they wrote disappear.
 func test_filling_in_a_missing_argument_keeps_what_was_typed() -> void:
-	var graph: ComposerGraph = ComposerReader.read(SHORT, AN_ABILITY)
-	await screen.show_graph(graph)
+	await screen.open(SHORT, AN_ABILITY)
+	var graph: ComposerGraph = screen.graph()
 	var node: ComposerNode = graph.nodes[0]
 
 	assert_eq(node.fields[EFFECT].source, ComposerNode.ValueSource.MISSING, "a gap")
@@ -197,11 +196,14 @@ func test_filling_in_a_missing_argument_keeps_what_was_typed() -> void:
 	screen._on_value_edited(node.id, EFFECT, "state_burning")
 	await wait_frames(2)
 
-	assert_eq(node.fields[EFFECT].display, "state_burning", "what was typed survived")
+	# Read again: an edit replaces the graph, so the one held before it is an
+	# ability that is no longer open.
+	var after: ComposerNode = screen.graph().nodes[0]
+	assert_eq(after.fields[EFFECT].display, "state_burning", "what was typed survived")
 	assert_eq(
-		node.fields[EFFECT].source, ComposerNode.ValueSource.LITERAL, "as a real argument"
+		after.fields[EFFECT].source, ComposerNode.ValueSource.LITERAL, "as a real argument"
 	)
-	assert_eq(graph.diagnostics.size(), 0, "and the panel has nothing left to say")
+	assert_eq(screen.graph().diagnostics.size(), 0, "and the panel has nothing to say")
 
 
 #endregion

@@ -30,7 +30,7 @@ const DASHBOARD_SCENE: PackedScene = preload("res://addons/GAS_Engine/editor/gas
 
 ## The screen names itself; the menu that opens it says the same word by
 ## reading it rather than by agreeing to spell it the same way.
-const COMPOSER_MENU: String = ComposerScreen.COMPOSER_TAB
+const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
 const DASHBOARD_MENU: String = "GAS_Engine Dashboard"
 const SCRIPT_SCREEN: String = "Script"
 const COMPOSER_REFUSED: String = "GAS_Engine: %s"
@@ -191,7 +191,7 @@ func _open_composer() -> void:
 		return
 
 	_showing_composer = true
-	_composer_instance.show_graph(opened.graph)
+	_composer_instance.open(opened.source, opened.graph.source_path)
 	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
 	_make_visible(true)
 

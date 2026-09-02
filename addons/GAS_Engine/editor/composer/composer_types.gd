@@ -116,6 +116,39 @@ static func script_behind(receiver: String, path: String) -> String:
 	return ""
 
 
+## What to write in front of a call so it reaches `source` from inside `path`.
+##
+## The mirror of `script_behind`, and it has to be, or a node placed from the
+## palette is written differently from the way the same node is read back - the
+## Composer disagreeing with itself about one call.
+##
+## Three answers and no fourth: nothing at all when the file already is that
+## script or descends from it, the name of a property when the file holds one of
+## that type, and the class itself when it declares a global name. Empty when
+## none of those is true, because a guessed receiver is a line that does not
+## compile put there by the tool rather than by the person.
+static func name_reaching(source: String, path: String) -> String:
+	if not ResourceLoader.exists(path):
+		return ""
+	var script: GDScript = load(path) as GDScript
+	if script == null:
+		return ""
+
+	var walked: GDScript = script
+	while walked != null:
+		if walked.resource_path == source:
+			return ""
+		walked = walked.get_base_script()
+
+	for described: Dictionary in script.get_script_property_list():
+		var declared: String = described["class_name"]
+		if not declared.is_empty() and script_of(StringName(declared)) == source:
+			return described["name"]
+
+	var named: GDScript = load(source) as GDScript
+	return named.get_global_name() if named != null else ""
+
+
 static func _script_paths() -> Dictionary[StringName, String]:
 	if not _paths.is_empty():
 		return _paths

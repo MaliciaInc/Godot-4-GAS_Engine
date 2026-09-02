@@ -15,16 +15,13 @@
 ## @meta_license: MIT
 class_name ComposerScreen extends Control
 
-const CODE_TAB: String = "Code"
-const COMPOSER_TAB: String = "Ability Composer"
-const NO_ABILITY: String = "No ability open"
 const NOTHING_TO_SAVE: String = "no ability is open"
+const BROKE_IT: String = "that would leave a file the Composer cannot read"
 ## Borrowed: a path that holds nothing is one fact, and a second spelling of it
 ## is a second thing to keep true.
 const NO_FILE: String = ComposerCatalog.NO_SCRIPT
 const NOT_WRITABLE: String = "%s cannot be written to"
 const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"
-const PICKER_MARK: String = "⌄"
 
 const TOP_BAR: float = 54.0
 const PALETTE_WIDTH: float = 250.0
@@ -36,13 +33,19 @@ const OUTPUT_HEIGHT: float = 132.0
 ## view that knows about Godot's docks.
 signal code_requested(source_path: String)
 
+var _top: ComposerTopBar = null
 var _graph: ComposerGraph = null
+
+## The file as it stands, saved or not. The graph is read out of this and
+## nothing else, so the two cannot describe different abilities.
+var _source: String = ""
+
+var _history: ComposerHistory = ComposerHistory.new()
+var _chords: Dictionary[int, Callable] = {}
 var _palette: ComposerPalette = null
 var _canvas: ComposerCanvas = null
 var _inspector: ComposerInspector = null
 var _output: ComposerOutput = null
-var _title: Label = null
-var _path: Label = null
 
 
 func _ready() -> void:
@@ -50,7 +53,10 @@ func _ready() -> void:
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(back)
 
-	_build_top_bar()
+	_top = ComposerTopBar.new()
+	_top.size = Vector2(size.x, TOP_BAR)
+	_top.code_requested.connect(_on_code_pressed)
+	add_child(_top)
 
 	_palette = ComposerPalette.new()
 	_palette.size = Vector2(PALETTE_WIDTH, size.y - TOP_BAR)
@@ -72,66 +78,13 @@ func _ready() -> void:
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_output.row_picked.connect(_on_row_picked)
 	_inspector.value_edited.connect(_on_value_edited)
+	_palette.node_picked.connect(_on_node_picked)
 
+	_build_chords()
 	resized.connect(_arrange)
 	_arrange()
 
 
-#region Top bar
-func _build_top_bar() -> void:
-	add_child(ComposerPanel.rule(Vector2(0.0, TOP_BAR), Vector2(size.x, 1.0)))
-
-	var code: Button = _tab(CODE_TAB, false)
-	code.position = Vector2(ComposerTheme.S4 + 2.0, ComposerTheme.S3)
-	code.pressed.connect(_on_code_pressed)
-	add_child(code)
-
-	add_child(_divider(Vector2(76.0, ComposerTheme.S3 + 5.0)))
-
-	var here: Button = _tab(COMPOSER_TAB, true)
-	here.position = Vector2(90.0, ComposerTheme.S3)
-	add_child(here)
-
-	var underline: ColorRect = ColorRect.new()
-	underline.position = Vector2(90.0, TOP_BAR - 2.0)
-	underline.size = Vector2(124.0, 2.0)
-	underline.color = ComposerTheme.ACCENT
-	add_child(underline)
-
-	_title = ComposerPanel.label(
-		NO_ABILITY, ComposerTheme.TEXT, ComposerTheme.FONT_TITLE
-	)
-	_title.position = Vector2(300.0, ComposerTheme.S3 + 1.0)
-	add_child(_title)
-
-	_path = ComposerPanel.label(
-		"", ComposerTheme.TEXT_FAINT, ComposerTheme.FONT_LABEL
-	)
-	_path.position = Vector2(300.0, ComposerTheme.S4 + 14.0)
-	add_child(_path)
-
-
-func _tab(text: String, active: bool) -> Button:
-	var made: Button = Button.new()
-	made.text = text
-	made.flat = true
-	made.add_theme_color_override(
-		DashboardTheme.FONT_COLOR,
-		ComposerTheme.TEXT if active else ComposerTheme.TEXT_DIM
-	)
-	made.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_TITLE)
-	return made
-
-
-func _divider(at: Vector2) -> Label:
-	var made: Label = ComposerPanel.label("│", ComposerTheme.RULE, ComposerTheme.FONT_TITLE)
-	made.position = at
-	return made
-
-
-func _on_code_pressed() -> void:
-	code_requested.emit(_graph.source_path if _graph != null else "")
-#endregion
 
 
 #region Showing a graph
@@ -141,20 +94,13 @@ func _on_code_pressed() -> void:
 ## files - which is the failure a person notices last and trusts least.
 func show_graph(graph: ComposerGraph) -> void:
 	_graph = graph
-	_title.text = _ability_name(graph)
-	_path.text = graph.source_path if graph != null else ""
+	_top.show_graph(graph)
 	# Opening a file is when a person looks at the palette, so it is when the
 	# panel finds out about anything a game registered since it was built.
 	_palette.refresh()
 	_output.show_graph(graph)
 	_inspector.show_node(null)
 	await _canvas.show_graph(graph)
-
-
-static func _ability_name(graph: ComposerGraph) -> String:
-	if graph == null or graph.source_path.is_empty():
-		return NO_ABILITY
-	return graph.source_path.get_file().get_basename().capitalize()
 
 
 ## The Inspector shows whatever is picked on the canvas.
@@ -172,6 +118,158 @@ func _on_selection_changed(picked: Array[StringName]) -> void:
 ## A row in the Output panel is a place in the graph, not just a message.
 func _on_row_picked(node_id: StringName, _line: int) -> void:
 	_canvas.reveal(node_id)
+
+
+## Open a file.
+##
+## The text is held, not just the graph read out of it. Everything the canvas
+## shows is worked out from this string, so an edit is a new string and undo is
+## the old one - there is nothing else to keep in step and nothing that can fall
+## out of step.
+func open(source: String, path: String) -> void:
+	_source = source
+	_history.forget()
+	await show_graph(ComposerReader.read(source, path))
+
+
+## Take the file somewhere new, or refuse and leave it exactly where it was.
+##
+## Read before it is accepted. An edit that produced something the Composer
+## cannot read would be an edit that blanks the canvas, and the person would be
+## left holding a file they can no longer see - so it does not happen, and the
+## reason is said out loud instead.
+func _commit(next: String) -> bool:
+	if _graph == null:
+		return false
+	var read: ComposerGraph = ComposerReader.read(next, _graph.source_path)
+	if not read.is_editable():
+		push_error(SAVE_REFUSED % BROKE_IT)
+		return false
+
+	_history.record(_source)
+	_source = next
+	await show_graph(read)
+	return true
+
+
+## Back one step, and forward again.
+##
+## Putting the text back puts everything back: the nodes, the cables, the marks
+## and where each card sits are all read out of it again. There is no stack of
+## operations that each know how to undo themselves, so there is no operation
+## that knows wrongly.
+func undo() -> void:
+	if not _history.can_undo():
+		return
+	var back: String = _history.undo(_source)
+	_source = back
+	await show_graph(ComposerReader.read(back, _graph.source_path))
+
+
+func redo() -> void:
+	if not _history.can_redo():
+		return
+	var forward: String = _history.redo(_source)
+	_source = forward
+	await show_graph(ComposerReader.read(forward, _graph.source_path))
+
+
+func history() -> ComposerHistory:
+	return _history
+
+
+#region Statements, as things you can move about
+## The spans of what is picked, in the order the file has them.
+func _picked_spans() -> Array[ComposerSpan]:
+	var found: Array[ComposerSpan] = []
+	if _graph == null:
+		return found
+	for id: StringName in _canvas.picked():
+		var node: ComposerNode = _graph.find_node(id)
+		if node != null:
+			found.append(node.span)
+	return found
+
+
+## Take the picked statements out.
+##
+## A body with nothing left in it still has to say so, or the file stops
+## parsing - and a tool that breaks somebody's script by deleting the last node
+## is not one they open again.
+func remove_picked() -> bool:
+	var spans: Array[ComposerSpan] = _picked_spans()
+	if spans.is_empty():
+		return false
+	return await _commit(
+		ComposerEdits.keep_a_body(ComposerEdits.remove(_source, spans))
+	)
+
+
+func repeat_picked() -> bool:
+	var spans: Array[ComposerSpan] = _picked_spans()
+	if spans.is_empty():
+		return false
+	return await _commit(ComposerEdits.repeat(_source, spans))
+
+
+## The picked statements, as the text they are.
+##
+## The system clipboard, not one of our own: a statement is GDScript, and
+## somebody who copies one here should be able to paste it into the script
+## editor beside this one.
+func copy_picked() -> String:
+	var spans: Array[ComposerSpan] = _picked_spans()
+	if spans.is_empty():
+		return ""
+	var taken: String = ComposerEdits.lines_of(_source, spans)
+	DisplayServer.clipboard_set(taken)
+	return taken
+
+
+## Put whatever is on the clipboard in after what is picked.
+##
+## Anything at all may be on it, so the result is read before it is accepted
+## like every other edit. Text that does not belong in an ability body is
+## refused rather than pasted and then complained about.
+func paste() -> bool:
+	return await paste_text(DisplayServer.clipboard_get())
+
+
+## The same, told what to put in.
+##
+## Split from `paste` because the clipboard is how the text arrives, not what
+## the operation is - and a machine with no clipboard at all should still be
+## able to answer whether pasting a given statement works.
+func paste_text(written: String) -> bool:
+	if written.strip_edges().is_empty() or _graph == null:
+		return false
+	return await _commit(ComposerEdits.insert_after(_source, _after(), written))
+
+
+## The line a new statement goes in after: the last one picked, or the end of
+## the body when nothing is.
+func _after() -> int:
+	var spans: Array[ComposerSpan] = _picked_spans()
+	var last: int = 0
+	for span: ComposerSpan in spans:
+		last = maxi(last, span.last_line)
+	if last > 0:
+		return last
+	var body: ComposerSpan = ComposerSubset.body_span(_source.split("\n"))
+	return body.last_line if body.is_valid() else 0
+
+
+## A node picked out of the palette becomes a statement in the body.
+func _on_node_picked(key: StringName) -> void:
+	if _graph == null or not _graph.is_editable():
+		return
+	var written: String = ComposerWriter.call_for(
+		ComposerCatalog.find(key), _graph.source_path
+	)
+	if written.is_empty():
+		return
+	await _commit(ComposerEdits.insert_after(_source, _after(), written))
+#endregion
 
 
 ## A typed value reaches the model, and everything that draws the model is asked
@@ -200,10 +298,12 @@ func _on_value_edited(node_id: StringName, position: int, written: String) -> vo
 	node.fields[position].source = ComposerNode.ValueSource.LITERAL
 	node.dirty = true
 
-	ComposerValidator.apply(_graph)
+	var printed: ComposerWriter.Result = ComposerWriter.apply(_graph, _source)
+	if not printed.is_ok():
+		push_error(SAVE_REFUSED % printed.refusal.message)
+		return
 	var held: Array[StringName] = _canvas.picked()
-	await show_graph(_graph)
-	if not held.is_empty():
+	if await _commit(printed.text) and not held.is_empty():
 		_canvas.reveal(held[0])
 
 
@@ -223,35 +323,86 @@ func save() -> ComposerWriter.Result:
 		result.refusal = ComposerWriter.refuse(NOTHING_TO_SAVE)
 		return result
 
+	if not _graph.is_editable():
+		# Identical bytes are still a write: a timestamp moves, anything watching
+		# the file wakes up, and the promise was that a file this cannot draw is
+		# never touched. Not nearly never.
+		result.refusal = ComposerWriter.refuse(_graph.blocked_reason())
+		return result
+
 	var path: String = _graph.source_path
 	if not FileAccess.file_exists(path):
 		result.refusal = ComposerWriter.refuse(NO_FILE % path)
 		return result
 
-	result = ComposerWriter.apply(_graph, FileAccess.get_file_as_string(path))
-	if not result.is_ok():
-		return result
-
+	# What is written is what has been held all along. Every edit already went
+	# through the writer and was read back before it was accepted, so a save has
+	# nothing left to verify - it has only to put the file where the text is.
 	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if out == null:
 		result.refusal = ComposerWriter.refuse(NOT_WRITABLE % path)
 		return result
-	out.store_string(result.text)
+	out.store_string(_source)
 	out.close()
 
-	await show_graph(ComposerReader.read(result.text, path))
+	result.text = _source
 	return result
 
 
-## Ctrl+S, the way every other editor in the world spells it.
+## The chords, spelled the way every other editor spells them.
+##
+## A table of what each one does rather than a chain of branches: the chords are
+## what somebody reading this came to find, and a list of them is the answer.
+## Built here and not written as a constant because the values are the methods
+## themselves - a name in a table is a name that goes stale the day a method is
+## renamed and nothing says so.
+func _build_chords() -> void:
+	_chords = {
+		KEY_S | KEY_MASK_CTRL: _save_now,
+		KEY_Z | KEY_MASK_CTRL: undo,
+		KEY_Z | KEY_MASK_CTRL | KEY_MASK_SHIFT: redo,
+		KEY_Y | KEY_MASK_CTRL: redo,
+		KEY_C | KEY_MASK_CTRL: copy_picked,
+		KEY_V | KEY_MASK_CTRL: paste,
+		KEY_D | KEY_MASK_CTRL: repeat_picked,
+		KEY_DELETE: remove_picked,
+	}
+
+
 func _shortcut_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
-	if key == null or not key.pressed or key.keycode != KEY_S or not key.ctrl_pressed:
+	if key == null or not key.pressed or key.echo:
+		return
+	var chord: int = key.keycode
+	if key.ctrl_pressed:
+		chord |= KEY_MASK_CTRL
+	if key.shift_pressed:
+		chord |= KEY_MASK_SHIFT
+	if not _chords.has(chord):
 		return
 	accept_event()
+	await _chords[chord].call()
+
+
+## Saving says so when it will not, because a chord that appears to do nothing
+## is worse than one that explains itself.
+func _save_now() -> void:
 	var result: ComposerWriter.Result = await save()
 	if not result.is_ok():
 		push_error(SAVE_REFUSED % result.refusal.message)
+
+
+## What is on screen right now.
+##
+## Read rather than kept by a caller: an edit replaces the graph, so anything
+## holding the old one would be describing an ability that is no longer open.
+## The file as it stands, edits and all. What a save would write.
+func printed() -> String:
+	return _source
+
+
+func graph() -> ComposerGraph:
+	return _graph
 
 
 func canvas() -> ComposerCanvas:
@@ -284,3 +435,8 @@ func _arrange() -> void:
 
 	_inspector.position = Vector2(size.x - right, TOP_BAR)
 	_inspector.size = Vector2(INSPECTOR_WIDTH, body)
+
+
+## The Code chip asked to leave, and only this knows where to.
+func _on_code_pressed() -> void:
+	code_requested.emit(_graph.source_path if _graph != null else "")
