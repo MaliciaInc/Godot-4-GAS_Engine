@@ -302,6 +302,28 @@ ability costs 0, so the commit path has never refused), the `Focus` buff and
 therefore the contribution-and-withdrawal that justifies effects over
 arithmetic, evasion and misses, and losing a battle.
 
+## 2026-09-01 — a screenshot proved a cost was never charged
+
+Play showed `Punch` offered at full brightness on round one, with one energy
+against a cost of three. It should have been unpressable. It was not merely
+mis-drawn: the cost never reached the engine at all, so the ability was free.
+
+Granting an ability snapshots its definition immediately after
+`instantiate()` - `GameplayAbilityDefinitionSnapshot` copies `costs` there, and
+its own header warns that mutating the instance afterwards changes nothing. The
+cost was being built in `_ready()`, which runs later, when the instance is added
+to the tree. The engine was right and said so in its documentation; the sandbox
+read it wrong.
+
+Built in the exported property's setter now, which runs while the scene is being
+instantiated - before the snapshot is taken.
+
+Second, smaller, and also from the screenshot: a disabled `TextureButton` looks
+exactly like a live one. The engine refused the press and the player was left
+without a reason, which reads as the game ignoring them. Unavailable entries are
+dimmed now, and still legible, because a player deciding what to save energy for
+is reading them.
+
 # Checked and not defects
 
 Recorded because a question asked and answered is worth as much as a bug found,

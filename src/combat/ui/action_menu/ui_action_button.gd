@@ -26,6 +26,24 @@ var ability: BattlerAbility = null:
 ## already retired.
 var handle: GameplayAbilityHandle = null
 
+## Dimmed rather than hidden: a player deciding what to save energy for is
+## still reading these, so the icon has to stay recognisable.
+const UNAVAILABLE_TINT: Color = Color(1.0, 1.0, 1.0, 0.4)
+
+## Whether the player may press this right now.
+##
+## Sets `disabled` and shows it. A bare disabled TextureButton looks identical
+## to a live one, so the engine refuses the press and the player is left
+## without a reason - which reads as the game ignoring them rather than as an
+## ability they cannot afford yet.
+var available: bool = true:
+	set(value):
+		available = value
+		disabled = not available
+		if not is_inside_tree():
+			await ready
+		modulate = Color.WHITE if available else UNAVAILABLE_TINT
+
 @onready var _icon: TextureRect = $MarginContainer/Items/Icon as TextureRect
 @onready var _name_label: Label = $MarginContainer/Items/Name as Label
 

@@ -54,9 +54,9 @@ func setup(battler: Battler, roster: BattlerRoster) -> void:
 		entry.ability = ability
 		# Two reasons a button is dead, both asked of something that knows:
 		# the engine refuses the activation, or there is no one to aim at.
-		entry.disabled = (
-			not battler.asc.ability_runtime.can_activate(spec)
-			or ability.possible_targets(roster).is_empty()
+		entry.available = (
+			battler.asc.ability_runtime.can_activate(spec)
+			and not ability.possible_targets(roster).is_empty()
 		)
 		entry.focus_entered.connect(_on_entry_focused.bind(entry))
 		entry.mouse_entered.connect(_on_entry_focused.bind(entry))

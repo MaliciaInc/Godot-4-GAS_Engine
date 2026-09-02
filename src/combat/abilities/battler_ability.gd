@@ -39,7 +39,19 @@ enum Scope {
 @export_range(0.0, 100.0) var accuracy: float = 100.0
 
 ## Energy this costs to use. Zero is free.
-@export_range(0.0, 10.0) var energy_cost: float = 0.0
+##
+## Declared through the setter rather than in `_ready()`, and that is not a
+## style choice. Granting an ability snapshots its definition straight after
+## `instantiate()` - `GameplayAbilityDefinitionSnapshot` copies `costs` there and
+## its own header warns that mutating the instance afterwards changes nothing.
+## `_ready()` runs later, when the instance is added to the tree, so a cost built
+## there never reaches the engine: the ability reads as free, the action menu
+## never greys it, and `commit_ability()` has nothing to refuse. A setter runs
+## while the scene is being instantiated, which is before the snapshot is taken.
+@export_range(0.0, 10.0) var energy_cost: float = 0.0:
+	set(value):
+		energy_cost = value
+		costs = _build_costs()
 
 @export_group("Pacing")
 ## Beat before the caster moves, so a turn beginning is something the eye
@@ -59,18 +71,20 @@ enum Scope {
 #endregion
 
 
-## Declare the cost so the engine can refuse an activation nobody can pay for.
+## The cost the engine refuses an activation over.
 ##
 ## Built from the number above rather than authored beside it, for the reason
 ## `_payload()` is: two ways to say what an ability costs is two places to look
 ## when a battler pays the wrong amount.
 ##
-## The engine holds the refusal. Nothing here checks whether the caster can
-## afford this - `commit_ability()` does, before any animation runs, which is
-## what makes an unaffordable action not happen rather than happen on credit.
-func _ready() -> void:
+## Nothing here checks whether the caster can afford it. `commit_ability()`
+## does, before any animation runs, and the action menu asks the same question
+## to decide what a player may press - which is what makes an unaffordable
+## action not happen rather than happen on credit.
+func _build_costs() -> Array[GameplayAbilityCost]:
 	if energy_cost <= 0.0:
-		return
+		return [] as Array[GameplayAbilityCost]
+
 	var amount: GameplayScalableFloat = GameplayScalableFloat.new()
 	amount.value = energy_cost
 
@@ -78,7 +92,7 @@ func _ready() -> void:
 	cost.mode = GameplayAbilityCost.Mode.ABSOLUTE
 	cost.target_attribute = BattlerAttributes.ENERGY
 	cost.amount = amount
-	costs = [cost] as Array[GameplayAbilityCost]
+	return [cost] as Array[GameplayAbilityCost]
 
 
 ## Filled by the arena before activation. An ability never goes looking for its
