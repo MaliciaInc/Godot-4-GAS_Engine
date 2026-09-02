@@ -14,4 +14,6 @@ targets_enemies = true
 accuracy = 65.0
 base_damage = 150.0
 energy_cost = 3.0
+cooldown_tag = &"Cooldown.Punch"
+cooldown_turns = 4
 icon = ExtResource("2_icon")

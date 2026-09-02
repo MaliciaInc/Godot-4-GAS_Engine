@@ -53,6 +53,32 @@ enum Scope {
 		energy_cost = value
 		costs = _build_costs()
 
+## The tag that marks this ability as cooling down.
+##
+## The tag IS the cooldown: the engine refuses an activation by asking
+## whether the caster carries it, not by consulting a timer of its own. So
+## two abilities given the same tag deliberately share one cooldown, and two
+## given none share nothing.
+@export var cooldown_tag: StringName = &"":
+	set(value):
+		cooldown_tag = value
+		cooldown_effect = _build_cooldown()
+
+## Turns this ability is unusable for after it is used. Zero is no cooldown.
+##
+## Built in a setter for the reason `energy_cost` is, and rebuilt in both
+## setters rather than one: a scene assigns its properties in file order and
+## neither setter can know whether it ran last. Whichever runs second builds
+## the effect that survives, and both build the same one.
+##
+## Nothing here advances the clock. `Combat` does, once per round - which is
+## what `TURN_BASED` means: the engine ages the effect when a turn manager
+## says a turn passed, and this game is the turn manager.
+@export_range(0, 9) var cooldown_turns: int = 0:
+	set(value):
+		cooldown_turns = value
+		cooldown_effect = _build_cooldown()
+
 @export_group("Pacing")
 ## Beat before the caster moves, so a turn beginning is something the eye
 ## catches rather than something it misses.
@@ -69,6 +95,29 @@ enum Scope {
 @export var recovery: float = 0.2
 @export_group("")
 #endregion
+
+
+## The cooldown the engine refuses a second activation over.
+##
+## Legal by the engine's own contract, which is stricter than it looks: no
+## modifiers (a cooldown is not a debuff), at least one granted tag (without
+## one nothing could observe it and it would expire unnoticed), and a
+## duration above zero. Null when either half is unset, because half a
+## cooldown is a cooldown that never lifts.
+func _build_cooldown() -> GameplayEffect:
+	if cooldown_turns <= 0 or cooldown_tag == &"":
+		return null
+
+	var effect: GameplayEffect = GameplayEffect.new()
+	effect.policy = GameplayEffect.DurationPolicy.TURN_BASED
+	effect.duration_turns = cooldown_turns
+
+	var marker: GameplayEffectTargetTagsComponent = (
+		GameplayEffectTargetTagsComponent.new()
+	)
+	marker.granted_tags = [cooldown_tag] as Array[StringName]
+	effect.components.append(marker)
+	return effect
 
 
 ## The cost the engine refuses an activation over.

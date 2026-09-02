@@ -73,6 +73,12 @@ func next_round() -> void:
 	round_count += 1
 	_intentions.clear()
 
+	# A turn passes for everyone, standing or not: an effect counted in turns
+	# is aged by whoever manages the turns, and that is this. Without this
+	# call a TURN_BASED effect never expires - a cooldown would lift never.
+	for battler: Battler in _roster.get_battlers():
+		battler.asc.advance_turn()
+
 	for battler: Battler in _roster.get_standing(_roster.get_battlers()):
 		battler.asc.apply_gameplay_effect(_energy_tick())
 
