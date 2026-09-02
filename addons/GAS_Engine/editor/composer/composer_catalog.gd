@@ -107,6 +107,13 @@ class Entry extends RefCounted:
 	## Parameter names and types, read from the engine rather than restated.
 	var parameters: Array[ComposerNode.Field] = []
 
+	## How many of them a caller has to pass.
+	##
+	## The rest carry defaults, and a default is not a gap: a call that leaves
+	## one out has said everything it needed to. Treating them the same would put
+	## a warning on every correct statement in a file.
+	var required: int = 0
+
 	func parameter(position: int) -> ComposerNode.Field:
 		if position < 0 or position >= parameters.size():
 			return null
@@ -160,6 +167,10 @@ static func _entry(method: String, group: StringName, path: String) -> Entry:
 		entry.title = method.capitalize()
 		entry.awaits = SUSPENDS.has(entry.type_id)
 		entry.parameters.assign(_parameters(described))
+		# Defaults fill the last parameters, so the required ones are whatever is
+		# left at the front. Read off the method rather than decided here.
+		var defaults: Array = described["default_args"]
+		entry.required = maxi(entry.parameters.size() - defaults.size(), 0)
 		return entry
 	return null
 

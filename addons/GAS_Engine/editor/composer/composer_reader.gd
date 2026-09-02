@@ -21,6 +21,10 @@ const EXEC_IN: StringName = &"exec_in"
 const EXEC_OUT: StringName = &"exec_out"
 const VALUE_OUT: StringName = &"value_out"
 
+## An argument slot. One per field, so a value lands where it is actually used
+## rather than on the node's run of control.
+const ARGUMENT: String = "arg_%d"
+
 ## Statements that suspend the ability, which the card says out loud.
 const AWAIT_MARK: String = "await "
 
@@ -44,6 +48,12 @@ static func read(source: String, path: String) -> ComposerGraph:
 	_build_nodes(graph, lines, span)
 	_wire_execution(graph, lines)
 	_wire_data(graph, lines)
+
+	# The findings come back with the graph rather than being asked for later.
+	# A caller that forgot to validate would draw a file with every card clean
+	# and an empty Output panel, which reads as "nothing is wrong" rather than
+	# as "nobody looked".
+	ComposerValidator.apply(graph)
 	return graph
 
 
@@ -83,6 +93,9 @@ static func _node(
 	node.title = _title(text, verdict)
 	node.ports = _ports(verdict, text)
 	node.fields.assign(_fields(text, node.type_id))
+	# After the fields, never before: there is one argument port per field, and
+	# reading them while the list is still empty gives a node no value can land on.
+	_add_argument_ports(node)
 	return node
 
 
@@ -151,8 +164,27 @@ static func _ports(
 		# would claim to carry nothing, and every wire out of it would be checked
 		# against a promise the file never made.
 		value.type_name = StringName(_local_type(text))
+		value.label = _local_name(text)
 		ports.append(value)
 	return ports
+
+
+## One data input per argument, typed by the catalog.
+##
+## Without these a value wire had nowhere to land and was joined to the node's
+## execution input instead - a data cable plugged into a run of control. Nothing
+## caught it until something compared the two ends, which is the whole reason
+## the type system exists.
+static func _add_argument_ports(node: ComposerNode) -> void:
+	for position: int in node.fields.size():
+		var slot: ComposerNode.Port = port(
+			StringName(ARGUMENT % position),
+			ComposerNode.PortKind.DATA,
+			ComposerNode.PortDirection.INPUT
+		)
+		slot.label = node.fields[position].label
+		slot.type_name = node.fields[position].type_name
+		node.ports.append(slot)
 
 
 ## The type in `var name: Type = ...`, or empty when there is none.
@@ -245,9 +277,12 @@ static func _wire_data(graph: ComposerGraph, lines: PackedStringArray) -> void:
 		for other: ComposerNode in graph.nodes:
 			if other.span.first_line <= node.span.last_line:
 				continue
-			if not _mentions(lines[other.span.last_line - 1], declared):
+			var slot: int = _argument_naming(lines[other.span.last_line - 1], declared)
+			if slot < 0:
 				continue
-			graph.connections.append(wire(node.id, VALUE_OUT, other.id, EXEC_IN))
+			graph.connections.append(
+				wire(node.id, VALUE_OUT, other.id, StringName(ARGUMENT % slot))
+			)
 
 
 static func _local_name(line: String) -> String:
@@ -261,15 +296,20 @@ static func _local_name(line: String) -> String:
 	return rest.substr(0, stop).strip_edges()
 
 
-## Whether a line names `word` as a word, not as part of a longer one.
-static func _mentions(line: String, word: String) -> bool:
+## Which argument of `line` is exactly `word`, or -1 when none is.
+##
+## Position matters: the wire has to land on the slot that uses the value, not
+## just on the statement that mentions it somewhere.
+static func _argument_naming(line: String, word: String) -> int:
 	var open: int = line.find("(")
 	if open < 0:
-		return false
+		return -1
+	var position: int = 0
 	for argument: String in line.substr(open + 1).split(","):
 		if argument.strip_edges().trim_suffix(")").strip_edges() == word:
-			return true
-	return false
+			return position
+		position += 1
+	return -1
 
 
 ## Public for the same reason `port()` is.

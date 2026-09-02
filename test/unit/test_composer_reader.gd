@@ -170,4 +170,38 @@ func test_a_value_reaches_the_statement_that_uses_it() -> void:
 		data += 1
 		assert_eq(wire.to_node, graph.nodes[1].id, "to the statement that names it")
 	assert_eq(data, 1, "and to no other")
+
+
+## A value lands on the argument that uses it, not on the run of control.
+##
+## The wire and the slot are two halves of the same fact - a value goes into a
+## particular argument - and nothing else compares them. Without this the reader
+## can point a cable at a port that was never built and every check downstream
+## quietly skips it, which is how a type system ends up agreeing with everything.
+func test_every_wire_lands_on_a_port_that_exists() -> void:
+	var graph: ComposerGraph = _read([
+		"var target: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, target)",
+		"end_ability()",
+	])
+
+	for wire: ComposerGraph.Connection in graph.connections:
+		var leaves: ComposerNode = graph.find_node(wire.from_node)
+		var lands: ComposerNode = graph.find_node(wire.to_node)
+		assert_not_null(leaves.find_port(wire.from_port), "leaves %s" % wire.from_port)
+		assert_not_null(lands.find_port(wire.to_port), "lands on %s" % wire.to_port)
+
+
+func test_a_value_lands_on_the_argument_that_names_it() -> void:
+	var graph: ComposerGraph = _read([
+		"var target: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, target)",
+	])
+
+	for wire: ComposerGraph.Connection in graph.connections:
+		if wire.from_port != ComposerReader.VALUE_OUT:
+			continue
+		var slot: ComposerNode.Port = graph.nodes[1].find_port(wire.to_port)
+		assert_eq(slot.label, "Source Asc", "the second argument, where it was written")
+		assert_eq(slot.kind, ComposerNode.PortKind.DATA, "and a value port, not a run")
 #endregion
