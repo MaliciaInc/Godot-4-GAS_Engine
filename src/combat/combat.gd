@@ -75,7 +75,9 @@ func next_round() -> void:
 
 	for battler: Battler in _roster.get_standing(_roster.get_battlers()):
 		battler.asc.apply_gameplay_effect(_energy_tick())
-	
+
+	_report_round()
+
 	for battler: Battler in _roster.get_standing(_roster.get_enemy_battlers()):
 		if battler.ai == null:
 			continue
@@ -84,6 +86,31 @@ func next_round() -> void:
 			_intentions[battler] = choice
 
 	_ask_next_player()
+
+
+## What every battler is standing on, printed once at the top of each round.
+##
+## A playthrough is the only way to put the engine in front of real content, and
+## an impression of a fight is not evidence. This turns one into a record.
+##
+## Health per battler is what tells an isolated attribute set apart from a shared
+## one: three of the enemies here are built from the same authored resource, so
+## if hitting one moves the others, they are sharing a pool. Reading it round by
+## round also carries across battles - a resource the engine wrote through would
+## show up as an enemy starting the second fight already wounded.
+func _report_round() -> void:
+	var lines: PackedStringArray = PackedStringArray()
+	for battler: Battler in _roster.get_battlers():
+		lines.append("%s %d/%d hp %d/%d en %de%s" % [
+			battler.name,
+			roundi(battler.attribute(BattlerAttributes.HEALTH)),
+			roundi(battler.attribute(BattlerAttributes.MAX_HEALTH)),
+			roundi(battler.attribute(BattlerAttributes.ENERGY)),
+			roundi(battler.attribute(BattlerAttributes.MAX_ENERGY)),
+			battler.asc.get_active_effects().size(),
+			" DOWN" if battler.is_downed() else "",
+		])
+	print("[GAS round %d] %s" % [round_count, " | ".join(lines)])
 
 
 ## The energy every standing battler gains at the top of a round.
