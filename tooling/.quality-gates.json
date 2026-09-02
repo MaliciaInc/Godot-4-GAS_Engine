@@ -8,7 +8,8 @@
       ".ps1"
     ],
     "exclude_globs": [
-      "addons/gut/**"
+      "addons/gut/**",
+      "docs/**"
     ],
     "file_length_allowlist": [
       {
@@ -59,7 +60,8 @@
     ],
     "require_test_directory": true,
     "exclude_globs": [
-      "addons/gut/**"
+      "addons/gut/**",
+      "docs/**"
     ]
   },
   "magic_strings": {
@@ -293,7 +295,8 @@
       "**/styles/**"
     ],
     "exclude_globs": [
-      "addons/gut/**"
+      "addons/gut/**",
+      "docs/**"
     ]
   },
   "duplication": {
