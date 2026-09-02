@@ -326,10 +326,17 @@ func test_sets_assigned_after_ready_are_still_isolated() -> void:
 	# Asked of the objects, not of a number. Reading health would pass while
 	# each component quietly went on using the set its fixture built - which
 	# is what this test did at first, and proved nothing.
-	assert_ne(one.asc.attribute_sets[0], authored, "one got a copy, not the original")
-	assert_ne(two.asc.attribute_sets[0], authored, "and so did two")
+	#
+	# Asked of the live sets rather than of the export, which is the second
+	# thing this got wrong: it read the export being overwritten with the
+	# copies as proof of isolation, and that overwrite was itself the bug
+	# below. The export holds what was authored; the copies live in the
+	# runtime that works on them.
+	assert_eq(one.asc.attribute_sets[0], authored, "the export still holds the original")
+	assert_ne(one.asc.attributes.find_set(&"health"), authored, "one works on a copy")
+	assert_ne(two.asc.attributes.find_set(&"health"), authored, "and so does two")
 	assert_ne(
-		one.asc.attribute_sets[0], two.asc.attribute_sets[0],
+		one.asc.attributes.find_set(&"health"), two.asc.attributes.find_set(&"health"),
 		"and not the same copy as each other, or one pool serves both"
 	)
 
@@ -338,5 +345,53 @@ func test_sets_assigned_after_ready_are_still_isolated() -> void:
 	assert_almost_eq(
 		two.asc.get_attribute_current(&"health"), 100.0, 0.0001,
 		"and the other did not feel it"
+	)
+
+
+## Isolation used to replace the elements of the array it was handed, and that
+## array belongs to the game. One array assigned to two components left the
+## second holding the first's live copies - a battler built after its twin had
+## taken a hit started the fight already wounded - and left the game's own
+## variable no longer holding what it authored.
+func test_one_array_handed_to_two_components_is_not_rewritten() -> void:
+	var one: ASCFixture = Fixture.create("First")
+	var two: ASCFixture = Fixture.create("Second")
+	add_child_autofree(one.owner)
+	add_child_autofree(two.owner)
+	one.asc.share_attributes = false
+	two.asc.share_attributes = false
+
+	var authored: TestAttributeSet = TestAttributeSet.new()
+	var roster: Array[AttributeSet] = [authored] as Array[AttributeSet]
+
+	one.asc.attribute_sets = roster
+	assert_eq(roster[0], authored, "the game's array still holds what it authored")
+
+	one.asc.apply_attribute_base_delta(&"health", -40.0)
+	two.asc.attribute_sets = roster
+
+	assert_almost_eq(
+		two.asc.get_attribute_current(&"health"), 100.0, 0.0001,
+		"the second copies the authored set, not the first's wounded one"
+	)
+
+
+## The policy is read at the handover, so assigning it to a running component
+## used to be ignored in silence - the same ordering trap the sets themselves
+## had, one export over. It is reversible now only because the export keeps the
+## authored resources instead of being overwritten with the copies.
+func test_share_attributes_set_after_ready_takes_effect() -> void:
+	var late: ASCFixture = Fixture.create("Sharer")
+	add_child_autofree(late.owner)
+
+	var authored: TestAttributeSet = TestAttributeSet.new()
+	late.asc.share_attributes = false
+	late.asc.attribute_sets = [authored] as Array[AttributeSet]
+	assert_ne(late.asc.attributes.find_set(&"health"), authored, "copied, as asked")
+
+	late.asc.share_attributes = true
+	assert_eq(
+		late.asc.attributes.find_set(&"health"), authored,
+		"and asked again the other way, it works on the authored set itself"
 	)
 #endregion

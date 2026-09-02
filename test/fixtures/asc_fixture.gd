@@ -39,8 +39,8 @@ static func create(entity_name: String = "Entity", attribute_set_script: GDScrip
 	fixture.asc = AbilitySystemComponent.new()
 	fixture.asc.name = String(AbilitySystemLocator.ASC_CHILD_NAME)
 	fixture.asc.attribute_sets = [fixture.attributes]
-	# Sharing is off by default, and the ASC would deep-copy the set on ready,
-	# leaving `fixture.attributes` pointing at a copy nothing else uses. The
+	# Sharing is off by default, and the component would then work on a deep
+	# copy, leaving `fixture.attributes` pointing at a set nothing reads. The
 	# fixture owns one instance and hands the same one over.
 	fixture.asc.share_attributes = true
 

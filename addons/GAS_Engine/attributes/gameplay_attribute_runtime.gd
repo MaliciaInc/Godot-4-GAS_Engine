@@ -38,21 +38,30 @@ var _contributions: Array[AttributeModifierContribution] = []
 #region Sets and lookup
 ## Take a set of authored attribute sets and make them this runtime's.
 ##
-## `isolate` duplicates them first, so two runtimes handed the same authored
-## resource do not share one pool of health - which looks like a working game
-## until the whole party dies at once. The elements are replaced rather than the
-## array, so a caller watching its own array for assignment is not re-entered.
+## `isolate` deep-copies them, so two runtimes handed the same authored resource
+## do not share one pool of health - which looks like a working game until the
+## whole party dies at once. It has no default value on purpose: the protective
+## choice must not be the one a caller has to remember to ask for.
+##
+## Builds its own array and never writes into the caller's. Isolating in place
+## did, and the array it rewrote belonged to the game: one array assigned to two
+## components left the second holding the first's live, already-damaged copies,
+## and left the game's own variable no longer holding what it authored. Nulls
+## keep their positions - every reader here already skips them, and dropping
+## them would silently renumber a caller's sets.
 ##
 ## Called again on every later assignment rather than once at wiring, because a
 ## game that builds its actors in code hands these over after the node exists.
 ## Taking them only once failed silently: this runtime kept the array it was
 ## wired with and the new sets were never read at all.
-func set_attribute_sets(sets: Array[AttributeSet], isolate: bool = false) -> void:
-	_sets = sets
-	if isolate:
-		for index: int in _sets.size():
-			if _sets[index] != null:
-				_sets[index] = _sets[index].duplicate(true)
+func set_attribute_sets(sets: Array[AttributeSet], isolate: bool) -> void:
+	var taken: Array[AttributeSet] = []
+	for authored: AttributeSet in sets:
+		if isolate and authored != null:
+			taken.append(authored.duplicate(true) as AttributeSet)
+		else:
+			taken.append(authored)
+	_sets = taken
 	initialize()
 
 

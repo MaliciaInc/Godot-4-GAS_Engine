@@ -109,9 +109,14 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		if is_node_ready():
 			_adopt_attribute_sets()
 
-## When false, this ASC deep-copies its attribute sets on ready so two entities
-## sharing a Resource do not share their stats. Matches Unreal's default.
-@export var share_attributes: bool = false
+## When false - Unreal's default - this component works on its own deep copies
+## rather than on the authored resources. See `set_attribute_sets()` for what
+## sharing them actually costs.
+@export var share_attributes: bool = false:
+	set(value):
+		share_attributes = value
+		if is_node_ready():
+			_adopt_attribute_sets()
 #endregion
 
 
@@ -132,16 +137,14 @@ func _ready() -> void:
 	_adopt_attribute_sets()
 
 
-## Hand the assigned sets to the attribute runtime, which isolates them unless
-## told to share. Run at ready and on every later assignment, because a game
-## building its actors in code hands these over after _ready has run.
+## The single handover: both exports above route here, so the sets and the
+## policy that copies them can never be applied one without the other.
 func _adopt_attribute_sets() -> void:
 	attributes.set_attribute_sets(attribute_sets, not share_attributes)
 
 
 func _wire_runtimes() -> void:
 	attributes.owner_node = self
-	attributes.set_attribute_sets(attribute_sets)
 
 	effects.owner_asc = self
 	effects.attributes = attributes
@@ -452,34 +455,10 @@ func get_active_effects() -> Array[ActiveGameplayEffect]:
 
 
 ## Whether every attribute this cost touches can pay it in full from its
-## durable base. A temporary buff does not subsidise it - Mana base 10 with
-## an active +20 cannot pay 20, since committing -20 to base gets reduced by
-## the clamp, and a cost the clamp had to shrink was survivable, not
-## affordable. Runs the same evaluator the commit runs, on an isolated spec
-## copy, so the preview cannot disagree with the commit or mutate anything.
+## durable base. `GameplayEffectEvaluator.can_afford()` carries the why, and
+## runs the very request a commit runs, so a preview cannot disagree with it.
 func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
-	if effect == null:
-		return true
-
-	var context: GameplayEffectContext = GameplayEffectContext.new(get_effect_target())
-	var probe: GameplayEffectSpec = GameplayEffectSpec.new(effect, context, effect_level)
-
-	var request: GameplayEffectEvaluator.Request = GameplayEffectEvaluator.Request.new()
-	request.spec = probe
-	request.attributes = attributes
-	request.owner_asc = self
-	request.application_order = 0
-	request.mode = GameplayEffectEvaluator.Mode.BASE_MUTATION
-	request.source_asc = probe.source_asc
-
-	var evaluation: GameplayEffectEvaluationResult = GameplayEffectEvaluator.evaluate(request)
-	if not evaluation.is_ok():
-		return false
-
-	for staged: AttributeBaseMutation in evaluation.base_mutations:
-		if not is_equal_approx(staged.committed_base_value, staged.requested_base_value):
-			return false
-	return true
+	return GameplayEffectEvaluator.can_afford(effect, effect_level, self)
 #endregion
 
 
