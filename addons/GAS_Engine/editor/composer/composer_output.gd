@@ -118,7 +118,21 @@ func _row(found: ComposerGraph.Diagnostic, source_path: String) -> Control:
 			ComposerTheme.FONT_LABEL + 1
 		)
 	)
+
+	# A row already prints `file.gd:61`, which is the shape every editor lets a
+	# person click. Printing it and doing nothing when they do is the panel
+	# telling them where to look and then leaving them to find it.
+	line.mouse_filter = Control.MOUSE_FILTER_STOP
+	line.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	line.gui_input.connect(_on_row_input.bind(found))
 	return line
+
+
+func _on_row_input(event: InputEvent, found: ComposerGraph.Diagnostic) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	if button == null or not button.pressed or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	row_picked.emit(found.node_id, found.span.first_line)
 
 
 ## `1 node`, `4 nodes`. A tool that writes "1 notes" reads as one nobody

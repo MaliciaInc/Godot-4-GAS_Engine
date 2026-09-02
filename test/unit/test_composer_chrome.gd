@@ -227,3 +227,30 @@ func test_a_node_registered_later_reaches_the_palette() -> void:
 
 	assert_eq(palette.open_group_name(), &"Stamina", "the new category can be opened")
 	ComposerCatalog.forget(&"spend_stamina")
+
+
+## A row in the Output panel takes you to the node it is about.
+##
+## Read end to end through the screen rather than by calling the canvas: the
+## signal, its connection and the reveal are three separate things, and a test
+## that skips the middle one passes while the panel does nothing.
+func test_clicking_an_output_row_reveals_that_node_on_the_canvas() -> void:
+	var screen: ComposerScreen = autofree(ComposerScreen.new())
+	screen.size = Vector2(1400.0, 800.0)
+	add_child_autofree(screen)
+	await wait_frames(1)
+
+	var source: String = (
+		"extends GameplayAbility\n\n\nfunc _activate_ability() -> void:\n"
+		+ "\tcommit_ability()\n\tadd_tag()\n"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
+	await screen.show_graph(graph)
+
+	assert_eq(graph.diagnostics.size(), 1, "the body has one thing wrong with it")
+	screen._on_row_picked(graph.diagnostics[0].node_id, 0)
+
+	assert_eq(
+		screen.canvas().picked(), [graph.diagnostics[0].node_id] as Array[StringName],
+		"the node the row was about"
+	)

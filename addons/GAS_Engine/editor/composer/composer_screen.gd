@@ -61,6 +61,11 @@ func _ready() -> void:
 	_output = ComposerOutput.new()
 	add_child(_output)
 
+	# Connected after every panel exists, not as each one is built: wiring a
+	# panel to one that has not been made yet reads as done and is not.
+	_canvas.selection_changed.connect(_on_selection_changed)
+	_output.row_picked.connect(_on_row_picked)
+
 	resized.connect(_arrange)
 	_arrange()
 
@@ -143,6 +148,22 @@ static func _ability_name(graph: ComposerGraph) -> String:
 	if graph == null or graph.source_path.is_empty():
 		return NO_ABILITY
 	return graph.source_path.get_file().get_basename().capitalize()
+
+
+## The Inspector shows whatever is picked on the canvas.
+##
+## One card at a time: with several picked there is no single set of fields to
+## show, and inventing something to fill the panel would be the panel making
+## something up. The first is the one nearest the start of the graph.
+func _on_selection_changed(picked: Array[StringName]) -> void:
+	_inspector.show_node(
+		_graph.find_node(picked[0]) if not picked.is_empty() and _graph != null else null
+	)
+
+
+## A row in the Output panel is a place in the graph, not just a message.
+func _on_row_picked(node_id: StringName, _line: int) -> void:
+	_canvas.reveal(node_id)
 
 
 func canvas() -> ComposerCanvas:

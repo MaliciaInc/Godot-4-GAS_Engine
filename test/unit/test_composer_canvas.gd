@@ -160,3 +160,228 @@ func test_showing_nothing_clears_the_canvas() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(_cards().size(), 0, "and then it was not")
+
+
+#region Picking cards
+func _click(at: Vector2, pressed: bool, adding: bool = false) -> void:
+	var button: InputEventMouseButton = InputEventMouseButton.new()
+	button.button_index = MOUSE_BUTTON_LEFT
+	button.pressed = pressed
+	button.position = at
+	button.shift_pressed = adding
+	canvas._gui_input(button)
+
+
+func _tap(at: Vector2, adding: bool = false) -> void:
+	_click(at, true, adding)
+	_click(at, false, adding)
+
+
+func _middle(pressed: bool) -> void:
+	var button: InputEventMouseButton = InputEventMouseButton.new()
+	button.button_index = MOUSE_BUTTON_MIDDLE
+	button.pressed = pressed
+	canvas._gui_input(button)
+
+
+func _drag_to(at: Vector2) -> void:
+	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	motion.position = at
+	motion.relative = Vector2(20.0, 12.0)
+	canvas._gui_input(motion)
+
+
+## Where a card is on screen, which is not where it is in the graph.
+func _on_screen(card: ComposerCard) -> Vector2:
+	return card.position * canvas.zoom() + canvas._world.position + card.size * 0.5
+
+
+## A point with no card under it.
+##
+## Worked out rather than guessed: the first card sits at the origin of the
+## world, so the obvious corner to click for "nothing here" is the one place
+## there is always something.
+func _empty_spot() -> Vector2:
+	var lowest: Vector2 = Vector2.ZERO
+	for card: ComposerCard in _cards():
+		var corner: Vector2 = (
+			(card.position + card.size) * canvas.zoom() + canvas._world.position
+		)
+		lowest = lowest.max(corner)
+	return lowest + Vector2(40.0, 40.0)
+
+
+func _shown() -> ComposerGraph:
+	var graph: ComposerGraph = Sample.build()
+	await canvas.show_graph(graph)
+	return graph
+
+
+func test_clicking_a_card_picks_it_and_clicking_away_lets_it_go() -> void:
+	await _shown()
+	var card: ComposerCard = _cards()[0]
+
+	_tap(_on_screen(card))
+	assert_eq(canvas.picked(), [card.node_id] as Array[StringName], "the one clicked")
+
+	_tap(_empty_spot())
+	assert_true(canvas.picked().is_empty(), "and nothing when the canvas is clicked")
+
+
+## Holding shift adds, and adds the other way on a card already picked. Without
+## the second half a person can grow a selection and never trim one.
+func test_holding_shift_adds_a_card_and_takes_it_back_out() -> void:
+	await _shown()
+	var first: ComposerCard = _cards()[0]
+	var second: ComposerCard = _cards()[1]
+
+	_tap(_on_screen(first))
+	_tap(_on_screen(second), true)
+	assert_eq(canvas.picked().size(), 2, "both")
+
+	_tap(_on_screen(second), true)
+	assert_eq(canvas.picked(), [first.node_id] as Array[StringName], "and back to one")
+
+
+## A card already in the selection is left alone on a plain click, so reaching
+## for several of them does not throw the rest away first.
+func test_clicking_one_of_several_picked_cards_keeps_the_others() -> void:
+	await _shown()
+	var first: ComposerCard = _cards()[0]
+	var second: ComposerCard = _cards()[1]
+	_tap(_on_screen(first))
+	_tap(_on_screen(second), true)
+
+	_tap(_on_screen(first))
+
+	assert_eq(canvas.picked().size(), 2, "still both")
+
+
+func test_a_box_dragged_over_the_graph_sweeps_what_it_covers() -> void:
+	await _shown()
+
+	var from: Vector2 = _empty_spot()
+	_click(from, true)
+	_drag_to(from - Vector2(4000.0, 4000.0))
+	_click(from - Vector2(4000.0, 4000.0), false)
+
+	assert_eq(canvas.picked().size(), _cards().size(), "a box over everything takes it all")
+
+
+## Dragged back past where it started, a box sweeps the other way rather than
+## collapsing to nothing.
+func test_a_box_dragged_backwards_still_covers_ground() -> void:
+	await _shown()
+	var card: ComposerCard = _cards()[0]
+	var at: Vector2 = _on_screen(card)
+
+	_click(at + Vector2(60.0, 60.0), true)
+	_drag_to(at - Vector2(60.0, 60.0))
+	_click(at - Vector2(60.0, 60.0), false)
+
+	assert_true(canvas.picked().has(card.node_id), "the card it was dragged across")
+
+
+func test_the_selection_is_announced_once_it_changes() -> void:
+	await _shown()
+	var heard: Array[int] = []
+	canvas.selection_changed.connect(
+		func _on(ids: Array[StringName]) -> void: heard.append(ids.size())
+	)
+
+	_tap(_on_screen(_cards()[0]))
+
+	assert_eq(heard.size(), 1, "said once")
+	assert_eq(heard[0], 1, "and said what is picked")
+#endregion
+
+
+#region Getting about
+func test_the_middle_button_drags_the_graph_about() -> void:
+	await _shown()
+	var before: Vector2 = canvas._world.position
+
+	_middle(true)
+	_drag_to(Vector2(300.0, 300.0))
+	_middle(false)
+	var after: Vector2 = canvas._world.position
+
+	assert_ne(after, before, "the world moved")
+	_drag_to(Vector2(600.0, 600.0))
+	assert_eq(canvas._world.position, after, "and stopped when the button came up")
+
+
+## The whole graph on screen, and never past the zoom a person can reach by
+## hand - a frame that lands outside the range leaves them somewhere the wheel
+## cannot get back to.
+func test_framing_everything_puts_the_whole_graph_on_screen() -> void:
+	var graph: ComposerGraph = await _shown()
+	canvas._apply_zoom(2.0, Vector2.ZERO)
+
+	canvas.frame_all()
+
+	assert_between(
+		canvas.zoom(), ComposerCanvas.ZOOM_MIN, ComposerCanvas.ZOOM_MAX, "within reach"
+	)
+	for card: ComposerCard in _cards():
+		var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
+		assert_between(at.x, 0.0, canvas.size.x, "%s is on screen" % card.node_id)
+		assert_between(at.y, 0.0, canvas.size.y, "%s is on screen" % card.node_id)
+	assert_gt(graph.nodes.size(), 1, "and there was more than one to fit")
+
+
+func test_revealing_a_node_picks_it_and_brings_it_into_view() -> void:
+	var graph: ComposerGraph = await _shown()
+	var wanted: StringName = graph.nodes[graph.nodes.size() - 1].id
+	canvas._apply_zoom(2.0, Vector2.ZERO)
+
+	canvas.reveal(wanted)
+
+	assert_eq(canvas.picked(), [wanted] as Array[StringName], "picked")
+	var card: ComposerCard = _cards()[graph.nodes.size() - 1]
+	var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
+	assert_between(at.x, 0.0, canvas.size.x, "and on screen")
+	assert_between(at.y, 0.0, canvas.size.y, "and on screen")
+
+
+func test_revealing_a_node_that_is_not_drawn_does_nothing() -> void:
+	await _shown()
+	canvas.reveal(&"no_such_node")
+
+	assert_true(canvas.picked().is_empty(), "nothing was picked")
+#endregion
+
+
+#region How much of a card is worth drawing
+## The three bands, read off the thresholds rather than off numbers repeated
+## here - a table that drifts from the canvas is a test of the table.
+func test_the_detail_a_card_draws_follows_the_zoom() -> void:
+	assert_eq(
+		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_FULL), ComposerCard.Detail.FULL,
+		"at the full threshold, the whole card"
+	)
+	assert_eq(
+		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_TITLE), ComposerCard.Detail.TITLE,
+		"lower down, the title alone"
+	)
+	assert_eq(
+		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_TITLE - 0.01),
+		ComposerCard.Detail.BLOCK,
+		"and below that, a block"
+	)
+
+
+## The card keeps its size as its contents go away. Shrinking it would move
+## every port on it and the wires with them, and the graph would appear to
+## rearrange itself while somebody was only pulling back to look at it.
+func test_pulling_back_empties_a_card_without_resizing_it() -> void:
+	await _shown()
+	var card: ComposerCard = _cards()[0]
+	var span: Vector2 = card.size
+
+	canvas._apply_zoom(ComposerCanvas.DETAIL_TITLE - 0.05, Vector2.ZERO)
+
+	assert_eq(card.size, span, "the card is the size it was")
+	for row: Control in card._rows:
+		assert_false(row.visible, "and its fields are not being drawn")
+#endregion

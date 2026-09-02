@@ -88,6 +88,13 @@ const LANE_STEP: float = 210.0
 
 ## An ellipse rather than a circle, at this multiple of the card it belongs to.
 ## A circle around a short wide card spills far above and below it.
+## The wash left over the graph while a selection box is being dragged. Faint
+## on purpose: it says which cards it covers without hiding them.
+const SELECTION_FILL: Color = Color(0.482, 0.361, 1.0, 0.14)
+
+## How thick the outline around a picked card is.
+const RING_WIDTH: float = 1.0
+
 const BLOOM_SCALE: float = 1.9
 
 const PORT_CORE: float = 2.6

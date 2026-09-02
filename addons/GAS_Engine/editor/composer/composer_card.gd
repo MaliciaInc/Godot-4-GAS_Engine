@@ -21,10 +21,23 @@ const AWAIT_LABEL: String = "await"
 const MISSING_LABEL: String = "not connected"
 const CHEVRON: String = "⌄"
 
+## How much of a card is worth drawing.
+##
+## Zoom alone is not enough, and it shows the moment anyone tries it: pulled
+## back far enough to see the shape of a flow, the fields are smudges and the
+## card is still spending its space drawing text nobody can read. Pulling back
+## is for seeing the shape - how many branches, where they meet, what is red -
+## and a block says that better than a full card does.
+enum Detail { FULL, TITLE, BLOCK }
+
 var node_id: StringName = &""
 
 var _glass: ColorRect = null
 var _column: VBoxContainer = null
+var _ring: ReferenceRect = null
+var _title: Control = null
+var _rows: Array[Control] = []
+var _state: ComposerNode.State = ComposerNode.State.CLEAN
 
 
 ## Build the card for `node`. Its size is provisional until `fit()` runs.
@@ -48,12 +61,26 @@ func build(node: ComposerNode) -> void:
 	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_column)
 
-	_column.add_child(_title_row(node))
+	_state = node.state
+	_title = _title_row(node)
+	_column.add_child(_title)
 	for field: ComposerNode.Field in node.fields:
-		_column.add_child(_field_row(field))
+		var row: Control = _field_row(field)
+		_rows.append(row)
+		_column.add_child(row)
 
 	if node.awaits:
 		add_child(_await_mark())
+
+	# Drawn rather than styled: a ReferenceRect is a border and nothing else,
+	# which is all a selection needs to be.
+	_ring = ReferenceRect.new()
+	_ring.editor_only = false
+	_ring.border_color = ComposerTheme.ACCENT
+	_ring.border_width = ComposerTheme.RING_WIDTH
+	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ring.visible = false
+	add_child(_ring)
 
 
 ## Trim the card to what its content turned out to be.
@@ -68,6 +95,34 @@ func fit() -> void:
 	_glass.size = span
 	ComposerShaders.resize_glass(_glass.material as ShaderMaterial, span)
 	size = span
+	if _ring != null:
+		_ring.size = span
+
+
+## Whether this card is one of the ones being worked on.
+func pick(on: bool) -> void:
+	if _ring != null:
+		_ring.visible = on
+
+
+## Draw as much of this card as is worth reading at the current zoom.
+##
+## The card keeps its size at every level. Shrinking it as its contents go away
+## would move every port on it, and the wires with them - the graph would appear
+## to rearrange itself while somebody was only pulling back to look at it.
+func show_detail(level: ComposerCard.Detail) -> void:
+	if _title != null:
+		_title.visible = level != ComposerCard.Detail.BLOCK
+	for row: Control in _rows:
+		row.visible = level == ComposerCard.Detail.FULL
+	if _glass != null:
+		# With the dot hidden, the block itself has to carry the state, or
+		# pulling back would hide exactly what pulling back is for.
+		_glass.modulate = (
+			ComposerTheme.severity_color(ComposerNode.severity_of(_state))
+			if level == ComposerCard.Detail.BLOCK
+			else Color.WHITE
+		)
 
 
 #region Rows
