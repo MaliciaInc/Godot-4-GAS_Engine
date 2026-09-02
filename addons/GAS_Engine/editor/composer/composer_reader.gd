@@ -63,7 +63,11 @@ static func _build_nodes(
 
 		var first: int = carried if carried != ComposerSpan.NO_LINE else line
 		carried = ComposerSpan.NO_LINE
-		graph.nodes.append(_node(lines[line - 1], verdict, first, line))
+		var node: ComposerNode = _node(lines[line - 1], verdict, first, line)
+		# The node keeps the text it came from, so a save can reprint it rather
+		# than rebuild it. See ComposerNode.source_text.
+		node.source_text = PackedStringArray(lines.slice(first - 1, line))
+		graph.nodes.append(node)
 
 
 static func _node(
@@ -74,6 +78,7 @@ static func _node(
 	node.id = StringName("n%d" % last)
 	node.span = ComposerSpan.new(first, last)
 	node.awaits = text.contains(AWAIT_MARK)
+	node.indent = verdict.indent
 	node.type_id = StringName(_call_name(text))
 	node.title = _title(text, verdict)
 	node.ports = _ports(verdict)

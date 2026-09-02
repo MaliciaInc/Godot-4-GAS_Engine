@@ -76,6 +76,25 @@ var awaits: bool = false
 ## The lines this was read from. See ComposerSpan for why it is not optional.
 var span: ComposerSpan = ComposerSpan.new()
 
+## The exact text those lines held.
+##
+## Not a second copy of the ability: it is the file's own text, held for as long
+## as the file is open and written nowhere. It is what lets an untouched node be
+## reprinted verbatim instead of rebuilt from this model - so a save can only
+## change what someone actually edited, and every comment, space and choice of
+## wording in the rest survives untouched.
+var source_text: PackedStringArray = PackedStringArray()
+
+## How deep this statement sits. Branch depth, and the indentation to reprint at.
+var indent: int = 0
+
+## Whether this node has been edited since it was read.
+##
+## Only a dirty node is rebuilt from the model. A clean one goes back exactly as
+## it came, which is the difference between a tool that formats your file on
+## every save and one that does not.
+var dirty: bool = false
+
 
 ## How loudly this node's state speaks, in the vocabulary the diagnostics use.
 ##
