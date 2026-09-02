@@ -85,6 +85,23 @@ var span: ComposerSpan = ComposerSpan.new()
 ## wording in the rest survives untouched.
 var source_text: PackedStringArray = PackedStringArray()
 
+## What the call is on: `owner_asc` in `owner_asc.add_tag(burning)`, empty for
+## a call written bare.
+##
+## Kept apart from `type_id` so the id is the method - the same thing the
+## catalog is keyed by - while a save still prints back the receiver the person
+## wrote. Folding the two together made every call on the ability system a node
+## the catalog had never heard of, which is most of the calls there are.
+var receiver: String = ""
+
+## The same statement as one line, with the wrapping taken out.
+##
+## A person wraps a long call across three lines and means one statement. The
+## file keeps the three; everything that asks what this node *says* - which call
+## it is, which argument names a local - asks this. Reading the last physical
+## line instead sees `)` and concludes the statement is nothing.
+var text: String = ""
+
 ## How deep this statement sits. Branch depth, and the indentation to reprint at.
 var indent: int = 0
 

@@ -44,7 +44,14 @@ class Result extends RefCounted:
 ## becomes the file's - and the narrower it stays, the less there is to get
 ## wrong.
 static func render(node: ComposerNode) -> String:
-	var call: String = "%s(%s)" % [String(node.type_id), _arguments(node)]
+	if node.type_id.is_empty():
+		# A branch, a return, a wait on a signal: there is no call here, and
+		# printing `()` for one would replace a person's line with nothing.
+		return "\n".join(node.source_text)
+	var written: String = String(node.type_id)
+	if not node.receiver.is_empty():
+		written = "%s.%s" % [node.receiver, written]
+	var call: String = "%s(%s)" % [written, _arguments(node)]
 	if node.awaits:
 		call = AWAIT_MARK + call
 	return TAB.repeat(maxi(node.indent, 1)) + call

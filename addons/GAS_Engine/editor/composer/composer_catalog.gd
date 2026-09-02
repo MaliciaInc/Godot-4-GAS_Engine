@@ -97,9 +97,15 @@ const OFFERED: Array[Array] = [
 ##
 ## A decision, not a fact - reflection cannot tell whether a method suspends - so
 ## a game offering a call of its own answers the same question for itself.
+##
+## Held against the engine all the same: every call here returns a task, because
+## a task is the thing an ability waits on. `apply_effect_to_targets` was on this
+## list and returns a result, not a task, and never suspends anything - the card
+## said `await` over a call that does not, and a node placed from the palette
+## would have printed one.
 const SUSPENDS: Array[StringName] = [
 	&"wait_delay", &"wait_target_data", &"wait_gameplay_event",
-	&"wait_input_pressed", &"wait_input_released", &"apply_effect_to_targets",
+	&"wait_input_pressed", &"wait_input_released",
 ]
 
 const NO_SCRIPT: String = "there is nothing at %s"

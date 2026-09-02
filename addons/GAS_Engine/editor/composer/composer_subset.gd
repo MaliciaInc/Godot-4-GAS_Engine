@@ -39,6 +39,7 @@ enum Kind {
 	MATCH_CASE,
 	RETURN,
 	SUPER,
+	ASSIGN,
 	UNSUPPORTED,
 }
 
@@ -57,6 +58,20 @@ const REFUSED: Array[Array] = [
 	["continue", "a loop keyword, and loops are outside the subset"],
 	["break", "a loop keyword, and loops are outside the subset"],
 ]
+
+const OPENING: String = "([{"
+const CLOSING: String = ")]}"
+const DOUBLE_QUOTE: String = "\""
+const SINGLE_QUOTE: String = "'"
+const ESCAPE: String = "\\"
+const COMMENT_MARK: String = "#"
+const COMMA: String = ","
+const EQUALS: String = "="
+
+## Characters that turn a following `=` into something that is not an
+## assignment. `:` is here for `:=`, which the subset refuses for its own
+## reasons and must not be mistaken for a plain assignment on the way.
+const COMPARISONS: String = "=!<>:"
 
 ## Openers whose shape is enough to name them.
 const OPENERS: Array[Array] = [
@@ -123,8 +138,11 @@ static func classify(line: String) -> Verdict:
 	if _is_call(text):
 		verdict.kind = Kind.CALL
 		return verdict
+	if scan(text).assign > 0:
+		verdict.kind = Kind.ASSIGN
+		return verdict
 
-	verdict.reason = "not a call, a local, a branch or a return"
+	verdict.reason = "not a call, a local, an assignment, a branch or a return"
 	return verdict
 
 
@@ -171,11 +189,102 @@ static func _is_dotted_name(text: String) -> bool:
 	return true
 
 
-## A bare call: one name, one pair of brackets, nothing nested inside them.
+## What the brackets in a line do.
 ##
-## Nested calls are refused because a node draws one operation. `apply(build())`
-## is two, and showing it as one would make the canvas a summary of the code
-## rather than a view of it.
+## One scan answers three questions that were being answered three ways: whether
+## a statement is finished, whether a call is one call, and where its arguments
+## end. Separate answers to the same question drift, and the drift shows up as a
+## file the tool refuses for being formatted.
+class Brackets extends RefCounted:
+	## Where the top-level commas are - the ones between arguments, not the ones
+	## inside them.
+	var breaks: PackedInt32Array = PackedInt32Array()
+
+	## Where the statement's own `=` is, or -1. Not a comparison, not one buried
+	## inside an argument list.
+	var assign: int = -1
+
+	## Bracket depth at the end. Anything but zero means the statement runs on
+	## into the next line.
+	var depth: int = 0
+
+	## The lowest depth reached on the way. Below zero means a bracket closed
+	## something that was never opened here.
+	var lowest: int = 0
+
+
+## Read the brackets of `text`.
+##
+## Quotes and trailing comments are skipped: a bracket inside a string is a
+## character, and a reader that counted it would join a line to the one after it
+## for the rest of the file.
+static func scan(text: String) -> Brackets:
+	var found: Brackets = Brackets.new()
+	var quote: String = ""
+	var index: int = 0
+	while index < text.length():
+		var character: String = text[index]
+		if not quote.is_empty():
+			if character == ESCAPE:
+				index += 2
+				continue
+			if character == quote:
+				quote = ""
+		elif character == DOUBLE_QUOTE or character == SINGLE_QUOTE:
+			quote = character
+		elif character == COMMENT_MARK:
+			break
+		elif OPENING.contains(character):
+			found.depth += 1
+		elif CLOSING.contains(character):
+			found.depth -= 1
+			found.lowest = mini(found.lowest, found.depth)
+		elif character == COMMA and found.depth == 0:
+			found.breaks.append(index)
+		elif character == EQUALS and found.depth == 0 and found.assign < 0:
+			if not _is_comparison(text, index):
+				found.assign = index
+		index += 1
+	return found
+
+
+## Whether the `=` at `index` belongs to `==`, `!=`, `<=`, `>=` or `:=`.
+##
+## `+=` is not one of them: a line that adds to something is still a line that
+## assigns to it, and refusing it would leave a person's own counter unreadable.
+static func _is_comparison(text: String, index: int) -> bool:
+	if index + 1 < text.length() and text[index + 1] == EQUALS:
+		return true
+	if index == 0:
+		return false
+	return COMPARISONS.contains(text[index - 1])
+
+
+## The pieces of an argument list, split on its own commas.
+static func arguments_of(inside: String) -> PackedStringArray:
+	var found: PackedStringArray = PackedStringArray()
+	var start: int = 0
+	for stop: int in scan(inside).breaks:
+		found.append(inside.substr(start, stop - start))
+		start = stop + 1
+	found.append(inside.substr(start))
+	return found
+
+
+## One call: a name, and one pair of brackets closing at the end of the line.
+##
+## A call inside the argument list is allowed and kept as the text it is. It was
+## refused once, on the grounds that a node draws one operation - but the subset
+## already allowed `level + 1.0` in an argument, which is also an operation, so
+## the rule was never really about that. It was a comma: splitting arguments on
+## every comma mis-reads `apply(a, build(x, y))`, and refusing the whole line was
+## the cheap way out. Counting brackets instead costs one scan and lets the
+## Composer open the abilities people actually write - a call whose level comes
+## from `get_ability_level()` is not exotic, it is most of them.
+##
+## What is still refused is two calls standing side by side. `foo() + bar()`
+## ends with a bracket and starts with a name, and only the depth never
+## returning to zero in between tells it apart from one call.
 static func _is_call(text: String) -> bool:
 	var open: int = text.find("(")
 	if open <= 0 or not text.ends_with(")"):
@@ -183,8 +292,9 @@ static func _is_call(text: String) -> bool:
 	var name: String = text.substr(0, open)
 	if not (name.is_valid_identifier() or _is_dotted_name(name)):
 		return false
-	var args: String = text.substr(open + 1, text.length() - open - 2)
-	return not args.contains("(")
+
+	var inside: Brackets = scan(text.substr(open + 1, text.length() - open - 2))
+	return inside.depth == 0 and inside.lowest >= 0
 
 
 static func indent_of(line: String) -> int:
@@ -236,6 +346,63 @@ static func _signature_line(lines: PackedStringArray) -> int:
 ##
 ## One refusal is enough: the file opens read-only either way, and naming the
 ## first one is what a person needs to decide whether to change it.
+## One statement: where it starts, where it ends, and what it says as one line.
+class Statement extends RefCounted:
+	var first: int = ComposerSpan.NO_LINE
+	var last: int = ComposerSpan.NO_LINE
+
+	## The wrapping taken out. A call split across three lines is one statement
+	## and is judged as one.
+	var text: String = ""
+
+	var verdict: ComposerSubset.Verdict = null
+
+
+## The statements of `span`, in order.
+##
+## The one place a body is cut into statements. There were two walks over the
+## same lines - one to refuse a file, one to build its nodes - and the first time
+## somebody wrapped a long call they disagreed: the builder joined the lines and
+## the refuser judged the continuation on its own, saw `owner_asc, world, sweep`,
+## and turned the file away for being formatted. The walk that refuses always
+## wins, so a second walk is not a second opinion, it is the only one.
+static func statements(lines: PackedStringArray, span: ComposerSpan) -> Array[Statement]:
+	var found: Array[Statement] = []
+	if not span.is_valid():
+		return found
+
+	var line: int = span.first_line
+	while line <= span.last_line:
+		var made: Statement = Statement.new()
+		made.first = line
+		made.last = _statement_end(lines, line, span.last_line)
+		made.text = _joined(lines, made.first, made.last)
+		made.verdict = classify(made.text)
+		found.append(made)
+		line = made.last + 1
+	return found
+
+
+## The last line of the statement that starts at `first`.
+##
+## A statement whose brackets have not closed runs on into the line below it.
+static func _statement_end(lines: PackedStringArray, first: int, limit: int) -> int:
+	var last: int = first
+	var text: String = lines[first - 1]
+	while last < limit and scan(text).depth > 0:
+		last += 1
+		text += lines[last - 1]
+	return last
+
+
+## The lines of one statement as a single line, wrapping removed.
+static func _joined(lines: PackedStringArray, first: int, last: int) -> String:
+	var text: String = lines[first - 1]
+	for line: int in range(first + 1, last + 1):
+		text += " " + lines[line - 1].strip_edges()
+	return text
+
+
 static func first_refusal(
 	lines: PackedStringArray, span: ComposerSpan
 ) -> ComposerGraph.Diagnostic:
@@ -244,11 +411,10 @@ static func first_refusal(
 			"no %s() to draw" % ENTRY_POINT, ComposerSpan.new()
 		)
 
-	for line: int in range(span.first_line, span.last_line + 1):
-		var verdict: Verdict = classify(lines[line - 1])
-		if verdict.is_representable():
+	for made: Statement in statements(lines, span):
+		if made.verdict.is_representable():
 			continue
-		return _refusal(verdict.reason, ComposerSpan.new(line, line))
+		return _refusal(made.verdict.reason, ComposerSpan.new(made.first, made.last))
 	return null
 
 

@@ -29,8 +29,13 @@ class RecordingPersistentCue extends GameplayCueNotify:
 	var executed_count: int = 0
 	var play_cue_count: int = 0
 
-	func executed(_params: GameplayCueParams) -> void:
+	## The tag the last run carried. Two tags installed at once share a parent,
+	## and counting by class alone credits one cue with the other's playbacks.
+	var last_tag: StringName = &""
+
+	func executed(params: GameplayCueParams) -> void:
 		executed_count += 1
+		last_tag = params.cue_tag
 
 	func play_cue(_params: GameplayCueParams) -> void:
 		play_cue_count += 1
@@ -56,6 +61,32 @@ static func install(manager: CueManagerScript, tag: StringName) -> void:
 	template.free()
 	manager._cue_scenes[tag] = scene
 	manager._pool[tag] = GameplayCuePoolBucket.new()
+
+
+## How many times the cue under `tag` has actually run.
+##
+## Counted off the recording instances themselves rather than off a flag: a test
+## that asks "did a cue fire" and is answered by anything other than the cue is
+## a test of the question, not of the answer. Sums over the pool because a cue
+## that has finished is returned to it, and over the target because one that is
+## still on screen has not been.
+static func executions(manager: CueManagerScript, target: Node, tag: StringName) -> int:
+	var count: int = 0
+	var bucket: GameplayCuePoolBucket = manager._pool.get(tag)
+	if bucket != null:
+		for pooled: GameplayCueNotify in bucket.items:
+			count += _executions_of(pooled, tag)
+	if target != null:
+		for child: Node in target.get_children():
+			count += _executions_of(child, tag)
+	return count
+
+
+static func _executions_of(node: Node, tag: StringName) -> int:
+	var recording: RecordingPersistentCue = node as RecordingPersistentCue
+	if recording == null or recording.last_tag != tag:
+		return 0
+	return recording.executed_count
 
 
 ## Take the tag back out of the manager the suite shares with every other test.

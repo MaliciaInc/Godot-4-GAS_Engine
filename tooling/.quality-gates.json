@@ -356,6 +356,10 @@
         "reason": "A key in Godot's own dictionaries. The Ability Composer's type system reads the class hierarchy out of ProjectSettings.get_global_class_list(), whose entries are spelled with these; the other occurrence is the same word in another engine-facing table. Neither is a value this project chose, and renaming one would only stop it matching what Godot returns."
       },
       {
+        "literal": "path",
+        "reason": "A key in Godot's own dictionaries. The Ability Composer resolves a receiver to the script it is by reading ProjectSettings.get_global_class_list(), whose entries are spelled with this key, and the project-invariants gate reads the same key out of project.godot's own structures. Neither chose the word; renaming it would simply stop reading Godot."
+      },
+      {
         "literal": "base",
         "reason": "A key in Godot's own dictionaries. The Ability Composer's type system reads the class hierarchy out of ProjectSettings.get_global_class_list(), whose entries are spelled with these; the other occurrence is the same word in another engine-facing table. Neither is a value this project chose, and renaming one would only stop it matching what Godot returns."
       }

@@ -26,6 +26,9 @@ const FLOAT: StringName = &"float"
 ## Script class name -> the class it extends. Built once from the project.
 static var _bases: Dictionary[StringName, StringName] = {}
 
+## Script class name -> the file that declares it. Built once from the project.
+static var _paths: Dictionary[StringName, String] = {}
+
 
 #region Deciding
 ## Whether a value of `source` may be handed to a slot of `target`.
@@ -72,6 +75,56 @@ static func ports_match(source: ComposerNode.Port, target: ComposerNode.Port) ->
 
 static func _spelled(type_name: StringName) -> String:
 	return "an untyped value" if UNTYPED.has(type_name) else String(type_name)
+#endregion
+
+
+#region Resolving a name to a script
+## The file a class name is declared in, or empty when the project declares no
+## such class.
+static func script_of(declared: StringName) -> String:
+	return _script_paths().get(declared, "")
+
+
+## Which script the receiver of `receiver.method()` is.
+##
+## Two shapes and no third: `GameplayTargetingService.overlap_2d(...)` names a
+## class outright, and `owner_asc.add_tag(...)` names a property whose type the
+## script declares. Both are read from the project rather than listed here, so
+## nothing has to be updated when a property changes type.
+##
+## Empty when it cannot be told, and the caller then knows nothing about the
+## call rather than guessing. Matching a catalog entry on the method name alone
+## would label a game's own `add_tag` with the engine's parameters and go on to
+## complain about an argument it never takes - a false error, which is the one
+## thing worse than no help at all.
+static func script_behind(receiver: String, path: String) -> String:
+	if receiver.is_empty():
+		return ""
+	var named: String = script_of(StringName(receiver))
+	if not named.is_empty():
+		return named
+	if not ResourceLoader.exists(path):
+		return ""
+	var script: GDScript = load(path) as GDScript
+	if script == null:
+		return ""
+	for described: Dictionary in script.get_script_property_list():
+		var property: String = described["name"]
+		if property == receiver:
+			var declared: String = described["class_name"]
+			return script_of(StringName(declared))
+	return ""
+
+
+static func _script_paths() -> Dictionary[StringName, String]:
+	if not _paths.is_empty():
+		return _paths
+	for described: Dictionary in ProjectSettings.get_global_class_list():
+		var declared: String = described["class"]
+		var path: String = described["path"]
+		if not declared.is_empty() and not path.is_empty():
+			_paths[StringName(declared)] = path
+	return _paths
 #endregion
 
 

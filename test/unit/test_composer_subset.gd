@@ -81,13 +81,14 @@ func test_an_inline_function_is_refused() -> void:
 ## the boundary is the content rather than something a reader infers from two
 ## examples that happen to sit near each other.
 ##
-## `apply(build())` is refused because a node draws one operation - drawing two
-## as one makes the canvas a summary of the code instead of a view of it. An
+## Two calls standing side by side are refused because neither is the statement:
+## `open() + shut()` has no single thing a node could be named after. A call
+## *inside* an argument list is a different case and is admitted - see below. An
 ## untyped local is refused because the graph shows a port's type, and inferring
 ## it would let the canvas and the file disagree until someone runs the game.
 func test_the_boundary_of_what_can_be_drawn() -> void:
 	var boundaries: Array[Array] = [
-		["apply_effect(build_spec())", "apply_effect(spec, 1.0)", "one node, one operation"],
+		["open_gate() + shut_gate()", "open_gate()", "a statement is one call"],
 		["var level := 1.0", "var level: float = 1.0", "a written type or nothing"],
 		["var level = 1.0", "var level: float = 1.0", "a written type or nothing"],
 	]
@@ -103,6 +104,95 @@ func test_the_boundary_of_what_can_be_drawn() -> void:
 		assert_true(
 			ComposerSubset.classify(admitted).is_representable(),
 			"%s: '%s' is inside" % [why, admitted]
+		)
+
+
+## A call inside an argument list is kept as the text it is.
+##
+## This was refused once, on the grounds that a node draws one operation. The
+## rule did not survive contact with real abilities: `apply(effect, asc,
+## get_ability_level())` is not exotic, it is most of them, and refusing it
+## turned away whole files. Nor was the rule ever really applied - `level + 1.0`
+## in an argument is an operation too, and was always admitted.
+##
+## What the check was actually protecting was the comma: splitting arguments on
+## every one of them cuts `build(x, y)` in half. Counting brackets instead costs
+## one scan, and the inner call reaches the card as the text a person wrote and
+## is printed back unchanged.
+func test_a_call_inside_an_argument_is_part_of_the_argument() -> void:
+	var written: String = "apply_effect(damage, owner_asc, get_ability_level())"
+
+	assert_true(
+		ComposerSubset.classify(written).is_representable(), "the statement is one call"
+	)
+	assert_eq(
+		ComposerSubset.arguments_of("damage, owner_asc, get_ability_level()").size(), 3,
+		"and its arguments are its own, not the inner call's"
+	)
+
+
+## A comma inside a string is a character, not a boundary.
+func test_a_comma_inside_a_string_does_not_split_an_argument() -> void:
+	assert_eq(
+		ComposerSubset.arguments_of("\"a, b\", second").size(), 2, "two arguments, not three"
+	)
+
+
+## A statement whose brackets have not closed runs on into the line below it.
+## Anything that reads a body has to agree about that, or a wrapped call is a
+## statement to one of them and a stray fragment to the other.
+func test_a_statement_can_span_the_lines_it_was_wrapped_across() -> void:
+	var lines: PackedStringArray = PackedStringArray([
+		"func _activate_ability() -> void:",
+		"\tvar found: GameplayAbilityTargetData = GameplayTargetingService.overlap_2d(",
+		"\t\towner_asc, world, sweep",
+		"\t)",
+		"\tend_ability()",
+	])
+	var body: ComposerSpan = ComposerSubset.body_span(lines)
+
+	var found: Array[ComposerSubset.Statement] = ComposerSubset.statements(lines, body)
+
+	assert_eq(found.size(), 2, "two statements, not four lines")
+	assert_eq(found[0].first, 2, "the first starts where it was written")
+	assert_eq(found[0].last, 4, "and ends where its brackets close")
+	assert_eq(found[0].verdict.kind, ComposerSubset.Kind.LOCAL, "and it is a local")
+	assert_null(
+		ComposerSubset.first_refusal(lines, body),
+		"and nothing refuses the file for being formatted"
+	)
+
+
+## Setting a property is a statement people write constantly. Refusing it made
+## the Composer unable to open an ability that configured anything before using
+## it, which is most of them.
+func test_an_assignment_is_a_statement() -> void:
+	var assignments: Array[String] = [
+		"sweep.radius = radius",
+		"sweep.center = caster.global_position",
+		"charges = charges - 1",
+		"charges += 1",
+	]
+
+	for written: String in assignments:
+		var verdict: ComposerSubset.Verdict = ComposerSubset.classify(written)
+		assert_eq(verdict.kind, ComposerSubset.Kind.ASSIGN, "assigns: %s" % written)
+
+
+## A comparison is not an assignment. Reading one as the other would turn a
+## branch's condition into a statement that sets something.
+func test_a_comparison_is_not_an_assignment() -> void:
+	var comparisons: Array[String] = [
+		"if charges == 0:",
+		"if charges != 0:",
+		"if charges <= 0:",
+		"if charges >= 0:",
+	]
+
+	for written: String in comparisons:
+		assert_eq(
+			ComposerSubset.classify(written).kind, ComposerSubset.Kind.BRANCH,
+			"a branch, not an assignment: %s" % written
 		)
 #endregion
 

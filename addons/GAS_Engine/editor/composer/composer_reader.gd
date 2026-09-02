@@ -45,7 +45,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 		graph.diagnostics = [refusal] as Array[ComposerGraph.Diagnostic]
 		return graph
 
-	_build_nodes(graph, lines, span)
+	_build_nodes(graph, lines, span, path)
 	_wire_execution(graph, lines)
 	_wire_data(graph, lines)
 
@@ -59,29 +59,28 @@ static func read(source: String, path: String) -> ComposerGraph:
 
 #region Nodes
 static func _build_nodes(
-	graph: ComposerGraph, lines: PackedStringArray, span: ComposerSpan
+	graph: ComposerGraph, lines: PackedStringArray, span: ComposerSpan, path: String
 ) -> void:
 	var carried: int = ComposerSpan.NO_LINE
-	for line: int in range(span.first_line, span.last_line + 1):
-		var verdict: ComposerSubset.Verdict = ComposerSubset.classify(lines[line - 1])
-		if not verdict.is_drawn():
+	for made: ComposerSubset.Statement in ComposerSubset.statements(lines, span):
+		if not made.verdict.is_drawn():
 			# A comment or a blank belongs to whatever comes next, so remember
 			# where the run started and let the statement claim it.
 			if carried == ComposerSpan.NO_LINE:
-				carried = line
+				carried = made.first
 			continue
 
-		var first: int = carried if carried != ComposerSpan.NO_LINE else line
+		var first: int = carried if carried != ComposerSpan.NO_LINE else made.first
 		carried = ComposerSpan.NO_LINE
-		var node: ComposerNode = _node(lines[line - 1], verdict, first, line)
+		var node: ComposerNode = _node(made.text, made.verdict, first, made.last, path)
 		# The node keeps the text it came from, so a save can reprint it rather
 		# than rebuild it. See ComposerNode.source_text.
-		node.source_text = PackedStringArray(lines.slice(first - 1, line))
+		node.source_text = PackedStringArray(lines.slice(first - 1, made.last))
 		graph.nodes.append(node)
 
 
 static func _node(
-	line: String, verdict: ComposerSubset.Verdict, first: int, last: int
+	line: String, verdict: ComposerSubset.Verdict, first: int, last: int, path: String
 ) -> ComposerNode:
 	var text: String = line.strip_edges()
 	var node: ComposerNode = ComposerNode.new()
@@ -89,10 +88,19 @@ static func _node(
 	node.span = ComposerSpan.new(first, last)
 	node.awaits = text.contains(AWAIT_MARK)
 	node.indent = verdict.indent
-	node.type_id = StringName(_call_name(text))
-	node.title = _title(text, verdict)
+	node.text = text
+	# Only a statement that is a call has one. Reading a name off a branch gives
+	# `if not commit_ability`, which is not a call, is not in any catalog, and is
+	# one lookup away from claiming a person's condition takes arguments.
+	var called: String = _call_name(text) if _may_call(verdict.kind) else ""
+	var dot: int = called.rfind(".")
+	node.receiver = called.left(dot) if dot > 0 else ""
+	node.type_id = StringName(called.substr(dot + 1))
+
+	var entry: ComposerCatalog.Entry = entry_for(node, path)
+	node.title = _title(node, verdict, entry)
 	node.ports = _ports(verdict, text)
-	node.fields.assign(_fields(text, node.type_id))
+	node.fields.assign(_fields(text, entry))
 	# After the fields, never before: there is one argument port per field, and
 	# reading them while the list is still empty gives a node no value can land on.
 	_add_argument_ports(node)
@@ -105,7 +113,24 @@ static func _node(
 ## `apply_gameplay_effect` reads as `Apply Gameplay Effect`. The structural
 ## statements name themselves, because `if` is already the clearest word for
 ## what it does.
-static func _title(text: String, verdict: ComposerSubset.Verdict) -> String:
+## The catalog entry a statement is, when the catalog can be sure it is that one.
+##
+## A bare call inside the body is a method on the ability itself, so the name is
+## enough. A call on something else has to prove it: the receiver is resolved to
+## the script it actually is, and an entry only matches when that is the very
+## script its signature was read from.
+static func entry_for(node: ComposerNode, path: String) -> ComposerCatalog.Entry:
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(node.type_id)
+	if entry == null or node.receiver.is_empty():
+		return entry
+	if ComposerTypes.script_behind(node.receiver, path) == entry.source:
+		return entry
+	return null
+
+
+static func _title(
+	node: ComposerNode, verdict: ComposerSubset.Verdict, entry: ComposerCatalog.Entry
+) -> String:
 	if verdict.kind == ComposerSubset.Kind.BRANCH:
 		return "Branch"
 	if verdict.kind == ComposerSubset.Kind.BRANCH_ELSE:
@@ -116,17 +141,25 @@ static func _title(text: String, verdict: ComposerSubset.Verdict) -> String:
 		return "Case"
 	if verdict.kind == ComposerSubset.Kind.RETURN:
 		return "End"
-
-	var name: String = _call_name(text)
-	if name.is_empty():
-		return text
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(StringName(name))
 	if entry != null:
 		return entry.title
-	return name.get_file().capitalize()
+	if node.type_id.is_empty():
+		return node.text.strip_edges()
+	# The method, not the receiver: a card headed "Owner Asc.apply Gameplay
+	# Effect" tells a person where the call went rather than what it does.
+	return String(node.type_id).capitalize()
 
 
 ## The called identifier, or empty when the line calls nothing.
+## Which statements can carry a call: the ones whose whole shape is one.
+static func _may_call(kind: ComposerSubset.Kind) -> bool:
+	return (
+		kind == ComposerSubset.Kind.CALL
+		or kind == ComposerSubset.Kind.LOCAL
+		or kind == ComposerSubset.Kind.AWAIT
+	)
+
+
 static func _call_name(text: String) -> String:
 	var body: String = text
 	if body.begins_with("var "):
@@ -218,7 +251,7 @@ static func port(
 ## may write anything the subset admits - but its arguments fall back to their
 ## position, which says "this is the second thing you passed" and claims nothing
 ## more.
-static func _fields(text: String, type_id: StringName) -> Array[ComposerNode.Field]:
+static func _fields(text: String, entry: ComposerCatalog.Entry) -> Array[ComposerNode.Field]:
 	var fields: Array[ComposerNode.Field] = []
 	var open: int = text.find("(")
 	if open < 0 or not text.ends_with(")"):
@@ -228,9 +261,10 @@ static func _fields(text: String, type_id: StringName) -> Array[ComposerNode.Fie
 	if inside.is_empty():
 		return fields
 
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(type_id)
 	var position: int = 0
-	for argument: String in inside.split(","):
+	# Split on the call's own commas. Every comma would cut `build(x, y)` in
+	# half and hand the card two arguments the file never passed.
+	for argument: String in ComposerSubset.arguments_of(inside):
 		var declared: ComposerNode.Field = (
 			entry.parameter(position) if entry != null else null
 		)
@@ -271,13 +305,13 @@ static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> v
 ## mentioning `target` means that `target`.
 static func _wire_data(graph: ComposerGraph, lines: PackedStringArray) -> void:
 	for node: ComposerNode in graph.nodes:
-		var declared: String = _local_name(lines[node.span.last_line - 1])
+		var declared: String = _local_name(node.text)
 		if declared.is_empty():
 			continue
 		for other: ComposerNode in graph.nodes:
 			if other.span.first_line <= node.span.last_line:
 				continue
-			var slot: int = _argument_naming(lines[other.span.last_line - 1], declared)
+			var slot: int = _argument_naming(other.text, declared)
 			if slot < 0:
 				continue
 			graph.connections.append(
@@ -305,7 +339,7 @@ static func _argument_naming(line: String, word: String) -> int:
 	if open < 0:
 		return -1
 	var position: int = 0
-	for argument: String in line.substr(open + 1).split(","):
+	for argument: String in ComposerSubset.arguments_of(line.substr(open + 1)):
 		if argument.strip_edges().trim_suffix(")").strip_edges() == word:
 			return position
 		position += 1
