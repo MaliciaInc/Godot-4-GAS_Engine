@@ -35,8 +35,28 @@ static func create(
 	return task
 
 
+## Whether the interval can ever come round. Zero would owe an unbounded
+## number of repetitions in any frame at all, and a non-finite one owes none
+## ever; neither is a slow repeat, both are a repetition that is never due.
+func _interval_is_usable() -> bool:
+	return is_finite(interval) and interval > 0.0
+
+
+## The same refusal AbilityTaskPlayAnimationAndWait makes when its player
+## cannot play what it was asked for: a task whose configuration can never be
+## satisfied ends itself, so a caller awaiting it is released rather than
+## stopping for good. An exported float defaults to 0.0, which is exactly how
+## an interval nobody set in the inspector arrives here - and before this it
+## produced a task that fired nothing and ended nothing, forever.
+func _on_start() -> void:
+	if not _interval_is_usable():
+		cancel(GameplayAbilityTask.CancelReason.MANUAL)
+
+
 func advance_time(delta: float) -> void:
-	if interval <= 0.0:
+	# Asked again rather than trusted from `_on_start()`: `interval` is public,
+	# and a running task assigned a fresh one must not divide by it either.
+	if not _interval_is_usable():
 		return
 	elapsed += maxf(delta, 0.0)
 	# Nudged by the same epsilon ActiveGameplayEffect ticks against, so a

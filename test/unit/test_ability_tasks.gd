@@ -414,3 +414,35 @@ func test_closing_an_ability_cancels_a_standard_task_too() -> void:
 	assert_true(delay.is_finished(), "a standard task ends with the cast like any other")
 	assert_eq(_running(), 0, "and nothing outlives it")
 #endregion
+
+
+func test_a_repeat_that_can_never_come_round_ends_itself() -> void:
+	# An exported float defaults to 0.0, so this is how an interval nobody set
+	# in the inspector arrives. Zero is not a fast repeat and INF is not a slow
+	# one: both are a repetition that is never due, and the task fired nothing
+	# and ended nothing either - so an ability awaiting it stopped for good.
+	for interval: float in [0.0, INF]:
+		var task: AbilityTaskRepeat = AbilityTaskFactory.repeat(ability, interval, 3)
+		assert_eq(task.state, GameplayAbilityTask.State.CANCELLED, "it refused itself")
+		assert_eq(task.completed_count, 0, "having repeated nothing")
+		assert_eq(_running(), 0, "and the runtime let it go")
+		# Asked of is_finished() rather than by awaiting completed(), which is
+		# what an ability would do here. completed() returns immediately for a
+		# task that is already over - that is its whole contract, proved on its
+		# own elsewhere - so awaiting it would add no claim, and would hang this
+		# suite instead of failing it the day this refusal regresses.
+		assert_true(task.is_finished(), "so an ability awaiting it is released")
+
+
+func test_a_repeat_with_a_usable_interval_still_waits() -> void:
+	# The refusal must not have eaten the ordinary case.
+	var task: AbilityTaskRepeat = AbilityTaskFactory.repeat(ability, 1.0, 2)
+	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "a real interval waits")
+
+	var seen: Array[int] = []
+	task.repeated.connect(func _on_repeat(index: int) -> void: seen.append(index))
+	task.advance_time(1.0)
+	task.advance_time(1.0)
+
+	assert_eq(seen, [0, 1] as Array[int], "it announced each repetition, in order")
+	assert_eq(task.state, GameplayAbilityTask.State.SUCCEEDED, "then ended by succeeding")
