@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Allow the literals 'Tags' and 'Tasks'. Both name one of the engine's own subsystems, and more than one editor surface has to print them: the runtime debugger names the tab that shows them, and the Ability Composer's catalog names the palette group holding their nodes. Renaming either would make one of the two describe something the engine does not have.
+# Allow ten GDScript keywords: for, while, break, continue, breakpoint, elif, match, var, super, func. Any tool that reasons about GDScript has to name them, and two now do - the gates' grammar tables list them to tokenise a file, and the Ability Composer's subset lists them to say whether a line of that shape can be drawn. Neither quotes the other and neither can pick a different word; the language chose it. Same case the existing 'export' entry already records.
 #
 # python: 3.14.6
-# date-utc: 2026-09-02T18:03:32Z
-# commit-previo: 025714b3ee9988067d0042684d8d63ff81d9b2ce
+# date-utc: 2026-09-02T18:15:35Z
+# commit-previo: e068a9bed66eab82b4a512a7295daa0e20e12be0
 # files: 23
-6ca89409b6879a3afe338b0b33c47f6540ae9d2e0a81af6c1ded2dd67c60a2ec  tooling/.quality-gates.json
+7d7da98d7cf313e37b99489b882ecc7c85c6748d1adcfb1c055f7893b6bc2930  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json

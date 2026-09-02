@@ -298,6 +298,46 @@
       {
         "literal": "Tasks",
         "reason": "The name of one of the engine's own subsystems. Any editor surface that lists them has to print it: the runtime debugger names the tab showing them, and the Composer's catalog names the palette group holding their nodes. Two surfaces printing the same subsystem name is the point rather than a duplication - renaming either would make one of them describe something the engine does not have."
+      },
+      {
+        "literal": "for",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "while",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "break",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "continue",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "breakpoint",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "elif",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "match",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "var",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "super",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "func",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
       }
     ],
     "allow_globs": [],
