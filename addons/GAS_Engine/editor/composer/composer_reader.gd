@@ -81,7 +81,7 @@ static func _node(
 	node.indent = verdict.indent
 	node.type_id = StringName(_call_name(text))
 	node.title = _title(text, verdict)
-	node.ports = _ports(verdict)
+	node.ports = _ports(verdict, text)
 	node.fields.assign(_fields(text, node.type_id))
 	return node
 
@@ -135,16 +135,35 @@ static func _call_name(text: String) -> String:
 ## Execution on every drawn statement, because every one of them runs. A value
 ## port only where a local is declared: that is the one shape in the subset that
 ## produces something later lines can name.
-static func _ports(verdict: ComposerSubset.Verdict) -> Array[ComposerNode.Port]:
+static func _ports(
+	verdict: ComposerSubset.Verdict, text: String
+) -> Array[ComposerNode.Port]:
 	var ports: Array[ComposerNode.Port] = [
 		port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
 		port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
 	]
 	if verdict.kind == ComposerSubset.Kind.LOCAL:
-		ports.append(
-			port(VALUE_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT)
+		var value: ComposerNode.Port = port(
+			VALUE_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT
 		)
+		# The type the person wrote, carried onto the port. The subset refuses an
+		# inferred local for exactly this reason: without a written type the port
+		# would claim to carry nothing, and every wire out of it would be checked
+		# against a promise the file never made.
+		value.type_name = StringName(_local_type(text))
+		ports.append(value)
 	return ports
+
+
+## The type in `var name: Type = ...`, or empty when there is none.
+static func _local_type(text: String) -> String:
+	if not text.begins_with("var "):
+		return ""
+	var colon: int = text.find(":")
+	var equals: int = text.find("=")
+	if colon < 0 or equals < colon:
+		return ""
+	return text.substr(colon + 1, equals - colon - 1).strip_edges()
 
 
 ## Public: this is how a projection is assembled, and anything else building
