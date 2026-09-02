@@ -66,9 +66,18 @@ func bind(
 ##
 ## Withdrawal happens first, while the ASC is still known. Letting go of an item
 ## slot must not leave its abilities on the wearer.
+## The stored node is asked with is_instance_valid rather than `!= null`: this
+## bridge holds a node it does not own, and a freed Node is not null. The
+## ordinary teardown order - a scene freeing its children before the bridge
+## beside them - used to reach `is_connected()` on a dead instance and take the
+## shutdown with it. Same guard AbilityTaskPlayAnimationAndWait makes of its
+## player. bind()'s arguments need no such guard: GDScript's own typed-argument
+## check refuses a freed object before the body runs, so `== null` there is the
+## whole of what can still get through.
+## `catalog` stays a plain null check: it is a Resource, so it cannot dangle.
 func unbind() -> void:
 	_withdraw()
-	if _slot != null:
+	if is_instance_valid(_slot):
 		if _slot.is_connected(EQUIPPED_SIGNAL, _on_item_equipped):
 			_slot.disconnect(EQUIPPED_SIGNAL, _on_item_equipped)
 		if _slot.is_connected(CLEARED_SIGNAL, _on_cleared):
@@ -100,7 +109,7 @@ func _on_cleared(_item: Variant) -> void:
 ## give should be removed and re-added, and the refcount already answers that.
 func refresh_from_slot() -> void:
 	_withdraw()
-	if _slot == null or target_asc == null or catalog == null:
+	if not is_instance_valid(_slot) or not is_instance_valid(target_asc) or catalog == null:
 		return
 
 	var prototype_id: StringName = _prototype_id_in_slot()
@@ -203,7 +212,7 @@ func _withdraw() -> void:
 		return
 	var worn: GlootGasEquipmentReceipt = _receipt
 	_receipt = null
-	if target_asc == null:
+	if not is_instance_valid(target_asc):
 		return
 	_take_back(worn)
 	equipment_removed.emit(worn.prototype_id)

@@ -76,6 +76,23 @@ func _bound() -> bool:
 	return bridge.bind(dialogic, fixture.asc, CHANNEL)
 
 
+func test_dialogic_freed_before_the_bridge_does_not_take_the_teardown_with_it() -> void:
+	# The ordinary teardown order: a scene frees the node the bridge watches,
+	# and the bridge beside it goes a moment later. A freed Node is not null,
+	# so the old `!= null` guard was true and is_connected() reached a dead
+	# instance, taking the shutdown with it.
+	var doomed: FakeDialogic = Fake.build()
+	add_child(doomed)
+	assert_true(bridge.bind(doomed, fixture.asc, CHANNEL), "bound to it")
+
+	doomed.free()
+	bridge.unbind()
+
+	assert_null(bridge.target_asc, "the bridge let go instead of crashing")
+	# Not also asked to refuse binding to the dead node: GDScript's typed-argument
+	# check rejects a freed object before bind() runs, which halts the run under
+	# the debugger rather than returning false. That check is the guard there.
+
 ## A well-formed message, before any one field is spoiled.
 func _message() -> Dictionary:
 	var message: Dictionary = {}

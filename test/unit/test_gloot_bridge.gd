@@ -129,6 +129,26 @@ func test_binding_needs_a_slot_an_asc_and_a_catalogue() -> void:
 	assert_false(bridge.bind(slot, fixture.asc, null), "nothing to look items up in")
 
 
+func test_a_slot_freed_before_the_bridge_does_not_take_the_teardown_with_it() -> void:
+	# The ordinary teardown order: a scene frees the node the bridge watches,
+	# and the bridge beside it goes a moment later. A freed Node is not null,
+	# so the old `!= null` guard was true and is_connected() reached a dead
+	# instance, taking the shutdown with it.
+	# Its own slot, not the fixture's: this one is freed by hand, and the
+	# fixture's is freed again by the test runner afterwards.
+	var doomed: FakeGlootSlot = Slot.build()
+	add_child(doomed)
+	var entries: Array[GlootGasEquipmentGrant] = [_full_sword()]
+	assert_true(bridge.bind(doomed, fixture.asc, _catalog(entries)), "bound to it")
+
+	doomed.free()
+	bridge.unbind()
+
+	assert_null(bridge.target_asc, "the bridge let go instead of crashing")
+	# Not also asked to refuse binding to the dead node: GDScript's typed-argument
+	# check rejects a freed object before bind() runs, which halts the run under
+	# the debugger rather than returning false. That check is the guard there.
+
 func test_binding_to_a_node_that_is_not_a_slot_is_refused() -> void:
 	var stranger: Node = Node.new()
 	add_child_autofree(stranger)
