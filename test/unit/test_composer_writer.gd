@@ -210,3 +210,114 @@ func test_changing_an_argument_changes_what_the_graph_is() -> void:
 		"a different effect is a different ability"
 	)
 #endregion
+
+
+#region Rebuilding an edited statement
+## A local that is rebuilt is still a local.
+##
+## The writer knew how to print a call and nothing else, so an edited
+## `var target: Node = await wait_target_data()` came back as
+## `await wait_target_data()` - the declaration, its name and its written type
+## gone, and every line below it naming something that no longer exists. It was
+## out of reach only because nothing marks a node edited yet, which is the worst
+## kind of safe.
+func test_rebuilding_a_local_keeps_the_declaration_in_front_of_it() -> void:
+	var graph: ComposerGraph = _read()
+	var local: ComposerNode = null
+	for node: ComposerNode in graph.nodes:
+		if node.type_id == &"wait_target_data":
+			local = node
+
+	assert_not_null(local, "the local was found")
+	var printed: String = ComposerWriter.render(local)
+
+	assert_true(printed.contains("var target: Node ="), "it is still a declaration")
+	assert_true(printed.contains("await wait_target_data()"), "of that call")
+	assert_eq(printed, local.source_text[0], "and the line is the line it was")
+
+
+## An edited statement does not take the comment above it with it.
+##
+## Nothing in the model stands for a comment, so a node reprinted from the model
+## alone loses whatever it picked up on the way in - and a person would find out
+## much later that a save had quietly deleted the note they wrote.
+func test_editing_a_statement_leaves_the_comment_above_it_alone() -> void:
+	var graph: ComposerGraph = _read()
+	for node: ComposerNode in graph.nodes:
+		if node.type_id == &"wait_target_data":
+			node.dirty = true
+
+	var printed: String = "
+".join(ComposerWriter.print_body(graph))
+
+	assert_true(
+		printed.contains("# Aim before spending anything."), "the comment survived"
+	)
+	assert_true(
+		printed.contains("var target: Node = await wait_target_data()"),
+		"and so did the statement it belongs to"
+	)
+
+
+## A call on the ability system is rebuilt on the ability system.
+##
+## The receiver is kept apart from the method so the catalog can be keyed by the
+## method, and a writer that forgot the other half would turn
+## `owner_asc.add_tag(x)` into `add_tag(x)` - a line that does not compile.
+func test_rebuilding_a_call_keeps_what_it_was_called_on() -> void:
+	var source: String = (
+		"extends GameplayAbility\n\n\nfunc _activate_ability() -> void:\n"
+		+ "\towner_asc.add_tag(burning)\n"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, PATH)
+
+	assert_eq(
+		ComposerWriter.render(graph.nodes[0]), "\towner_asc.add_tag(burning)",
+		"receiver and method, the way it was written"
+	)
+
+
+## A wrapped statement that still says the same thing keeps its wrapping.
+##
+## Reflowing a statement nobody changed is the tool imposing a style on somebody
+## else's file, and it is the difference between a save people make and one they
+## learn not to.
+func test_a_wrapped_statement_that_did_not_change_keeps_its_lines() -> void:
+	var wrapped: String = (
+		"extends GameplayAbility\n\n\nfunc _activate_ability() -> void:\n"
+		+ "\tapply_effect_to_target_data(\n\t\tburning, target\n\t)\n"
+	)
+	var graph: ComposerGraph = ComposerReader.read(wrapped, PATH)
+	graph.nodes[0].dirty = true
+
+	var printed: PackedStringArray = ComposerWriter.print_body(graph)
+
+	assert_eq(
+		"\n".join(printed), "\tapply_effect_to_target_data(\n\t\tburning, target\n\t)",
+		"the wrapping the person chose"
+	)
+
+
+## One that did change is reflowed, and still says what the graph says.
+##
+## The project declares no width to wrap at, so one line is the only normal form
+## available that is not a number invented here. What matters is that the
+## statement still reads back as the statement it is meant to be - which is what
+## the save path checks before it writes anything.
+func test_a_wrapped_statement_that_changed_is_rebuilt_and_still_verifies() -> void:
+	var wrapped: String = (
+		"extends GameplayAbility\n\n\nfunc _activate_ability() -> void:\n"
+		+ "\tapply_effect_to_target_data(\n\t\tburning, target\n\t)\n"
+	)
+	var graph: ComposerGraph = ComposerReader.read(wrapped, PATH)
+	graph.nodes[0].dirty = true
+	graph.nodes[0].fields[0].display = "freezing"
+
+	var saved: ComposerWriter.Result = ComposerWriter.apply(graph, wrapped)
+
+	assert_true(saved.is_ok(), "the save verified: %s" % saved.refusal)
+	assert_true(
+		saved.text.contains("\tapply_effect_to_target_data(freezing, target)"),
+		"on one line, carrying the edit: %s" % saved.text
+	)
+#endregion

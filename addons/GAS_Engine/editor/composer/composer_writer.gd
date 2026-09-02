@@ -48,13 +48,39 @@ static func render(node: ComposerNode) -> String:
 		# A branch, a return, a wait on a signal: there is no call here, and
 		# printing `()` for one would replace a person's line with nothing.
 		return "\n".join(node.source_text)
+
+	var rebuilt: String = TAB.repeat(maxi(node.indent, 1)) + node.prefix
+	if node.awaits:
+		rebuilt += AWAIT_MARK
 	var written: String = String(node.type_id)
 	if not node.receiver.is_empty():
 		written = "%s.%s" % [node.receiver, written]
-	var call: String = "%s(%s)" % [written, _arguments(node)]
-	if node.awaits:
-		call = AWAIT_MARK + call
-	return TAB.repeat(maxi(node.indent, 1)) + call
+	rebuilt += "%s(%s)" % [written, _arguments(node)]
+
+	# A statement that came wrapped across lines and still says exactly what it
+	# said keeps the wrapping the person chose. Only one the Composer actually
+	# changed is reflowed, and then onto one line - the project declares no width
+	# to wrap at, and picking one here would be this tool imposing a style on
+	# somebody else's file.
+	if node.source_text.size() > 1 and _same_statement(rebuilt, node.source_text):
+		return "\n".join(node.source_text)
+	return rebuilt
+
+
+## Whether a rebuilt statement says what the lines it came from said.
+##
+## Compared with the runs of whitespace collapsed, because that is the only
+## difference wrapping makes - a line break and an indent where a space would
+## otherwise be.
+static func _same_statement(rebuilt: String, source: PackedStringArray) -> bool:
+	return _flattened(rebuilt) == _flattened(" ".join(source))
+
+
+static func _flattened(text: String) -> String:
+	var flat: String = text.replace(TAB, " ").strip_edges()
+	while flat.contains("  "):
+		flat = flat.replace("  ", " ")
+	return flat.replace("( ", "(").replace(" )", ")")
 
 
 static func _arguments(node: ComposerNode) -> String:
@@ -72,6 +98,11 @@ static func _arguments(node: ComposerNode) -> String:
 static func print_body(graph: ComposerGraph) -> PackedStringArray:
 	var body: PackedStringArray = PackedStringArray()
 	for node: ComposerNode in graph.nodes:
+		# Whatever the node picked up on the way in goes back out untouched,
+		# edited or not. A rebuilt statement says nothing about the comment
+		# above it, so printing only the statement is how that comment is lost.
+		for line: String in node.carried:
+			body.append(line)
 		if node.dirty or node.source_text.is_empty():
 			body.append(render(node))
 			continue

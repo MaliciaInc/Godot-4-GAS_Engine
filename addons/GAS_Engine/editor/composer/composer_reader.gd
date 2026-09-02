@@ -25,6 +25,8 @@ const VALUE_OUT: StringName = &"value_out"
 ## rather than on the node's run of control.
 const ARGUMENT: String = "arg_%d"
 
+const OPEN_BRACKET: String = "("
+
 ## Statements that suspend the ability, which the card says out loud.
 const AWAIT_MARK: String = "await "
 
@@ -74,8 +76,11 @@ static func _build_nodes(
 		carried = ComposerSpan.NO_LINE
 		var node: ComposerNode = _node(made.text, made.verdict, first, made.last, path)
 		# The node keeps the text it came from, so a save can reprint it rather
-		# than rebuild it. See ComposerNode.source_text.
-		node.source_text = PackedStringArray(lines.slice(first - 1, made.last))
+		# than rebuild it. The comments it picked up on the way are kept apart:
+		# nothing in the model stands for a comment, so a rebuilt statement that
+		# carried them along would print itself and lose them.
+		node.carried = PackedStringArray(lines.slice(first - 1, made.first - 1))
+		node.source_text = PackedStringArray(lines.slice(made.first - 1, made.last))
 		graph.nodes.append(node)
 
 
@@ -96,6 +101,7 @@ static func _node(
 	var dot: int = called.rfind(".")
 	node.receiver = called.left(dot) if dot > 0 else ""
 	node.type_id = StringName(called.substr(dot + 1))
+	node.prefix = _prefix(text, called)
 
 	var entry: ComposerCatalog.Entry = entry_for(node, path)
 	node.title = _title(node, verdict, entry)
@@ -151,6 +157,22 @@ static func _title(
 
 
 ## The called identifier, or empty when the line calls nothing.
+## What the statement says before the call, `await` excluded.
+##
+## Found by looking for the call in the line rather than by parsing the
+## declaration: whatever is in front of it is the prefix, whether that is a
+## `var` with a written type or nothing at all. The `await` is left out because
+## the node carries that separately and the writer would otherwise print it
+## twice.
+static func _prefix(text: String, called: String) -> String:
+	if called.is_empty():
+		return ""
+	var at: int = text.find(called + OPEN_BRACKET)
+	if at <= 0:
+		return ""
+	return text.left(at).trim_suffix(AWAIT_MARK)
+
+
 ## Which statements can carry a call: the ones whose whole shape is one.
 static func _may_call(kind: ComposerSubset.Kind) -> bool:
 	return (
@@ -289,6 +311,15 @@ static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> v
 		var depth: int = ComposerSubset.indent_of(lines[node.span.last_line - 1])
 		if previous.has(depth):
 			graph.connections.append(wire(previous[depth], EXEC_OUT, node.id, EXEC_IN))
+		else:
+			# The first statement of a block runs because the line above opened
+			# it. Without this the body of every branch floats free of its own
+			# condition: nothing leads into it, so the layout treats it as
+			# another place the method starts and puts it at the left margin
+			# beside the first line of the ability.
+			var opener: StringName = _opener(previous, depth)
+			if not opener.is_empty():
+				graph.connections.append(wire(opener, EXEC_OUT, node.id, EXEC_IN))
 		previous[depth] = node.id
 
 		# A deeper block starts fresh: whatever ran at that depth belonged to an
@@ -296,6 +327,19 @@ static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> v
 		for open_depth: int in previous.keys():
 			if open_depth > depth:
 				previous.erase(open_depth)
+
+
+## The statement that opened the block `depth` is inside.
+##
+## The nearest shallower depth still open, not `depth - 1`: indentation is
+## counted in characters, so a file written with spaces steps four at a time and
+## subtracting one would find nothing.
+static func _opener(previous: Dictionary[int, StringName], depth: int) -> StringName:
+	var nearest: int = -1
+	for open_depth: int in previous.keys():
+		if open_depth < depth and open_depth > nearest:
+			nearest = open_depth
+	return previous[nearest] if nearest >= 0 else &""
 
 
 ## A local's value reaches every later statement that names it.

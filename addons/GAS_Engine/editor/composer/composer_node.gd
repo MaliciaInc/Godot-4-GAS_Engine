@@ -85,6 +85,24 @@ var span: ComposerSpan = ComposerSpan.new()
 ## wording in the rest survives untouched.
 var source_text: PackedStringArray = PackedStringArray()
 
+## The comments and blank lines that came before the statement.
+##
+## Held apart from the statement because they are never rebuilt - nothing in the
+## model stands for a comment, so anything that reprinted a node from the model
+## alone would drop them. That is how a save deletes the note somebody wrote
+## above the line they just edited, and they would find out much later.
+var carried: PackedStringArray = PackedStringArray()
+
+## Everything the statement says before the call: `var found: Node2D = ` in
+## `var found: Node2D = pick_target()`, empty for a statement that is only a
+## call.
+##
+## Kept because a rebuilt statement is a call plus whatever led up to it, and a
+## writer that knew only the call printed `pick_target()` over the top of a
+## person's local - the declaration, its name and its written type gone, and the
+## lines below it now naming something that no longer exists.
+var prefix: String = ""
+
 ## What the call is on: `owner_asc` in `owner_asc.add_tag(burning)`, empty for
 ## a call written bare.
 ##

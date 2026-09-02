@@ -155,6 +155,50 @@ func test_a_branch_does_not_run_into_the_statement_beside_it() -> void:
 		assert_false(crosses, "the branch's body does not lead to the line after it")
 
 
+## A branch leads into its own body.
+##
+## Without this edge the body floats: nothing runs into it, so the layout reads
+## it as another place the method begins and puts it at the left margin beside
+## the first line of the ability. Every reference ability is full of branches,
+## and every one of them drew that way.
+func test_a_branch_leads_into_the_statement_it_opens() -> void:
+	var graph: ComposerGraph = _read([
+		"if not commit_ability().is_ok():",
+		"	return false",
+		"end_ability()",
+	])
+
+	assert_true(
+		graph.is_port_connected(graph.nodes[1].id, ComposerReader.EXEC_IN),
+		"the body of the branch is reached"
+	)
+	var from_branch: int = 0
+	for wire: ComposerGraph.Connection in graph.connections:
+		if wire.from_node == graph.nodes[0].id:
+			from_branch += 1
+	assert_eq(from_branch, 2, "the branch leads both into its body and past it")
+
+
+## Nothing but the first line of a body is left without a way in.
+##
+## The check that the last one generalises: a node nothing leads to is a card
+## with no cable arriving, and the canvas has no way to say why.
+func test_every_statement_but_the_first_is_reached() -> void:
+	var graph: ComposerGraph = _read([
+		"if ready:",
+		"	commit_ability()",
+		"	if armed:",
+		"		execute_cue(fire)",
+		"end_ability()",
+	])
+
+	for index: int in range(1, graph.nodes.size()):
+		assert_true(
+			graph.is_port_connected(graph.nodes[index].id, ComposerReader.EXEC_IN),
+			"%s is reached" % graph.nodes[index].title
+		)
+
+
 ## A local reaches the later statements that name it, and only those.
 func test_a_value_reaches_the_statement_that_uses_it() -> void:
 	var graph: ComposerGraph = _read([
