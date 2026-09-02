@@ -40,7 +40,7 @@ func test_the_palette_lists_every_group_the_catalog_declares() -> void:
 	) as ComposerPalette
 
 	var shown: Array[String] = _labels(palette, [] as Array[String])
-	for group: StringName in ComposerCatalog.GROUPS:
+	for group: StringName in ComposerCatalog.groups():
 		assert_true(shown.has(String(group)), "%s is offered" % group)
 
 
@@ -202,3 +202,28 @@ func test_asking_for_the_code_names_the_file_rather_than_opening_it() -> void:
 	assert_eq(asked.size(), 1, "it asked once")
 	assert_eq(asked[0], "res://abilities/sample.gd", "naming the file it is a view of")
 #endregion
+
+
+## A node offered after the panel was built shows up the next time a file opens.
+##
+## The palette is drawn once and lives as long as the editor. A game that
+## registers later would otherwise see nothing happen and conclude the door does
+## not work.
+func test_a_node_registered_later_reaches_the_palette() -> void:
+	var palette: ComposerPalette = autofree(ComposerPalette.new())
+	palette.size = Vector2(240.0, 600.0)
+	add_child_autofree(palette)
+	await wait_frames(1)
+
+	assert_eq(
+		ComposerCatalog.register(
+			"spend_stamina", &"Stamina", "res://test/fixtures/game_composer_nodes.gd", false
+		),
+		"",
+		"a game offers a call"
+	)
+	palette.refresh()
+	palette.open_group(&"Stamina")
+
+	assert_eq(palette.open_group_name(), &"Stamina", "the new category can be opened")
+	ComposerCatalog.forget(&"spend_stamina")

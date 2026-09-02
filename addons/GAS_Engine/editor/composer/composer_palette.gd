@@ -21,6 +21,11 @@ signal node_picked(type_id: StringName)
 var _open: StringName = ComposerCatalog.TASKS
 var _list: VBoxContainer = null
 
+## The vocabulary this was drawn from. A game may offer nodes after the panel is
+## already on screen, and a palette that never asked again would be the reason
+## someone thinks their registration did nothing.
+var _drawn: int = -1
+
 
 func _ready() -> void:
 	var back: ColorRect = ComposerPanel.backdrop(ComposerTheme.CHROME)
@@ -50,10 +55,11 @@ func _ready() -> void:
 ## empty groups would look like a tool that can do less than it will, and the
 ## shape of the vocabulary is worth seeing before the entries exist.
 func _rebuild() -> void:
+	_drawn = ComposerCatalog.revision()
 	for child: Node in _list.get_children():
 		child.queue_free()
 
-	for group: StringName in ComposerCatalog.GROUPS:
+	for group: StringName in ComposerCatalog.groups():
 		var open: bool = group == _open
 		var head: HBoxContainer = ComposerPanel.row(ComposerTheme.S2)
 		head.add_child(
@@ -92,8 +98,19 @@ func _entry_row(entry: StringName) -> Control:
 
 ## Open a group, closing whichever was open. One at a time, because a palette
 ## with everything expanded is a list nobody can scan.
+## Draw again if what is offered has changed since last time.
+##
+## Compared rather than rebuilt unconditionally: every row is a Control, and
+## throwing the panel away on each file that opens would be work nobody asked
+## for in the common case where nothing was registered.
+func refresh() -> void:
+	if _list == null or _drawn == ComposerCatalog.revision():
+		return
+	_rebuild()
+
+
 func open_group(group: StringName) -> void:
-	if group == _open or not ComposerCatalog.GROUPS.has(group):
+	if group == _open or not ComposerCatalog.groups().has(group):
 		return
 	_open = group
 	_rebuild()

@@ -131,6 +131,9 @@ func show_graph(graph: ComposerGraph) -> void:
 	_graph = graph
 	_title.text = _ability_name(graph)
 	_path.text = graph.source_path if graph != null else ""
+	# Opening a file is when a person looks at the palette, so it is when the
+	# panel finds out about anything a game registered since it was built.
+	_palette.refresh()
 	_output.show_graph(graph)
 	_inspector.show_node(null)
 	await _canvas.show_graph(graph)
