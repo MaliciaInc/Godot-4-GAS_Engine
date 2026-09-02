@@ -122,6 +122,28 @@ func test_tick_time_reports_the_instant_a_tick_was_due() -> void:
 	assert_almost_eq(active.tick_time(3), active.period_origin_elapsed + 6.0, 0.0001)
 
 
+## Restarting the period moves the origin; it does not wind the total clock
+## back. GameplayEffectStackingRuntime used to zero elapsed_time, so tick_time()
+## - the public "when did this happen" - answered from zero after a stack reset
+## and from the true instant after an inhibition one. Same question, two answers.
+func test_restarting_the_period_clock_keeps_the_total_clock() -> void:
+	var periodic: GameplayEffect = EffectFactory.infinite_periodic(
+		[EffectFactory.add(ATTACK, 1.0)] as Array[GameplayEffectModifier], 2.0
+	)
+	var active: ActiveGameplayEffect = EffectFactory.apply(target.asc, periodic)
+	active.consume_ticks(active.advance_clock(30.0))
+	assert_eq(active.completed_ticks, 15, "fifteen ticks were paid")
+
+	active.restart_period_clock()
+
+	assert_almost_eq(active.elapsed_time, 30.0, 0.0001, "the total clock is untouched")
+	assert_eq(active.completed_ticks, 0, "while the tick count starts over")
+	assert_almost_eq(
+		active.tick_time(1), 32.0, 0.0001,
+		"so the next tick reports its real instant, not one period from zero"
+	)
+
+
 func test_tick_time_is_zero_for_an_effect_that_never_ticks() -> void:
 	var active: ActiveGameplayEffect = EffectFactory.apply(
 		target.asc, EffectFactory.infinite([] as Array[GameplayEffectModifier])

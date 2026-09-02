@@ -163,6 +163,22 @@ func consume_ticks(count: int) -> void:
 	completed_ticks += count
 
 
+## Restart the periodic clock from this instant: the next tick falls due one
+## full period from now, exactly as a freshly applied effect's first tick is
+## one period after application rather than at application itself.
+##
+## Moves the origin rather than winding `elapsed_time` back to zero, which is
+## the invariant that field is declared with - it is the total clock and never
+## resets. GameplayEffectStackingRuntime used to wind it back, and that made
+## `tick_time()` answer the same public question two ways: the true instant
+## after an inhibition restart, and an instant measured from zero after a
+## stack one. Both runtimes ask here now, so there is one answer.
+func restart_period_clock() -> void:
+	period_origin_elapsed = elapsed_time
+	completed_ticks = 0
+	missed_tick_while_inhibited = false
+
+
 ## The instant in time the Nth tick (since the current period origin) was
 ## theoretically due, for a cue or event that wants to say when it happened
 ## rather than when it was processed.
