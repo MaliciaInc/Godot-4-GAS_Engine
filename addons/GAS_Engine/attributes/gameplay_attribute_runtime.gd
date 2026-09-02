@@ -36,8 +36,24 @@ var _contributions: Array[AttributeModifierContribution] = []
 
 
 #region Sets and lookup
-func set_attribute_sets(sets: Array[AttributeSet]) -> void:
+## Take a set of authored attribute sets and make them this runtime's.
+##
+## `isolate` duplicates them first, so two runtimes handed the same authored
+## resource do not share one pool of health - which looks like a working game
+## until the whole party dies at once. The elements are replaced rather than the
+## array, so a caller watching its own array for assignment is not re-entered.
+##
+## Called again on every later assignment rather than once at wiring, because a
+## game that builds its actors in code hands these over after the node exists.
+## Taking them only once failed silently: this runtime kept the array it was
+## wired with and the new sets were never read at all.
+func set_attribute_sets(sets: Array[AttributeSet], isolate: bool = false) -> void:
 	_sets = sets
+	if isolate:
+		for index: int in _sets.size():
+			if _sets[index] != null:
+				_sets[index] = _sets[index].duplicate(true)
+	initialize()
 
 
 ## The set that declares an attribute, or null.

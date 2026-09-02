@@ -281,3 +281,62 @@ func test_a_stale_current_value_is_repaired_without_signals() -> void:
 	assert_almost_eq(stale.current_of(MANA), 100.0, TOLERANCE, "current repaired")
 	assert_signal_not_emitted(component, "attribute_changed", "bootstrap is silent")
 #endregion
+
+
+#region Attribute sets handed over after the component is running
+## `_ready()` isolates the authored sets and hands them to the runtime. A
+## component given its sets after that used to keep neither: the runtime held
+## the array it was wired with, so the new sets were never read, and the
+## isolation never ran, so two components handed the same authored resource
+## shared one pool of health.
+##
+## Both failures are silent, and the second is the worse one - it looks like a
+## working game until the whole party dies at once.
+func test_sets_assigned_after_ready_reach_the_runtime() -> void:
+	var late: ASCFixture = Fixture.create("Late")
+	add_child_autofree(late.owner)
+	late.asc.attribute_sets = [] as Array[AttributeSet]
+	assert_eq(late.asc.get_attribute_current(&"health"), 0.0, "nothing to read yet")
+
+	var authored: TestAttributeSet = TestAttributeSet.new()
+	late.asc.attribute_sets = [authored] as Array[AttributeSet]
+
+	assert_almost_eq(
+		late.asc.get_attribute_current(&"health"), 100.0, 0.0001,
+		"the runtime reads what it was handed, whenever it was handed over"
+	)
+
+
+func test_sets_assigned_after_ready_are_still_isolated() -> void:
+	var one: ASCFixture = Fixture.create("One")
+	var two: ASCFixture = Fixture.create("Two")
+	add_child_autofree(one.owner)
+	add_child_autofree(two.owner)
+
+	# The fixture turns sharing on so a test can reach the same set object;
+	# isolation is exactly what is under test here, so it goes back off.
+	one.asc.share_attributes = false
+	two.asc.share_attributes = false
+
+	# The same authored resource, handed to both after each is running.
+	var authored: TestAttributeSet = TestAttributeSet.new()
+	one.asc.attribute_sets = [authored] as Array[AttributeSet]
+	two.asc.attribute_sets = [authored] as Array[AttributeSet]
+
+	# Asked of the objects, not of a number. Reading health would pass while
+	# each component quietly went on using the set its fixture built - which
+	# is what this test did at first, and proved nothing.
+	assert_ne(one.asc.attribute_sets[0], authored, "one got a copy, not the original")
+	assert_ne(two.asc.attribute_sets[0], authored, "and so did two")
+	assert_ne(
+		one.asc.attribute_sets[0], two.asc.attribute_sets[0],
+		"and not the same copy as each other, or one pool serves both"
+	)
+
+	one.asc.apply_attribute_base_delta(&"health", -40.0)
+	assert_almost_eq(one.asc.get_attribute_current(&"health"), 60.0, 0.0001, "one took the hit")
+	assert_almost_eq(
+		two.asc.get_attribute_current(&"health"), 100.0, 0.0001,
+		"and the other did not feel it"
+	)
+#endregion

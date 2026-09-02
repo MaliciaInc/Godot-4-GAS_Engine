@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# drift reporting generalised; two shared field names declared
+# attribute sets can be handed over after ready
 #
 # python: 3.14.6
-# date-utc: 2026-09-02T01:33:45Z
-# commit-previo: 440a5d853c1af0dad8c4bd464586d30a93e7381a
+# date-utc: 2026-09-02T01:41:42Z
+# commit-previo: 47943ff9c485e8bad1f5cd4d8d94b9a3d0c086b6
 # files: 23
 2f1fd23a7cac2a2e6b48948cf7fe67ae826892bdb7543704997ce02ef8080ab3  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
