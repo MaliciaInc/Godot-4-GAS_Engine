@@ -32,6 +32,7 @@ var _graph: ComposerGraph = null
 
 var _doc: ComposerDocument = ComposerDocument.new()
 var _menu: PopupMenu = null
+var _finder: ComposerFinder = null
 var _chords: Dictionary[int, Callable] = {}
 var _palette: ComposerPalette = null
 var _canvas: ComposerCanvas = null
@@ -63,6 +64,10 @@ func _ready() -> void:
 
 	_output = ComposerOutput.new()
 	add_child(_output)
+
+	_finder = ComposerFinder.new()
+	_finder.chose.connect(_on_node_picked)
+	add_child(_finder)
 
 	# Connected after every panel exists, not as each one is built: wiring a
 	# panel to one that has not been made yet reads as done and is not.
@@ -104,7 +109,8 @@ func show_graph(graph: ComposerGraph) -> void:
 func _on_selection_changed(picked: Array[StringName]) -> void:
 	_inspector.show_node(
 		_graph.find_node(picked[0]) if not picked.is_empty() and _graph != null else null,
-		_graph != null and _graph.is_editable()
+		_graph != null and _graph.is_editable(),
+		_graph
 	)
 
 
@@ -280,10 +286,9 @@ func _on_value_edited(node_id: StringName, position: int, written: String) -> vo
 	var node: ComposerNode = _graph.find_node(node_id)
 	if node == null or position < 0 or position >= node.fields.size():
 		return
-	# Asked here and not only where the box was drawn. The panel does not offer
-	# one for a value that arrives on a cable, but a guard that lives only in the
-	# thing that draws the control is a guard the next caller walks straight
-	# past - and this is the door every one of them comes through.
+	# Asked here and not only where the control was drawn. A guard that lives
+	# only in the thing that draws the control is one the next caller walks
+	# straight past, and this is the door every one of them comes through.
 	if not node.may_edit(node.fields[position]):
 		return
 
@@ -294,7 +299,7 @@ func _on_value_edited(node_id: StringName, position: int, written: String) -> vo
 	node.fields[position].source = ComposerNode.ValueSource.LITERAL
 	node.dirty = true
 
-	var rebuilt: ComposerWriter.Result = ComposerWriter.apply(_graph, _doc.printed())
+	var rebuilt: ComposerWriter.Result = ComposerWriter.apply(_graph, _doc.printed(), false)
 	if not rebuilt.is_ok():
 		push_error(SAVE_REFUSED % rebuilt.refusal.message)
 		return
@@ -338,12 +343,17 @@ func _build_chords() -> void:
 		KEY_V | KEY_MASK_CTRL: paste,
 		KEY_D | KEY_MASK_CTRL: repeat_picked,
 		KEY_DELETE: remove_picked,
+		KEY_SPACE: _find_a_node,
 	}
 
 
 func _shortcut_input(event: InputEvent) -> void:
 	var key: InputEventKey = event as InputEventKey
 	if key == null or not key.pressed or key.echo:
+		return
+	# While the finder is open every key belongs to it, space most of all: the
+	# chord that opens it is a character the moment there is somewhere to type.
+	if _finder != null and _finder.visible:
 		return
 	var chord: int = key.keycode
 	if key.ctrl_pressed:
@@ -354,6 +364,15 @@ func _shortcut_input(event: InputEvent) -> void:
 		return
 	accept_event()
 	await _chords[chord].call()
+
+
+## Space: type the name of what you want instead of finding which of ten
+## categories somebody filed it under.
+func _find_a_node() -> void:
+	if not _doc.may_write():
+		return
+	_finder.position = (size - _finder.size) * 0.5
+	_finder.begin()
 
 
 ## Saving says so when it will not, because a chord that appears to do nothing

@@ -52,6 +52,20 @@ func _activate_ability() -> void:
 	owner_asc.add_tag()
 """
 
+## Two locals of the same type, so one cable has somewhere else to go.
+const REWIRE: String = """extends GameplayAbility
+
+@export var burning: GameplayEffect
+
+
+func _activate_ability() -> bool:
+	var level: float = get_ability_level()
+	var louder: float = get_ability_level()
+	owner_asc.apply_gameplay_effect(burning, owner_asc, level)
+	end_ability()
+	return true
+"""
+
 const AN_ABILITY: String = "res://addons/GAS_Engine/reference/timed_buff.gd"
 const SCRATCH: String = "user://composer_editing_%d.gd"
 
@@ -104,18 +118,54 @@ func test_a_value_that_was_typed_can_be_typed_again() -> void:
 	assert_true(node.may_edit(node.fields[EFFECT]), "so it can be written again")
 
 
-## A value fed by a cable is not typed anywhere.
+## A value fed by a cable is offered as a choice, not as a box.
 ##
-## `level` comes from the statement above it. Offering a box for it would offer
-## something that cannot be done, and whatever was typed would be thrown away
-## the next time the file was read.
-func test_a_value_that_arrives_on_a_cable_cannot_be_typed() -> void:
+## It was refused outright for a while, on the grounds that a cable cannot be
+## typed over. That was wrong: the text is the truth here and the cable is read
+## out of it, so naming a different local rewires and writing a literal
+## disconnects. What changes for a wired value is what it is offered as.
+func test_a_value_that_arrives_on_a_cable_is_offered_as_what_feeds_it() -> void:
 	var graph: ComposerGraph = await _open(SOURCE, 2)
 	var node: ComposerNode = _applied(graph)
 
 	assert_eq(node.fields[LEVEL].source, ComposerNode.ValueSource.WIRED, "it is wired")
-	assert_false(node.may_edit(node.fields[LEVEL]), "so it is not typed here")
-	assert_true(node.may_edit(node.fields[SOURCE_ASC]), "while the one beside it is")
+	assert_true(node.may_edit(node.fields[LEVEL]), "and it can still be changed")
+	assert_false(node.may_type(node.fields[LEVEL]), "but not by typing over it")
+	assert_true(node.may_type(node.fields[SOURCE_ASC]), "while the one beside it is typed")
+
+
+## Rewiring: the argument names a different local, and the cable follows.
+func test_naming_another_local_moves_the_cable() -> void:
+	var graph: ComposerGraph = await _open(REWIRE, 20)
+	var node: ComposerNode = _applied(graph)
+
+	var reachable: Array[ComposerNode.Port] = graph.locals_reaching(
+		node, node.fields[LEVEL].type_name
+	)
+	var names: PackedStringArray = PackedStringArray()
+	for port: ComposerNode.Port in reachable:
+		names.append(port.label)
+	assert_true(names.has("louder"), "the other local fits too: %s" % [names])
+
+	screen._on_value_edited(node.id, LEVEL, "louder")
+	await wait_frames(2)
+
+	var after: ComposerNode = _applied(screen.graph())
+	assert_eq(after.fields[LEVEL].display, "louder", "the argument names the other one")
+	assert_eq(after.fields[LEVEL].source, ComposerNode.ValueSource.WIRED, "still fed")
+
+
+## Disconnecting: a literal where a name was, and the cable is gone.
+func test_writing_a_value_takes_the_cable_off() -> void:
+	var graph: ComposerGraph = await _open(REWIRE, 21)
+	var node: ComposerNode = _applied(graph)
+
+	screen._on_value_edited(node.id, LEVEL, "3.0")
+	await wait_frames(2)
+
+	var after: ComposerNode = _applied(screen.graph())
+	assert_eq(after.fields[LEVEL].display, "3.0", "a written value")
+	assert_eq(after.fields[LEVEL].source, ComposerNode.ValueSource.LITERAL, "not fed")
 
 
 ## A statement this cannot print back is not edited at all.
@@ -154,15 +204,17 @@ func test_nothing_is_offered_in_a_file_the_composer_cannot_draw() -> void:
 ## is one the next caller walks straight past.
 const EDITS: Array[Array] = [
 	[EFFECT, "freezing", true, "a value somebody wrote"],
-	[LEVEL, "9.0", false, "a value that arrives on a cable"],
+	[SOURCE_ASC, "caster", true, "another value somebody wrote"],
 ]
 
 
 func test_only_the_values_that_can_be_typed_are_changed() -> void:
-	var graph: ComposerGraph = await _open(SOURCE, 5)
-	var node: ComposerNode = _applied(graph)
+	await _open(SOURCE, 5)
 
 	for row: Array in EDITS:
+		# Fetched inside the loop: an edit replaces the graph, and the node held
+		# from before it is an ability that is no longer open.
+		var node: ComposerNode = _applied(screen.graph())
 		var position: int = row[0]
 		var written: String = row[1]
 		var takes: bool = row[2]
@@ -173,11 +225,11 @@ func test_only_the_values_that_can_be_typed_are_changed() -> void:
 		screen._on_value_edited(node.id, position, written)
 		await wait_frames(2)
 
+		var after: ComposerNode = _applied(screen.graph())
 		assert_eq(
-			node.fields[position].display, written if takes else before,
+			after.fields[position].display, written if takes else before,
 			"%s: %s" % [described, "changes" if takes else "is left alone"]
 		)
-		assert_eq(node.dirty, takes, "%s: and the node says so" % described)
 
 
 ## A missing argument that is filled in stops being missing.

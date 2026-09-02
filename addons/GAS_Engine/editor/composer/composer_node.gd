@@ -102,22 +102,24 @@ var carried: PackedStringArray = PackedStringArray()
 ## disagree about what a statement is.
 var entry: ComposerCatalog.Entry = null
 
-## Whether a person may type into `field`.
+## Whether a person may change `field` at all.
 ##
-## Some values are editable and some are not, and the two reasons live in two
-## places - which is why the question is asked in one. A value that arrives on a
-## cable is not typed anywhere: it is whatever the statement above produced, and
-## a box offering to change it would be offering something that cannot be done.
-## And a statement this cannot print back - a branch, a return, a wait on a
-## signal - must not be edited at all, because the writer would have to rebuild
-## it from a model that never held it.
+## One condition, and it is about the statement rather than the value: a branch,
+## a return, a wait on a signal cannot be printed back from the model, so the
+## writer would have to rebuild them out of something that never held them.
 ##
-## The third condition is the graph's, not the node's: a file outside the subset
-## opens read-only, and nothing in it may be touched.
+## A value that arrives on a cable is **not** one of the exceptions, though it
+## was for a while. The reasoning was that a cable cannot be typed over - but
+## the text is the truth here and the cable is read out of it, so naming a
+## different local is rewiring and writing a literal is disconnecting. What
+## changes for a wired value is what it is offered as, not whether it may move.
 func may_edit(field: Field) -> bool:
-	if type_id.is_empty():
-		return false
-	return field.source != ComposerNode.ValueSource.WIRED
+	return not type_id.is_empty() and field != null
+
+
+## Whether arbitrary text belongs in it, or a choice of what feeds it.
+func may_type(field: Field) -> bool:
+	return may_edit(field) and field.source != ComposerNode.ValueSource.WIRED
 
 
 ## Everything the statement says before the call: `var found: Node2D = ` in

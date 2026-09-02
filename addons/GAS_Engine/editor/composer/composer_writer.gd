@@ -139,7 +139,7 @@ static func print_body(graph: ComposerGraph) -> PackedStringArray:
 #region Saving
 ## Splice the printed body into `source`, then prove the result reads back the
 ## same before handing it over.
-static func apply(graph: ComposerGraph, source: String) -> Result:
+static func apply(graph: ComposerGraph, source: String, verify: bool = true) -> Result:
 	var result: Result = Result.new()
 	if graph == null or not graph.is_editable():
 		result.refusal = refuse("a file this tool cannot draw is not one it may write")
@@ -152,6 +152,10 @@ static func apply(graph: ComposerGraph, source: String) -> Result:
 		return result
 
 	var spliced: String = _splice(lines, span, print_body(graph))
+	if not verify:
+		result.text = spliced
+		return result
+
 	var verdict: ComposerGraph.Diagnostic = _verify(graph, spliced, graph.source_path)
 	if verdict != null:
 		result.refusal = verdict

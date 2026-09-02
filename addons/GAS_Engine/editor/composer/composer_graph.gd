@@ -78,6 +78,24 @@ func find_node(node_id: StringName) -> ComposerNode:
 
 
 ## The node whose lines contain `line`, for putting a caret back on a card.
+## The locals declared above `node` that would fit `wanted`.
+##
+## What a cable into that argument could be attached to instead. Read off the
+## graph rather than kept anywhere: a local is a statement that declares one, and
+## which of them are in scope is which of them are above.
+func locals_reaching(node: ComposerNode, wanted: StringName) -> Array[ComposerNode.Port]:
+	var found: Array[ComposerNode.Port] = []
+	for other: ComposerNode in nodes:
+		if other.span.last_line >= node.span.first_line:
+			continue
+		var value: ComposerNode.Port = other.find_port(ComposerReader.VALUE_OUT)
+		if value == null or value.label.is_empty():
+			continue
+		if ComposerTypes.accepts(wanted, value.type_name):
+			found.append(value)
+	return found
+
+
 func node_at_line(line: int) -> ComposerNode:
 	for node: ComposerNode in nodes:
 		if node.span.contains(line):

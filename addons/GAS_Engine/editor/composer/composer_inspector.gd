@@ -8,10 +8,11 @@
 ## a value that is absent reads `not connected` here too, and in the same red,
 ## because both ask the field rather than deciding for themselves.
 ##
-## Not every value can be typed. One that arrives on a cable is whatever the
-## statement above produced, and a box offering to change it would be offering
-## something that cannot be done - so it is shown as what feeds it instead. The
-## node answers which is which; this only draws the answer.
+## Not every value is offered the same way. One that arrives on a cable is
+## offered as a choice of what feeds it - the locals above it that fit - because
+## that is what a cable is: a name in an argument. Choosing a different one
+## rewires; typing a value instead disconnects. The node answers which control
+## belongs to which value; this only draws the answer.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: MIT
@@ -30,8 +31,12 @@ signal value_edited(node_id: StringName, position: int, written: String)
 
 const WIRED_MARK: String = "⌄ "
 
+## The entry that is not a local: taking the cable off.
+const UNPLUGGED: String = "— not from a cable —"
+
 var _collapsed: bool = false
 var _shown: ComposerNode = null
+var _graph: ComposerGraph = null
 var _may_write: bool = false
 var _body: VBoxContainer = null
 var _grip: Button = null
@@ -63,7 +68,10 @@ func _ready() -> void:
 ##
 ## An empty panel and a panel showing nothing look the same, and one of them is
 ## a bug. Saying it removes the question.
-func show_node(node: ComposerNode, may_write: bool = false) -> void:
+func show_node(
+	node: ComposerNode, may_write: bool = false, graph: ComposerGraph = null
+) -> void:
+	_graph = graph
 	_shown = node
 	_may_write = may_write
 	for child: Node in _body.get_children():
@@ -93,10 +101,46 @@ func _field_block(node: ComposerNode, position: int) -> Control:
 			field.label, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_LABEL
 		)
 	)
-	block.add_child(
-		_box(node, position) if _may_write and node.may_edit(field) else _read_only(field)
-	)
+	if not _may_write or not node.may_edit(field):
+		block.add_child(_read_only(field))
+	elif node.may_type(field):
+		block.add_child(_box(node, position))
+	else:
+		block.add_child(_feeds(node, position))
 	return block
+
+
+## What a cable could be attached to instead.
+##
+## The locals above this statement that fit the argument, and one entry that is
+## not a local at all: choosing it writes an empty value, which is how a cable
+## is taken off. Free text is not offered here because a cable is a name, and a
+## box inviting anything would invite the thing that is not one.
+func _feeds(node: ComposerNode, position: int) -> Control:
+	var field: ComposerNode.Field = node.fields[position]
+	var choice: OptionButton = OptionButton.new()
+	choice.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
+	choice.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT)
+	choice.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
+
+	var offered: Array[String] = [field.display]
+	for port: ComposerNode.Port in _reachable(node, field):
+		if port.label != field.display:
+			offered.append(port.label)
+	offered.append(UNPLUGGED)
+
+	for name: String in offered:
+		choice.add_item(name)
+	choice.selected = 0
+	choice.item_selected.connect(
+		func _took(index: int) -> void:
+			_commit(node.id, position, "" if offered[index] == UNPLUGGED else offered[index])
+	)
+	return choice
+
+
+func _reachable(node: ComposerNode, field: ComposerNode.Field) -> Array[ComposerNode.Port]:
+	return _graph.locals_reaching(node, field.type_name) if _graph != null else []
 
 
 ## A value that cannot be typed, shown as what it is.
