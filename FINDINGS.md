@@ -353,10 +353,17 @@ What was missing is that nothing said so. This sandbox shipped a free ability
 for a whole session on exactly that, and a screenshot caught it rather than any
 log - the ability worked, it simply worked for free.
 
-`GameplayAbilityDefinitionSnapshot.report_cost_drift()` now pushes an error
-naming the ability and both counts. Once per instance, through the error channel
-alone: a game that wired up no listener is still told, and two ways to learn the
-same thing is the shape this codebase keeps removing.
+`GameplayAbilityDefinitionSnapshot.report_drift()` now pushes an error naming
+the ability and which fields drifted. Once per instance, through the error
+channel alone: a game that wired up no listener is still told, and two ways to
+learn the same thing is the shape this codebase keeps removing.
+
+Closed as a class rather than as the cost that exposed it. The snapshot freezes
+seventeen fields and all seventeen are watched - a cooldown that never arrives
+leaves an ability with none, a blocked-tag query that never arrives leaves it
+ungated, and both look exactly like an ability behaving correctly. A test reads
+`from_probe()` and fails when anything it captures is missing from the list, so
+the guard cannot rot back into the silence it exists to end.
 
 # Checked and not defects
 
