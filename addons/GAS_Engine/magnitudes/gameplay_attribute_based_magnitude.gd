@@ -45,11 +45,20 @@ func resolve(context: GameplayMagnitudeContext) -> GameplayMagnitudeResult:
 ## vocabulary: SOURCE_MISSING and TARGET_MISSING are both "the capture this
 ## magnitude needed never resolved", which is the one thing a caller here
 ## actually needs to know.
+##
+## INVALID_DEFINITION is not one of those, and used to fall through into the
+## same answer. A capture whose attribute_name was left blank is a definition
+## that is wrong, not one that is missing - this class already reports its own
+## unset capture that way, a few lines up - and MISSING_CAPTURE sent an author
+## looking for a capture nobody registered when the one they wrote is right
+## there, empty.
 static func _translate(status: AttributeCaptureResult.Status) -> GameplayMagnitudeResult.Status:
 	match status:
 		AttributeCaptureResult.Status.ATTRIBUTE_NOT_FOUND:
 			return GameplayMagnitudeResult.Status.ATTRIBUTE_NOT_FOUND
 		AttributeCaptureResult.Status.NON_FINITE_VALUE:
 			return GameplayMagnitudeResult.Status.NON_FINITE_VALUE
+		AttributeCaptureResult.Status.INVALID_DEFINITION:
+			return GameplayMagnitudeResult.Status.INVALID_DEFINITION
 		_:
 			return GameplayMagnitudeResult.Status.MISSING_CAPTURE

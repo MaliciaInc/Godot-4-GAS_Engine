@@ -148,15 +148,56 @@ func test_attribute_based_applies_coefficient_pre_and_post_add() -> void:
 	assert_almost_eq(result.value, 37.0, TOLERANCE, "((10 + 2) * 3) + 1")
 
 
-func test_attribute_based_reports_why_its_capture_could_not_resolve() -> void:
+## Why a capture could not resolve, in the capture's own words. Each row is a
+## different wrongness and they must not collapse into one another: an author
+## sent to the wrong reason looks in the wrong place.
+class CaptureFailureCase extends RefCounted:
+	var attribute_name: StringName
+	var status: GameplayMagnitudeResult.Status
+	var label: String
+
+	func _init(
+		in_attribute_name: StringName,
+		in_status: GameplayMagnitudeResult.Status,
+		in_label: String
+	) -> void:
+		attribute_name = in_attribute_name
+		status = in_status
+		label = in_label
+
+
+func _capture_failure_cases() -> Array[CaptureFailureCase]:
+	return [
+		CaptureFailureCase.new(
+			&"no_such_attribute",
+			GameplayMagnitudeResult.Status.ATTRIBUTE_NOT_FOUND,
+			"an attribute nobody declared"
+		),
+		# Blank rather than absent. Answered with MISSING_CAPTURE before, which is
+		# the one place an author would not look: the capture is right there in
+		# the magnitude, it is just empty. INVALID_DEFINITION is the same word
+		# this magnitude already uses for its own unset capture.
+		CaptureFailureCase.new(
+			&"",
+			GameplayMagnitudeResult.Status.INVALID_DEFINITION,
+			"a capture left blank"
+		),
+	] as Array[CaptureFailureCase]
+
+
+func test_attribute_based_reports_why_its_capture_could_not_resolve(
+	case: CaptureFailureCase = use_parameters(_capture_failure_cases())
+) -> void:
 	var magnitude: GameplayAttributeBasedMagnitude = GameplayAttributeBasedMagnitude.new()
-	magnitude.capture = Factory.capture_definition(GameplayAttributeCaptureDefinition.Actor.SOURCE, &"no_such_attribute")
+	magnitude.capture = Factory.capture_definition(
+		GameplayAttributeCaptureDefinition.Actor.SOURCE, case.attribute_name
+	)
 	var spec: GameplayEffectSpec = _spec()
 	spec.register_capture(magnitude.capture)
 	spec.capture_source_attributes(source.asc)
 
 	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
-	assert_eq(result.status, GameplayMagnitudeResult.Status.ATTRIBUTE_NOT_FOUND)
+	assert_eq(result.status, case.status, case.label)
 #endregion
 
 
