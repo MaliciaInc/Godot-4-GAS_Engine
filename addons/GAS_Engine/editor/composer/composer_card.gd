@@ -171,13 +171,17 @@ func _field_row(field: ComposerNode.Field) -> Control:
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(line)
 
-	# A required value that is absent says so, in the same words and the same
-	# colour the Output panel uses. Both read `field.source`, so neither is
-	# deciding it on its own and they cannot contradict each other.
+	# A required value that is absent is an error, and is drawn as one. The words
+	# differ from the Output panel's on purpose - the row names the node, and on
+	# a card the title has already said it - but the severity may not, and it did
+	# for a while: amber here and red there, over one missing argument.
 	var absent: bool = not field.is_satisfied()
 	var value: Label = _label(
 		MISSING_LABEL if absent else field.display,
-		ComposerTheme.WARNING if absent else ComposerTheme.TEXT,
+		(
+			ComposerTheme.severity_color(ComposerGraph.Severity.ERROR) if absent
+			else ComposerTheme.TEXT
+		),
 		ComposerTheme.FONT_VALUE
 	)
 	value.clip_text = true

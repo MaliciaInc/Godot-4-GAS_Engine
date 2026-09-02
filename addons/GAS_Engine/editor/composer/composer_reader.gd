@@ -50,6 +50,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 	_build_nodes(graph, lines, span, path)
 	_wire_execution(graph, lines)
 	_wire_data(graph, lines)
+	_mark_wired_fields(graph)
 
 	# The findings come back with the graph rather than being asked for later.
 	# A caller that forgot to validate would draw a file with every card clean
@@ -339,6 +340,19 @@ static func _opener(previous: Dictionary[int, StringName], depth: int) -> String
 		if open_depth < depth and open_depth > nearest:
 			nearest = open_depth
 	return previous[nearest] if nearest >= 0 else &""
+
+
+## A field whose value arrives on a cable says so.
+##
+## The card already knew how to draw one - a chevron where the text would be -
+## and nothing ever set it, so the mark was unreachable. A person could not tell
+## which of a statement's arguments they had typed and which came from the line
+## above, which is the one thing the wire was drawn to show.
+static func _mark_wired_fields(graph: ComposerGraph) -> void:
+	for node: ComposerNode in graph.nodes:
+		for position: int in node.fields.size():
+			if graph.is_port_connected(node.id, StringName(ARGUMENT % position)):
+				node.fields[position].source = ComposerNode.ValueSource.WIRED
 
 
 ## A local's value reaches every later statement that names it.

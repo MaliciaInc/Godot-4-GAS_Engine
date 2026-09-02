@@ -20,7 +20,6 @@ class_name ComposerTheme extends RefCounted
 const CANVAS: Color = Color(0.043, 0.043, 0.059)
 const CHROME: Color = Color(0.055, 0.055, 0.075)
 
-const PANEL: Color = Color(0.086, 0.086, 0.110)
 const ROW: Color = Color(0.118, 0.118, 0.149)
 const BORDER: Color = Color(0.165, 0.165, 0.204)
 const RULE: Color = Color(0.125, 0.125, 0.165)
@@ -202,8 +201,13 @@ static func glow_rect(texture: GradientTexture2D) -> TextureRect:
 ## Two branching functions were the alternative, and they were the same shape
 ## twice - which is how a card's dot and its Output row end up disagreeing about
 ## one fact.
-const SEVERITY_COLORS: Array[Color] = [TEXT_FAINT, WARNING, ERROR, TEXT_DIM]
-const SEVERITY_MARKS: Array[String] = ["•", "▲", "■", "■"]
+## A file this tool cannot draw is not a file with mistakes in it, so it is not
+## red - but it is something a person has to know, so it is not grey either. Grey
+## is what a count of nodes is drawn in, and a reason that reads as a count is a
+## reason nobody reads. Hollow rather than solid, for the same reason: it has to
+## be told apart from an error at a glance.
+const SEVERITY_COLORS: Array[Color] = [TEXT_FAINT, WARNING, ERROR, WARNING]
+const SEVERITY_MARKS: Array[String] = ["•", "▲", "■", "□"]
 
 
 static func severity_color(severity: ComposerGraph.Severity) -> Color:

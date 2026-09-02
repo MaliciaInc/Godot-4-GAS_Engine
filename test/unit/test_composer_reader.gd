@@ -249,3 +249,26 @@ func test_a_value_lands_on_the_argument_that_names_it() -> void:
 		assert_eq(slot.label, "Source Asc", "the second argument, where it was written")
 		assert_eq(slot.kind, ComposerNode.PortKind.DATA, "and a value port, not a run")
 #endregion
+
+
+## A field fed by a cable is marked as one.
+##
+## The card draws a chevron for it instead of the text, because the value is not
+## typed there - it comes from the statement above. The mark existed and nothing
+## ever set it, so every argument looked hand-written whether it was or not.
+func test_an_argument_a_cable_arrives_at_is_marked_as_wired() -> void:
+	var graph: ComposerGraph = _read([
+		"var target: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, target)",
+	])
+
+	var fed: ComposerNode = graph.nodes[1]
+	assert_eq(
+		fed.fields[1].source, ComposerNode.ValueSource.WIRED,
+		"the argument the cable lands on"
+	)
+	assert_eq(
+		fed.fields[0].source, ComposerNode.ValueSource.LITERAL,
+		"and the one beside it was typed"
+	)
+	assert_true(fed.fields[1].is_satisfied(), "a wired value is a value")

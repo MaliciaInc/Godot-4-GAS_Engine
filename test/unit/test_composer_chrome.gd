@@ -258,3 +258,56 @@ func test_clicking_an_output_row_reveals_that_node_on_the_canvas() -> void:
 		screen.canvas().picked(), [graph.diagnostics[0].node_id] as Array[StringName],
 		"the node the row was about"
 	)
+
+
+#region What the spec fixes about how things read
+## One missing argument, one severity.
+##
+## The card said it in amber and the Output row said it in red, over the same
+## fact, and a comment in the card claimed the two agreed. A person reading the
+## card would have concluded their ability still runs.
+func test_a_missing_argument_is_the_same_severity_on_the_card_and_in_the_panel() -> void:
+	var source: String = (
+		"extends GameplayAbility
+
+
+func _activate_ability() -> void:
+	add_tag()
+"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
+
+	assert_eq(graph.diagnostics.size(), 1, "the panel has something to say")
+	assert_eq(
+		graph.diagnostics[0].severity, ComposerGraph.Severity.ERROR, "and says it is an error"
+	)
+	assert_eq(
+		graph.nodes[0].state, ComposerNode.State.ERROR, "and the card carries the same"
+	)
+	assert_eq(
+		ComposerTheme.severity_color(
+			ComposerNode.severity_of(graph.nodes[0].state)
+		),
+		ComposerTheme.severity_color(graph.diagnostics[0].severity),
+		"so both are drawn in one colour"
+	)
+
+
+## A file this tool cannot draw is not drawn like a count of nodes.
+##
+## The reason went out in the same grey a node count is written in, which is how
+## a reason ends up being read as a tally and skipped.
+func test_a_read_only_reason_is_not_the_colour_of_a_count() -> void:
+	var reason: Color = ComposerTheme.severity_color(
+		ComposerGraph.Severity.NOT_REPRESENTABLE
+	)
+
+	assert_eq(reason, ComposerTheme.WARNING, "amber, because it wants reading")
+	assert_ne(reason, ComposerTheme.TEXT_FAINT, "not the colour of the count")
+	assert_ne(reason, ComposerTheme.TEXT_DIM, "nor of a label beside it")
+	assert_ne(
+		ComposerTheme.severity_mark(ComposerGraph.Severity.NOT_REPRESENTABLE),
+		ComposerTheme.severity_mark(ComposerGraph.Severity.ERROR),
+		"and it is not marked the way an error is"
+	)
+#endregion
