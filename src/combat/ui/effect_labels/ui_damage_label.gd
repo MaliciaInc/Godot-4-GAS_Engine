@@ -5,12 +5,12 @@ class_name UIDamageLabel extends Marker2D
 @export var move_distance: = 96.0
 
 ## Determines how long the label will be moving upwards.
-@export var move_time: = 0.6
+@export var move_time: = 1.1
 
 ## Determines how long it will take for the label to fade to transparent. This occurs at the end of
 ## the upwards movement.
 ## <br><br><b>Note:</b> fade_time must be less than [member move_time].
-@export var fade_time: = 0.2
+@export var fade_time: = 0.35
 
 ## Label color when [member amount] is >= 0.
 @export var color_damage := Color("#b0305c")

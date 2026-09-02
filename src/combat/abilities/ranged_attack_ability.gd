@@ -7,8 +7,8 @@
 class_name RangedAttackAbility extends DamageAbility
 
 @export var travel_distance: float = 350.0
-@export var travel_time: float = 0.25
-@export var return_time: float = 0.25
+@export var travel_time: float = 0.35
+@export var return_time: float = 0.35
 
 
 func _perform() -> void:

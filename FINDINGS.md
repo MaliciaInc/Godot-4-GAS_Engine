@@ -283,6 +283,20 @@ composition, ability activation and commit, effect application through
 attribute, defeat detection through a tag, and the AI asking the component what
 is legal instead of guessing.
 
+## 2026-09-01 — losing a battle, exercised by losing one
+
+A fight against the ghost was lost, then won on the third attempt. Losing
+exercises what winning does not: `State.Downed` cascading until a whole side is
+out, `is_side_defeated` on the player's side, `_finish(false)` and the loss
+timeline. No errors.
+
+Feedback from that session, and it was a regression rather than a taste: the
+fight read as hurried. The original combat held ~0.1s beats between the phases
+of a swing and the rewrite dropped them, so impact and recovery landed in the
+same instant and the damage number was gone before it could be read. Restored as
+named, exported beats - windup, impact_hold, recovery - rather than the bare
+sleeps they were.
+
 Not yet exercised, and worth aiming at next: energy costs (every authored
 ability costs 0, so the commit path has never refused), the `Focus` buff and
 therefore the contribution-and-withdrawal that justifies effects over

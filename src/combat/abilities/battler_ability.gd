@@ -40,6 +40,22 @@ enum Scope {
 
 ## Energy this costs to use. Zero is free.
 @export_range(0.0, 10.0) var energy_cost: float = 0.0
+
+@export_group("Pacing")
+## Beat before the caster moves, so a turn beginning is something the eye
+## catches rather than something it misses.
+@export var windup: float = 0.15
+
+## Beat held at the moment of impact, before anything moves again.
+##
+## This is the one the damage number is read in. Without it the hit and the
+## recovery are the same instant, and the number is gone before it is seen -
+## which is exactly how the rewrite first felt.
+@export var impact_hold: float = 0.35
+
+## Beat after the caster is home, so one turn ends before the next begins.
+@export var recovery: float = 0.2
+@export_group("")
 #endregion
 
 
@@ -186,6 +202,10 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 		return
 	var origin: Vector2 = caster.position
 
+	await _pause(windup)
+	if not is_instance_valid(caster):
+		return
+
 	var out_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	out_tween.tween_property(caster, "position", origin + offset, out_time)
 	await out_tween.finished
@@ -197,10 +217,29 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 		return
 
 	_land()
+	await _pause(impact_hold)
+	if not is_instance_valid(caster):
+		return
 
 	var back_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	back_tween.tween_property(caster, "position", origin, back_time)
 	await back_tween.finished
+	await _pause(recovery)
+
+
+## A deliberate beat.
+##
+## The rewrite dropped these and the fight read as hurried: every phase ran
+## straight into the next with nothing between them. Exported rather than
+## sprinkled as bare numbers, so a hit can be retimed without reading the
+## choreography, and named for what each is for rather than how long it lasts.
+func _pause(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	var tree: SceneTree = owner_asc.get_tree() if owner_asc != null else null
+	if tree == null:
+		return
+	await tree.create_timer(seconds).timeout
 
 
 ## Which way the first target lies, as -1 or 1. Zero targets is not a case here:

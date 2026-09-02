@@ -14,7 +14,7 @@ class_name EmpowerAbility extends BattlerAbility
 
 @export var added_value: float = 10.0
 @export var hop_height: float = 250.0
-@export var hop_time: float = 0.15
+@export var hop_time: float = 0.22
 
 
 func _perform() -> void:

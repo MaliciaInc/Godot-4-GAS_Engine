@@ -9,7 +9,7 @@ class_name HealAbility extends BattlerAbility
 
 @export var heal_amount: float = 50.0
 @export var hop_height: float = 250.0
-@export var hop_time: float = 0.15
+@export var hop_time: float = 0.22
 
 
 func _perform() -> void:
