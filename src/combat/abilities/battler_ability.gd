@@ -101,6 +101,30 @@ func _build_costs() -> Array[GameplayAbilityCost]:
 var targets: Array[Battler] = []
 
 
+## Refuse a target that has gone down, through the engine's own gate.
+##
+## `possible_targets()` keeps corpses out of the menu, and that used to be the
+## whole story. It is only half: intentions are declared for the whole round and
+## resolved in speed order, so a target chosen at the start can be downed by
+## someone faster before this ability ever runs. The game then spent a turn
+## swinging at a corpse and applying an effect to it.
+##
+## `accepts_target()` is what the engine checks, and `apply_effect_to_targets()`
+## is what its own doc calls the sole enforcement route - which `_land()` already
+## goes through. The gate was there the whole time with nothing written on it.
+##
+## Built in `_init()` rather than `_ready()`: the engine freezes an ability's
+## definition when it is granted, and `_ready()` runs after that, so the value
+## would be reported as drift and never read. The ability scenes store no
+## override for this property, so what is set here survives instantiation.
+func _init() -> void:
+	var downed: GameplayTagQueryExpression = GameplayTagQueryExpression.new()
+	downed.operator = GameplayTagQueryExpression.Operator.ANY
+	downed.tags = [Battler.DOWNED] as Array[StringName]
+	target_blocked_query = GameplayTagQuery.new()
+	target_blocked_query.root = downed
+
+
 func _activate_ability() -> bool:
 	if targets.is_empty():
 		return false

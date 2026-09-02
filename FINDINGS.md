@@ -293,6 +293,35 @@ have no factory entry. They are all reachable on `GameplayAbility` itself
 `wait_target_data`), which is the surface the engine's own tests use. The engine
 was complete; the game had simply not used it.
 
+## SBX-004 — a turn spent swinging at a corpse · **FIXED**
+
+Intentions are declared for a whole round and resolved in speed order, so a
+target chosen at the start can be downed by someone faster before the ability
+that named it ever runs. `possible_targets()` filters `is_targetable()` at menu
+time, which is the wrong moment and the only moment the game checked. `act()`
+takes the targets as given.
+
+Reachable in any fight with more than one enemy: a fast ally finishes the ghost
+a slower ally had aimed at, and the slower one still swings, still rolls for
+accuracy, still applies its effect to a battler that is already down.
+
+**The gate was already there with nothing written on it.** `GameplayAbility`
+exports `target_blocked_query`, `accepts_target()` reads it, and
+`apply_effect_to_targets()` - which `_land()` already calls - is what the engine's
+own doc calls the sole enforcement route. The game had no target queries at all.
+`BattlerAbility._init()` now blocks `State.Downed`.
+
+Built in `_init()`, not `_ready()`: the definition is frozen at grant, so
+`_ready()` would be reported as drift and never read - the lesson GAS-003 left.
+The ability scenes store no override for that property, so the assignment
+survives instantiation.
+
+Known consequence: a target downed mid-round is dropped inside
+`apply_effect_to_targets()`, after `_connects_with()` has already rolled for
+accuracy, so nothing is shown for it. Left that way on purpose - filtering in
+`_land()` as well would put the same rule in two places, and the engine's gate
+is the one that cannot be forgotten.
+
 # Milestones
 
 ## 2026-09-01 — combat runs on GAS_Engine end to end
