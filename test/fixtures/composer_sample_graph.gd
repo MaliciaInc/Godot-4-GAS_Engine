@@ -43,8 +43,9 @@ static func build() -> ComposerGraph:
 	graph.find_node(CUE).state = ComposerNode.State.WARNING
 
 	graph.connections = [
-		wire(COMMIT, EXEC_OUT, APPLY), wire(APPLY, EXEC_OUT, WAIT),
-		wire(WAIT, EXEC_OUT, CUE),
+		ComposerReader.wire(COMMIT, EXEC_OUT, APPLY, EXEC_IN),
+		ComposerReader.wire(APPLY, EXEC_OUT, WAIT, EXEC_IN),
+		ComposerReader.wire(WAIT, EXEC_OUT, CUE, EXEC_IN),
 	] as Array[ComposerGraph.Connection]
 
 	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
@@ -70,21 +71,11 @@ static func _node(
 	node.span = span
 	node.fields.assign(fields)
 	node.ports = [
-		_port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
-		_port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
-		_port(DATA_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT),
+		ComposerReader.port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
+		ComposerReader.port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
+		ComposerReader.port(DATA_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT),
 	] as Array[ComposerNode.Port]
 	return node
-
-
-static func _port(
-	id: StringName, kind: ComposerNode.PortKind, direction: ComposerNode.PortDirection
-) -> ComposerNode.Port:
-	var port: ComposerNode.Port = ComposerNode.Port.new()
-	port.id = id
-	port.kind = kind
-	port.direction = direction
-	return port
 
 
 static func _field(label: String, display: String) -> ComposerNode.Field:
@@ -99,16 +90,3 @@ static func _missing(label: String) -> ComposerNode.Field:
 	field.label = label
 	field.source = ComposerNode.ValueSource.MISSING
 	return field
-
-
-## Public, because the layout tests build their own shapes and a second copy of
-## this is a second thing to keep correct.
-static func wire(
-	source: StringName, source_port: StringName, target: StringName
-) -> ComposerGraph.Connection:
-	var wire: ComposerGraph.Connection = ComposerGraph.Connection.new()
-	wire.from_node = source
-	wire.from_port = source_port
-	wire.to_node = target
-	wire.to_port = EXEC_IN
-	return wire

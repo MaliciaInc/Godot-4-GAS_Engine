@@ -53,6 +53,14 @@ func _data_only(id: StringName) -> ComposerNode:
 	return node
 
 
+## The layout tests build many shapes, so the fourth argument is spelled once
+## here rather than at every call.
+func _wire(
+	source: StringName, source_port: StringName, target: StringName
+) -> ComposerGraph.Connection:
+	return ComposerReader.wire(source, source_port, target, PORT_IN)
+
+
 func _graph(nodes: Array, wires: Array) -> ComposerGraph:
 	var graph: ComposerGraph = ComposerGraph.new()
 	graph.nodes.assign(nodes)
@@ -70,7 +78,7 @@ func _graph(nodes: Array, wires: Array) -> ComposerGraph:
 func test_a_sequence_holds_one_lane_and_a_branch_opens_the_next() -> void:
 	var line: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(_graph(
 		[_node(&"a"), _node(&"b"), _node(&"c")],
-		[Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"b", PORT_OUT, &"c")]
+		[_wire(&"a", PORT_OUT, &"b"), _wire(&"b", PORT_OUT, &"c")]
 	))
 	assert_eq(line[&"a"], Vector2i(0, 0), "the entry starts at the origin")
 	assert_eq(line[&"b"], Vector2i(1, 0), "one column along, same lane")
@@ -78,7 +86,7 @@ func test_a_sequence_holds_one_lane_and_a_branch_opens_the_next() -> void:
 
 	var fork: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(_graph(
 		[_node(&"a"), _node(&"b"), _node(&"c")],
-		[Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"a", PORT_ALT, &"c")]
+		[_wire(&"a", PORT_OUT, &"b"), _wire(&"a", PORT_ALT, &"c")]
 	))
 	assert_eq(fork[&"b"], Vector2i(1, 0), "one side leaves the branch holding the lane")
 	assert_eq(fork[&"c"], Vector2i(1, 1), "and the other takes the next")
@@ -90,9 +98,9 @@ func test_a_join_lands_past_the_longest_side_of_the_branch() -> void:
 	var placed: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(_graph(
 		[_node(&"a"), _node(&"b"), _node(&"c"), _node(&"d"), _node(&"join")],
 		[
-			Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"b", PORT_OUT, &"c"),
-			Sample.wire(&"a", PORT_ALT, &"d"),
-			Sample.wire(&"c", PORT_OUT, &"join"), Sample.wire(&"d", PORT_OUT, &"join"),
+			_wire(&"a", PORT_OUT, &"b"), _wire(&"b", PORT_OUT, &"c"),
+			_wire(&"a", PORT_ALT, &"d"),
+			_wire(&"c", PORT_OUT, &"join"), _wire(&"d", PORT_OUT, &"join"),
 		]
 	))
 
@@ -103,7 +111,7 @@ func test_a_join_lands_past_the_longest_side_of_the_branch() -> void:
 
 func test_a_node_wired_only_by_data_does_not_advance_a_column() -> void:
 	var placed: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(_graph(
-		[_node(&"a"), _data_only(&"value")], [Sample.wire(&"value", PORT_VALUE, &"a")]
+		[_node(&"a"), _data_only(&"value")], [_wire(&"value", PORT_VALUE, &"a")]
 	))
 
 	assert_eq(
@@ -120,7 +128,7 @@ func test_a_node_wired_only_by_data_does_not_advance_a_column() -> void:
 ## Anything iterating a Dictionary directly would pass the repeat-run test below
 ## and fail this one, which is why both are here.
 func test_the_same_structure_laid_out_from_opposite_orders_agrees() -> void:
-	var wires: Array = [Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"b", PORT_OUT, &"c")]
+	var wires: Array = [_wire(&"a", PORT_OUT, &"b"), _wire(&"b", PORT_OUT, &"c")]
 	var forward: ComposerGraph = _graph([_node(&"a"), _node(&"b"), _node(&"c")], wires)
 	var backward: ComposerGraph = _graph([_node(&"c"), _node(&"b"), _node(&"a")], wires)
 
@@ -133,7 +141,7 @@ func test_the_same_structure_laid_out_from_opposite_orders_agrees() -> void:
 func test_laying_the_same_graph_out_twice_gives_the_same_answer() -> void:
 	var graph: ComposerGraph = _graph(
 		[_node(&"a"), _node(&"b"), _node(&"c")],
-		[Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"a", PORT_ALT, &"c")]
+		[_wire(&"a", PORT_OUT, &"b"), _wire(&"a", PORT_ALT, &"c")]
 	)
 
 	assert_eq(
@@ -149,13 +157,13 @@ func test_laying_the_same_graph_out_twice_gives_the_same_answer() -> void:
 ## Appending a statement is the most common edit there is. If it reshuffled the
 ## nodes above it, every edit would cost the reader the map they already had.
 func test_appending_a_statement_moves_nothing_before_it() -> void:
-	var grown: Array = [Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"a", PORT_ALT, &"c")]
+	var grown: Array = [_wire(&"a", PORT_OUT, &"b"), _wire(&"a", PORT_ALT, &"c")]
 	var was: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(
 		_graph([_node(&"a"), _node(&"b"), _node(&"c")], grown)
 	)
 	var now: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(_graph(
 		[_node(&"a"), _node(&"b"), _node(&"c"), _node(&"d")],
-		grown + [Sample.wire(&"b", PORT_OUT, &"d")]
+		grown + [_wire(&"b", PORT_OUT, &"d")]
 	))
 
 	for id: StringName in [&"a", &"b", &"c"] as Array[StringName]:
@@ -171,7 +179,7 @@ func test_appending_a_statement_moves_nothing_before_it() -> void:
 func test_a_cycle_terminates_instead_of_spinning() -> void:
 	var graph: ComposerGraph = _graph(
 		[_node(&"a"), _node(&"b")],
-		[Sample.wire(&"a", PORT_OUT, &"b"), Sample.wire(&"b", PORT_OUT, &"a")]
+		[_wire(&"a", PORT_OUT, &"b"), _wire(&"b", PORT_OUT, &"a")]
 	)
 
 	var placed: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(graph)
