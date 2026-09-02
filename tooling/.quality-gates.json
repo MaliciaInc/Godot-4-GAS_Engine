@@ -338,6 +338,18 @@
       {
         "literal": "func",
         "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the gates' grammar tables list it to tokenise a file, and the Ability Composer's subset lists it to say whether a line of that shape can be drawn. Neither is quoting the other, and neither can use a different word - the language chose it."
+      },
+      {
+        "literal": "add_tag",
+        "reason": "The name of a method on AbilitySystemComponent. Two callers name it: the Dialogic bridge maps a command word onto it, and the Ability Composer's catalog offers it as a node. Neither invented the word and neither may use a different one - it is the engine's own API surface, and two places calling one method is not a duplicated value."
+      },
+      {
+        "literal": "remove_tag",
+        "reason": "The name of a method on AbilitySystemComponent. Two callers name it: the Dialogic bridge maps a command word onto it, and the Ability Composer's catalog offers it as a node. Neither invented the word and neither may use a different one - it is the engine's own API surface, and two places calling one method is not a duplicated value."
+      },
+      {
+        "literal": "type",
+        "reason": "A key in Godot's own dictionaries - the argument descriptor returned by get_script_method_list(), and the project-settings property info. Both are the engine's spelling, not a value this project chose."
       }
     ],
     "allow_globs": [],

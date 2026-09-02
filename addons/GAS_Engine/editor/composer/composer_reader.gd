@@ -82,7 +82,7 @@ static func _node(
 	node.type_id = StringName(_call_name(text))
 	node.title = _title(text, verdict)
 	node.ports = _ports(verdict)
-	node.fields.assign(_fields(text))
+	node.fields.assign(_fields(text, node.type_id))
 	return node
 
 
@@ -107,6 +107,9 @@ static func _title(text: String, verdict: ComposerSubset.Verdict) -> String:
 	var name: String = _call_name(text)
 	if name.is_empty():
 		return text
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(StringName(name))
+	if entry != null:
+		return entry.title
 	return name.get_file().capitalize()
 
 
@@ -157,12 +160,14 @@ static func port(
 	return port
 
 
-## One field per argument, labelled by position.
+## One field per argument, named by the catalog where it knows the call.
 ##
-## Positional until the catalog names them: without it the reader knows the
-## argument's text but not what the engine calls that parameter, and inventing a
-## name here would put a word on the card the API never used.
-static func _fields(text: String) -> Array[ComposerNode.Field]:
+## The label is the engine's own parameter name, read from the method rather
+## than invented here. A call the catalog does not offer still draws - a person
+## may write anything the subset admits - but its arguments fall back to their
+## position, which says "this is the second thing you passed" and claims nothing
+## more.
+static func _fields(text: String, type_id: StringName) -> Array[ComposerNode.Field]:
 	var fields: Array[ComposerNode.Field] = []
 	var open: int = text.find("(")
 	if open < 0 or not text.ends_with(")"):
@@ -172,10 +177,15 @@ static func _fields(text: String) -> Array[ComposerNode.Field]:
 	if inside.is_empty():
 		return fields
 
-	var position: int = 1
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(type_id)
+	var position: int = 0
 	for argument: String in inside.split(","):
+		var declared: ComposerNode.Field = (
+			entry.parameter(position) if entry != null else null
+		)
 		var field: ComposerNode.Field = ComposerNode.Field.new()
-		field.label = "#%d" % position
+		field.label = declared.label if declared != null else "#%d" % (position + 1)
+		field.type_name = declared.type_name if declared != null else &""
 		field.display = argument.strip_edges()
 		fields.append(field)
 		position += 1
