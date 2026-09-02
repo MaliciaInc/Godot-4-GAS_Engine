@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# GameplayAbility.completed(): awaiting an ability that already ended
+# cost drift is reported instead of swallowed
 #
 # python: 3.14.6
-# date-utc: 2026-09-01T23:53:49Z
-# commit-previo: ad10a2b5ebba6c65eea705bb0ca92c7161f9bea0
+# date-utc: 2026-09-02T01:29:43Z
+# commit-previo: 321a020a00aacbbcdd2e582db5e95af1d231491b
 # files: 23
 fe65c5bb2a1e11b24b21c3c2b1f3fa8011ce993e783cc8e142f8544974ce64d4  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py

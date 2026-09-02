@@ -351,3 +351,51 @@ func test_removing_an_active_ability_ends_it_exactly_once() -> void:
 	assert_false(ability.is_active, "and is no longer running")
 	assert_null(ability.owner_asc, "and no longer points at the ASC that dropped it")
 #endregion
+
+
+#region Costs written after the grant
+## Granting an ability freezes its definition, and the commit prices from that
+## snapshot - so a cost written onto the running instance afterwards is ignored.
+## That is the design and the snapshot's own header says so, but silence is a bad
+## way to say it: an ability whose cost never reached the engine is simply free,
+## and a green console and a won battle both look exactly the same as correct.
+##
+## The sandbox lost a whole session to it, and a screenshot caught it rather than
+## any log. The commit says it out loud now.
+func test_a_cost_written_after_the_grant_is_reported_not_swallowed() -> void:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.LateCost")
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	var instance: ProbeAbility = spec.per_actor_instance as ProbeAbility
+	assert_true(spec.definition.costs.is_empty(), "granted with no costs")
+
+	# Exactly the mistake: the instance is told what it costs, too late.
+	var amount: GameplayScalableFloat = GameplayScalableFloat.new()
+	amount.value = 5.0
+	var late: GameplayAbilityCost = GameplayAbilityCost.new()
+	late.mode = GameplayAbilityCost.Mode.ABSOLUTE
+	late.target_attribute = &"mana"
+	late.amount = amount
+	instance.costs = [late] as Array[GameplayAbilityCost]
+
+	# The commit still prices from the definition - the behaviour is unchanged -
+	# but it no longer does so quietly. Through the engine's error channel, so
+	# a game that wired up nothing at all is still told.
+	var commit: AbilityCommitResult = instance.commit_ability()
+
+	assert_true(commit.is_ok(), "priced from the definition, which has no costs")
+	# The probe fixture leaves `ability_name` empty, so the report falls back to
+	# the node name - which is the tag with its dots replaced.
+	assert_push_error(
+		"ability 'Ability_LateCost' carries 1 cost(s) the engine will not charge"
+	)
+
+
+func test_an_ability_whose_costs_match_its_definition_says_nothing() -> void:
+	# The guard must not shout at every ordinary commit.
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.HonestCost")
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	var instance: ProbeAbility = spec.per_actor_instance as ProbeAbility
+
+	instance.commit_ability()
+	assert_push_error_count(0, "nothing drifted, so nothing to say")
+#endregion
