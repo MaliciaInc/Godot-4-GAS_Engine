@@ -117,10 +117,11 @@ func completed() -> void:
 ## Finishing from here is allowed but is the awkward case: the runtime registers
 ## and connects before it starts a task, so the ending is not lost - but the
 ## caller does not hold the task yet, so `await task.finished` would wait for an
-## emission that has already happened. Three tasks in this library can end
+## emission that has already happened. Four tasks in this library can end
 ## during `start()` - a threshold already crossed, a tag query already at the
-## result it was told to wait for, an animation the player does not have - which
-## is why `completed()` exists and why callers should use it.
+## result it was told to wait for, an animation the player does not have, a
+## repeat interval that can never come round - which is why `completed()`
+## exists and why callers should use it.
 func _on_start() -> void:
 	pass
 

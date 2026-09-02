@@ -410,3 +410,41 @@ static func _compose_for_attribute(
 
 	return composed
 #endregion
+
+#region Affordability
+## Whether every attribute this cost touches can pay it in full from its
+## durable base. A temporary buff does not subsidise it - Mana base 10 with
+## an active +20 cannot pay 20, since committing -20 to base gets reduced by
+## the clamp, and a cost the clamp had to shrink was survivable, not
+## affordable.
+##
+## Lives here rather than on the component that exposes it, because it is
+## this evaluator's own answer read a second way: it builds the very request
+## a commit builds, on an isolated spec copy, so a preview cannot disagree
+## with the commit or mutate anything.
+static func can_afford(
+	effect: GameplayEffect, effect_level: float, asc: AbilitySystemComponent
+) -> bool:
+	if effect == null:
+		return true
+
+	var context: GameplayEffectContext = GameplayEffectContext.new(asc.get_effect_target())
+	var probe: GameplayEffectSpec = GameplayEffectSpec.new(effect, context, effect_level)
+
+	var request: Request = Request.new()
+	request.spec = probe
+	request.attributes = asc.attributes
+	request.owner_asc = asc
+	request.application_order = 0
+	request.mode = Mode.BASE_MUTATION
+	request.source_asc = probe.source_asc
+
+	var evaluation: GameplayEffectEvaluationResult = evaluate(request)
+	if not evaluation.is_ok():
+		return false
+
+	for staged: AttributeBaseMutation in evaluation.base_mutations:
+		if not is_equal_approx(staged.committed_base_value, staged.requested_base_value):
+			return false
+	return true
+#endregion

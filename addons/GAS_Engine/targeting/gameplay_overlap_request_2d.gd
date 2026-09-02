@@ -31,3 +31,14 @@ var collide_with_areas: bool = false
 ## Without a filter the caster is also included: excluding it is
 ## GameplayTargetFilter.exclude_source's job, and there is no filter to ask.
 var filter: GameplayTargetFilter = null
+
+## How many colliders physics may answer with before it stops looking.
+##
+## Godot's own default is 32, and it truncates in silence. That is a second
+## limit sitting under GameplayTargetFilter.max_targets and applied in the wrong
+## order: physics stops before the sweep has dropped scenery and collapsed an
+## actor's several colliders into one target, so an author who asked for twenty
+## targets could be handed sixteen and never be told why. Raised here so the
+## only limit that decides is one somebody wrote. Lower it to pay less for a
+## sweep that cannot reach a crowd. Clamped to one or more when the query runs.
+var max_results: int = 256

@@ -60,8 +60,18 @@ func bind_installed(tree: SceneTree, asc: AbilitySystemComponent, channel: Strin
 
 
 ## Stop listening. Safe to call on a bridge that never bound, and again after.
+## The stored node is asked with is_instance_valid rather than `!= null`: this
+## bridge holds a node it does not own, and a freed Node is not null. The
+## ordinary teardown order - a scene freeing its children before the bridge
+## beside them - used to reach `is_connected()` on a dead instance and take the
+## shutdown with it. Same guard AbilityTaskPlayAnimationAndWait makes of its
+## player. bind()'s arguments need no such guard: GDScript's own typed-argument
+## check refuses a freed object before the body runs, so `== null` there is the
+## whole of what can still get through.
 func unbind() -> void:
-	if _dialogic != null and _dialogic.is_connected(SIGNAL_NAME, _on_signal_event):
+	if is_instance_valid(_dialogic) and _dialogic.is_connected(
+		SIGNAL_NAME, _on_signal_event
+	):
 		_dialogic.disconnect(SIGNAL_NAME, _on_signal_event)
 	_dialogic = null
 	target_asc = null
@@ -89,7 +99,7 @@ func _on_signal_event(argument: Variant) -> void:
 
 	var command: DialogicGasCommand = parsed.command
 	# Addressed to another bridge on the same bus. Well-formed, just not ours.
-	if command.channel != bridge_channel or target_asc == null:
+	if command.channel != bridge_channel or not is_instance_valid(target_asc):
 		return
 
 	_apply(command)

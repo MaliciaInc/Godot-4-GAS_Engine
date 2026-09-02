@@ -234,11 +234,9 @@ func _deactivate_persistent_cues(active: ActiveGameplayEffect) -> void:
 ## Ticks owed while inhibited were already skipped by GameplayEffectScheduler
 ## without running - this only handles the catch-up/reset on the way back.
 ##
-## Resetting `period_origin_elapsed` to `elapsed_time` and `completed_ticks`
-## to 0 together mean advance_clock() sees this instant exactly as it saw
-## application: the next real tick is due one full period from right now,
-## same as a freshly-applied periodic effect's first tick is one period
-## after application, never at application itself.
+## Both restarting policies say the same thing to the clock, so both ask
+## ActiveGameplayEffect.restart_period_clock() rather than spelling it out.
+## The stacking runtime spelled it out too, and spelled it wrong.
 func _resume_periodic_clock(active: ActiveGameplayEffect) -> void:
 	if not active.is_periodic():
 		return
@@ -246,12 +244,9 @@ func _resume_periodic_clock(active: ActiveGameplayEffect) -> void:
 		GameplayEffect.PeriodInhibitionPolicy.EXECUTE_IMMEDIATELY_ON_UNINHIBIT:
 			if active.missed_tick_while_inhibited:
 				effects.run_periodic_tick(active)
-			active.period_origin_elapsed = active.elapsed_time
-			active.completed_ticks = 0
-			active.missed_tick_while_inhibited = false
+			active.restart_period_clock()
 		GameplayEffect.PeriodInhibitionPolicy.RESET_PERIOD_ON_UNINHIBIT:
-			active.period_origin_elapsed = active.elapsed_time
-			active.completed_ticks = 0
+			active.restart_period_clock()
 		GameplayEffect.PeriodInhibitionPolicy.SKIP_MISSED_TICKS:
 			pass
 #endregion

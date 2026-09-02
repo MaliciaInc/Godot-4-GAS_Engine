@@ -134,7 +134,7 @@ func tag_turns_remaining(tag: StringName) -> int:
 ## until this application's own outcome is known - and the evaluator run. A
 ## refusal at any stage is total.
 func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
-	if spec == null or spec.effect_def == null:
+	if spec == null or not spec.is_applicable():
 		return _refuse(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
 
 	if spec.chain_depth > MAX_EFFECT_CHAIN_DEPTH:

@@ -107,10 +107,10 @@ func _ready() -> void:
 
 	asc = AbilitySystemComponent.new()
 	asc.name = "AbilitySystemComponent"
-	# Duplicated, not shared: the ASC isolates its sets anyway, and handing it
-	# the authored resource directly would let a runtime write reach the file
-	# on disk.
-	asc.attribute_sets = [attributes.duplicate()] as Array[AttributeSet]
+	# The authored resource itself. Two battlers pointing at one .tres get the
+	# same cached Resource, and the component deep-copies it unless told to
+	# share - so this is also what proves that guarantee still holds.
+	asc.attribute_sets = [attributes] as Array[AttributeSet]
 	add_child(asc)
 
 	asc.attribute_changed.connect(_on_attribute_changed)

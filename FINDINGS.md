@@ -383,6 +383,66 @@ game until the whole party dies at once.
 Found by asking what ordering the engine requires and does not enforce - the
 same question that produced GAS-003.
 
+## GAS-005 — the handover rewrote the caller's array and read its policy once
+
+**Status:** `FIXED ON MAIN 1b980dd` — deployed here
+
+Three failures with one root: the runtime aliased the array it was handed and
+applied the copy policy in place, at a single moment.
+
+- **Isolation wrote into the caller's array.** It replaced the elements rather
+  than the array, to avoid re-entering the setter. Those elements belong to the
+  game: one array assigned to two components left the second holding the first's
+  live, already-damaged copies, and left the game's own variable no longer
+  holding what it authored.
+- **`share_attributes` was read only at the handover.** Assigning it to a
+  running component was ignored in silence - the same ordering trap GAS-004
+  found in the sets themselves, one export over.
+- **`_wire_runtimes()` handed the sets over a second time without isolating**,
+  immediately before the real handover did it properly. Two ways in, and the
+  shorter one was the unsafe one. `isolate` also lost its default value: the
+  protective choice must not be the one a caller has to remember to ask for.
+
+Found by generalising GAS-004 rather than waiting to trip over it: every
+`@export` in the addon, asked whether the engine reads it again after start-up.
+`share_attributes` was the only other one, and pulling on it exposed the rest.
+
+The unit test for GAS-004's isolation asserted that the export had been
+overwritten with the copies - the first bug above, stated as the contract. A
+test that verifies a property by observing the side effect that caused it will
+defend the side effect. It asks the runtime for its live sets now.
+
+**Deployed here, and this sandbox now leans on the fix.** `battler.gd` used to
+hand over `attributes.duplicate()`, defending itself against exactly this; its
+comment gave a reason ("a runtime write would reach the file on disk") that was
+never quite right and is now not true at all. It hands over the authored
+resource directly. Two battlers sharing one `.tres` get the same cached
+Resource, so if the engine ever stops copying, they share a health pool and the
+next battle says so.
+
+# Deployed from main, not found here
+
+The sandbox runs whatever `main` runs, so this section says which engine it is.
+None of these were found by playing: they came from sweeping the addon itself,
+mostly by asking where a rule is applied in one place and not in its neighbour.
+They are listed so that a behaviour change noticed here has somewhere to be
+looked up.
+
+| commit | what changed |
+| --- | --- |
+| `1b980dd` | The attribute-set handover stopped rewriting the caller's array, and `share_attributes` became assignable to a running component. |
+| `426c3dd` | `AbilityTaskRepeat` with an interval of zero or INF ends itself instead of waiting forever. |
+| `20aa035` | A spec whose `duration` or `period` is not a finite number is refused rather than applied. |
+| `fc08af7` | One period-clock restart instead of two that disagreed; `tick_time()` now answers the same way whoever restarted it. |
+| `23fd19d` | The Dialogic/GLoot/QuestSystem bridges survive the node they watch being freed first. |
+| `ae713db` | A capture left blank reports INVALID_DEFINITION rather than MISSING_CAPTURE. |
+| `7afb25e` | An overlap sweep is no longer capped at 32 targets by Godot's own default; `max_results` is authored. |
+| `f4653ad` | The dashboard refuses an attribute named for a GDScript keyword, which used to generate a file that would not parse. |
+| `bab301b` | The asset validator reports an empty row in an authored array instead of stepping over it. |
+
+Of these, `7afb25e` is the one this game could meet: a crowded battle sweeping
+for targets was silently answered with at most thirty-two colliders.
+
 # Checked and not defects
 
 Recorded because a question asked and answered is worth as much as a bug found,

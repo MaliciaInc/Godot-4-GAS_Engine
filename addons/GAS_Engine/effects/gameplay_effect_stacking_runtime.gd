@@ -100,16 +100,7 @@ func refresh_clocks_on_reapplication(existing: ActiveGameplayEffect) -> void:
 		effect.stack_period_reset_policy == GameplayEffect.StackPeriodResetPolicy.ON_SUCCESSFUL_APPLICATION
 		and existing.is_periodic()
 	):
-		reset_period_clock(existing)
-
-
-## Unconditional period-clock reset, for both the reapplication path above
-## and expiration's own always-restart duration semantics.
-func reset_period_clock(existing: ActiveGameplayEffect) -> void:
-	existing.elapsed_time = 0.0
-	existing.completed_ticks = 0
-	existing.period_origin_elapsed = 0.0
-	existing.missed_tick_while_inhibited = false
+		existing.restart_period_clock()
 
 
 #region Reapplication onto an existing stack
@@ -238,7 +229,7 @@ func _settle_expiring(active: ActiveGameplayEffect, new_count: int) -> void:
 	elif effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
 		active.spec.remaining_turns = effect.duration_turns
 	if active.is_periodic():
-		reset_period_clock(active)
+		active.restart_period_clock()
 
 	effects.recompose_and_emit(active.spec)
 	if active.spec.period <= 0.0:

@@ -97,11 +97,21 @@ func bind_installed(tree: SceneTree, asc: AbilitySystemComponent) -> bool:
 
 
 ## Let go of both directions, and of every quest this bridge was holding.
+## The stored node is asked with is_instance_valid rather than `!= null`: this
+## bridge holds a node it does not own, and a freed Node is not null. The
+## ordinary teardown order - a scene freeing its children before the bridge
+## beside them - used to reach `is_connected()` on a dead instance and take the
+## shutdown with it. Same guard AbilityTaskPlayAnimationAndWait makes of its
+## player. bind()'s arguments need no such guard: GDScript's own typed-argument
+## check refuses a freed object before the body runs, so `== null` there is the
+## whole of what can still get through.
 func unbind() -> void:
 	_drop(AVAILABLE_SIGNAL, _on_available)
 	_drop(ACCEPTED_SIGNAL, _on_accepted)
 	_drop(COMPLETED_SIGNAL, _on_completed)
-	if target_asc != null and target_asc.gameplay_event_received.is_connected(_on_gameplay_event):
+	if is_instance_valid(target_asc) and target_asc.gameplay_event_received.is_connected(
+		_on_gameplay_event
+	):
 		target_asc.gameplay_event_received.disconnect(_on_gameplay_event)
 
 	_quest_system = null
@@ -110,7 +120,9 @@ func unbind() -> void:
 
 
 func _drop(signal_name: StringName, handler: Callable) -> void:
-	if _quest_system != null and _quest_system.is_connected(signal_name, handler):
+	if is_instance_valid(_quest_system) and _quest_system.is_connected(
+		signal_name, handler
+	):
 		_quest_system.disconnect(signal_name, handler)
 
 
@@ -222,7 +234,7 @@ func _binding_for(quest_id: int) -> QuestGasBinding:
 #region Gameplay reaching the quests
 func _on_gameplay_event(event: GameplayEventData) -> void:
 	# The door against re-entry: this is an event still being sent outward.
-	if _forwarding_depth > 0 or event == null or _quest_system == null:
+	if _forwarding_depth > 0 or event == null or not is_instance_valid(_quest_system):
 		return
 
 	for binding: QuestGasBinding in bindings:
