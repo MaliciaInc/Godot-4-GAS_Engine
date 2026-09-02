@@ -362,6 +362,22 @@
       {
         "literal": "base",
         "reason": "A key in Godot's own dictionaries. The Ability Composer's type system reads the class hierarchy out of ProjectSettings.get_global_class_list(), whose entries are spelled with these; the other occurrence is the same word in another engine-facing table. Neither is a value this project chose, and renaming one would only stop it matching what Godot returns."
+      },
+      {
+        "literal": "attribute",
+        "reason": "A fragment the Ability Composer matches a method name against to work out which palette category it belongs in. The word is not a value: it is part of the engine's own naming, and the same word turning up elsewhere in the project is a different thing that happens to be spelled the same. Assigning a hundred methods to categories by hand would be a list that drifts from the methods; matching on the name is the rule that cannot."
+      },
+      {
+        "literal": "tag",
+        "reason": "A fragment the Ability Composer matches a method name against to work out which palette category it belongs in. The word is not a value: it is part of the engine's own naming, and the same word turning up elsewhere in the project is a different thing that happens to be spelled the same. Assigning a hundred methods to categories by hand would be a list that drifts from the methods; matching on the name is the rule that cannot."
+      },
+      {
+        "literal": "target",
+        "reason": "A fragment the Ability Composer matches a method name against to work out which palette category it belongs in. The word is not a value: it is part of the engine's own naming, and the same word turning up elsewhere in the project is a different thing that happens to be spelled the same. Assigning a hundred methods to categories by hand would be a list that drifts from the methods; matching on the name is the rule that cannot."
+      },
+      {
+        "literal": "AbilitySystemComponent",
+        "reason": "Two different facts that happen to be spelled the same. AbilitySystemLocator uses it as the name a component is conventionally given in a scene - a convention, and its own comment says so - while the Ability Composer uses it as the class whose public calls it offers. Tying one to the other would mean renaming the scene convention silently changed which class the palette reads."
       }
     ],
     "allow_globs": [],

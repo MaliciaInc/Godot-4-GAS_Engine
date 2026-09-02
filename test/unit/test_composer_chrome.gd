@@ -226,7 +226,11 @@ func test_a_node_registered_later_reaches_the_palette() -> void:
 	palette.open_group(&"Stamina")
 
 	assert_eq(palette.open_group_name(), &"Stamina", "the new category can be opened")
-	ComposerCatalog.forget(&"spend_stamina")
+	ComposerCatalog.forget(
+		ComposerCatalog.key_for(
+			"res://test/fixtures/game_composer_nodes.gd", &"spend_stamina"
+		)
+	)
 
 
 ## A row in the Output panel takes you to the node it is about.

@@ -39,79 +39,65 @@ const GROUPS: Array[StringName] = [
 	FLOW, ABILITY, TASKS, EFFECTS, TAGS, TARGETING, EVENTS, CUES, CONTEXT, VALUES,
 ]
 
-const ABILITY_SCRIPT: String = "res://addons/GAS_Engine/abilities/gameplay_ability.gd"
-const ASC_SCRIPT: String = "res://addons/GAS_Engine/components/ability_system_component.gd"
-const TARGETING_SCRIPT: String = "res://addons/GAS_Engine/targeting/gameplay_targeting_service.gd"
-
-## Curated: the calls worth a node, and where each belongs.
+## The classes whose public calls the Composer offers.
 ##
-## Not every public method is a node. The facade carries fifty-odd, and offering
-## all of them would hand someone a palette they have to read rather than one
-## they can scan. What is here is what an ability body actually does.
+## Named as classes, not as file paths. A path written here is a path written
+## twice - the file already says where it is - and the copy is what stops being
+## true the day somebody moves a folder. The project is asked where each class
+## lives, which is the same question Godot answers to load it.
+const ABILITY_CLASS: StringName = &"GameplayAbility"
+const ASC_CLASS: StringName = &"AbilitySystemComponent"
+const TARGETING_CLASS: StringName = &"GameplayTargetingService"
+const TASK_FACTORY_CLASS: StringName = &"AbilityTaskFactory"
+const TARGET_DATA_CLASS: StringName = &"GameplayAbilityTargetData"
+
+## Every script whose public calls the Composer offers.
 ##
-## `[method, group, source script]`.
-const OFFERED: Array[Array] = [
-	["commit_ability", ABILITY, ABILITY_SCRIPT],
-	["abort_ability", ABILITY, ABILITY_SCRIPT],
-	["end_ability", ABILITY, ABILITY_SCRIPT],
-	["get_ability_level", ABILITY, ABILITY_SCRIPT],
-	["get_cooldown_state", ABILITY, ABILITY_SCRIPT],
-
-	["wait_delay", TASKS, ABILITY_SCRIPT],
-	["wait_target_data", TASKS, ABILITY_SCRIPT],
-	["wait_gameplay_event", TASKS, ABILITY_SCRIPT],
-	["wait_input_pressed", TASKS, ABILITY_SCRIPT],
-	["wait_input_released", TASKS, ABILITY_SCRIPT],
-
-	["apply_effect_to_targets", EFFECTS, ABILITY_SCRIPT],
-	["apply_gameplay_effect", EFFECTS, ASC_SCRIPT],
-	["remove_effects_with_tag", EFFECTS, ASC_SCRIPT],
-	["count_active_effects", EFFECTS, ASC_SCRIPT],
-
-	["add_tag", TAGS, ASC_SCRIPT],
-	["remove_tag", TAGS, ASC_SCRIPT],
-	["has_tag", TAGS, ASC_SCRIPT],
-	["has_tag_exact", TAGS, ASC_SCRIPT],
-
-	["raycast_2d", TARGETING, TARGETING_SCRIPT],
-	["raycast_3d", TARGETING, TARGETING_SCRIPT],
-	["overlap_2d", TARGETING, TARGETING_SCRIPT],
-	["overlap_3d", TARGETING, TARGETING_SCRIPT],
-
-	["send_gameplay_event", EVENTS, ASC_SCRIPT],
-
-	["execute_cue", CUES, ABILITY_SCRIPT],
-	["activate_persistent_cue", CUES, ASC_SCRIPT],
-	["deactivate_persistent_cue", CUES, ASC_SCRIPT],
-
-	["get_ability_handle", CONTEXT, ABILITY_SCRIPT],
-	["find_asc_on", CONTEXT, ABILITY_SCRIPT],
-
-	["get_attribute_base", VALUES, ASC_SCRIPT],
-	["get_attribute_current", VALUES, ASC_SCRIPT],
-	["has_attribute", VALUES, ASC_SCRIPT],
+## The whole hand-written half of the catalog, and it is a list of files rather
+## than a list of methods. What each of them carries is read from the file: a
+## method added to the engine is on the palette the next time the editor starts,
+## and one that is renamed takes its node with it. A list of methods beside the
+## methods is the thing that stops being true, and it stops being true silently.
+const SOURCES: Array[StringName] = [
+	ABILITY_CLASS, ASC_CLASS, TARGETING_CLASS, TASK_FACTORY_CLASS, TARGET_DATA_CLASS,
 ]
 
-## Statements that suspend the ability. The card says the word, and the writer
-## prints the keyword; both read this rather than guessing from the name.
+## What a method has to mention to belong to a category, in the order asked.
 ##
-## A decision, not a fact - reflection cannot tell whether a method suspends - so
-## a game offering a call of its own answers the same question for itself.
-##
-## Held against the engine all the same: every call here returns a task, because
-## a task is the thing an ability waits on. `apply_effect_to_targets` was on this
-## list and returns a result, not a task, and never suspends anything - the card
-## said `await` over a call that does not, and a node placed from the palette
-## would have printed one.
-const SUSPENDS: Array[StringName] = [
-	&"wait_delay", &"wait_target_data", &"wait_gameplay_event",
-	&"wait_input_pressed", &"wait_input_released",
+## A rule rather than a table. Assigning ninety-odd methods to categories by
+## hand is ninety-odd chances to disagree with the next person who adds one, and
+## the disagreement shows up as a node nobody can find. Order matters: an
+## effect's tag is an effect before it is a tag.
+const BY_NAME: Array[Array] = [
+	["wait_", TASKS],
+	["repeat", TASKS],
+	["play_animation", TASKS],
+	["cue", CUES],
+	["effect", EFFECTS],
+	["tag", TAGS],
+	["target", TARGETING],
+	["raycast", TARGETING],
+	["overlap", TARGETING],
+	["hit", TARGETING],
+	["event", EVENTS],
+	["attribute", VALUES],
+	["cost", VALUES],
+	["abilit", ABILITY],
+	["cooldown", ABILITY],
+	["input", ABILITY],
 ]
+
+## The class an ability waits on. A call that hands one back is a call that
+## suspends, which is a fact of the method rather than a decision about it - so
+## it is read from the return type instead of being listed.
+const TASK_CLASS: StringName = &"GameplayAbilityTask"
+
+## What separates one script's call from another's with the same name.
+const KEY_JOIN: String = "#"
 
 const NO_SCRIPT: String = "there is nothing at %s"
 const NOT_A_SCRIPT: String = "%s is not a script"
 const NOT_THERE: String = "%s() is not on %s"
-const TAKEN: String = "%s is already offered from %s"
 const REFUSED: String = "GAS_Engine: the Composer refused a node - %s"
 
 static var _cache: Dictionary[StringName, Entry] = {}
@@ -121,6 +107,13 @@ static var _revision: int = 0
 
 ## One offerable call: what it is, what it takes, where it belongs.
 class Entry extends RefCounted:
+	## Script and method together. The engine really does declare `execute_cue`
+	## twice - once on the ability and once on the ability system - and a catalog
+	## keyed by the method alone can hold only one of them, so one of the two is
+	## a call the Composer could never draw. Which one was never a decision
+	## anybody made; it was whichever was listed first.
+	var key: StringName = &""
+
 	var type_id: StringName = &""
 	var group: StringName = &""
 	var title: String = ""
@@ -147,6 +140,7 @@ class Entry extends RefCounted:
 		return parameters[position]
 
 
+
 #region What is offered
 ## Every offered call, built once and kept.
 ##
@@ -158,18 +152,80 @@ static func all() -> Dictionary[StringName, Entry]:
 	# Raised before admitting, not after: `_admit` reaches back through here, and
 	# a flag set late would send it around again.
 	_built = true
-	for row: Array in OFFERED:
-		var method: String = row[0]
-		var group: StringName = row[1]
-		var path: String = row[2]
-		var refused: String = _admit(method, group, path, SUSPENDS.has(StringName(method)))
-		if not refused.is_empty():
-			push_error(REFUSED % refused)
+	for declared: StringName in SOURCES:
+		_admit_every_call_on(script_for(declared))
 	return _cache
 
 
-static func find(type_id: StringName) -> Entry:
-	return all().get(type_id)
+## Where the project says a class lives.
+static func script_for(declared: StringName) -> String:
+	return ComposerTypes.script_of(declared)
+
+
+## Offer everything a script declares in public.
+##
+## Nothing is left out by opinion. A method the engine exposes is a statement
+## somebody can write in an ability, and a palette that quietly omitted it would
+## be answering a question - "is this worth drawing?" - that belongs to the
+## person writing the ability, not to this file.
+static func _admit_every_call_on(path: String) -> void:
+	var script: GDScript = load(path) as GDScript
+	if script == null:
+		push_error(REFUSED % (NO_SCRIPT % path))
+		return
+	for described: Dictionary in script.get_script_method_list():
+		var method: String = described["name"]
+		# Leading marks are Godot's, not a person's: `_` is private and `@` is a
+		# property setter wearing a method's shape.
+		if method.begins_with("_") or method.begins_with("@"):
+			continue
+		var refused: String = _admit(method, group_of(method), path, _suspends(described))
+		if not refused.is_empty():
+			push_error(REFUSED % refused)
+
+
+## Which category a call belongs to, worked out from its name.
+static func group_of(method: String) -> StringName:
+	for rule: Array in BY_NAME:
+		var mark: String = rule[0]
+		var group: StringName = rule[1]
+		if method.contains(mark):
+			return group
+	return CONTEXT
+
+
+## Whether a call hands back something an ability waits on.
+static func _suspends(described: Dictionary) -> bool:
+	var returned: Dictionary = described["return"]
+	var declared: String = returned["class_name"]
+	return ComposerTypes.inherits(StringName(declared), TASK_CLASS)
+
+
+static func find(key: StringName) -> Entry:
+	return all().get(key)
+
+
+## The key a call is filed under.
+static func key_for(source: String, method: StringName) -> StringName:
+	return StringName("%s%s%s" % [source, KEY_JOIN, method])
+
+
+## The call `method` on `source`, or null when that script does not offer one.
+static func find_on(source: String, method: StringName) -> Entry:
+	return find(key_for(source, method))
+
+
+## Every script that offers a call by this name.
+##
+## More than one is not a mistake: `execute_cue` is on the ability and on the
+## ability system, and they take different arguments. A caller with no receiver
+## to go on can only use this when the answer is unambiguous.
+static func sources_offering(method: StringName) -> Array[String]:
+	var found: Array[String] = []
+	for entry: Entry in all().values():
+		if entry.type_id == method:
+			found.append(entry.source)
+	return found
 
 
 ## The categories to draw, the engine's own first and in their written order.
@@ -189,7 +245,7 @@ static func entries(group: StringName) -> Array[StringName]:
 	var found: Array[StringName] = []
 	for entry: Entry in all().values():
 		if entry.group == group:
-			found.append(entry.type_id)
+			found.append(entry.key)
 	return found
 
 
@@ -198,6 +254,62 @@ static func entries(group: StringName) -> Array[StringName]:
 static func revision() -> int:
 	all()
 	return _revision
+#endregion
+
+
+#region Which call a statement is
+## The catalog entry a statement is, when the catalog can be sure it is that one.
+##
+## A bare call inside the body is a method on the ability itself, so the name is
+## enough. A call on something else has to prove it: the receiver is resolved to
+## the script it actually is, and an entry only matches when that is the very
+## script its signature was read from.
+static func entry_for(
+	method: StringName, receiver: String, path: String,
+	locals: Dictionary[String, StringName]
+) -> Entry:
+	if method.is_empty():
+		return null
+	if not receiver.is_empty():
+		return find_on(_behind(receiver, path, locals), method)
+	return _on_the_file_itself(method, path)
+
+
+## Which script a receiver is.
+##
+## A local first: its written type is right there in the body, and a receiver is
+## a local more often than it is anything else.
+static func _behind(
+	receiver: String, path: String, locals: Dictionary[String, StringName]
+) -> String:
+	var written: StringName = locals.get(receiver, &"")
+	if not written.is_empty():
+		return ComposerTypes.script_of(written)
+	return ComposerTypes.script_behind(receiver, path)
+
+
+## A call written with no receiver is a call on the file itself.
+##
+## Walked over the file's own base scripts, so `commit_ability()` in an ability
+## finds the ability's method and not something with the same name elsewhere.
+## When the file cannot be read - a body being tested on its own, a path that is
+## not on disk - the answer is the one script that offers the name, and nothing
+## at all when more than one does. Guessing between two would be the tool
+## deciding which of a person's calls they meant.
+static func _on_the_file_itself(method: StringName, path: String) -> Entry:
+	if ResourceLoader.exists(path):
+		var walked: GDScript = load(path) as GDScript
+		while walked != null:
+			var found: Entry = find_on(
+				walked.resource_path, method
+			)
+			if found != null:
+				return found
+			walked = walked.get_base_script()
+		return null
+
+	var offering: Array[String] = sources_offering(method)
+	return find_on(offering[0], method) if offering.size() == 1 else null
 #endregion
 
 
@@ -232,10 +344,10 @@ static func register(method: String, group: StringName, path: String, suspends: 
 ## An integration pack whose addon is switched off while the editor is running
 ## has to withdraw, or the palette keeps offering a call into a class that is no
 ## longer there and the file it writes will not compile.
-static func forget(type_id: StringName) -> void:
-	if not all().has(type_id):
+static func forget(key: StringName) -> void:
+	if not all().has(key):
 		return
-	_cache.erase(type_id)
+	_cache.erase(key)
 	_revision += 1
 
 
@@ -244,16 +356,14 @@ static func forget(type_id: StringName) -> void:
 ## The single admission. What the engine offers itself comes through here on the
 ## same terms a game does.
 static func _admit(method: String, group: StringName, path: String, suspends: bool) -> String:
-	var type_id: StringName = StringName(method)
-	var taken: Entry = _cache.get(type_id)
-	if taken != null:
-		# The same call offered twice is not a conflict. A pack that registers
-		# again after an editor reload should not be punished for being careful.
-		if taken.source == path:
-			return ""
-		# Two packs claiming one name is a conflict only a person can settle.
-		# Letting the last one win would make the palette depend on load order.
-		return TAKEN % [method, taken.source]
+	var key: StringName = key_for(path, StringName(method))
+	# The same call offered twice is not a conflict, and neither is one name on
+	# two scripts - the engine itself declares `execute_cue` on the ability and
+	# on the ability system, and the receiver tells them apart. Only the very
+	# same call from the very same script is a repeat, and a pack registering
+	# again after an editor reload should not be punished for being careful.
+	if _cache.has(key):
+		return ""
 
 	# Asked before it is loaded, because the resource loader answers a missing
 	# path with an error of its own, and a person then reads two complaints about
@@ -269,7 +379,8 @@ static func _admit(method: String, group: StringName, path: String, suspends: bo
 		return NOT_THERE % [method, path.get_file()]
 
 	entry.source = path
-	_cache[type_id] = entry
+	entry.key = key
+	_cache[key] = entry
 	_revision += 1
 	return ""
 #endregion

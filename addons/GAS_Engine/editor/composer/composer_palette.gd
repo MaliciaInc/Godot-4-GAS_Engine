@@ -83,9 +83,14 @@ func _rebuild() -> void:
 			_list.add_child(_entry_row(entry))
 
 
-func _entry_row(entry: StringName) -> Control:
+## A row says what the call is called, not where it is filed.
+##
+## The key carries the script so two calls with one name can both be offered;
+## putting that in front of a person would be showing them the filing system.
+func _entry_row(key: StringName) -> Control:
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(key)
 	var button: Button = Button.new()
-	button.text = String(entry)
+	button.text = entry.title if entry != null else String(key)
 	button.flat = true
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)

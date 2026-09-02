@@ -132,7 +132,7 @@ func test_a_missing_port_is_not_a_match() -> void:
 ## A wire into `apply_gameplay_effect`'s first slot has to accept the very thing
 ## the method declares, or the Composer and the compiler disagree.
 func test_a_catalog_parameter_accepts_what_the_method_declares() -> void:
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(&"apply_gameplay_effect")
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"apply_gameplay_effect")
 	var wanted: StringName = entry.parameters[0].type_name
 
 	assert_eq(wanted, &"GameplayEffect", "read from the method")

@@ -11,39 +11,34 @@ extends GutTest
 
 
 #region Held against the engine
-## Every offered call exists, on the class it says it does.
+## Every call the catalog offers still exists, on the script it says it is on.
 ##
-## Without this the curated list is a declared authority sitting beside the tree
-## it describes, which is the failure this project keeps meeting: it stays right
-## until someone renames a method, and then it is wrong everywhere at once and
-## silent about it.
-func test_every_offered_call_still_exists_on_its_class() -> void:
-	for row: Array in ComposerCatalog.OFFERED:
-		var method: String = row[0]
-		var path: String = row[2]
-		var script: GDScript = load(path) as GDScript
-		assert_not_null(script, "%s is a script" % path)
+## The catalog reads the engine rather than restating it, so this cannot drift
+## the way a written list did - but the test stays, because it is the one that
+## would notice if the reading ever stopped happening and something cached took
+## its place.
+func test_every_offered_call_still_exists_on_the_script_it_came_from() -> void:
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		var script: GDScript = load(entry.source) as GDScript
+		assert_not_null(script, "%s is a script" % entry.source)
 
 		var found: bool = false
 		for described: Dictionary in script.get_script_method_list():
 			var name: String = described["name"]
-			if name == method:
+			if StringName(name) == entry.type_id:
 				found = true
 				break
-		assert_true(found, "%s() is still on %s" % [method, path.get_file()])
+		assert_true(found, "%s() is still on %s" % [entry.type_id, entry.source.get_file()])
 
 
-## The list and what was built from it agree. An entry that failed to build is
-## the same silence the test above exists to prevent.
-##
-## Asked as presence rather than as a count, because a game may offer nodes of
-## its own and a count would then be a test of who ran before it.
-func test_every_offered_call_became_an_entry() -> void:
-	for row: Array in ComposerCatalog.OFFERED:
-		var method: String = row[0]
+## Nothing is offered from a script the catalog was not asked to read.
+func test_every_entry_came_from_a_script_the_catalog_reads() -> void:
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		var read: Array[String] = []
+		for declared: StringName in ComposerCatalog.SOURCES:
+			read.append(ComposerCatalog.script_for(declared))
 		assert_true(
-			ComposerCatalog.all().has(StringName(method)),
-			"%s was not quietly dropped on the way in" % method
+			read.has(entry.source), "%s came from %s" % [entry.type_id, entry.source]
 		)
 
 
@@ -63,7 +58,7 @@ func test_every_entry_belongs_to_a_group_the_palette_shows() -> void:
 ## editing this file - and a parameter that no longer exists cannot linger here
 ## claiming it does.
 func test_parameters_carry_the_names_the_engine_uses() -> void:
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(&"apply_gameplay_effect")
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"apply_gameplay_effect")
 
 	assert_not_null(entry, "the call is offered")
 	assert_eq(entry.parameters.size(), 3, "as many fields as the method takes")
@@ -74,14 +69,14 @@ func test_parameters_carry_the_names_the_engine_uses() -> void:
 
 func test_a_call_with_no_arguments_has_no_parameters() -> void:
 	assert_eq(
-		ComposerCatalog.find(&"commit_ability").parameters.size(), 0, "it takes nothing"
+		ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ABILITY_CLASS), &"commit_ability").parameters.size(), 0, "it takes nothing"
 	)
 
 
 ## A built-in type has no class name, so it is reported by its own name rather
 ## than as an empty string that would read as "untyped" on a card.
 func test_a_builtin_parameter_still_reports_a_type() -> void:
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(&"add_tag")
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"add_tag")
 
 	assert_eq(entry.parameters[0].label, "Tag", "named")
 	assert_eq(entry.parameters[0].type_name, &"StringName", "and typed")
@@ -90,13 +85,13 @@ func test_a_builtin_parameter_still_reports_a_type() -> void:
 ## The word `await` on a card comes from here, not from guessing at a method's
 ## name. A call that suspends is a fact about the API, not about its spelling.
 func test_the_calls_that_suspend_are_marked_as_such() -> void:
-	assert_true(ComposerCatalog.find(&"wait_target_data").awaits, "this one waits")
-	assert_false(ComposerCatalog.find(&"add_tag").awaits, "and this one does not")
+	assert_true(ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ABILITY_CLASS), &"wait_target_data").awaits, "this one waits")
+	assert_false(ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"add_tag").awaits, "and this one does not")
 
 
 func test_an_unoffered_call_is_simply_not_found() -> void:
 	assert_null(
-		ComposerCatalog.find(&"no_such_method"),
+		ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"no_such_method"),
 		"asking about something outside the catalog is not an error"
 	)
 #endregion
@@ -138,13 +133,14 @@ func test_a_call_outside_the_catalog_still_draws_with_positional_fields() -> voi
 ## learned something about a particular game and the framework would be less
 ## portable than it claims.
 const GAME_SCRIPT: String = "res://test/fixtures/game_composer_nodes.gd"
-const OTHER_SCRIPT: String = "res://test/fixtures/probe_ability.gd"
+const OTHER_SCRIPT: String = "res://test/fixtures/other_composer_nodes.gd"
 const STAMINA: StringName = &"Stamina"
 
 
 func after_each() -> void:
-	ComposerCatalog.forget(&"spend_stamina")
-	ComposerCatalog.forget(&"play_flourish")
+	ComposerCatalog.forget(ComposerCatalog.key_for(GAME_SCRIPT, &"spend_stamina"))
+	ComposerCatalog.forget(ComposerCatalog.key_for(OTHER_SCRIPT, &"spend_stamina"))
+	ComposerCatalog.forget(ComposerCatalog.key_for(GAME_SCRIPT, &"play_flourish"))
 
 
 func _offer_stamina() -> String:
@@ -155,7 +151,7 @@ func _offer_stamina() -> String:
 func test_a_game_can_offer_a_call_of_its_own() -> void:
 	assert_eq(_offer_stamina(), "", "admitted")
 
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(&"spend_stamina")
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find_on(GAME_SCRIPT, &"spend_stamina")
 	assert_not_null(entry, "and it is offered")
 	assert_eq(entry.title, "Spend Stamina", "named the way a person says it")
 	assert_eq(entry.parameters[0].label, "Amount", "with the game's own parameter name")
@@ -222,8 +218,8 @@ func test_a_game_says_for_itself_whether_its_call_suspends() -> void:
 
 	assert_eq(_offer_stamina(), "", "and one that does not")
 
-	assert_true(ComposerCatalog.find(&"play_flourish").awaits, "the game said so")
-	assert_false(ComposerCatalog.find(&"spend_stamina").awaits, "and said so here too")
+	assert_true(ComposerCatalog.find_on(GAME_SCRIPT, &"play_flourish").awaits, "the game said so")
+	assert_false(ComposerCatalog.find_on(GAME_SCRIPT, &"spend_stamina").awaits, "and said so here too")
 #endregion
 
 
@@ -237,20 +233,45 @@ func test_offering_the_same_call_twice_is_not_a_conflict() -> void:
 	assert_eq(ComposerCatalog.entries(STAMINA).size(), 1, "offered once")
 
 
-## Two packs claiming one name is a conflict only a person can settle. Letting
-## the last one win would make the palette depend on load order, which is the
-## kind of bug that only shows up on someone else's machine.
-func test_a_second_script_cannot_take_a_name_already_offered() -> void:
-	assert_eq(_offer_stamina(), "", "the first holds it")
-
-	var refused: String = ComposerCatalog.register(
-		"spend_stamina", STAMINA, OTHER_SCRIPT, false
+## One name on two scripts is not a conflict, because the engine itself does it.
+##
+## This was refused once, on the grounds that letting the last one win would
+## make the palette depend on load order. The reasoning was sound and the rule
+## was wrong: the engine declares `execute_cue` on the ability and again on the
+## ability system, and a catalog that can hold only one of them cannot draw the
+## other - and which one it dropped was never a decision anybody made, it was
+## whichever came first. Entries are filed by script and method together, and
+## the receiver on the call says which is meant.
+func test_one_name_on_two_scripts_is_not_a_conflict() -> void:
+	assert_eq(_offer_stamina(), "", "the first")
+	assert_eq(
+		ComposerCatalog.register("spend_stamina", STAMINA, OTHER_SCRIPT, false), "",
+		"and the second, from another script"
 	)
 
-	assert_true(refused.contains("already offered"), "refused: %s" % refused)
-	assert_true(refused.contains(GAME_SCRIPT), "naming who holds it: %s" % refused)
-	assert_eq(ComposerCatalog.find(&"spend_stamina").source, GAME_SCRIPT, "and it kept it")
-	assert_push_error(ComposerCatalog.REFUSED % refused)
+	assert_eq(
+		ComposerCatalog.find_on(GAME_SCRIPT, &"spend_stamina").source, GAME_SCRIPT,
+		"each is filed where it came from"
+	)
+	assert_eq(
+		ComposerCatalog.find_on(OTHER_SCRIPT, &"spend_stamina").source, OTHER_SCRIPT,
+		"and so is the other"
+	)
+
+
+## The engine's own double, which is what proved the old rule wrong.
+func test_the_engine_declares_one_call_on_two_of_its_own_classes() -> void:
+	var offering: Array[String] = ComposerCatalog.sources_offering(&"execute_cue")
+
+	assert_eq(offering.size(), 2, "execute_cue is on two: %s" % [offering])
+	assert_not_null(
+		ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ABILITY_CLASS), &"execute_cue"),
+		"the ability's"
+	)
+	assert_not_null(
+		ComposerCatalog.find_on(ComposerCatalog.script_for(ComposerCatalog.ASC_CLASS), &"execute_cue"),
+		"and the ability system's"
+	)
 
 
 ## Every way a registration can name something that is not there, and the words
@@ -280,7 +301,10 @@ func test_a_registration_that_names_nothing_real_is_refused() -> void:
 		var refused: String = ComposerCatalog.register(method, STAMINA, path, false)
 
 		assert_true(refused.contains(expected), "%s: %s" % [described, refused])
-		assert_null(ComposerCatalog.find(StringName(method)), "%s: nothing offered" % described)
+		assert_null(
+			ComposerCatalog.find_on(path, StringName(method)),
+			"%s: nothing offered" % described
+		)
 		assert_push_error(ComposerCatalog.REFUSED % refused)
 #endregion
 
@@ -307,9 +331,9 @@ func test_a_game_category_appears_after_the_engine_own() -> void:
 func test_withdrawing_a_call_takes_its_category_with_it() -> void:
 	assert_eq(_offer_stamina(), "", "admitted")
 
-	ComposerCatalog.forget(&"spend_stamina")
+	ComposerCatalog.forget(ComposerCatalog.key_for(GAME_SCRIPT, &"spend_stamina"))
 
-	assert_null(ComposerCatalog.find(&"spend_stamina"), "gone")
+	assert_null(ComposerCatalog.find_on(GAME_SCRIPT, &"spend_stamina"), "gone")
 	assert_false(ComposerCatalog.groups().has(STAMINA), "and its category with it")
 
 
@@ -324,7 +348,7 @@ func test_the_vocabulary_says_when_it_changed() -> void:
 	var offered: int = ComposerCatalog.revision()
 	assert_ne(offered, quiet, "offering does")
 
-	ComposerCatalog.forget(&"spend_stamina")
+	ComposerCatalog.forget(ComposerCatalog.key_for(GAME_SCRIPT, &"spend_stamina"))
 	assert_ne(ComposerCatalog.revision(), offered, "and so does withdrawing")
 
 
@@ -332,9 +356,81 @@ func test_the_vocabulary_says_when_it_changed() -> void:
 ## the admission put it there, so the engine's own calls came in the same way a
 ## game's does. A shortcut for the core would leave this empty.
 func test_the_engine_own_calls_came_through_the_same_door() -> void:
-	for row: Array in ComposerCatalog.OFFERED:
-		var method: String = row[0]
-		var path: String = row[2]
-		var entry: ComposerCatalog.Entry = ComposerCatalog.find(StringName(method))
-		assert_eq(entry.source, path, "%s was admitted, not installed" % method)
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		assert_false(entry.key.is_empty(), "%s was admitted, not installed" % entry.type_id)
+		assert_eq(
+			entry.key, ComposerCatalog.key_for(entry.source, entry.type_id),
+			"%s is filed where it says it is" % entry.type_id
+		)
+#endregion
+
+
+#region Reaching a call written on something else
+## A call on a local is placed by what the local was declared to be.
+##
+## `data.get_target_nodes()` is how anyone writes it, and without reading the
+## local's written type the catalog can only say it has never heard of a
+## receiver called `data` - so two thirds of what it offers stays unreachable
+## while appearing to be on offer.
+func test_a_call_on_a_local_is_placed_by_the_type_the_local_was_given() -> void:
+	var source: String = (
+		"extends GameplayAbility
+
+
+func _activate_ability() -> void:
+"
+		+ "	var data: GameplayAbilityTargetData = make_data()
+"
+		+ "	data.get_target_nodes()
+"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
+
+	assert_eq(graph.nodes[1].receiver, "data", "the receiver was kept")
+	assert_not_null(graph.nodes[1].entry, "and the call was placed")
+	assert_eq(graph.nodes[1].title, "Get Target Nodes", "named by the catalog")
+
+
+## A call on a class is placed by the class.
+##
+## Every ability task worth waiting on is a static call on AbilityTaskFactory,
+## which is thirteen of the calls the catalog offers.
+func test_a_call_on_a_class_is_placed_by_that_class() -> void:
+	var source: String = (
+		"extends GameplayAbility
+
+
+func _activate_ability() -> void:
+"
+		+ "	AbilityTaskFactory.wait_tag_added(self, burning)
+"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
+
+	assert_not_null(graph.nodes[0].entry, "placed")
+	assert_eq(graph.nodes[0].title, "Wait Tag Added", "named by the catalog")
+	assert_true(graph.nodes[0].entry.awaits, "and known to be something you wait on")
+
+
+## A local of some other type does not borrow the entry.
+##
+## The whole point of resolving the receiver: a name that happens to match a
+## method the engine offers is not that method, and labelling it as one would
+## put the engine's parameters on somebody else's call.
+func test_a_local_of_another_type_does_not_borrow_the_entry() -> void:
+	var source: String = (
+		"extends GameplayAbility
+
+
+func _activate_ability() -> void:
+"
+		+ "	var helper: Node = make_helper()
+	helper.add_tag(burning)
+"
+	)
+	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
+
+	assert_null(graph.nodes[1].entry, "a Node has no add_tag the catalog knows")
+	assert_eq(graph.nodes[1].fields[0].label, "#1", "so its argument keeps its position")
+	assert_eq(graph.diagnostics.size(), 0, "and it is not accused of anything")
 #endregion

@@ -40,6 +40,7 @@ enum Kind {
 	RETURN,
 	SUPER,
 	ASSIGN,
+	NOTHING,
 	UNSUPPORTED,
 }
 
@@ -67,6 +68,11 @@ const ESCAPE: String = "\\"
 const COMMENT_MARK: String = "#"
 const COMMA: String = ","
 const EQUALS: String = "="
+
+## An ability that does nothing yet still has to say so. `pass` is the first
+## line of every body somebody has started and not finished, and a tool that
+## cannot open one cannot be opened while the work is being done.
+const NOTHING_MARK: String = "pass"
 
 ## Characters that turn a following `=` into something that is not an
 ## assignment. `:` is here for `:=`, which the subset refuses for its own
@@ -134,6 +140,9 @@ static func classify(line: String) -> Verdict:
 
 	if _is_match_case(text):
 		verdict.kind = Kind.MATCH_CASE
+		return verdict
+	if text == NOTHING_MARK:
+		verdict.kind = Kind.NOTHING
 		return verdict
 	if _is_call(text):
 		verdict.kind = Kind.CALL

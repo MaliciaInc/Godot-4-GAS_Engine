@@ -15,10 +15,8 @@
 ## @meta_license: MIT
 class_name ComposerHost extends RefCounted
 
-## Borrowed rather than restated. The path of the ability base class and the
-## words for a path that holds nothing are each one thing, and a second spelling
-## of either is a second thing to keep true.
-const ABILITY_SCRIPT: String = ComposerCatalog.ABILITY_SCRIPT
+## Borrowed rather than restated: the words for a path that holds nothing are
+## one thing, and a second spelling of them is a second thing to keep true.
 const NOT_THERE: String = ComposerCatalog.NO_SCRIPT
 
 const SCRIPT_SUFFIX: String = ".gd"
@@ -73,9 +71,10 @@ static func open(path: String) -> Opened:
 ## not need a global name - none of the reference abilities has one - and asking
 ## the class list would refuse every file that did not bother to declare itself.
 static func is_ability(script: GDScript) -> bool:
+	var base: String = ComposerCatalog.script_for(ComposerCatalog.ABILITY_CLASS)
 	var walked: GDScript = script
 	while walked != null:
-		if walked.resource_path == ABILITY_SCRIPT:
+		if walked.resource_path == base:
 			return true
 		walked = walked.get_base_script()
 	return false

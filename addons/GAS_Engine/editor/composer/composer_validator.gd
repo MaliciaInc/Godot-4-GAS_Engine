@@ -55,7 +55,7 @@ static func inspect(graph: ComposerGraph) -> Array[ComposerGraph.Diagnostic]:
 	if graph == null:
 		return found
 	for node: ComposerNode in graph.nodes:
-		_check_arguments(graph, node, found)
+		_check_arguments(node, found)
 		_check_wires(graph, node, found)
 		_check_unread(graph, node, found)
 	return found
@@ -71,9 +71,9 @@ static func inspect(graph: ComposerGraph) -> Array[ComposerGraph.Diagnostic]:
 ## The gap becomes a field as well as a row, so the card shows the same words the
 ## panel does instead of looking complete while the panel disagrees.
 static func _check_arguments(
-	graph: ComposerGraph, node: ComposerNode, found: Array[ComposerGraph.Diagnostic]
+	node: ComposerNode, found: Array[ComposerGraph.Diagnostic]
 ) -> void:
-	var entry: ComposerCatalog.Entry = ComposerReader.entry_for(node, graph.source_path)
+	var entry: ComposerCatalog.Entry = node.entry
 	if entry == null:
 		return
 

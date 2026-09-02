@@ -64,6 +64,11 @@ static func _build_nodes(
 	graph: ComposerGraph, lines: PackedStringArray, span: ComposerSpan, path: String
 ) -> void:
 	var carried: int = ComposerSpan.NO_LINE
+	# What each local was declared to be, gathered on the way down. A receiver
+	# is very often a local - `var data: GameplayAbilityTargetData = ...` and
+	# then `data.get_target_nodes()` - and without this every call on one is a
+	# call the catalog cannot place.
+	var locals: Dictionary[String, StringName] = {}
 	for made: ComposerSubset.Statement in ComposerSubset.statements(lines, span):
 		if not made.verdict.is_drawn():
 			# A comment or a blank belongs to whatever comes next, so remember
@@ -74,7 +79,10 @@ static func _build_nodes(
 
 		var first: int = carried if carried != ComposerSpan.NO_LINE else made.first
 		carried = ComposerSpan.NO_LINE
-		var node: ComposerNode = _node(made.text, made.verdict, first, made.last, path)
+		var node: ComposerNode = _node(made, first, path, locals)
+		var declared: String = _local_name(made.text)
+		if not declared.is_empty():
+			locals[declared] = StringName(_local_type(made.text))
 		# The node keeps the text it came from, so a save can reprint it rather
 		# than rebuild it. The comments it picked up on the way are kept apart:
 		# nothing in the model stands for a comment, so a rebuilt statement that
@@ -85,12 +93,14 @@ static func _build_nodes(
 
 
 static func _node(
-	line: String, verdict: ComposerSubset.Verdict, first: int, last: int, path: String
+	made: ComposerSubset.Statement, first: int, path: String,
+	locals: Dictionary[String, StringName]
 ) -> ComposerNode:
-	var text: String = line.strip_edges()
+	var text: String = made.text.strip_edges()
+	var verdict: ComposerSubset.Verdict = made.verdict
 	var node: ComposerNode = ComposerNode.new()
-	node.id = StringName("n%d" % last)
-	node.span = ComposerSpan.new(first, last)
+	node.id = StringName("n%d" % made.last)
+	node.span = ComposerSpan.new(first, made.last)
 	node.awaits = text.contains(AWAIT_MARK)
 	node.indent = verdict.indent
 	node.text = text
@@ -103,10 +113,10 @@ static func _node(
 	node.type_id = StringName(called.substr(dot + 1))
 	node.prefix = _prefix(text, called)
 
-	var entry: ComposerCatalog.Entry = entry_for(node, path)
-	node.title = _title(node, verdict, entry)
+	node.entry = ComposerCatalog.entry_for(node.type_id, node.receiver, path, locals)
+	node.title = _title(node, verdict)
 	node.ports = _ports(verdict, text)
-	node.fields.assign(_fields(text, entry))
+	node.fields.assign(_fields(text, node.entry))
 	# After the fields, never before: there is one argument port per field, and
 	# reading them while the list is still empty gives a node no value can land on.
 	_add_argument_ports(node)
@@ -119,24 +129,7 @@ static func _node(
 ## `apply_gameplay_effect` reads as `Apply Gameplay Effect`. The structural
 ## statements name themselves, because `if` is already the clearest word for
 ## what it does.
-## The catalog entry a statement is, when the catalog can be sure it is that one.
-##
-## A bare call inside the body is a method on the ability itself, so the name is
-## enough. A call on something else has to prove it: the receiver is resolved to
-## the script it actually is, and an entry only matches when that is the very
-## script its signature was read from.
-static func entry_for(node: ComposerNode, path: String) -> ComposerCatalog.Entry:
-	var entry: ComposerCatalog.Entry = ComposerCatalog.find(node.type_id)
-	if entry == null or node.receiver.is_empty():
-		return entry
-	if ComposerTypes.script_behind(node.receiver, path) == entry.source:
-		return entry
-	return null
-
-
-static func _title(
-	node: ComposerNode, verdict: ComposerSubset.Verdict, entry: ComposerCatalog.Entry
-) -> String:
+static func _title(node: ComposerNode, verdict: ComposerSubset.Verdict) -> String:
 	if verdict.kind == ComposerSubset.Kind.BRANCH:
 		return "Branch"
 	if verdict.kind == ComposerSubset.Kind.BRANCH_ELSE:
@@ -147,8 +140,10 @@ static func _title(
 		return "Case"
 	if verdict.kind == ComposerSubset.Kind.RETURN:
 		return "End"
-	if entry != null:
-		return entry.title
+	if verdict.kind == ComposerSubset.Kind.NOTHING:
+		return "Nothing"
+	if node.entry != null:
+		return node.entry.title
 	if node.type_id.is_empty():
 		return node.text.strip_edges()
 	# The method, not the receiver: a card headed "Owner Asc.apply Gameplay
@@ -243,7 +238,11 @@ static func _add_argument_ports(node: ComposerNode) -> void:
 
 
 ## The type in `var name: Type = ...`, or empty when there is none.
-static func _local_type(text: String) -> String:
+static func _local_type(line: String) -> String:
+	# Stripped here, the way `_local_name` strips: one of the two taking a raw
+	# line and the other a trimmed one is an asymmetry nobody sees until a
+	# caller hands both the same string and only one of them answers.
+	var text: String = line.strip_edges()
 	if not text.begins_with("var "):
 		return ""
 	var colon: int = text.find(":")

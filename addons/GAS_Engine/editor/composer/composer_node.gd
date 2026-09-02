@@ -93,6 +93,15 @@ var source_text: PackedStringArray = PackedStringArray()
 ## above the line they just edited, and they would find out much later.
 var carried: PackedStringArray = PackedStringArray()
 
+## Which catalog call this statement is, or null when the catalog cannot be
+## sure it is any of them.
+##
+## Decided once, by the reader, which is the only thing that can see the file
+## the call was written in and the locals declared above it. Asking again later
+## from somewhere with less of that in view is how two parts of the tool come to
+## disagree about what a statement is.
+var entry: ComposerCatalog.Entry = null
+
 ## Everything the statement says before the call: `var found: Node2D = ` in
 ## `var found: Node2D = pick_target()`, empty for a statement that is only a
 ## call.
