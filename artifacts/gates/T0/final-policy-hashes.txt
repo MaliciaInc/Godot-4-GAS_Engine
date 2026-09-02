@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Exclude docs/** from loc, test-location and magic-string. The gates walk the filesystem rather than git, so they were grading a design mock that lives in docs/ - a folder that is gitignored, never shipped, and not product code. The mock is the Ability Composer's visual reference: it exists to be read and re-rendered, not to meet a product's file-size or literal-reuse budget. Nothing under docs/ reaches an exported game or the addon.
+# Allow the literal 'await'. It is a GDScript keyword the gates' grammar tables already list, and it is also the word the Ability Composer prints on a card that suspends the ability. Every card is glass so the treatment cannot carry that meaning; the word has to. Also moves composer_theme.gd under editor/theme/ so the colour rule applies where colours are declared - the Composer's palette now lives beside the dashboard's, and nothing outside that folder constructs a Color.
 #
 # python: 3.14.6
-# date-utc: 2026-09-02T16:45:47Z
-# commit-previo: 2e3371d6515eec9eb14f0b7c0e13ae1edb31311c
+# date-utc: 2026-09-02T17:45:53Z
+# commit-previo: e106b0f7079af086d7ddd09198fa2f05ac6e24a1
 # files: 23
-84cf4dcc29e0c968fa54396303430685c57f7faa7c0af122ce548fef0a5785a1  tooling/.quality-gates.json
+bf36b3cbd6db14b52169040d46f39417405378d89866d370598dbae03e263799  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json

@@ -154,7 +154,7 @@ func _setup_ui() -> void:
 	_sync_theme_colors()
 	
 	if _cue_list_vbox:
-		_cue_list_vbox.add_theme_constant_override("separation", 8)
+		_cue_list_vbox.add_theme_constant_override(DashboardTheme.SEPARATION, 8)
 	
 	# Build the Scene Browser Dialog
 	_scene_dialog = EditorFileDialog.new()

@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      policy-seal
+command:    python tooling/seal_policy.py
+started:    2026-09-02T17:50:27.6675804Z
+ended:      2026-09-02T17:50:27.7555026Z
+duration_s: 0.088
+exit_code:  0
+
+--- stdout ---
+policy seal verified against artifacts/gates/T0/final-policy-hashes.txt
+
+--- stderr ---
+

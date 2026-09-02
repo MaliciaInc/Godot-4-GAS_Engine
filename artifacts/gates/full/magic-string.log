@@ -1,0 +1,37 @@
+RESULT: PASS
+stage:      magic-string
+command:    python C:\Users\Edward\Documents\Projectos\GAS_Engine\tooling\gates\run_gate.py magic-string C:\Users\Edward\Documents\Projectos\GAS_Engine\artifacts\gates\full
+started:    2026-09-02T17:50:32.0061128Z
+ended:      2026-09-02T17:50:40.2916685Z
+duration_s: 8.286
+exit_code:  0
+
+--- stdout ---
+# Magic String Gate
+
+- Status: **PASS**
+- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Source files scanned: 207
+- Blocking findings: 0
+- Scan issues: 0
+- Blocking kinds: colors, repeated, templates
+- Configured exclusions: addons/gut/**, docs/**
+
+## Repeated Literals
+
+- None
+
+## Repeated Templates
+
+- None
+
+## Hard-coded Colors
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

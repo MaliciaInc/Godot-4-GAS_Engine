@@ -77,6 +77,21 @@ var awaits: bool = false
 var span: ComposerSpan = ComposerSpan.new()
 
 
+## How loudly this node's state speaks, in the vocabulary the diagnostics use.
+##
+## Declared here because this is where `State` lives, and read by the theme so
+## a card's dot and its Output row cannot end up different colours for the same
+## fact.
+static func severity_of(state: ComposerNode.State) -> ComposerGraph.Severity:
+	match state:
+		State.WARNING:
+			return ComposerGraph.Severity.WARNING
+		State.ERROR:
+			return ComposerGraph.Severity.ERROR
+		_:
+			return ComposerGraph.Severity.NOTE
+
+
 func find_port(port_id: StringName) -> Port:
 	for port: Port in ports:
 		if port.id == port_id:

@@ -1,0 +1,2 @@
+RESULT: PASS
+cold .godot removal + project_invariants.py + Godot MCP launch_editor import: no parse errors, get_project_info succeeded (350 scripts, 25 scenes)

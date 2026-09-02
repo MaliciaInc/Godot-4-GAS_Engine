@@ -1,0 +1,27 @@
+RESULT: PASS
+stage:      loc
+command:    python C:\Users\Edward\Documents\Projectos\GAS_Engine\tooling\gates\run_gate.py loc C:\Users\Edward\Documents\Projectos\GAS_Engine\artifacts\gates\full
+started:    2026-09-02T17:50:30.8849013Z
+ended:      2026-09-02T17:50:31.4786258Z
+duration_s: 0.594
+exit_code:  0
+
+--- stdout ---
+# LOC and Structure Gate
+
+- Status: **PASS**
+- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Source files scanned: 303
+- Blocking findings: 0
+- Scan issues: 0
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

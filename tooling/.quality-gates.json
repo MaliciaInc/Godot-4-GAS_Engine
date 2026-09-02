@@ -286,6 +286,10 @@
       {
         "literal": "tooling/product_identity.py",
         "reason": "product_identity.py's own path, spelled once inside itself to exclude itself from its own tracked-file scan, and once in tooling/verify.ps1's stage-argument list. A Python constant is not importable from PowerShell."
+      },
+      {
+        "literal": "await",
+        "reason": "A GDScript keyword the gates' own grammar tables list, and the word the Ability Composer prints on a card that suspends the ability. Every card is glass, so the treatment cannot carry that meaning and the word has to - a label is read, a texture is only felt. Naming it anything else would make the card say something GDScript does not."
       }
     ],
     "allow_globs": [],
