@@ -453,3 +453,18 @@ func _read_attribute(
 	result.value = value
 	return result
 #endregion
+
+
+#region Applicability
+## Whether this spec can be applied at all: it names an effect, and the clocks
+## the engine will run it by are numbers it can count with.
+##
+## `duration` and `period` are public so a game can scale them per application,
+## which is also how a non-finite one arrives: `base / stat` with the stat at
+## zero is INF. That changes what the effect IS rather than how long it runs -
+## an INF duration never counts down, so a DURATION effect silently becomes a
+## permanent one, and an INF period is periodic and never ticks. Refused, not
+## clamped: an invalid configuration is never a no-op.
+func is_applicable() -> bool:
+	return effect_def != null and is_finite(duration) and is_finite(period)
+#endregion

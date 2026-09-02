@@ -226,3 +226,42 @@ func test_a_magnitude_capturing_an_attribute_that_does_not_exist_is_refused() ->
 	assert_almost_eq(target.current_of(ATTACK), before, 0.0001)
 	assert_eq(target.asc.effects.active_count(), 0)
 #endregion
+
+
+#region Clocks that are not numbers
+## `duration` and `period` are public and meant to be scaled per application, so
+## `base / stat` with the stat at zero is how INF arrives. It does not make a
+## long effect: an INF duration never counts down, so a DURATION effect silently
+## becomes a permanent one, and an INF period is periodic and never ticks. Both
+## used to apply and look like a working game.
+func test_a_spec_whose_clocks_are_not_numbers_is_refused() -> void:
+	# Typed loops rather than a list of pairs: an untyped element reaches the
+	# assertions as Variant, which this project treats as an error.
+	for field: StringName in [&"duration", &"period"] as Array[StringName]:
+		for value: float in [INF, NAN] as Array[float]:
+			var spec: GameplayEffectSpec = GameplayEffectSpec.new()
+			spec.effect_def = EffectFactory.duration([] as Array[GameplayEffectModifier], 5.0)
+			spec.duration = 5.0
+			spec.set(field, value)
+
+			var result: GameplayEffectApplicationResult = target.asc.effects.apply(spec)
+
+			assert_eq(
+				result.status, GameplayEffectApplicationResult.Status.INVALID_SPEC,
+				"%s = %s is refused, not applied" % [field, value]
+			)
+			assert_eq(target.asc.effects.active_count(), 0, "and nothing was registered")
+
+
+func test_a_spec_whose_clocks_are_numbers_still_applies() -> void:
+	# The refusal must not have eaten the ordinary case - and this is the same
+	# spec shape as above with the one field left alone.
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new()
+	spec.effect_def = EffectFactory.duration([] as Array[GameplayEffectModifier], 5.0)
+	spec.duration = 5.0
+
+	var result: GameplayEffectApplicationResult = target.asc.effects.apply(spec)
+
+	assert_true(result.is_ok(), "a finite duration applies")
+	assert_eq(target.asc.effects.active_count(), 1, "and is registered")
+#endregion
