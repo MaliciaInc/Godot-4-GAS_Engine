@@ -92,6 +92,11 @@ func _granted(configure: Callable) -> ProbeAbility:
 func _commit() -> void:
 	var result: AbilityCommitResult = ability.commit_ability()
 	assert_true(result.is_ok(), "the cooldown was accepted and applied")
+
+
+## Why the engine would refuse to activate this ability right now.
+func _refusal() -> AbilityRuntime.ActivationError:
+	return asc.ability_runtime.activation_error(ability.current_spec)
 #endregion
 
 
@@ -219,6 +224,46 @@ func test_a_refreshed_cooldown_reports_the_new_time() -> void:
 		SECONDS,
 		TOLERANCE,
 		"the refresh put the wait back to full, and the reading followed"
+	)
+
+
+## A turn-counted cooldown lifts on the turn it says, and not one before.
+##
+## The seconds case above proves the reported number falls. This proves the
+## refusal itself ends, on the exact turn, through a clock nothing advances on
+## its own: `advance_turn()` is called by whatever manages the turns, so a game
+## that forgets it has a cooldown that lifts never.
+##
+## Nothing else here tied that clock to whether an ability may be activated. A
+## turn-based game built on this addon reaches the path on its first cooldown -
+## an ability affordable again before its cooldown is over is refused, and the
+## refusal has to end by itself.
+##
+## Asked for the reason rather than the verdict. `can_activate_ability()` is
+## false for eight different reasons, and a test that only reads the bool would
+## pass just as well against an ability refused for being already active.
+func test_a_turn_counted_cooldown_lifts_on_the_turn_it_says() -> void:
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _turns_cooldown(OWN_COOLDOWN, TURNS)
+	)
+	_commit()
+
+	assert_eq(
+		_refusal(), AbilityRuntime.ActivationError.ON_COOLDOWN,
+		"used, and refused for the cooldown rather than for anything else"
+	)
+
+	for elapsed: int in TURNS - 1:
+		asc.advance_turn()
+		assert_eq(
+			_refusal(), AbilityRuntime.ActivationError.ON_COOLDOWN,
+			"still owed %d of %d turns" % [TURNS - elapsed - 1, TURNS]
+		)
+
+	asc.advance_turn()
+	assert_eq(
+		_refusal(), AbilityRuntime.ActivationError.NONE,
+		"the last turn owed is the one that lifts it"
 	)
 
 
