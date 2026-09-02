@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# AbilitySystemComponent: a scene naming convention and a class name, spelled alike
+# Composer context menu verbs that collide with an icon key and a name suffix
 #
 # python: 3.14.6
-# date-utc: 2026-09-02T22:28:44Z
-# commit-previo: b0ce378b34d7c00c9299adfe0be5bf4615112b72
+# date-utc: 2026-09-02T23:24:52Z
+# commit-previo: 05fac32a37ab4e1c33f05a3fc1b3ad82039d8740
 # files: 23
-1df777a7345960f36807b692ce59856edf24c024db77dfe644fea58a18a56628  tooling/.quality-gates.json
+f12765e7bbbecb674446670a7fceca32b1f7f40967f9f7d03f08a6bd2af7f0f3  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json

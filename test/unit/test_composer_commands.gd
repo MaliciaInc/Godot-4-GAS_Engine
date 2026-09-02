@@ -229,7 +229,7 @@ func test_a_paste_that_would_break_the_file_is_refused() -> void:
 	)
 
 	assert_false(took, "refused")
-	assert_push_error(ComposerScreen.BROKE_IT)
+	assert_push_error(ComposerDocument.BROKE_IT)
 	assert_eq(screen.printed(), before, "and the file is where it was")
 
 
@@ -250,4 +250,53 @@ func test_pasting_a_statement_puts_it_in() -> void:
 	assert_true(await screen.paste_text("	abort_ability()"), "pasted")
 
 	assert_true(_titles().has("Abort Ability"), "and it is on the canvas")
+#endregion
+
+
+#region Dragging one onto another
+## Dragging a card means moving its statement.
+##
+## Cards have no positions of their own: the layout works out where each goes
+## from the order the statements run in. So the only honest thing a drag can do
+## is put the statement somewhere, and the card follows because the layout is
+## asked again. Anything else would need a position stored beside the file - the
+## parallel truth this whole tool exists without.
+func test_dragging_a_card_onto_another_moves_its_statement() -> void:
+	await _open(14)
+	var titles: PackedStringArray = _titles()
+	var last: StringName = screen.graph().nodes[screen.graph().nodes.size() - 1].id
+	var first: StringName = screen.graph().nodes[0].id
+
+	screen._on_node_dropped(last, first)
+	await wait_frames(2)
+
+	assert_ne(_titles(), titles, "the order changed")
+	assert_eq(_titles()[0], titles[titles.size() - 1], "the dragged one is where it landed")
+	assert_eq(_titles().size(), titles.size(), "and nothing was lost on the way")
+
+
+## Moving one and putting it back leaves the file exactly as it was.
+func test_a_move_and_an_undo_leave_the_file_untouched() -> void:
+	await _open(15)
+	var before: String = screen.printed()
+	var nodes: Array[ComposerNode] = screen.graph().nodes
+
+	screen._on_node_dropped(nodes[nodes.size() - 1].id, nodes[0].id)
+	await wait_frames(2)
+	await screen.undo()
+
+	assert_eq(screen.printed(), before, "byte for byte")
+
+
+## A card dropped on itself is not a move.
+func test_dropping_a_card_on_itself_changes_nothing() -> void:
+	await _open(16)
+	var before: String = screen.printed()
+	var only: StringName = screen.graph().nodes[0].id
+
+	screen._on_node_dropped(only, only)
+	await wait_frames(2)
+
+	assert_eq(screen.printed(), before, "nothing happened")
+	assert_false(screen.history().can_undo(), "and nothing was recorded as having")
 #endregion

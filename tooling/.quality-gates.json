@@ -378,6 +378,14 @@
       {
         "literal": "AbilitySystemComponent",
         "reason": "Two different facts that happen to be spelled the same. AbilitySystemLocator uses it as the name a component is conventionally given in a scene - a convention, and its own comment says so - while the Ability Composer uses it as the class whose public calls it offers. Tying one to the other would mean renaming the scene convention silently changed which class the palette reads."
+      },
+      {
+        "literal": "Copy",
+        "reason": "Three different things spelled the same. The Ability Composer's context menu offers it as a verb a person reads; the attribute set drafts append it to a name to mark a duplicate; neither invented the English word. Tying them together would mean renaming a menu item changed what a duplicated draft is called."
+      },
+      {
+        "literal": "Remove",
+        "reason": "A verb on the Ability Composer's context menu and, elsewhere, the name of an icon in the dashboard's theme. A menu label and a theme key are not the same kind of thing, and borrowing one for the other would make a change to the icon set rewrite the menu."
       }
     ],
     "allow_globs": [],

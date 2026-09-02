@@ -24,6 +24,10 @@ const PAN_BUTTON: int = MOUSE_BUTTON_MIDDLE
 ## flush against the edge of a panel.
 const FRAME_MARGIN: float = 48.0
 
+## How far the pointer has to travel before a click becomes a drag. Without it
+## every click is a drag of nought pixels onto the card it started on.
+const DRAG_SLACK: float = 6.0
+
 ## The zoom at which a card stops being worth reading in full, and the one at
 ## which it stops being worth reading at all.
 const DETAIL_FULL: float = 0.75
@@ -33,13 +37,15 @@ const ZOOM_MIN: float = 0.25
 const ZOOM_MAX: float = 2.0
 const ZOOM_STEP: float = 1.1
 
-## Where a card's first port sits, measured down from its top edge. Level with
-## the title, so a wire arrives pointing at the node's name.
-const PORT_INSET: float = 33.0
-const PORT_PITCH: float = 28.0
-
 ## Which cards are being worked on. Empty when none are.
 signal selection_changed(picked: Array[StringName])
+
+## One card was dragged onto another. What that means is not the canvas's to
+## decide - cards have no positions of their own here.
+signal node_dropped(moved: StringName, onto: StringName)
+
+## Somebody asked a card what can be done to it.
+signal menu_requested(node_id: StringName, at: Vector2)
 
 var _zoom: float = 1.0
 var _graph: ComposerGraph = null
@@ -58,6 +64,8 @@ var _picked: Dictionary[StringName, bool] = {}
 var _panning: bool = false
 var _boxing: bool = false
 var _box_from: Vector2 = Vector2.ZERO
+var _dragging: StringName = &""
+var _drag_from: Vector2 = Vector2.ZERO
 var _box: ColorRect = null
 
 
@@ -110,7 +118,7 @@ func show_graph(graph: ComposerGraph) -> void:
 	# endpoint depends on where a card's edges ended up.
 	await get_tree().process_frame
 	_fit_cards()
-	_draw_wires()
+	ComposerWiring.draw(_graph, _cards, _wire_layer, _bead_layer)
 
 
 func _add_card(node: ComposerNode) -> void:
@@ -151,57 +159,6 @@ func _fit_cards() -> void:
 #endregion
 
 
-#region Wires
-func _draw_wires() -> void:
-	var wired: Dictionary[String, bool] = {}
-	for wire: ComposerGraph.Connection in _graph.connections:
-		var from: Vector2 = _port_point(wire.from_node, wire.from_port)
-		var to: Vector2 = _port_point(wire.to_node, wire.to_port)
-		ComposerWire.draw_into(_wire_layer, from, to)
-		ComposerWire.bead_into(_bead_layer, from)
-		ComposerWire.bead_into(_bead_layer, to)
-		wired[_key(wire.from_node, wire.from_port)] = true
-		wired[_key(wire.to_node, wire.to_port)] = true
-
-	# Every remaining port still gets drawn, as an outline. A card showing only
-	# its wired ports looks like a node that takes nothing.
-	for node: ComposerNode in _graph.nodes:
-		for port: ComposerNode.Port in node.ports:
-			if wired.has(_key(node.id, port.id)):
-				continue
-			ComposerWire.ring_into(_bead_layer, _port_point(node.id, port.id))
-
-
-static func _key(node_id: StringName, port_id: StringName) -> String:
-	return "%s/%s" % [node_id, port_id]
-
-
-## Where a port sits on its card's edge.
-##
-## Inputs on the left, outputs on the right: flow is horizontal, and execution
-## and data are told apart by the shape drawn for them rather than by which side
-## they arrive on. Splitting them across sides would make a graph that has to be
-## read in two directions at once.
-func _port_point(node_id: StringName, port_id: StringName) -> Vector2:
-	var card: ComposerCard = _cards.get(node_id)
-	var node: ComposerNode = _graph.find_node(node_id) if _graph != null else null
-	if card == null or node == null:
-		return Vector2.ZERO
-
-	var index: int = 0
-	var port: ComposerNode.Port = node.find_port(port_id)
-	var outgoing: bool = port != null and port.direction == ComposerNode.PortDirection.OUTPUT
-	for other: ComposerNode.Port in node.ports:
-		if other.id == port_id:
-			break
-		if (other.direction == ComposerNode.PortDirection.OUTPUT) == outgoing:
-			index += 1
-
-	var down: float = minf(
-		PORT_INSET + float(index) * PORT_PITCH, maxf(card.size.y - ComposerTheme.PAD_Y, 0.0)
-	)
-	return card.position + Vector2(card.size.x if outgoing else 0.0, down)
-#endregion
 
 
 #region Driving it
@@ -228,6 +185,12 @@ func _on_button(button: InputEventMouseButton) -> void:
 		_apply_zoom(_zoom / ZOOM_STEP, button.position)
 	elif button.button_index == PAN_BUTTON:
 		_panning = button.pressed
+	elif button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
+		var asked: StringName = _card_at(button.position)
+		if not asked.is_empty():
+			if not _picked.has(asked):
+				_pick([asked] as Array[StringName])
+			menu_requested.emit(asked, button.position)
 	elif button.button_index == MOUSE_BUTTON_LEFT:
 		if button.pressed:
 			_press(button)
@@ -261,6 +224,8 @@ func _press(button: InputEventMouseButton) -> void:
 			_pick([])
 		return
 
+	_dragging = hit
+	_drag_from = button.position
 	if _adding(button):
 		_pick(_with(hit))
 	elif not _picked.has(hit):
@@ -270,6 +235,14 @@ func _press(button: InputEventMouseButton) -> void:
 
 
 func _release(button: InputEventMouseButton) -> void:
+	if not _dragging.is_empty():
+		var moved: StringName = _dragging
+		_dragging = &""
+		if button.position.distance_to(_drag_from) > DRAG_SLACK:
+			var onto: StringName = _card_at(button.position)
+			if not onto.is_empty() and onto != moved:
+				node_dropped.emit(moved, onto)
+		return
 	if not _boxing:
 		return
 	_boxing = false

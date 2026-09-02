@@ -15,12 +15,6 @@
 ## @meta_license: MIT
 class_name ComposerScreen extends Control
 
-const NOTHING_TO_SAVE: String = "no ability is open"
-const BROKE_IT: String = "that would leave a file the Composer cannot read"
-## Borrowed: a path that holds nothing is one fact, and a second spelling of it
-## is a second thing to keep true.
-const NO_FILE: String = ComposerCatalog.NO_SCRIPT
-const NOT_WRITABLE: String = "%s cannot be written to"
 const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"
 
 const TOP_BAR: float = 54.0
@@ -36,11 +30,8 @@ signal code_requested(source_path: String)
 var _top: ComposerTopBar = null
 var _graph: ComposerGraph = null
 
-## The file as it stands, saved or not. The graph is read out of this and
-## nothing else, so the two cannot describe different abilities.
-var _source: String = ""
-
-var _history: ComposerHistory = ComposerHistory.new()
+var _doc: ComposerDocument = ComposerDocument.new()
+var _menu: PopupMenu = null
 var _chords: Dictionary[int, Callable] = {}
 var _palette: ComposerPalette = null
 var _canvas: ComposerCanvas = null
@@ -76,6 +67,8 @@ func _ready() -> void:
 	# Connected after every panel exists, not as each one is built: wiring a
 	# panel to one that has not been made yet reads as done and is not.
 	_canvas.selection_changed.connect(_on_selection_changed)
+	_canvas.node_dropped.connect(_on_node_dropped)
+	_canvas.menu_requested.connect(_on_menu_requested)
 	_output.row_picked.connect(_on_row_picked)
 	_inspector.value_edited.connect(_on_value_edited)
 	_palette.node_picked.connect(_on_node_picked)
@@ -121,154 +114,157 @@ func _on_row_picked(node_id: StringName, _line: int) -> void:
 
 
 ## Open a file.
-##
-## The text is held, not just the graph read out of it. Everything the canvas
-## shows is worked out from this string, so an edit is a new string and undo is
-## the old one - there is nothing else to keep in step and nothing that can fall
-## out of step.
 func open(source: String, path: String) -> void:
-	_source = source
-	_history.forget()
-	await show_graph(ComposerReader.read(source, path))
+	_doc.open(source, path)
+	await _redraw()
 
 
-## Take the file somewhere new, or refuse and leave it exactly where it was.
+## Draw whatever the document says now.
 ##
-## Read before it is accepted. An edit that produced something the Composer
-## cannot read would be an edit that blanks the canvas, and the person would be
-## left holding a file they can no longer see - so it does not happen, and the
-## reason is said out loud instead.
-func _commit(next: String) -> bool:
-	if _graph == null:
-		return false
-	var read: ComposerGraph = ComposerReader.read(next, _graph.source_path)
-	if not read.is_editable():
-		push_error(SAVE_REFUSED % BROKE_IT)
-		return false
+## Called after every change rather than announced by the document. An
+## announcement is redrawn whenever the emitter gets round to it, and a caller
+## that wanted to know the canvas had caught up would have nothing to wait on.
+func _redraw() -> void:
+	await show_graph(_doc.graph())
 
-	_history.record(_source)
-	_source = next
-	await show_graph(read)
+
+## Do it, redraw, and say so out loud when it was refused.
+##
+## A refusal that only returns false is one the person experiences as the tool
+## ignoring them.
+func _did(refusal: ComposerGraph.Diagnostic) -> bool:
+	if refusal != null:
+		push_error(SAVE_REFUSED % refusal.message)
+		return false
+	await _redraw()
 	return true
 
 
-## Back one step, and forward again.
-##
-## Putting the text back puts everything back: the nodes, the cables, the marks
-## and where each card sits are all read out of it again. There is no stack of
-## operations that each know how to undo themselves, so there is no operation
-## that knows wrongly.
 func undo() -> void:
-	if not _history.can_undo():
-		return
-	var back: String = _history.undo(_source)
-	_source = back
-	await show_graph(ComposerReader.read(back, _graph.source_path))
+	_doc.undo()
+	await _redraw()
 
 
 func redo() -> void:
-	if not _history.can_redo():
-		return
-	var forward: String = _history.redo(_source)
-	_source = forward
-	await show_graph(ComposerReader.read(forward, _graph.source_path))
+	_doc.redo()
+	await _redraw()
 
 
 func history() -> ComposerHistory:
-	return _history
+	return _doc.history()
+
+
+func printed() -> String:
+	return _doc.printed()
+
+
+func graph() -> ComposerGraph:
+	return _doc.graph()
 
 
 #region Statements, as things you can move about
 ## The spans of what is picked, in the order the file has them.
 func _picked_spans() -> Array[ComposerSpan]:
 	var found: Array[ComposerSpan] = []
-	if _graph == null:
-		return found
 	for id: StringName in _canvas.picked():
-		var node: ComposerNode = _graph.find_node(id)
+		var node: ComposerNode = _doc.graph().find_node(id) if _doc.is_open() else null
 		if node != null:
 			found.append(node.span)
 	return found
 
 
-## Take the picked statements out.
-##
-## A body with nothing left in it still has to say so, or the file stops
-## parsing - and a tool that breaks somebody's script by deleting the last node
-## is not one they open again.
 func remove_picked() -> bool:
 	var spans: Array[ComposerSpan] = _picked_spans()
-	if spans.is_empty():
-		return false
-	return await _commit(
-		ComposerEdits.keep_a_body(ComposerEdits.remove(_source, spans))
-	)
+	return await _did(_doc.remove(spans)) if not spans.is_empty() else false
 
 
 func repeat_picked() -> bool:
 	var spans: Array[ComposerSpan] = _picked_spans()
-	if spans.is_empty():
-		return false
-	return await _commit(ComposerEdits.repeat(_source, spans))
+	return await _did(_doc.repeat(spans)) if not spans.is_empty() else false
 
 
 ## The picked statements, as the text they are.
 ##
-## The system clipboard, not one of our own: a statement is GDScript, and
-## somebody who copies one here should be able to paste it into the script
-## editor beside this one.
+## The system clipboard as well, because a statement is GDScript and somebody
+## who copies one here should be able to paste it into the script editor beside
+## this one - but the text is returned, so the operation can be asked a question
+## on a machine that has no clipboard at all.
 func copy_picked() -> String:
 	var spans: Array[ComposerSpan] = _picked_spans()
 	if spans.is_empty():
 		return ""
-	var taken: String = ComposerEdits.lines_of(_source, spans)
+	var taken: String = _doc.copy(spans)
 	DisplayServer.clipboard_set(taken)
 	return taken
 
 
-## Put whatever is on the clipboard in after what is picked.
-##
-## Anything at all may be on it, so the result is read before it is accepted
-## like every other edit. Text that does not belong in an ability body is
-## refused rather than pasted and then complained about.
 func paste() -> bool:
 	return await paste_text(DisplayServer.clipboard_get())
 
 
-## The same, told what to put in.
-##
-## Split from `paste` because the clipboard is how the text arrives, not what
-## the operation is - and a machine with no clipboard at all should still be
-## able to answer whether pasting a given statement works.
+## Anything at all may be on a clipboard, so what comes off one is read back
+## before it is accepted, like every other edit.
 func paste_text(written: String) -> bool:
-	if written.strip_edges().is_empty() or _graph == null:
+	if not _doc.is_open() or written.strip_edges().is_empty():
 		return false
-	return await _commit(ComposerEdits.insert_after(_source, _after(), written))
-
-
-## The line a new statement goes in after: the last one picked, or the end of
-## the body when nothing is.
-func _after() -> int:
-	var spans: Array[ComposerSpan] = _picked_spans()
-	var last: int = 0
-	for span: ComposerSpan in spans:
-		last = maxi(last, span.last_line)
-	if last > 0:
-		return last
-	var body: ComposerSpan = ComposerSubset.body_span(_source.split("\n"))
-	return body.last_line if body.is_valid() else 0
+	return await _did(_doc.insert(written, _doc.after(_picked_spans())))
 
 
 ## A node picked out of the palette becomes a statement in the body.
 func _on_node_picked(key: StringName) -> void:
-	if _graph == null or not _graph.is_editable():
+	if not _doc.may_write():
 		return
 	var written: String = ComposerWriter.call_for(
-		ComposerCatalog.find(key), _graph.source_path
+		ComposerCatalog.find(key), _doc.path()
 	)
-	if written.is_empty():
+	if not written.is_empty():
+		await _did(_doc.insert(written, _doc.after(_picked_spans())))
+
+
+## One card dropped onto another: the statement goes where that one is.
+##
+## The only dragging this canvas can honestly offer. Cards have no positions of
+## their own - the layout works out where each goes from the order the
+## statements run in - so dragging one somewhere means putting its statement
+## somewhere, and the card follows because the layout is asked again.
+func _on_node_dropped(moved: StringName, onto: StringName) -> void:
+	if not _doc.may_write():
 		return
-	await _commit(ComposerEdits.insert_after(_source, _after(), written))
+	var from: ComposerNode = _doc.graph().find_node(moved)
+	var to: ComposerNode = _doc.graph().find_node(onto)
+	if from == null or to == null:
+		return
+	await _did(_doc.move(from.span, to.span))
+## What can be done to a card, offered where the pointer is.
+##
+## The same three operations the chords do, said out loud. A tool whose only way
+## in is a chord is a tool you have to be told about, and nobody is there to
+## tell somebody opening it for the first time.
+const MENU_ITEMS: Array[String] = ["Remove", "Repeat", "Copy"]
+
+
+func _on_menu_requested(_node_id: StringName, at: Vector2) -> void:
+	if not _doc.may_write():
+		return
+	if _menu == null:
+		_menu = PopupMenu.new()
+		for item: String in MENU_ITEMS:
+			_menu.add_item(item)
+		_menu.id_pressed.connect(_on_menu_chosen)
+		add_child(_menu)
+	_menu.position = Vector2i(global_position + at)
+	_menu.reset_size()
+	_menu.popup()
+
+
+func _on_menu_chosen(chosen: int) -> void:
+	match chosen:
+		0:
+			await remove_picked()
+		1:
+			await repeat_picked()
+		2:
+			copy_picked()
 #endregion
 
 
@@ -298,12 +294,12 @@ func _on_value_edited(node_id: StringName, position: int, written: String) -> vo
 	node.fields[position].source = ComposerNode.ValueSource.LITERAL
 	node.dirty = true
 
-	var printed: ComposerWriter.Result = ComposerWriter.apply(_graph, _source)
-	if not printed.is_ok():
-		push_error(SAVE_REFUSED % printed.refusal.message)
+	var rebuilt: ComposerWriter.Result = ComposerWriter.apply(_graph, _doc.printed())
+	if not rebuilt.is_ok():
+		push_error(SAVE_REFUSED % rebuilt.refusal.message)
 		return
 	var held: Array[StringName] = _canvas.picked()
-	if await _commit(printed.text) and not held.is_empty():
+	if await _did(_doc.commit(rebuilt.text)) and not held.is_empty():
 		_canvas.reveal(held[0])
 
 
@@ -319,33 +315,9 @@ func _on_value_edited(node_id: StringName, position: int, written: String) -> vo
 ## splice into the wrong place.
 func save() -> ComposerWriter.Result:
 	var result: ComposerWriter.Result = ComposerWriter.Result.new()
-	if _graph == null:
-		result.refusal = ComposerWriter.refuse(NOTHING_TO_SAVE)
-		return result
-
-	if not _graph.is_editable():
-		# Identical bytes are still a write: a timestamp moves, anything watching
-		# the file wakes up, and the promise was that a file this cannot draw is
-		# never touched. Not nearly never.
-		result.refusal = ComposerWriter.refuse(_graph.blocked_reason())
-		return result
-
-	var path: String = _graph.source_path
-	if not FileAccess.file_exists(path):
-		result.refusal = ComposerWriter.refuse(NO_FILE % path)
-		return result
-
-	# What is written is what has been held all along. Every edit already went
-	# through the writer and was read back before it was accepted, so a save has
-	# nothing left to verify - it has only to put the file where the text is.
-	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if out == null:
-		result.refusal = ComposerWriter.refuse(NOT_WRITABLE % path)
-		return result
-	out.store_string(_source)
-	out.close()
-
-	result.text = _source
+	result.refusal = _doc.save()
+	if result.is_ok():
+		result.text = _doc.printed()
 	return result
 
 
@@ -390,19 +362,6 @@ func _save_now() -> void:
 	var result: ComposerWriter.Result = await save()
 	if not result.is_ok():
 		push_error(SAVE_REFUSED % result.refusal.message)
-
-
-## What is on screen right now.
-##
-## Read rather than kept by a caller: an edit replaces the graph, so anything
-## holding the old one would be describing an ability that is no longer open.
-## The file as it stands, edits and all. What a save would write.
-func printed() -> String:
-	return _source
-
-
-func graph() -> ComposerGraph:
-	return _graph
 
 
 func canvas() -> ComposerCanvas:
