@@ -130,7 +130,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dialogic/plugin.cfg", "res://addons/GAS_Engine/plugin.cfg")
+enabled=PackedStringArray("res://addons/GAS_Engine/plugin.cfg", "res://addons/dialogic/plugin.cfg")
 
 [filesystem]
 

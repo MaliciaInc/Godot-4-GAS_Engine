@@ -33,6 +33,8 @@ const DASHBOARD_SCENE: PackedScene = preload("res://addons/GAS_Engine/editor/gas
 const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
 const DASHBOARD_MENU: String = "GAS_Engine Dashboard"
 const SCRIPT_SCREEN: String = "Script"
+const SCRIPT_FILTER: String = "*.gd"
+const SCRIPT_FILTER_NAME: String = "GDScript"
 ## What the log says when the Composer was asked for and had nothing to draw.
 ##
 ## It carries the way out, not just the complaint. It also reads differently
@@ -147,6 +149,7 @@ func _enter_tree() -> void:
 	_composer_instance.visible = false
 	_composer_instance.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_composer_instance.code_requested.connect(_on_code_requested)
+	_composer_instance.open_requested.connect(_ask_for_an_ability)
 	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
@@ -215,6 +218,34 @@ func _open_dashboard() -> void:
 	_showing_composer = false
 	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
 	_make_visible(true)
+
+
+## Choose an ability to draw, without going to find it first.
+##
+## The Composer draws whatever the Script editor has open, which is right when
+## somebody is already looking at an ability and wrong as the only way in: a
+## person who picks Ability Composer from the Tools menu has asked for the
+## Composer, not for a lecture about what they should have opened.
+func _ask_for_an_ability() -> void:
+	var picker: EditorFileDialog = EditorFileDialog.new()
+	picker.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
+	picker.access = EditorFileDialog.ACCESS_RESOURCES
+	picker.add_filter(SCRIPT_FILTER, SCRIPT_FILTER_NAME)
+	picker.file_selected.connect(_draw_ability_at)
+	picker.canceled.connect(picker.queue_free)
+	EditorInterface.get_base_control().add_child(picker)
+	picker.popup_file_dialog()
+
+
+## Draw the file that was chosen, or say why it cannot be drawn - on the screen
+## the person is already looking at, which is the Composer.
+func _draw_ability_at(source_path: String) -> void:
+	var opened: ComposerHost.Opened = ComposerHost.open(source_path)
+	if not opened.is_ok():
+		push_warning(COMPOSER_REFUSED % opened.refusal)
+		_composer_instance.show_refusal(opened.refusal)
+		return
+	_composer_instance.open(opened.source, opened.graph.source_path)
 
 
 ## The Code chip: the same ability, in the editor that shows it as text.

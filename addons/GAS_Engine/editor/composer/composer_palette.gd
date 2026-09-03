@@ -97,7 +97,11 @@ func _entry_row(key: StringName) -> Control:
 	button.add_theme_font_size_override(
 		DashboardTheme.FONT_SIZE, ComposerTheme.FONT_LABEL + 1
 	)
-	button.pressed.connect(func _picked() -> void: node_picked.emit(entry))
+	# The key, not the entry. The signal declares a StringName and the screen
+	# looks the entry up again from it; emitting the object satisfied neither and
+	# failed at the connection, which is why every palette click was refused by
+	# Godot before it reached anything that could have reported it.
+	button.pressed.connect(func _picked() -> void: node_picked.emit(key))
 	return button
 
 
