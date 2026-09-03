@@ -96,14 +96,23 @@ static func tags_in_file() -> Array[StringName]:
 
 
 ## The tag a constant line names, or nothing when the line names none.
+##
+## A commented line is already out, because a comment does not begin with
+## `const `. What was not out was a comment at the END of one: the closing quote
+## was found with `rfind`, so
+## `const Noted: StringName = &"Status.Noted"  # they call it "big"` came back
+## as a tag named `Status.Noted"  # they call it "big`. A tag cannot contain a
+## quote, so the first quote after the opener is always the right one.
 static func _tag_named_in(line: String) -> String:
 	if not line.begins_with(CONST_WORD):
 		return ""
 	var opened: int = line.find(TAG_OPEN)
-	var closed: int = line.rfind(TAG_CLOSE)
-	if opened < 0 or closed <= opened + TAG_OPEN.length() - 1:
+	if opened < 0:
 		return ""
 	var from: int = opened + TAG_OPEN.length()
+	var closed: int = line.find(TAG_CLOSE, from)
+	if closed <= from:
+		return ""
 	return line.substr(from, closed - from)
 
 

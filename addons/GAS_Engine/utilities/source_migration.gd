@@ -24,6 +24,30 @@ const TAGS_UNWRITABLE: String = "GAS_Engine: could not write the project's gamep
 const CUES_UNWRITABLE: String = "GAS_Engine: could not write the project's gameplay cues."
 
 
+## Everything this project needs done to its source files when the editor
+## starts, in the one order that is correct.
+##
+## Returns whether something was recorded that now has to be persisted - the
+## only part of this the plugin still owns, because saving a setting is an
+## editor's job and this has to stay drivable without one.
+##
+## The order is the whole point. Seeding runs after the fold has finished, or
+## when there was nothing to fold; never after one that failed. A project
+## part-way through a migration is still an old project, and writing "what a
+## new project starts with" on top of a half-finished fold creates exactly the
+## files the next attempt is supposed to fold the old registry into. It used to
+## run either way, and only the fact that a filesystem failure usually repeats
+## kept that from being visible.
+static func bring_project_up_to_date(example_tags: Array[String]) -> bool:
+	var folded: bool = false
+	if pending():
+		if not run():
+			return false
+		folded = true
+	ensure_sources(example_tags)
+	return folded
+
+
 ## Whether the fold still has to happen in this project.
 static func pending() -> bool:
 	return not GASEngineProjectSettings.source_migration_done()

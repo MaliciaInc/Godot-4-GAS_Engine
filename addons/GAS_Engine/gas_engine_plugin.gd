@@ -313,10 +313,9 @@ func ensure_project_sources() -> void:
 	# Saved here and nowhere else: the fold records itself in a setting, and
 	# ProjectSettings.save() rewrites project.godot whole - so it happens once,
 	# where the cost is expected, rather than wherever a value changed.
-	if GASSourceMigration.pending() and GASSourceMigration.run():
+	if GASSourceMigration.bring_project_up_to_date(EXAMPLE_TAGS):
 		if ProjectSettings.save() != OK:
 			push_error("GAS_Engine: could not record that the registry fold happened.")
-	GASSourceMigration.ensure_sources(EXAMPLE_TAGS)
 
 
 #endregion

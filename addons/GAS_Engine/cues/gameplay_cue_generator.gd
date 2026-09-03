@@ -29,6 +29,14 @@ const CLOSE_SCENE: String = '")'
 
 const GENERATED_REPORT: String = "GAS_Engine: wrote %s with %d cue bindings."
 
+## The name the bindings live under, written once because both halves read it:
+## the renderer puts the declaration in the file, and the reader looks for it to
+## know where the body it may trust begins.
+const BINDINGS_NAME: String = "const BINDINGS"
+const BINDINGS_DECLARATION: String = (
+	BINDINGS_NAME + ": Dictionary[StringName, PackedScene] = {"
+)
+
 ## The lines above the bindings.
 ##
 ## Built rather than declared: a `const` may not read another const that is a
@@ -49,7 +57,7 @@ static func _header_lines() -> Array[String]:
 		Source.TOOL_ANNOTATION,
 		"class_name GameplayCues",
 		"",
-		"const BINDINGS: Dictionary[StringName, PackedScene] = {",
+		BINDINGS_DECLARATION,
 	]
 
 
@@ -72,14 +80,35 @@ static func render_source(bindings: Dictionary[StringName, String]) -> String:
 ## Read as text for the reason the tags are: the file declares a global
 ## `class_name`, so loading a second copy of it collides with the one Godot has
 ## already registered - which is exactly what a test pointing elsewhere does.
+##
+## Reading it as text is why the two rules below exist. The header calls this
+## file safe to edit by hand, so it has to be read the way GDScript reads it,
+## and it was not: any line anywhere holding `&"..."` and `preload("...")`
+## counted. A commented-out binding therefore stayed live - gone for Godot, gone
+## for the exporter that no longer sees the dependency, and present for the cue
+## manager, which builds its table from here. An example in a doc comment and a
+## second dictionary further down counted too.
+##
+## So a binding is a line inside the BINDINGS body that starts where a binding
+## starts. Everything else in the file is somebody else's business.
 static func bindings_in_file() -> Dictionary[StringName, String]:
 	var found: Dictionary[StringName, String] = {}
 	var path: String = Settings.get_generated_cue_script_path()
 	if not FileAccess.file_exists(path):
 		return found
 
+	var inside: bool = false
 	for line: String in FileAccess.get_file_as_string(path).split(LINE_BREAK):
 		var trimmed: String = line.strip_edges()
+		if not inside:
+			# Matched on the name alone, not the whole declaration: a person who
+			# adjusts the type hint has not stopped declaring the bindings.
+			inside = trimmed.begins_with(BINDINGS_NAME)
+			continue
+		if trimmed.begins_with(CLOSING_LINE):
+			break
+		if not trimmed.begins_with(OPEN_TAG):
+			continue
 		var tag: String = _between(trimmed, OPEN_TAG, CLOSE_TAG)
 		var scene: String = _between(trimmed, OPEN_SCENE, CLOSE_SCENE)
 		if not tag.is_empty() and not scene.is_empty():
