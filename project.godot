@@ -137,6 +137,11 @@ enabled=PackedStringArray("res://addons/GAS_Engine/plugin.cfg", "res://addons/di
 import/blender/enabled=false
 import/fbx/enabled=false
 
+[gas_engine]
+
+resources/cues/registry_file="res://gas_engine/cue_registry.tres"
+resources/tags/registry_file="res://gas_engine/tag_registry.tres"
+
 [gui]
 
 theme/custom="res://assets/gui/default.theme"

@@ -19,6 +19,9 @@ extends Node
 const GASEngineProjectSettings = preload("res://addons/GAS_Engine/utilities/project_settings.gd")
 const CueNotify = preload("res://addons/GAS_Engine/cues/gameplay_cue_notify.gd")
 const CueRegistry = preload("res://addons/GAS_Engine/cues/gameplay_cue_registry.gd")
+const CueGenerator = preload("res://addons/GAS_Engine/cues/gameplay_cue_generator.gd")
+
+const SCENE_MISSING: String = "GAS_Engine: cue %s names a scene that will not load: %s"
 const CueEntry = preload("res://addons/GAS_Engine/cues/gameplay_cue_entry.gd")
 const CueParams = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 const CueHandle = preload("res://addons/GAS_Engine/cues/gameplay_cue_handle.gd")
@@ -52,22 +55,19 @@ func _ready() -> void:
 
 ## Load the cue registry from disk and prepare one empty bucket per tag.
 func _load_registry() -> void:
-	var cue_registry_path: String = GASEngineProjectSettings.get_registry_cue_path()
-	if not ResourceLoader.exists(cue_registry_path):
-		_warn_missing_registry(cue_registry_path)
+	var path: String = GASEngineProjectSettings.get_generated_cue_script_path()
+	if not FileAccess.file_exists(path):
+		_warn_missing_registry(path)
 		return
 
-	var loaded: Resource = load(cue_registry_path)
-	if not is_instance_of(loaded, CueRegistry):
-		push_error("GAS_Engine: resource at " + cue_registry_path + " is not a GameplayCueRegistry.")
-		return
-
-	var registry: CueRegistry = loaded
-	for entry: CueEntry in registry.entries:
-		if entry == null or entry.tag == &"" or entry.scene == null:
+	var bindings: Dictionary[StringName, String] = CueGenerator.bindings_in_file()
+	for tag: StringName in bindings:
+		var scene: PackedScene = load(bindings[tag]) as PackedScene
+		if scene == null:
+			push_error(SCENE_MISSING % [String(tag), bindings[tag]])
 			continue
-		_cue_scenes[entry.tag] = entry.scene
-		_pool[entry.tag] = PoolBucket.new()
+		_cue_scenes[tag] = scene
+		_pool[tag] = PoolBucket.new()
 
 
 ## A missing registry is normal in a project that declares no cues, and noisy in

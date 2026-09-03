@@ -17,7 +17,7 @@ class_name GameplayTagTree extends RefCounted
 
 const SEPARATOR: String = "."
 const UNAVAILABLE_TOOLTIP: String = "Tag already mapped to a Cue"
-const REGISTRY_MISSING: String = "GAS_Engine: tag registry not found at "
+const REGISTRY_MISSING: String = "GAS_Engine: no gameplay tags file at "
 
 
 ## How one tag should be drawn.
@@ -105,14 +105,18 @@ class Run extends RefCounted:
 ## used to each decide this, so the same absence was a warning in one tab
 ## and an error in another.
 static func load_registry() -> GameplayTagRegistry:
-	var path: String = GASEngineProjectSettings.get_registry_tag_path()
-	if ResourceLoader.exists(path):
-		return load(path)
-	if Engine.is_editor_hint() and EditorInterface.is_plugin_enabled(
-		GASEngineProjectSettings.ADDON_NAME
-	):
-		push_warning(REGISTRY_MISSING + path)
-	return null
+	var path: String = GASEngineProjectSettings.get_generated_tag_script_path()
+	if not FileAccess.file_exists(path):
+		if Engine.is_editor_hint() and EditorInterface.is_plugin_enabled(
+			GASEngineProjectSettings.ADDON_NAME
+		):
+			push_warning(REGISTRY_MISSING + path)
+		return null
+
+	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
+	registry.tags.assign(GameplayTagGenerator.tags_in_file())
+	registry.speaks_for_project = true
+	return registry
 
 
 ## Walk one tag's segments, reusing branches that already exist.

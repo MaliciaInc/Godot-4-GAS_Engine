@@ -20,19 +20,6 @@ const CueEntry = preload("res://addons/GAS_Engine/cues/gameplay_cue_entry.gd")
 @export var entries: Array[CueEntry] = []
 
 
-#region Registry Queries
-## The PackedScene mapped to a tag, or null.
-##
-## Answers exactly what GameplayCueManager would play. The manager builds a
-## Dictionary while loading, skipping an entry with no tag or no scene, so a tag
-## listed twice resolves to the last usable entry. This read the list forwards
-## and returned whatever the first entry carrying the tag held - so it answered
-## null for a tag the manager plays happily, and the earlier scene for a tag
-## listed twice.
-##
-## Two answers to one question, on a method nothing inside this addon calls -
-## which is how they were free to drift - and which a game may well be the one
-## asking.
 func get_scene_for_tag(tag: StringName) -> PackedScene:
 	for index: int in range(entries.size() - 1, -1, -1):
 		var entry: CueEntry = entries[index]

@@ -49,6 +49,7 @@ const PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY: String = PROJECT_SETTINGS_N
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS: String = PROJECT_SETTINGS_NAME_RESOURCES + "/tags"
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY: String = PROJECT_SETTINGS_NAME_RESOURCES_TAGS + "/registry_file"
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT: String = PROJECT_SETTINGS_NAME_RESOURCES_TAGS + "/generated_script"
+const PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT: String = PROJECT_SETTINGS_NAME_RESOURCES_CUES + "/generated_script"
 
 const PROJECT_SETTINGS_NAME_INTERNAL: String = PROJECT_SETTINGS_NAME + "/internal"
 const PROJECT_SETTINGS_NAME_INTERNAL_CUE_MANAGER_OWNED: String = (
@@ -63,6 +64,7 @@ const DEFAULT_PATH: String = "res://gas_engine"
 const DEFAULT_PATH_CUES_REGISTRY: String = DEFAULT_PATH + "/cue_registry.tres"
 const DEFAULT_PATH_TAGS_REGISTRY: String = DEFAULT_PATH + "/tag_registry.tres"
 const DEFAULT_PATH_TAGS_GENERATED_SCRIPT: String = DEFAULT_PATH + "/gameplay_tags.gd"
+const DEFAULT_PATH_CUES_GENERATED_SCRIPT: String = DEFAULT_PATH + "/gameplay_cues.gd"
 
 ## Property-info keys, named once. They are Godot's own dictionary schema, and
 ## writing them out at each of the six call sites is how one of them ends up
@@ -91,8 +93,7 @@ static func init_project_settings() -> void:
 		if save_error != OK:
 			push_error("GAS_Engine: failed to save migrated project settings.")
 	_init_generated_tag_script_path()
-	_init_registry_cue()
-	_init_registry_tag()
+	_init_generated_cue_script_path()
 	_init_editor_tag_property_editor()
 
 
@@ -175,11 +176,24 @@ static func get_generated_tag_script_path() -> String:
 	)
 
 
-static func get_registry_cue_path() -> String:
+static func get_generated_cue_script_path() -> String:
+	return _setting_or_default(
+		PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT, DEFAULT_PATH_CUES_GENERATED_SCRIPT
+	)
+
+
+## Where a cue registry resource used to live. Still read, never written: a
+## project that has one has its bindings folded in once.
+static func get_legacy_registry_cue_path() -> String:
 	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY, DEFAULT_PATH_CUES_REGISTRY)
 
 
-static func get_registry_tag_path() -> String:
+## Where a tag registry resource used to live.
+##
+## Still read, and never written: a project that set this before the tags moved
+## into their own script has one, and its tags are folded in once. Not declared
+## any more, so it does not appear in Project Settings for a file nothing keeps.
+static func get_legacy_registry_tag_path() -> String:
 	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY, DEFAULT_PATH_TAGS_REGISTRY)
 
 
@@ -205,27 +219,19 @@ static func get_editor_tag_property_editor_match_type() -> Self.EditorTagsTagEdi
 
 
 #region Initialisers
+static func _init_generated_cue_script_path() -> void:
+	_declare(
+		PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT,
+		DEFAULT_PATH_CUES_GENERATED_SCRIPT,
+		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT)
+	)
+
+
 static func _init_generated_tag_script_path() -> void:
 	_declare(
 		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT,
 		DEFAULT_PATH_TAGS_GENERATED_SCRIPT,
 		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT)
-	)
-
-
-static func _init_registry_cue() -> void:
-	_declare(
-		PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY,
-		DEFAULT_PATH_CUES_REGISTRY,
-		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY)
-	)
-
-
-static func _init_registry_tag() -> void:
-	_declare(
-		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY,
-		DEFAULT_PATH_TAGS_REGISTRY,
-		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY)
 	)
 
 
