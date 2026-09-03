@@ -37,6 +37,12 @@ const BINDINGS_DECLARATION: String = (
 	BINDINGS_NAME + ": Dictionary[StringName, PackedScene] = {"
 )
 
+## What may follow the name, if the line is declaring it and not something else.
+##
+## A type hint opens with a colon, an untyped constant with an equals sign, and
+## either may be spaced away from the name. What may NOT follow it is more name.
+const AFTER_THE_NAME: String = ": =\t"
+
 ## The lines above the bindings.
 ##
 ## Built rather than declared: a `const` may not read another const that is a
@@ -101,9 +107,7 @@ static func bindings_in_file() -> Dictionary[StringName, String]:
 	for line: String in FileAccess.get_file_as_string(path).split(LINE_BREAK):
 		var trimmed: String = line.strip_edges()
 		if not inside:
-			# Matched on the name alone, not the whole declaration: a person who
-			# adjusts the type hint has not stopped declaring the bindings.
-			inside = trimmed.begins_with(BINDINGS_NAME)
+			inside = _declares_bindings(trimmed)
 			continue
 		if trimmed.begins_with(CLOSING_LINE):
 			break
@@ -114,6 +118,23 @@ static func bindings_in_file() -> Dictionary[StringName, String]:
 		if not tag.is_empty() and not scene.is_empty():
 			found[StringName(tag)] = scene
 	return found
+
+
+## Whether this line declares the bindings, and not something else.
+##
+## Matched on the name rather than the whole declaration, so that adjusting the
+## type hint by hand does not stop it being a declaration - but on the WHOLE
+## name. `const BINDINGS_BACKUP = {` begins with `const BINDINGS` too, and a
+## reader that took a prefix would read somebody's backup copy as the real
+## thing, stop at its closing brace, and never reach the one GDScript uses. The
+## same disagreement as a commented-out binding, arrived at by another road, so
+## what follows the name has to be something that can follow a name.
+static func _declares_bindings(trimmed: String) -> bool:
+	if not trimmed.begins_with(BINDINGS_NAME):
+		return false
+	if trimmed.length() == BINDINGS_NAME.length():
+		return true
+	return AFTER_THE_NAME.contains(trimmed[BINDINGS_NAME.length()])
 
 
 ## What one line holds between two markers, or nothing when it holds neither.
