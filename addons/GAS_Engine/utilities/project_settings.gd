@@ -50,6 +50,7 @@ const PROJECT_SETTINGS_NAME_RESOURCES_TAGS: String = PROJECT_SETTINGS_NAME_RESOU
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY: String = PROJECT_SETTINGS_NAME_RESOURCES_TAGS + "/registry_file"
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT: String = PROJECT_SETTINGS_NAME_RESOURCES_TAGS + "/generated_script"
 const PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT: String = PROJECT_SETTINGS_NAME_RESOURCES_CUES + "/generated_script"
+const PROJECT_SETTINGS_NAME_INTERNAL_SOURCE_MIGRATION: String = PROJECT_SETTINGS_NAME + "/internal/source_registry_migration"
 
 const PROJECT_SETTINGS_NAME_INTERNAL: String = PROJECT_SETTINGS_NAME + "/internal"
 const PROJECT_SETTINGS_NAME_INTERNAL_CUE_MANAGER_OWNED: String = (
@@ -65,6 +66,14 @@ const DEFAULT_PATH_CUES_REGISTRY: String = DEFAULT_PATH + "/cue_registry.tres"
 const DEFAULT_PATH_TAGS_REGISTRY: String = DEFAULT_PATH + "/tag_registry.tres"
 const DEFAULT_PATH_TAGS_GENERATED_SCRIPT: String = DEFAULT_PATH + "/gameplay_tags.gd"
 const DEFAULT_PATH_CUES_GENERATED_SCRIPT: String = DEFAULT_PATH + "/gameplay_cues.gd"
+
+## How far the one-time fold of pre-file registry resources has got.
+##
+## Recorded rather than inferred. Asking whether the old resource still
+## exists answers "is there something to read", never "have I already read
+## it" - and the difference is a tag somebody deleted coming back.
+const SOURCE_MIGRATION_DONE: int = 1
+const DEFAULT_SOURCE_MIGRATION: int = 0
 
 ## Property-info keys, named once. They are Godot's own dictionary schema, and
 ## writing them out at each of the six call sites is how one of them ends up
@@ -185,16 +194,38 @@ static func get_generated_cue_script_path() -> String:
 ## Where a cue registry resource used to live. Still read, never written: a
 ## project that has one has its bindings folded in once.
 static func get_legacy_registry_cue_path() -> String:
-	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY, DEFAULT_PATH_CUES_REGISTRY)
+	return ProjectSettings.get_setting(
+		PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY, DEFAULT_PATH_CUES_REGISTRY
+	)
+
+
+## Whether the one-time fold has already happened in this project.
+static func source_migration_done() -> bool:
+	var at: int = ProjectSettings.get_setting(
+		PROJECT_SETTINGS_NAME_INTERNAL_SOURCE_MIGRATION, DEFAULT_SOURCE_MIGRATION
+	)
+	return at >= SOURCE_MIGRATION_DONE
+
+
+## Say it happened. Persisting is the caller's to do and the caller's to time:
+## `ProjectSettings.save()` rewrites project.godot whole, comments and all, so
+## it belongs at the one place that already accepts that cost rather than
+## anywhere a value happens to change.
+static func mark_source_migration_done() -> void:
+	ProjectSettings.set_setting(
+		PROJECT_SETTINGS_NAME_INTERNAL_SOURCE_MIGRATION, SOURCE_MIGRATION_DONE
+	)
 
 
 ## Where a tag registry resource used to live.
 ##
-## Still read, and never written: a project that set this before the tags moved
-## into their own script has one, and its tags are folded in once. Not declared
-## any more, so it does not appear in Project Settings for a file nothing keeps.
+## Read with a default rather than through `_setting_or_default`, which writes
+## the default in when it is missing: asking where a file used to be should not
+## put the question back into Project Settings for a file nothing keeps.
 static func get_legacy_registry_tag_path() -> String:
-	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY, DEFAULT_PATH_TAGS_REGISTRY)
+	return ProjectSettings.get_setting(
+		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY, DEFAULT_PATH_TAGS_REGISTRY
+	)
 
 
 static func get_editor_tag_property_editor_enabled() -> bool:

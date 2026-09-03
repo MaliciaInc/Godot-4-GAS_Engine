@@ -74,3 +74,49 @@ func test_a_registry_made_by_hand_does_not_speak_for_the_project() -> void:
 
 	assert_eq(_tracked_source(), before, "and the project's file was not touched")
 #endregion
+
+
+#region A failed write leaves the file it was replacing alone
+## The file is the project's only copy of its tags now, so the moment to find
+## out a write cannot happen is before the old one is gone.
+##
+## Failure is provoked rather than imagined: a directory sitting exactly where
+## the staged file wants to be means FileAccess cannot open it, which is the
+## same shape as a lock, a full disk, or a permission the editor does not have.
+func test_a_write_that_cannot_be_staged_leaves_the_original_untouched() -> void:
+	var path: String = "user://test_write_target.gd"
+	var blocked: String = path + GDScriptSource.STAGED_SUFFIX
+	var before: String = "# what was there first"
+
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	out.store_string(before)
+	out.close()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(blocked))
+
+	_expect_engine_error()
+	var wrote: bool = GDScriptSource.write(path, "# something else entirely")
+	_handle_tracked_errors()
+
+	assert_false(wrote, "it refused")
+	assert_eq(FileAccess.get_file_as_string(path), before, "and the original is untouched")
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(blocked))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## The engine is expected to complain here: a write it cannot make is a write
+## it should say it cannot make.
+func _expect_engine_error() -> void:
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.NOTHING
+
+
+## Mark them handled and put the default back, so the next test still fails on
+## an error nobody asked for.
+func _handle_tracked_errors() -> void:
+	@warning_ignore_start("unsafe_cast")
+	var tracker: GutErrorTracker = GutUtils.get_error_tracker() as GutErrorTracker
+	@warning_ignore_restore("unsafe_cast")
+	for tracked: GutTrackedError in tracker.get_current_test_errors():
+		tracked.handled = true
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.FAILURE
+#endregion
