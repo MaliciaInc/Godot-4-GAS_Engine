@@ -26,8 +26,14 @@ const DISABLED_FONT_COLOR: String = "disabled_font_color"
 const SUCCESS_COLOR: String = "success_color"
 const ERROR_COLOR: String = "error_color"
 const PANEL_STYLEBOX: String = "panel"
+const SEPARATION: String = "separation"
+const FONT_SIZE: String = "font_size"
 ## The RichTextLabel slot whose stylebox paints its background.
-const RICH_TEXT_STYLEBOX: String = "normal"
+## What a control draws itself with when nothing is happening to it. Named
+## after the theme item rather than after one of the controls that reads it -
+## a RichTextLabel and a LineEdit both do, and naming it for either is how the
+## other ends up with a second const holding the same word.
+const NORMAL_STYLEBOX: String = "normal"
 
 ## Icon names Godot ships that the dashboards reuse.
 const ICON_EDIT: String = "Edit"

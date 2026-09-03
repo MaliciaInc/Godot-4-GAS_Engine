@@ -1,4 +1,5 @@
-## The editor plugin: dashboard, tag inspector, and one-time project seeding.
+## The editor plugin: dashboard, Ability Composer, tag inspector, and one-time
+## project seeding.
 ##
 ## `project.godot` declares the GameplayCueManager autoload directly so a clean
 ## checkout reaches its tests without an editor, and upstream's `_enable_plugin`
@@ -26,6 +27,13 @@ const PLUGIN_DISPLAY_NAME: String = GASEngineProjectSettings.ADDON_NAME
 const PLUGIN_ICON_PATH: String = "res://addons/GAS_Engine/icons/gas_engine.svg"
 
 const DASHBOARD_SCENE: PackedScene = preload("res://addons/GAS_Engine/editor/gas_engine_dashboard.tscn")
+
+## The screen names itself; the menu that opens it says the same word by
+## reading it rather than by agreeing to spell it the same way.
+const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
+const DASHBOARD_MENU: String = "GAS_Engine Dashboard"
+const SCRIPT_SCREEN: String = "Script"
+const COMPOSER_REFUSED: String = "GAS_Engine: %s"
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
@@ -63,7 +71,17 @@ const EXAMPLE_TAGS: Array[String] = [
 var _owns_cue_manager_autoload: bool = false
 
 var _dashboard_instance: Control = null
+var _composer_instance: ComposerScreen = null
 var _tag_inspector: EditorInspectorPlugin = null
+
+## Which of the two the main screen shows when it is asked to appear.
+##
+## The Composer and the dashboard share one main screen because a plugin has one
+## to share. Remembering which was last asked for is what lets the Code chip
+## leave for the script editor and the person come back to the ability they were
+## looking at, rather than to a dashboard they did not ask for - the two views
+## are meant to feel like one thing seen two ways.
+var _showing_composer: bool = false
 
 
 #region Plugin Lifecycle
@@ -115,6 +133,15 @@ func _enter_tree() -> void:
 	_dashboard_instance = DASHBOARD_SCENE.instantiate()
 	_dashboard_instance.visible = false
 	EditorInterface.get_editor_main_screen().add_child(_dashboard_instance)
+
+	_composer_instance = ComposerScreen.new()
+	_composer_instance.visible = false
+	_composer_instance.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_composer_instance.code_requested.connect(_on_code_requested)
+	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
+
+	add_tool_menu_item(COMPOSER_MENU, _open_composer)
+	add_tool_menu_item(DASHBOARD_MENU, _open_dashboard)
 	_make_visible(false)
 
 
@@ -132,11 +159,60 @@ func _disable_plugin() -> void:
 
 
 func _exit_tree() -> void:
+	remove_tool_menu_item(COMPOSER_MENU)
+	remove_tool_menu_item(DASHBOARD_MENU)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
 	if _dashboard_instance != null:
 		_dashboard_instance.queue_free()
 		_dashboard_instance = null
+	if _composer_instance != null:
+		_composer_instance.queue_free()
+		_composer_instance = null
+#endregion
+
+
+#region The Ability Composer
+## Draw whatever ability the script editor currently has open.
+##
+## The script editor is asked rather than a picker of our own: a person who has
+## an ability open and wants to see it drawn has already said which one, and
+## making them say it again in a dialog is a step that exists only because the
+## tool did not look.
+func _open_composer() -> void:
+	var script: Script = EditorInterface.get_script_editor().get_current_script()
+	var opened: ComposerHost.Opened = ComposerHost.open(
+		script.resource_path if script != null else ""
+	)
+	if not opened.is_ok():
+		# Said out loud rather than swallowed. A menu item that appears to do
+		# nothing is worse than one that explains itself.
+		push_warning(COMPOSER_REFUSED % opened.refusal)
+		return
+
+	_showing_composer = true
+	_composer_instance.open(opened.source, opened.graph.source_path)
+	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
+	_make_visible(true)
+
+
+func _open_dashboard() -> void:
+	_showing_composer = false
+	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
+	_make_visible(true)
+
+
+## The Code chip: the same ability, in the editor that shows it as text.
+##
+## The ability stays loaded here, so coming back to this screen shows what the
+## person left rather than starting them over. They are two views of one file,
+## and neither is a copy of the other.
+func _on_code_requested(source_path: String) -> void:
+	if not source_path.is_empty():
+		var script: Script = load(source_path) as Script
+		if script != null:
+			EditorInterface.edit_script(script)
+	EditorInterface.set_main_screen_editor(SCRIPT_SCREEN)
 #endregion
 
 
@@ -214,5 +290,7 @@ func _get_plugin_icon() -> Texture2D:
 
 func _make_visible(next_visible: bool) -> void:
 	if _dashboard_instance != null:
-		_dashboard_instance.visible = next_visible
+		_dashboard_instance.visible = next_visible and not _showing_composer
+	if _composer_instance != null:
+		_composer_instance.visible = next_visible and _showing_composer
 #endregion
