@@ -31,9 +31,36 @@ const NAMED_WORD: String = "class_name "
 const SKIPPED: Array[String] = ["res://addons/gut", "res://.godot"]
 
 
+## What the last look found, and whether one has happened.
+##
+## A project with Dialogic, GLoot and QuestSystem installed carries about five
+## hundred scripts that are not anybody's abilities, and looking through all of
+## them again on every press is work nobody asked for. The answer is remembered
+## instead, and thrown away whenever the editor says the filesystem moved.
+static var _remembered: PackedStringArray = PackedStringArray()
+static var _looked: bool = false
+
+
+## Look again next time. Cheap, and correct to call whenever anything might have
+## changed: the cost of forgetting too often is one scan, and the cost of
+## forgetting too rarely is somebody's new ability being invisible.
+static func forget() -> void:
+	_looked = false
+	_remembered = PackedStringArray()
+
+
 ## Every file whose base chain reaches GameplayAbility, sorted so the list a
 ## person sees does not reshuffle itself between two openings.
 static func abilities_in_project() -> PackedStringArray:
+	if not _looked:
+		_remembered = scan()
+		_looked = true
+	return _remembered
+
+
+## The look itself, without the remembering. Separate so a caller that has to
+## know the answer is current can ask for one, and so the two can be compared.
+static func scan() -> PackedStringArray:
 	var known: Dictionary[String, String] = _declared_classes()
 	var settled: Dictionary[String, bool] = {}
 	var found: PackedStringArray = PackedStringArray()

@@ -35,6 +35,7 @@ const MENU_SIZE: Vector2i = Vector2i(520, 420)
 const SCRIPT_FILTER: String = "*.gd"
 const RESOURCE_PREFIX: String = "res://"
 const BROWSE_INSTEAD: String = "Browse…"
+const LOOK_AGAIN: String = "Re-scan abilities"
 const NONE_FOUND: String = (
 	"This project has no abilities yet. A script that extends GameplayAbility "
 	+ "is one; there are six to copy from in addons/GAS_Engine/reference/."
@@ -145,6 +146,13 @@ func _enter_tree() -> void:
 	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
 	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
 
+	# The editor already knows when a file appeared, moved or was deleted, so
+	# the remembered list is dropped on its word rather than on a guess about
+	# how long an answer stays true.
+	EditorInterface.get_resource_filesystem().filesystem_changed.connect(
+		ComposerLibrary.forget
+	)
+
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
 	_make_visible(false)
 
@@ -224,6 +232,7 @@ func _offer_abilities(reason: String) -> void:
 	for at: String in found:
 		menu.add_item(String(at).trim_prefix(RESOURCE_PREFIX))
 	menu.add_separator()
+	menu.add_item(LOOK_AGAIN)
 	menu.add_item(BROWSE_INSTEAD)
 	menu.id_pressed.connect(_on_ability_chosen)
 	menu.close_requested.connect(menu.queue_free)
@@ -237,6 +246,12 @@ func _offer_abilities(reason: String) -> void:
 func _on_ability_chosen(chosen: int) -> void:
 	if chosen >= 0 and chosen < _choices.size():
 		_draw_ability_at(_choices[chosen])
+		return
+	if chosen == _choices.size() + 1:
+		# The list is remembered between openings, so this is the button that
+		# makes an ability written a moment ago appear without restarting.
+		ComposerLibrary.forget()
+		_offer_abilities("")
 		return
 	_ask_for_an_ability()
 
