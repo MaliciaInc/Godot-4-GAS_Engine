@@ -14,7 +14,6 @@ the same defect as a gate that passes without scanning anything.
 from __future__ import annotations
 
 import dataclasses
-from pathlib import Path
 from typing import Any, Sequence
 
 from .gate_io import status_word
@@ -41,13 +40,25 @@ class Report:
     """Everything the shared Markdown renderer needs, as one typed value."""
 
     title: str
-    root: Path
     blocking: Sequence[Any]
     scan_issues: Sequence[str]
     files_scanned: int | None = None
     allow_scan_errors: bool = False
     extra_rows: tuple[str, ...] = ()
     sections: tuple[ReportSection, ...] = ()
+
+
+#: What the Project row says, instead of where this checkout happens to sit.
+#:
+#: The root this used to carry was absolute and resolved, so rendering it
+#: stamped a machine and
+#: a username into every report - and these reports are committed as release
+#: evidence. It also meant the same repository, checked out somewhere else,
+#: produced a different file for an identical run. Every path a report names is
+#: already repository-relative, so the root told a reader nothing and told a
+#: diff something untrue. Sanitising the artefacts afterwards is not the answer
+#: either; a generated artefact has to come out clean.
+PROJECT_ROW = "`<repo>`"
 
 
 def summary_row(label: str, value: Any) -> str:
@@ -66,7 +77,7 @@ def header_lines(report: Report) -> list[str]:
         f"# {report.title}",
         "",
         summary_row("Status", f"**{status_word(report.scan_issues, report.blocking, report.allow_scan_errors)}**"),
-        summary_row("Project", f"`{report.root}`"),
+        summary_row("Project", PROJECT_ROW),
     ]
     if report.files_scanned is not None:
         lines.append(summary_row("Source files scanned", report.files_scanned))

@@ -4,33 +4,33 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# the two generated files are read the way GDScript reads them; the identity gate looks for the word
+# the cue reader asks for the whole name; no receipt carries a machine path
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T23:16:07Z
-# commit-previo: 30813ee461e289cc534253f5b283fe80865d564f
+# date-utc: 2026-09-03T23:50:43Z
+# commit-previo: 94ed9700becb5e439ec4c8098427043075f1d63b
 # files: 24
 82a3ecb02ae2b6f458affbb6ca3aae6c449ad192f7ebc1362fae68e80aa0257c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
-34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
+066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json
 89250cd31ce232a8dbb189d615912b1800f0ab68509381a29f0be82e7ae2cc38  tooling/gates/lib/__init__.py
 890f31353a11028b25bd2f850dda1799192f2eb64ff9c48e0069acd48231f78d  tooling/gates/lib/allowances.py
 058e7e57667470e69695f9fe261b8264ba928d5137a789faaa7a8715db331359  tooling/gates/lib/duplication_matching.py
 a0d725ced54540f49c4dbab405a83e064214d9d2d580a195ff1267d9f903d9bb  tooling/gates/lib/duplication_units.py
 7cb37c1ee226ed0902143cd44bf29ce7de89f93f44aa513f4e523b8806471743  tooling/gates/lib/gate_io.py
-8a6ee82518533091d35ea66d3c9ef1021838c110c98d8b6cc6693a2fd6414ba5  tooling/gates/lib/gate_report.py
+245b3bb8bb6b50f596fb5c712cef68c91371048598c2e7674db45760d7deae2d  tooling/gates/lib/gate_report.py
 c1a1fe2935b0aeb94a5f81c45b4ba4b49576f19d77e5d30eb38be36b13454133  tooling/gates/lib/gdscript_lexing.py
 f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/lib/gdscript_regions.py
 9d669fede258c694727cf24151dd65bd014c29ffd41b888d61f348d1513dbedd  tooling/gates/lib/languages.py
 0c630633581a56b3017da36fc5e807db6d6b710c6f5bf75d6a911771dfa1955f  tooling/gates/lib/loc_regions.py
-3a7e5c169b6ca6785220075126ea7a2ff6a0455fa26ba8463b61fad776c13b36  tooling/gates/loc-gate.py
-5049d71c49ec0f0323ca82e8e4aa48ab2d58537f4adf3a825d61a7670e83fbbe  tooling/gates/magic-string-gate.py
+a3c7d0dc88aa826e4df3a164f535ed9b1f08890bb8cfb6183fa9347863ad18a8  tooling/gates/loc-gate.py
+e81c73d8b53208301944119dc38e02ba8153e6abd392fde00976f586d9c90a06  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
-2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
+1c3e982abdc41c322376e2dd33415fe3a254fa28b7abdd41f41f9fd3a6373cb7  tooling/gates/test-location-gate.py
 019f345fb922a584d02c5d2b521274d630f7a9d14fc3e3fd0076995827bb4014  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
-dbcf49d0a25e438de74f0621d69ed92948aa134a049166b5f3b7a197a4147576  tooling/verify.ps1
+1f767ec0c13b7742de16bde5a7a54a14691b4696ef1b300a5b458ba9a7554cd3  tooling/verify.ps1

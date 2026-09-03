@@ -1,23 +1,23 @@
 RESULT: PASS
 stage:      duplication
-command:    python C:\Users\Edward\Documents\Projectos\GAS_Engine\tooling\gates\run_gate.py duplication C:\Users\Edward\Documents\Projectos\GAS_Engine\artifacts\gates\source-fold-tests
-started:    2026-09-03T23:18:02.0945913Z
-ended:      2026-09-03T23:18:07.8014492Z
-duration_s: 5.707
+command:    python tooling\gates\run_gate.py duplication artifacts\gates\source-fold-tests
+started:    2026-09-03T23:50:58.2437564Z
+ended:      2026-09-03T23:51:03.8040087Z
+duration_s: 5.560
 exit_code:  0
 
 --- stdout ---
 # Duplication Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Project: `<repo>`
 - Source files scanned: 318
 - Blocking findings: 0
 - Scan issues: 0
 - Units scanned: 1312
 - Units by language: gdscript 1278, powershell 4, python 30
 - Findings: 334
-- Elapsed: 5.512s
+- Elapsed: 5.382s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 34 (identifier overlap < 0.55 or fewer than 3 identifiers)
 - Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13327 (raise with --max-pairs)

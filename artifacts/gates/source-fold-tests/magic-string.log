@@ -1,16 +1,16 @@
 RESULT: PASS
 stage:      magic-string
-command:    python C:\Users\Edward\Documents\Projectos\GAS_Engine\tooling\gates\run_gate.py magic-string C:\Users\Edward\Documents\Projectos\GAS_Engine\artifacts\gates\source-fold-tests
-started:    2026-09-03T23:17:52.7692546Z
-ended:      2026-09-03T23:18:02.0931204Z
-duration_s: 9.324
+command:    python tooling\gates\run_gate.py magic-string artifacts\gates\source-fold-tests
+started:    2026-09-03T23:50:49.2217287Z
+ended:      2026-09-03T23:50:58.2423019Z
+duration_s: 9.021
 exit_code:  0
 
 --- stdout ---
 # Magic String Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Project: `<repo>`
 - Source files scanned: 220
 - Blocking findings: 0
 - Scan issues: 0

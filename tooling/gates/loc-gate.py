@@ -298,7 +298,6 @@ def report(result: Result, root: Path, settings: Settings) -> gate_report.Report
     """Project the scan onto the shared report contract."""
     return gate_report.Report(
         title="LOC and Structure Gate",
-        root=root,
         blocking=result.violations,
         scan_issues=result.scan_issues,
         files_scanned=result.files_scanned,

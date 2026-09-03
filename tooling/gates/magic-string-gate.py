@@ -389,7 +389,6 @@ def report(result: Result, root: Path, settings: Settings) -> gate_report.Report
     """Project the scan onto the shared report contract."""
     return gate_report.Report(
         title="Magic String Gate",
-        root=root,
         blocking=range(result.blocking_count),
         scan_issues=result.scan_issues,
         files_scanned=result.files_scanned,

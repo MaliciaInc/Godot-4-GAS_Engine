@@ -1,14 +1,14 @@
 # Duplication Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Project: `<repo>`
 - Source files scanned: 318
 - Blocking findings: 0
 - Scan issues: 0
 - Units scanned: 1312
 - Units by language: gdscript 1278, powershell 4, python 30
 - Findings: 334
-- Elapsed: 5.512s
+- Elapsed: 5.382s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 34 (identifier overlap < 0.55 or fewer than 3 identifiers)
 - Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13327 (raise with --max-pairs)

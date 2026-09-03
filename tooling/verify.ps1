@@ -77,6 +77,20 @@ function Invoke-CheckedProcess {
     # Runs one stage synchronously, mirroring output to the console and to the
     # receipt, and returns its real exit code. A timeout returns a non-zero code
     # after the process tree is killed.
+    #
+    # The command it records is written relative to the repository rather than
+    # as it sits on this machine. These logs are committed as release evidence,
+    # and the absolute form put a username and a local path into every one of
+    # them - and made an identical run in another checkout produce a different
+    # file. The child process below already runs with the repository as its
+    # working directory, so the relative spelling is the command that actually
+    # ran rather than a cleaned-up version of it.
+    #
+    # This explanation lives above the parameter block, not beside the two lines
+    # it belongs to, and that is the LOC gate's doing: its declaration pattern
+    # is a brace-language one, so it cannot find where a PowerShell `param()`
+    # ends and keeps reading to the next `) {` further down the function. Every
+    # comma it passes on the way counts as another parameter, prose included.
     param(
         [Parameter(Mandatory)] [string]   $Stage,
         [Parameter(Mandatory)] [string]   $Executable,
@@ -85,7 +99,9 @@ function Invoke-CheckedProcess {
         [int] $TimeoutSeconds = 300
     )
 
-    $commandLine = $Executable + ' ' + ($Arguments -join ' ')
+    # Relative to the repository - see the note above the parameter block.
+    $repoPrefix = $RepoRoot + [IO.Path]::DirectorySeparatorChar
+    $commandLine = ($Executable + ' ' + ($Arguments -join ' ')).Replace($repoPrefix, '')
     $startedAt = Get-Date
     Write-Banner ($Stage + '  ->  ' + $commandLine)
 
@@ -218,8 +234,17 @@ function Invoke-Verification {
     if ((Invoke-CheckedProcess @seal) -ne 0) { return 2 }
 
     $stages = @(
+        # --buffer: a passing test's output is held and dropped, and only a
+        # failing one's is shown. Without it whatever a test printed landed in
+        # this stage's log, which is committed as release evidence - and two of
+        # them run a gate against a missing path under the user's profile, so
+        # the gate named it and a username reached a receipt. Fixing the two
+        # tests would have left the next one free to do it again.
         @{ Stage = 'gate-self-tests'
-           Arguments = @('-m', 'unittest', 'discover', '-s', 'tooling/gates/tests', '-p', 'test_*.py') },
+           Arguments = @(
+               '-m', 'unittest', 'discover', '--buffer',
+               '-s', 'tooling/gates/tests', '-p', 'test_*.py'
+           ) },
         # Runs before the gates: no gate can see project.godot losing a setting
         # to the editor's rewrite, or declaring an autoload a clean checkout
         # will not have. Both have happened here.

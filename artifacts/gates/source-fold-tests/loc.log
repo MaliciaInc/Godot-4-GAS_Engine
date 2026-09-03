@@ -1,17 +1,17 @@
 RESULT: PASS
 stage:      loc
-command:    python C:\Users\Edward\Documents\Projectos\GAS_Engine\tooling\gates\run_gate.py loc C:\Users\Edward\Documents\Projectos\GAS_Engine\artifacts\gates\source-fold-tests
-started:    2026-09-03T23:17:51.4442571Z
-ended:      2026-09-03T23:17:52.1516199Z
-duration_s: 0.707
+command:    python tooling\gates\run_gate.py loc artifacts\gates\source-fold-tests
+started:    2026-09-03T23:50:47.8222801Z
+ended:      2026-09-03T23:50:48.5835771Z
+duration_s: 0.761
 exit_code:  0
 
 --- stdout ---
 # LOC and Structure Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
-- Source files scanned: 340
+- Project: `<repo>`
+- Source files scanned: 341
 - Blocking findings: 0
 - Scan issues: 0
 

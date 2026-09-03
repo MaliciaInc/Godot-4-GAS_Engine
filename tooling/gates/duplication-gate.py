@@ -224,7 +224,6 @@ def render(result: ScanResult, config: Config, elapsed: float) -> str:
     return gate_report.render_report(
         gate_report.Report(
             title="Duplication Gate",
-            root=config.root,
             blocking=blocking(result, config),
             scan_issues=result.issues,
             files_scanned=result.files_scanned,

@@ -1,7 +1,7 @@
 # Magic String Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
+- Project: `<repo>`
 - Source files scanned: 220
 - Blocking findings: 0
 - Scan issues: 0

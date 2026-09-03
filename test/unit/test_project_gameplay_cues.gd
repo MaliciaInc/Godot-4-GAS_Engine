@@ -122,14 +122,24 @@ func test_a_commented_out_binding_is_not_a_binding() -> void:
 	assert_false(found.has(&"Cue.TakenOut"), "and the one behind a # is not")
 
 
-## And a binding-shaped line that is not in the bindings is not one either.
+## And a binding-shaped line that is not in THE bindings is not one either.
 ##
-## The same hole seen from the other side: an example in a doc comment above the
-## declaration, and a second dictionary below it, both read as bindings. A file
-## a person is invited to edit will eventually contain both.
-func test_only_what_is_inside_the_bindings_counts() -> void:
+## Everything here is binding-shaped and only one of them is a binding. The doc
+## comment above the declaration and the dictionary below it were read as
+## bindings; `BINDINGS_BACKUP` was read as the declaration itself, because the
+## reader matched a prefix and `const BINDINGS_BACKUP` starts with
+## `const BINDINGS` - so it took a backup copy for the real thing, stopped at
+## its closing brace, and never reached the one GDScript uses.
+##
+## Three roads to the same disagreement, in one file, because a file a person is
+## invited to edit will eventually hold all of it.
+func test_only_the_real_bindings_body_counts() -> void:
 	var found: Dictionary[StringName, String] = _bindings_in([
 		'## For example: &"Cue.FromTheDocs": preload("%s")' % A_SCENE_THAT_EXISTS,
+		"const BINDINGS_BACKUP: Dictionary[StringName, PackedScene] = {",
+		'	&"Cue.FromTheBackup": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		"}",
+		"",
 		GameplayCueGenerator.BINDINGS_DECLARATION,
 		'	&"Cue.Real": preload("%s"),' % A_SCENE_THAT_EXISTS,
 		"}",
@@ -139,5 +149,6 @@ func test_only_what_is_inside_the_bindings_counts() -> void:
 		"}",
 	])
 
-	assert_eq(found.keys(), [&"Cue.Real"] as Array[StringName], "only the body counts")
+	var only_the_real_one: Array[StringName] = [&"Cue.Real"]
+	assert_eq(found.keys(), only_the_real_one, "the bindings, not what resembles them")
 #endregion

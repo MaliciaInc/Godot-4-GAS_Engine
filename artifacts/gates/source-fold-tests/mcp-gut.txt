@@ -1,5 +1,5 @@
 RESULT: PASS
-SOURCE: f08ce9351f6494df77c6767813e482c08d7679992708aadced3bba53c0f952d5
+SOURCE: a59ea91bafcca91f27799d08ec94e986a3d6cd28bf6897b6b0b02c2de20e0d72
 GAS_ENGINE_GUT_RESULT: PASS passed=37475 failed=0 pending=0 orphans=0
 scripts: 84 loaded, 84 on disk; tests: 1093 passing, 0 risky
-five new contracts, each proved red first: a commented cue binding, a binding outside the BINDINGS body, a note at the end of a tag line, a failed fold that must not be seeded over, and a fresh project that must be
+the cue reader now asks for the whole BINDINGS name, not a prefix of it
