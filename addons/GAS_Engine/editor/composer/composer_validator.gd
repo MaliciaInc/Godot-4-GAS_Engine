@@ -150,16 +150,20 @@ static func _named_after(graph: ComposerGraph, node: ComposerNode, word: String)
 		if other.span.first_line <= node.span.last_line:
 			continue
 		for line: String in other.source_text:
-			if _names(line, word):
+			if names(line, word):
 				return true
 	return false
 
 
 ## Whether `line` uses `word` as a whole name.
 ##
+## Public because the reader asks the same question when it decides whether a
+## statement depends on a local. Two answers to one question is two chances to
+## disagree about whether a cable belongs there.
+##
 ## A name does not appear inside a longer one, which is the difference between a
 ## check and a coincidence.
-static func _names(line: String, word: String) -> bool:
+static func names(line: String, word: String) -> bool:
 	var at: int = line.find(word)
 	while at >= 0:
 		var after: int = at + word.length()
