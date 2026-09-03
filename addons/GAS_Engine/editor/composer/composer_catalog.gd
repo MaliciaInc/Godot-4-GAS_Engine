@@ -22,7 +22,6 @@
 ## @meta_license: MIT
 class_name ComposerCatalog extends RefCounted
 
-const FLOW: StringName = &"Flow"
 const ABILITY: StringName = &"Ability"
 const TASKS: StringName = &"Tasks"
 const EFFECTS: StringName = &"Effects"
@@ -35,8 +34,13 @@ const VALUES: StringName = &"Values"
 
 ## In the order a person reads them: what shapes a method first, then what it
 ## does, then what it reads.
+##
+## There was a `Flow` here, for Start, Branch, End and Sequence. No method can
+## ever land in it: flow is statements, and a statement is not a call. It sat on
+## the palette as a category that would stay empty for ever - which reads as a
+## tool that has not finished rather than one that draws branches as branches.
 const GROUPS: Array[StringName] = [
-	FLOW, ABILITY, TASKS, EFFECTS, TAGS, TARGETING, EVENTS, CUES, CONTEXT, VALUES,
+	ABILITY, TASKS, EFFECTS, TAGS, TARGETING, EVENTS, CUES, CONTEXT, VALUES,
 ]
 
 ## The classes whose public calls the Composer offers.

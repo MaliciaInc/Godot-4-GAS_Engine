@@ -434,3 +434,17 @@ func _activate_ability() -> void:
 	assert_eq(graph.nodes[1].fields[0].label, "#1", "so its argument keeps its position")
 	assert_eq(graph.diagnostics.size(), 0, "and it is not accused of anything")
 #endregion
+
+
+## Every category the palette shows has something in it.
+##
+## A category that can never fill is one the palette advertises for ever. There
+## was a `Flow` group for Start, Branch and End, and no method can land in it -
+## flow is statements, and a statement is not a call. It read as a tool that had
+## not finished rather than one that draws a branch as a branch.
+func test_no_category_on_the_palette_is_permanently_empty() -> void:
+	for group: StringName in ComposerCatalog.groups():
+		assert_gt(
+			ComposerCatalog.entries(group).size(), 0,
+			"%s has calls in it" % group
+		)
