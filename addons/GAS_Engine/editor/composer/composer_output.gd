@@ -16,7 +16,6 @@ const NODE_WORD: String = "node"
 const NOTE_WORD: String = "note"
 const READ_ONLY: String = "Read-only — "
 const NOT_DRAWN: String = "Nothing to draw"
-const PICK_ONE: String = "Open an ability…"
 const HOW_TO_OPEN: String = (
 	"Open an ability in the Script editor, then choose Ability Composer again. "
 	+ "There are six to start from in addons/GAS_Engine/reference/."
@@ -26,9 +25,6 @@ const COUNT_INSET: float = 190.0
 
 signal row_picked(node_id: StringName, line: int)
 
-## Somebody took the panel up on its suggestion. Who owns a file dialog is
-## not this panel's business - it says what is wanted and the plugin acts.
-signal open_requested
 
 var _rows: VBoxContainer = null
 var _edge: ColorRect = null
@@ -116,17 +112,6 @@ func show_refusal(reason: String) -> void:
 	_rows.add_child(
 		ComposerPanel.label(HOW_TO_OPEN, ComposerTheme.TEXT_FAINT, ComposerTheme.FONT_VALUE)
 	)
-
-	# Telling a person to go and open a file, from a screen they reached through
-	# a menu, is telling them the tool cannot do the thing they just asked for.
-	var pick: Button = Button.new()
-	pick.text = PICK_ONE
-	pick.flat = true
-	pick.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	pick.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.ACCENT)
-	pick.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
-	pick.pressed.connect(func _asked() -> void: open_requested.emit())
-	_rows.add_child(pick)
 
 
 func _row(found: ComposerGraph.Diagnostic, source_path: String) -> Control:

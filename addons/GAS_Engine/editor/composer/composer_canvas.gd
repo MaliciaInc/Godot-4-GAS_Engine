@@ -47,6 +47,9 @@ signal node_dropped(moved: StringName, onto: StringName)
 ## Somebody asked a card what can be done to it.
 signal menu_requested(node_id: StringName, at: Vector2)
 
+## A call was dragged in from the palette and let go over the canvas.
+signal node_requested(type_id: StringName)
+
 var _zoom: float = 1.0
 var _graph: ComposerGraph = null
 var _placements: Dictionary[StringName, Vector2i] = {}
@@ -287,6 +290,31 @@ func _joined(swept: Array[StringName]) -> Array[StringName]:
 		if not next.has(id):
 			next.append(id)
 	return next
+
+
+## Whether what is being dragged is a call this canvas can take.
+func _can_drop_data(_at: Vector2, data: Variant) -> bool:
+	if _graph == null or not _graph.is_editable() or typeof(data) != TYPE_DICTIONARY:
+		return false
+	var carried: Dictionary = data
+	return carried.has(ComposerCatalog.DRAGGED_CALL)
+
+
+## Take it, and put the selection where it landed.
+##
+## Selecting the card under the pointer is the whole of what the drop has to
+## say about position: the Composer already writes a new statement after
+## whatever is selected, so a drop onto a card lands after that card and a drop
+## onto empty canvas lands at the end. One insertion path, two ways in.
+func _drop_data(at: Vector2, data: Variant) -> void:
+	var carried: Dictionary = data
+	var call_id: StringName = carried[ComposerCatalog.DRAGGED_CALL]
+	var onto: StringName = _card_at(at)
+	var landing: Array[StringName] = []
+	if not onto.is_empty():
+		landing.append(onto)
+	_pick(landing)
+	node_requested.emit(call_id)
 
 
 func picked() -> Array[StringName]:
