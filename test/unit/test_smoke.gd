@@ -74,14 +74,14 @@ func test_the_plugin_will_not_claim_an_autoload_the_project_declares() -> void:
 	)
 
 
-func test_the_seeded_authoring_resources_load() -> void:
-	var cues: Resource = ResourceLoader.load(
-		GASEngineProjectSettings.get_registry_cue_path()
-	)
-	assert_true(cues is GameplayCueRegistry, "the seeded cue registry is a real registry")
+func test_the_seeded_authoring_files_are_there() -> void:
 	assert_gt(
 		GameplayTagGenerator.tags_in_file().size(), 0,
-		"and the project's tags are in the file that holds them"
+		"the project's tags are in the file that holds them"
+	)
+	assert_true(
+		FileAccess.file_exists(GASEngineProjectSettings.get_generated_cue_script_path()),
+		"and its cue bindings have a file, empty or not"
 	)
 
 

@@ -308,29 +308,29 @@ func seed_default_registries() -> void:
 
 
 func _seed_cue_registry() -> void:
-	var path: String = GASEngineProjectSettings.get_registry_cue_path()
-	if FileAccess.file_exists(path):
-		return
-
-	var absolute_dir: String = ProjectSettings.globalize_path(path.get_base_dir())
-	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(absolute_dir)
-	if mkdir_error != OK and mkdir_error != ERR_ALREADY_EXISTS:
-		push_error("GAS_Engine: could not create cue registry directory: " + path.get_base_dir())
-		return
-
-	var registry: GameplayCueRegistry = GameplayCueRegistry.new()
-	var save_error: Error = ResourceSaver.save(registry, path)
-	if save_error != OK:
-		push_error("GAS_Engine: could not seed cue registry: " + path)
+	if not GameplayCueGenerator.generate_cues_file(_bindings_to_seed()):
+		push_error("GAS_Engine: could not write the project's gameplay cues.")
 
 
-## Make sure the project has a tags file, and fold in a registry from before
-## the tags lived in one.
-##
-## The fold is a one-time thing that only matters in the case the old two-file
-## arrangement created: somebody edited the registry resource by hand and the
-## generated script never caught up. Their tags are not lost for having been
-## added the way the tool allowed.
+## What the cues file should hold: whatever it already holds, plus anything a
+## registry resource from before the bindings lived in a file still names.
+func _bindings_to_seed() -> Dictionary[StringName, String]:
+	var found: Dictionary[StringName, String] = GameplayCueGenerator.bindings_in_file()
+	var legacy: String = GASEngineProjectSettings.get_legacy_registry_cue_path()
+	if not FileAccess.file_exists(legacy):
+		return found
+
+	var registry: GameplayCueRegistry = load(legacy) as GameplayCueRegistry
+	if registry == null:
+		return found
+	for entry: GameplayCueEntry in registry.entries:
+		if entry == null or entry.tag == &"" or entry.scene == null:
+			continue
+		if not found.has(entry.tag):
+			found[entry.tag] = entry.scene.resource_path
+	return found
+
+
 func _seed_tag_registry() -> void:
 	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
 	registry.tags.assign(GameplayTagGenerator.tags_in_file())
