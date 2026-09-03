@@ -47,6 +47,43 @@ static func arrange(graph: ComposerGraph) -> Dictionary[StringName, Vector2i]:
 
 ## Node ids, sorted. Every walk below starts from this so that nothing depends
 ## on the order the reader happened to append nodes in.
+## Grid coordinates become pixels, each column as wide as its widest card.
+##
+## A fixed step assumed every card had one width. They do not: a card is as wide
+## as the longest thing it has to say, so a column holding a wide one has to be
+## wider or the next column lands on top of it.
+##
+## `widths` is allowed to be short, and is on the first pass - a card has no
+## measured size until a frame has gone by. What is missing counts as the
+## minimum, and the second pass, once every card has been fitted, uses what they
+## turned out to be.
+static func origins(
+	placements: Dictionary[StringName, Vector2i],
+	widths: Dictionary[StringName, float] = {}
+) -> Dictionary[StringName, Vector2]:
+	var widest: Dictionary[int, float] = {}
+	for id: StringName in placements:
+		var column: int = placements[id].x
+		var width: float = widths[id] if widths.has(id) else ComposerTheme.NODE_MIN_WIDTH
+		widest[column] = maxf(widest[column] if widest.has(column) else 0.0, width)
+
+	var columns: Array[int] = []
+	columns.assign(widest.keys())
+	columns.sort()
+
+	var starts: Dictionary[int, float] = {}
+	var running: float = 0.0
+	for column: int in columns:
+		starts[column] = running
+		running += widest[column] + ComposerTheme.COLUMN_GAP
+
+	var found: Dictionary[StringName, Vector2] = {}
+	for id: StringName in placements:
+		var at: Vector2i = placements[id]
+		found[id] = Vector2(starts[at.x], float(at.y) * ComposerTheme.LANE_STEP)
+	return found
+
+
 static func _sorted_ids(graph: ComposerGraph) -> Array[StringName]:
 	var ids: Array[StringName] = []
 	for node: ComposerNode in graph.nodes:

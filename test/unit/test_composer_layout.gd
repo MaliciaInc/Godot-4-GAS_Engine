@@ -190,3 +190,18 @@ func test_an_empty_graph_places_nothing() -> void:
 	assert_eq(ComposerLayout.arrange(ComposerGraph.new()).size(), 0, "nothing to place")
 	assert_eq(ComposerLayout.arrange(null).size(), 0, "and null is not a crash")
 #endregion
+
+
+## Columns make room for what they hold, or the next one lands on top.
+func test_a_wide_card_pushes_the_next_column_clear_of_it() -> void:
+	var placements: Dictionary[StringName, Vector2i] = {
+		&"wide": Vector2i(0, 0), &"next": Vector2i(1, 0),
+	}
+	var widths: Dictionary[StringName, float] = {&"wide": 400.0, &"next": 232.0}
+
+	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(placements, widths)
+
+	assert_gte(
+		placed[&"next"].x, 400.0 + ComposerTheme.COLUMN_GAP,
+		"the second column starts past the first card, not on top of it"
+	)

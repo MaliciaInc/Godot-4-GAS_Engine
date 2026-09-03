@@ -114,8 +114,9 @@ func show_graph(graph: ComposerGraph) -> void:
 		return
 
 	_placements = ComposerLayout.arrange(graph)
+	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(_placements)
 	for node: ComposerNode in graph.nodes:
-		_add_card(node)
+		_add_card(node, placed[node.id])
 
 	# Cards have no measured height until a frame has passed, and every wire
 	# endpoint depends on where a card's edges ended up.
@@ -124,7 +125,7 @@ func show_graph(graph: ComposerGraph) -> void:
 	ComposerWiring.draw(_graph, _cards, _wire_layer, _bead_layer)
 
 
-func _add_card(node: ComposerNode) -> void:
+func _add_card(node: ComposerNode, at: Vector2) -> void:
 	var bloom: TextureRect = ComposerTheme.glow_rect(
 		ComposerTheme.glow(ComposerTheme.ACCENT, ComposerTheme.BLOOM_STRENGTH)
 	)
@@ -132,18 +133,10 @@ func _add_card(node: ComposerNode) -> void:
 	_blooms[node.id] = bloom
 
 	var card: ComposerCard = ComposerCard.new()
-	card.position = _origin_of(node.id)
+	card.position = at
 	_card_layer.add_child(card)
 	card.build(node)
 	_cards[node.id] = card
-
-
-## Grid coordinates become pixels here and nowhere else.
-func _origin_of(id: StringName) -> Vector2:
-	var at: Vector2i = _placements.get(id, Vector2i.ZERO)
-	return Vector2(
-		float(at.x) * ComposerTheme.COLUMN_STEP, float(at.y) * ComposerTheme.LANE_STEP
-	)
 
 
 ## Trim every card to its content, then hang its glow on the result.
@@ -152,9 +145,17 @@ func _origin_of(id: StringName) -> Vector2:
 ## short wide card spills far above and below it and stops looking like that
 ## card's light.
 func _fit_cards() -> void:
+	var widths: Dictionary[StringName, float] = {}
+	for id: StringName in _cards:
+		_cards[id].fit()
+		widths[id] = _cards[id].size.x
+
+	# Placed again now that the cards have a size: the first pass could only
+	# guess, and a column is only as wide as what it turned out to hold.
+	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(_placements, widths)
 	for id: StringName in _cards:
 		var card: ComposerCard = _cards[id]
-		card.fit()
+		card.position = placed[id]
 		var bloom: TextureRect = _blooms[id]
 		var reach: Vector2 = card.size * ComposerTheme.BLOOM_SCALE
 		bloom.position = card.position + card.size * 0.5 - reach * 0.5

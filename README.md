@@ -393,7 +393,9 @@ Certified integration versions and third-party dependency information are docume
 
 The Composer is a visual editor for abilities that is a **view of the code**, not a second way to author them. There is no JSON, no cached graph, no `.tres`, no interpreter: the `.gd` file is the ability, and the canvas is read out of it every time it is opened. Opening an ability and saving it without changing anything gives the file back byte for byte, comments and formatting included.
 
-Open it from **Project → Tools → Ability Composer**, which draws whatever ability the script editor currently has open. The `Code` chip takes you back to the same file as text.
+Open it from **Project → Tools → Ability Composer**. It finds the abilities in your project for you — every script whose base chain reaches `GameplayAbility`, however many classes deep — and offers them; if you have exactly one, it simply opens it. Whatever the Script editor has open is drawn straight away when it is an ability, so moving between the two views costs nothing. The `Code` chip takes you back to the same file as text.
+
+The list is kept between openings and refreshed whenever the editor reports a change on disk, with **Re-scan abilities** in the picker for anything that misses and **Browse** for a file you would rather point at yourself.
 
 ### What it can draw
 
@@ -417,6 +419,15 @@ Everything else opens **read-only**, with the line and the reason on the Output 
 - two calls side by side, such as `open() + shut()` — neither one is the statement.
 
 A local must carry a written type. `var level := 1.0` is refused where `var level: float = 1.0` is drawn, because a port shows the type of what flows through it and inferring one here would let the canvas and the file disagree until somebody ran the game.
+
+### Putting a node down
+
+Click a call in the palette to write it after whatever is selected, or drag it
+onto the canvas and drop it where you want it — a drop onto a card writes after
+that card, a drop onto empty canvas writes at the end. Space opens a finder that
+searches the same vocabulary by typing.
+
+Click a group's header to open it, and click it again to close it.
 
 ### What is on the palette
 

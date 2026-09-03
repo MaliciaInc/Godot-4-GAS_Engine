@@ -52,7 +52,9 @@ func test_cards_are_cut_to_their_content_rather_than_left_at_a_placeholder() -> 
 
 	for card: ComposerCard in _cards():
 		assert_gt(card.size.y, ComposerTheme.PAD_Y * 2.0, "%s has real height" % card.node_id)
-		assert_eq(card.size.x, ComposerTheme.NODE_WIDTH, "and the one width every card has")
+		assert_gte(
+			card.size.x, ComposerTheme.NODE_MIN_WIDTH, "and at least the narrowest width"
+		)
 
 
 ## A card with two fields is taller than one with none. Without this, a height
