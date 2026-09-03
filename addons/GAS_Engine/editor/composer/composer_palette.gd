@@ -75,6 +75,11 @@ func _rebuild() -> void:
 				ComposerTheme.FONT_VALUE
 			)
 		)
+		# A row of two labels is not a button. Nothing was connected to this, so
+		# open_group() could only ever be called from a test and a person could
+		# not open or close a single group in the palette.
+		head.mouse_filter = Control.MOUSE_FILTER_STOP
+		head.gui_input.connect(_on_head_input.bind(group))
 		_list.add_child(head)
 
 		if not open:
@@ -102,7 +107,32 @@ func _entry_row(key: StringName) -> Control:
 	# failed at the connection, which is why every palette click was refused by
 	# Godot before it reached anything that could have reported it.
 	button.pressed.connect(func _picked() -> void: node_picked.emit(key))
+	# Dragged as well as pressed. A palette beside a canvas invites a drag, and
+	# one that only answers clicks reads as broken rather than as different.
+	button.set_drag_forwarding(_carry.bind(key), Callable(), Callable())
 	return button
+
+
+## What leaves the palette when a row is dragged.
+##
+## The preview is the row's own words, so what is under the cursor is what was
+## picked up rather than a shape standing in for it.
+func _carry(_at: Vector2, key: StringName) -> Variant:
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(key)
+	set_drag_preview(
+		ComposerPanel.label(
+			entry.title if entry != null else String(key),
+			ComposerTheme.TEXT, ComposerTheme.FONT_VALUE
+		)
+	)
+	return carried_call(key)
+
+
+## What one end of the drag hands the other, and the only part of it a test can
+## hold: Godot refuses set_drag_preview() outside a live drag, so the preview is
+## the one line here no suite can reach.
+static func carried_call(key: StringName) -> Dictionary:
+	return {ComposerCatalog.DRAGGED_CALL: key}
 
 
 ## Open a group, closing whichever was open. One at a time, because a palette
@@ -123,6 +153,25 @@ func open_group(group: StringName) -> void:
 		return
 	_open = group
 	_rebuild()
+
+
+## Open this group, or close it when it is the one already open.
+##
+## Closing leaves every group shut, which is a state worth being able to reach:
+## the shape of the vocabulary is easier to read with nothing expanded over it.
+func toggle_group(group: StringName) -> void:
+	if group != _open:
+		open_group(group)
+		return
+	_open = &""
+	_rebuild()
+
+
+func _on_head_input(event: InputEvent, group: StringName) -> void:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return
+	toggle_group(group)
 
 
 func open_group_name() -> StringName:

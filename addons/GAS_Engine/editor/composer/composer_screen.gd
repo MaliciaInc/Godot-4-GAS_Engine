@@ -58,7 +58,6 @@ func _ready() -> void:
 	add_child(back)
 
 	_top = ComposerTopBar.new()
-	_top.size = Vector2(size.x, TOP_BAR)
 	_top.code_requested.connect(_on_code_pressed)
 	add_child(_top)
 
@@ -85,9 +84,11 @@ func _ready() -> void:
 	# panel to one that has not been made yet reads as done and is not.
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_canvas.node_dropped.connect(_on_node_dropped)
+	# A call dragged in from the palette is inserted exactly as a clicked one is.
+	_canvas.node_requested.connect(_on_node_picked)
 	_canvas.menu_requested.connect(_on_menu_requested)
 	_output.row_picked.connect(_on_row_picked)
-	_output.open_requested.connect(func _asked() -> void: open_requested.emit())
+	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
 	_inspector.value_edited.connect(_on_value_edited)
 	_palette.node_picked.connect(_on_node_picked)
 
@@ -421,6 +422,7 @@ func inspector() -> ComposerInspector:
 func _arrange() -> void:
 	if _palette == null:
 		return
+	_top.size = Vector2(size.x, TOP_BAR)
 	var body: float = size.y - TOP_BAR
 	var right: float = _inspector.occupied_width()
 

@@ -15,6 +15,7 @@ class_name ComposerTopBar extends Control
 const CODE_TAB: String = "Code"
 const COMPOSER_TAB: String = "Ability Composer"
 const NO_ABILITY: String = "No ability open"
+const OPEN_ONE: String = "Open an ability…"
 const DIVIDER: String = "│"
 
 const HEIGHT: float = 54.0
@@ -27,8 +28,14 @@ const TITLE_AT: float = 300.0
 ## Asked to be taken to the same file, as text.
 signal code_requested
 
+## Asked for an ability to open. The bar says which one is open, so the way
+## to open another belongs here - not buried in the diagnostics panel, where
+## it was one clipped line at the bottom of the window.
+signal open_requested
+
 var _title: Label = null
 var _path: Label = null
+var _open: Button = null
 
 
 func _ready() -> void:
@@ -58,6 +65,26 @@ func _ready() -> void:
 	_path = ComposerPanel.label("", ComposerTheme.TEXT_FAINT, ComposerTheme.FONT_LABEL)
 	_path.position = Vector2(TITLE_AT, ComposerTheme.S4 + 14.0)
 	add_child(_path)
+
+	_open = Button.new()
+	_open.text = OPEN_ONE
+	_open.flat = true
+	_open.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.ACCENT)
+	_open.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
+	_open.pressed.connect(func _asked() -> void: open_requested.emit())
+	add_child(_open)
+
+	resized.connect(_place_open)
+	_place_open()
+
+
+## Kept against the right edge, which is where the bar ends however wide it is.
+func _place_open() -> void:
+	if _open == null:
+		return
+	_open.position = Vector2(
+		size.x - _open.size.x - ComposerTheme.S3, ComposerTheme.S3
+	)
 
 
 ## Say which ability is open, and where it lives.

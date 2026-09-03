@@ -99,6 +99,11 @@ const TASK_CLASS: StringName = &"GameplayAbilityTask"
 ## What separates one script's call from another's with the same name.
 const KEY_JOIN: String = "#"
 
+## What a call being dragged out of the palette is carried under. Declared
+## here because the palette writes it and the canvas reads it, and a payload
+## key spelled twice is a drop that never matches and never says why.
+const DRAGGED_CALL: StringName = &"gas_engine_call"
+
 const NO_SCRIPT: String = "there is nothing at %s"
 const NOT_A_SCRIPT: String = "%s is not a script"
 const NOT_THERE: String = "%s() is not on %s"
