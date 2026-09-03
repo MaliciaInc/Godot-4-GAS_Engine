@@ -8,6 +8,176 @@ It is developed as a standalone reusable Godot addon.
 
 See [License](#license) for the exact distinction.
 
+## Requirements
+
+| | |
+|---|---|
+| Godot | **4.7.2** |
+| Language | GDScript |
+| Dependencies | none |
+
+The exact patch version is named rather than "4.7" because GDScript warnings promoted to errors can change between patch releases, and this framework is strictly typed throughout.
+
+## Installation
+
+1. Copy the `addons/GAS_Engine/` folder into your project's `addons/` folder.
+2. **Project → Project Settings → Plugins**, and tick **GAS_Engine**.
+
+Enabling the plugin adds one autoload, `GameplayCueManager`. If your project already declares an autoload by that name, GAS_Engine leaves your declaration alone and warns rather than overwriting it.
+
+That is the whole installation. There is no build step, and nothing needs configuring before the next section works.
+
+## Quick start: a fireball in five minutes
+
+Two scripts and a scene. Everything below is plain GDScript that runs the moment you save it.
+
+### 1. Your first AttributeSet
+
+An **AttributeSet** is everything about a character that a number can express. Declare each attribute as an `@export`; the engine finds them by reflection, so there is no registration step and no list to keep in sync.
+
+```gdscript
+class_name HeroAttributes extends AttributeSet
+
+const HEALTH: StringName = &"health"
+const MAX_HEALTH: StringName = &"max_health"
+
+@export var health: AttributeData = AttributeData.new(100.0)
+@export var max_health: AttributeData = AttributeData.new(100.0)
+
+
+## Fresh instances per set. Without this the `@export` defaults are evaluated
+## once and every character built from this script shares one health pool -
+## the whole party dies the moment anyone does.
+func _init() -> void:
+	health = AttributeData.new(100.0)
+	max_health = AttributeData.new(100.0)
+
+
+## Asked before a durable write lands, so an overkill hit is clamped at the
+## source instead of after several systems have already seen a negative pool.
+func pre_attribute_base_change(attribute_name: StringName, proposed: float) -> float:
+	return _bounded(attribute_name, proposed)
+
+
+## Asked again after modifiers compose, so a `max_health` buff that expires
+## cannot leave `health` standing above the ceiling it just lost.
+func pre_attribute_change(attribute_name: StringName, proposed: float) -> float:
+	return _bounded(attribute_name, proposed)
+
+
+func _bounded(attribute_name: StringName, value: float) -> float:
+	if attribute_name == HEALTH:
+		return clampf(value, 0.0, max_health.current_value)
+	return maxf(value, 0.0)
+```
+
+The `_init()` block is not boilerplate you can skip. It is the most common first mistake with this framework.
+
+### 2. Your first GameplayEffect
+
+A **GameplayEffect** is what an ability lands. It is built in code, from numbers the ability already declares:
+
+```gdscript
+func _payload() -> GameplayEffect:
+	var how_much: GameplayScalableFloat = GameplayScalableFloat.new()
+	how_much.value = -damage
+
+	var magnitude: GameplayScalableMagnitude = GameplayScalableMagnitude.new()
+	magnitude.value = how_much
+
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = HeroAttributes.HEALTH
+	modifier.operation = GameplayEffectModifier.Operation.ADD
+	modifier.magnitude = magnitude
+
+	var effect: GameplayEffect = GameplayEffect.new()
+	effect.policy = GameplayEffect.DurationPolicy.INSTANT
+	effect.modifiers = [modifier] as Array[GameplayEffectModifier]
+	return effect
+```
+
+The idea worth carrying forward: **a modifier is a contribution, not a write.** A `+5` attack buff does not set `attack` to `15`; it registers a contribution the engine folds in while the effect lives and withdraws when it ends. Nothing has to remember to undo anything, which is why a stack of buffs and debuffs expiring in any order still lands on the right number.
+
+`INSTANT` applies its arithmetic once and vanishes. `DURATION`, `INFINITE` and `TURN_BASED` are the other three policies, and only those can grant tags.
+
+### 3. Your first Ability
+
+A **GameplayAbility** is a `Node`. It pays for itself, decides who it reaches, and applies its payload:
+
+```gdscript
+class_name Fireball extends GameplayAbility
+
+## What this takes off a target's health.
+@export var damage: float = 30.0
+
+## Who it is aimed at. A real game decides targets outside the ability; a group
+## keeps this example to one file.
+@export var enemies_group: StringName = &"enemies"
+
+
+func _activate_ability() -> bool:
+	# Paid first. Nothing has happened yet, so a refusal costs nothing to undo.
+	if not commit_ability().is_ok():
+		return false
+
+	var struck: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
+	for enemy: Node in get_tree().get_nodes_in_group(enemies_group):
+		var theirs: AbilitySystemComponent = AbilitySystemLocator.find_for_node(enemy)
+		if theirs != null:
+			struck.append_node(theirs)
+
+	apply_effect_to_targets(_payload(), struck)
+	end_ability()
+	return true
+
+
+func _payload() -> GameplayEffect:
+	pass  # exactly as in step 2
+```
+
+Save it as a scene — one `Node` with this script attached, `fireball.tscn` — and set `damage` in the Inspector. **The scene carries the numbers; the script carries the behaviour.** That is how every ability in this framework is authored.
+
+An ability never subtracts a cost itself. It calls `commit_ability()`, and the engine refuses the whole activation when the cost cannot be paid, so an ability nobody can afford never half-happens.
+
+> **One trap worth knowing now.** If you give an ability a cost or a cooldown, build it in a property setter or in `_init()`, never in `_ready()`. Granting an ability snapshots its definition immediately after `instantiate()`, and `_ready()` runs later — a cost built there never reaches the engine, the ability silently reads as free, and `commit_ability()` has nothing to refuse.
+
+### 4. Give it to a character
+
+A character is any node with an `AbilitySystemComponent` **as a child named `AbilitySystemComponent`**. The component asks its parent what effects and cues act on, so it is never an orphan.
+
+```gdscript
+extends Node
+
+const FIREBALL: PackedScene = preload("res://fireball.tscn")
+
+var asc: AbilitySystemComponent = null
+
+
+func _ready() -> void:
+	asc = AbilitySystemComponent.new()
+	asc.name = "AbilitySystemComponent"
+	asc.attribute_sets = [HeroAttributes.new()] as Array[AttributeSet]
+	add_child(asc)
+
+	var handle: GameplayAbilityHandle = asc.give_ability(FIREBALL)
+	asc.ability_runtime.try_activate(handle)
+```
+
+Put the same component on a second node, add that node to the `enemies` group, and the fireball takes it from 100 health to 70.
+
+Read a value back with `asc.get_attribute_current(&"health")`, and watch it move by connecting `asc.attribute_changed`.
+
+### Why none of this is a `.tres`
+
+Effects, costs and cooldowns are built in GDScript from numbers authored on the ability's scene. There is deliberately no authored-resource alternative sitting beside them: two ways to say what an ability does is two places to look when it does the wrong thing, and the hand-written one is the one nothing can check.
+
+### Where to go from here
+
+- `addons/GAS_Engine/reference/` holds six complete abilities, written by hand and commented: an instant hit, a paid strike, a timed buff, an aimed-then-confirmed blast, an area sweep, and one that fires cues.
+- The **Ability Composer** below opens any ability as a graph and writes your edits back to the same file.
+- The rest of this document explains what each subsystem guarantees, and why.
+
+
 ### Project Model
 
 GAS_Engine is **source-available** and **free for use in games**.

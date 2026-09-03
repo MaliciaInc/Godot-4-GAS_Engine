@@ -42,8 +42,12 @@ PASSED = "PASS"
 
 def covered_files() -> list[str]:
 	"""Every tracked file the driven stages load. Sorted, so the hash is stable."""
+	# --others as well as the index: a script that exists but has not been added
+	# yet is still a script the suite loaded, and a fingerprint blind to it
+	# reports evidence as current over code nobody ran. --exclude-standard keeps
+	# ignored files out, so a stray tool artifact does not age a good receipt.
 	listed = subprocess.run(
-		["git", "ls-files", "--", *COVERED],
+		["git", "ls-files", "--cached", "--others", "--exclude-standard", "--", *COVERED],
 		capture_output=True, text=True, check=True,
 	)
 	return sorted(line for line in listed.stdout.splitlines() if line.strip())

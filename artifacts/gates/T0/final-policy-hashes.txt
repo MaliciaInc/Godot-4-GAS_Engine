@@ -4,15 +4,15 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Test-EngineEvidence returned its own stdout: PowerShell folds uncaptured output into a function's return value, so the verdict was an array ending in the answer and every caller read it as a pass. The guard did nothing on its first run.
+# One literal declared: the git flag engine_evidence.py and gate_io.py each spell for their own listing.
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T15:20:57Z
-# commit-previo: a4de79ad8d3009f71c67455bc7823bfa5fc65831
+# date-utc: 2026-09-03T15:59:18Z
+# commit-previo: eae8a1529f17ac19f8655f7e31a081bcbe0d4850
 # files: 24
-92062462ab1ad75c0300aaa5cd7c5c08c6bafeaff26478e644a709cf5712fb28  tooling/.quality-gates.json
+e5d16939eb597f2c517b6c4f30787a99a110a46603589149ea974ce0b1de7c85  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
-d98454aa9d273aaeb42fa5c7d5fcdaec2626ac2a19d64535d086ed1084eb5fb1  tooling/engine_evidence.py
+26a46b6695d7425dacf442640bf743e71197003dfe1442ead1afe4a91125b34c  tooling/engine_evidence.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json
 89250cd31ce232a8dbb189d615912b1800f0ab68509381a29f0be82e7ae2cc38  tooling/gates/lib/__init__.py

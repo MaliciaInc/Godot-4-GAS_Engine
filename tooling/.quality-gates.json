@@ -224,6 +224,10 @@
         "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
       },
       {
+        "literal": "--exclude-standard",
+        "reason": "The git flag that keeps ignored files out of a listing, spelled independently by engine_evidence.py and by gate_io.py. Both are their own git callers - engine_evidence.py is a standalone script outside the gates shared plumbing, and importing that plumbing would drag the gates CLI into a script that is not one."
+      },
+      {
         "literal": "*.gd",
         "reason": "The pathspec engine_evidence.py hands git to list the scripts the driven stages load, spelled independently of project_invariants.py's own scans. Both are standalone scripts outside the gates' shared plumbing, and neither can import from the other without dragging one script's concerns into the other's."
       },
