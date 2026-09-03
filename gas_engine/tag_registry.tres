@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="GameplayTagRegistry" format=3 uid="uid://v6qfj4hb72j7"]
-
-[ext_resource type="Script" uid="uid://cbna3i315ffo1" path="res://addons/GAS_Engine/gameplay_tag/gameplay_tag_registry.gd" id="1_din1t"]
-
-[resource]
-script = ExtResource("1_din1t")
-tags = Array[StringName]([&"Example.Ability.Arrow.Impact", &"Example.Ability.Arrow.Shoot", &"Example.Ability.Heal.Triggered", &"Example.Ability.Poison.Applied", &"Example.Ability.Poison.Cast", &"Example.Event.Damage.Critical", &"Example.Event.Damage.Missed", &"Example.Event.Damage.Normal", &"Example.Event.Defend.Hit", &"Example.State.Cooldown.Arrow", &"Example.State.Cooldown.Poison"])
