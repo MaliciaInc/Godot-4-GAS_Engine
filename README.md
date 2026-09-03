@@ -8,6 +8,18 @@ It is developed as a standalone reusable Godot addon.
 
 See [License](#license) for the exact distinction.
 
+### Project Model
+
+GAS_Engine is **source-available** and **free for use in games**.
+
+GAS_Engine is maintained centrally by **MaliciaInc**. Bug reports and feature requests are handled through GitHub Issues. External modifications are not part of the supported distribution model.
+
+### Networking
+
+GAS_Engine does **not** provide built-in network replication, client-side prediction, reconciliation, or other multiplayer networking infrastructure.
+
+Networking is intentionally outside the scope of the framework and may be implemented separately according to the needs of each project.
+
 ## Proven in a real game
 
 A suite proves a framework against itself. It cannot prove that a game built on
