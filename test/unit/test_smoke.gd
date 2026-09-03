@@ -78,11 +78,11 @@ func test_the_seeded_authoring_resources_load() -> void:
 	var cues: Resource = ResourceLoader.load(
 		GASEngineProjectSettings.get_registry_cue_path()
 	)
-	var tags: Resource = ResourceLoader.load(
-		GASEngineProjectSettings.get_registry_tag_path()
-	)
 	assert_true(cues is GameplayCueRegistry, "the seeded cue registry is a real registry")
-	assert_true(tags is GameplayTagRegistry, "and so is the seeded tag registry")
+	assert_gt(
+		GameplayTagGenerator.tags_in_file().size(), 0,
+		"and the project's tags are in the file that holds them"
+	)
 
 
 ## The generated constants are reachable by name from ordinary code.

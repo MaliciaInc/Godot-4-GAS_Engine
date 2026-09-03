@@ -14,8 +14,8 @@ extends GutTest
 
 const GASEngineProjectSettings = preload("res://addons/GAS_Engine/utilities/project_settings.gd")
 
-const SETTING: String = GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY
-const SCRATCH_REGISTRY: String = "user://test_gameplay_tag_tree_registry.tres"
+const SETTING: String = GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT
+const SCRATCH_REGISTRY: String = "user://test_gameplay_tag_tree_tags.gd"
 
 const NO_FILTER: String = ""
 
@@ -43,10 +43,12 @@ func after_each() -> void:
 
 
 func _built(tags: Array[StringName], filter: String = NO_FILTER) -> Tree:
-	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
-	registry.tags = tags
-	assert_eq(ResourceSaver.save(registry, SCRATCH_REGISTRY), OK, "the scratch registry saved")
+	# Written as the file the tags now live in, which is what the tree reads.
 	ProjectSettings.set_setting(SETTING, SCRATCH_REGISTRY)
+	var out: FileAccess = FileAccess.open(SCRATCH_REGISTRY, FileAccess.WRITE)
+	assert_not_null(out, "the scratch tags file opened")
+	out.store_string(GameplayTagGenerator.render_tags_source(tags))
+	out.close()
 
 	var tree: Tree = Tree.new()
 	add_child_autofree(tree)
@@ -141,7 +143,7 @@ func test_a_filter_matching_nothing_leaves_an_empty_tree() -> void:
 
 #region A registry that is not there
 func test_a_missing_registry_is_reported_rather_than_assumed_empty() -> void:
-	ProjectSettings.set_setting(SETTING, "user://test_gameplay_tag_tree_absent.tres")
+	ProjectSettings.set_setting(SETTING, "user://test_gameplay_tag_tree_absent.gd")
 	var tree: Tree = Tree.new()
 	add_child_autofree(tree)
 	assert_false(

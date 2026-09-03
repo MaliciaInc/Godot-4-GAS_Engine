@@ -324,38 +324,40 @@ func _seed_cue_registry() -> void:
 		push_error("GAS_Engine: could not seed cue registry: " + path)
 
 
+## Make sure the project has a tags file, and fold in a registry from before
+## the tags lived in one.
+##
+## The fold is a one-time thing that only matters in the case the old two-file
+## arrangement created: somebody edited the registry resource by hand and the
+## generated script never caught up. Their tags are not lost for having been
+## added the way the tool allowed.
 func _seed_tag_registry() -> void:
-	var path: String = GASEngineProjectSettings.get_registry_tag_path()
-	var registry: GameplayTagRegistry = null
+	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
+	registry.tags.assign(GameplayTagGenerator.tags_in_file())
+	var found: int = registry.tags.size()
 
-	if FileAccess.file_exists(path):
-		registry = load(path) as GameplayTagRegistry
-		if registry == null:
-			push_error("GAS_Engine: tag registry is not a GameplayTagRegistry: " + path)
-			return
-	else:
-		registry = GameplayTagRegistry.new()
+	for tag: StringName in _tags_from_a_legacy_registry():
+		registry.add_tag(String(tag))
+	if registry.tags.is_empty():
 		for tag: String in EXAMPLE_TAGS:
-			var result: String = registry.add_tag(tag)
-			if result.begins_with(GameplayTagRegistry.ERROR_PREFIX):
-				push_error("GAS_Engine: could not seed example tag: " + result)
-				return
+			registry.add_tag(tag)
 
-		var absolute_dir: String = ProjectSettings.globalize_path(path.get_base_dir())
-		var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(absolute_dir)
-		if mkdir_error != OK and mkdir_error != ERR_ALREADY_EXISTS:
-			push_error("GAS_Engine: could not create tag registry directory: " + path.get_base_dir())
-			return
+	if registry.tags.size() == found and found > 0:
+		return
+	if not GameplayTagGenerator.generate_tags_file(registry.tags):
+		push_error("GAS_Engine: could not write the project's gameplay tags.")
 
-		var save_error: Error = ResourceSaver.save(registry, path)
-		if save_error != OK:
-			push_error("GAS_Engine: could not seed tag registry: " + path)
-			return
 
-	var generated_path: String = GASEngineProjectSettings.get_generated_tag_script_path()
-	if not FileAccess.file_exists(generated_path):
-		if not GameplayTagGenerator.generate_tags_file(registry.tags):
-			push_error("GAS_Engine: could not seed generated gameplay tag script.")
+## Read once, folded in, and never written to again.
+func _tags_from_a_legacy_registry() -> Array[StringName]:
+	var found: Array[StringName] = []
+	var path: String = GASEngineProjectSettings.get_legacy_registry_tag_path()
+	if not FileAccess.file_exists(path):
+		return found
+	var registry: GameplayTagRegistry = load(path) as GameplayTagRegistry
+	if registry != null:
+		found.assign(registry.tags)
+	return found
 #endregion
 
 

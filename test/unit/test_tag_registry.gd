@@ -235,13 +235,9 @@ func test_add_tag_rolls_back_registry_when_generated_script_write_fails() -> voi
 
 	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
 	registry.tags = [&"State.Ready"]
-	var registry_path: String = "user://gas_engine_atomic_tag_registry.tres"
-	assert_eq(ResourceSaver.save(registry, registry_path), OK)
-	# ResourceSaver.save() does not stamp resource_path onto the resource in
-	# this Godot version, and _persist() treats an empty resource_path as
-	# "nothing to do" - without this, the write failure below is never
-	# reached and the test cannot exercise the rollback it names.
-	registry.resource_path = registry_path
+	# A working copy writes nothing, which would mean the failure below is never
+	# reached and the rollback this test names is never exercised.
+	registry.speaks_for_project = true
 
 	expect_engine_error()
 	var result: String = registry.add_tag("State.Burning")
@@ -259,11 +255,6 @@ func test_add_tag_rolls_back_registry_when_generated_script_write_fails() -> voi
 	assert_true(result.begins_with(GameplayTagRegistry.ERROR_PREFIX))
 	assert_eq(registry.tags, [&"State.Ready"])
 
-	var reloaded: GameplayTagRegistry = load(registry_path) as GameplayTagRegistry
-	assert_not_null(reloaded)
-	assert_eq(reloaded.tags, [&"State.Ready"])
-
 	ProjectSettings.set_setting(setting_name, previous_output)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(registry_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(blocked_output))
 #endregion

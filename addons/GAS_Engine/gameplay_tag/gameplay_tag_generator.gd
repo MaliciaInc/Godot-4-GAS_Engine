@@ -13,6 +13,12 @@
 class_name GameplayTagGenerator extends RefCounted
 
 ## The line printed once a generated file is written.
+const CONST_WORD: String = "const "
+const TAG_OPEN: String = '&"'
+const TAG_CLOSE: String = '"'
+const NEWLINE: String = "
+"
+
 const GENERATED_REPORT: String = "GAS_Engine: generated %s with %d constants."
 
 ## Said out loud rather than printed: a designer who added a tag and got no
@@ -57,6 +63,48 @@ static func render_tags_source(tags: Array[StringName]) -> String:
 
 
 ## Write the constants file for these tags.
+## The tags this project has, read back out of the file that holds them.
+##
+## The file used to be a copy of a registry resource, which meant two places a
+## tag could live and one of them going stale the moment somebody edited the
+## other by hand. It is the registry now: written here, read here, and nothing
+## else to keep in step with it.
+##
+## Read as text rather than loaded. The file declares a global `class_name`, so
+## loading a second copy of it - which is exactly what a test does, and what any
+## caller pointing at another path would do - collides with the one Godot has
+## already registered. Reading also costs no compile, and the format being
+## parsed is the one rendered eight lines further down.
+static func tags_in_file() -> Array[StringName]:
+	var found: Array[StringName] = []
+	var path: String = GASEngineProjectSettings.get_generated_tag_script_path()
+	if not FileAccess.file_exists(path):
+		return found
+
+	for line: String in FileAccess.get_file_as_string(path).split(NEWLINE):
+		var tag: String = _tag_named_in(line.strip_edges())
+		if not tag.is_empty():
+			found.append(StringName(tag))
+	# Not sorted here. The file was written in order and reading it back must
+	# hand that order over unchanged - and `Array[StringName].sort()` would not
+	# even be the right order to impose: StringName compares by its own internal
+	# ordering, not alphabetically, so sorting here silently reshuffled the
+	# project's tags on the first read.
+	return found
+
+
+## The tag a constant line names, or nothing when the line names none.
+static func _tag_named_in(line: String) -> String:
+	if not line.begins_with(CONST_WORD):
+		return ""
+	var opened: int = line.find(TAG_OPEN)
+	var closed: int = line.rfind(TAG_CLOSE)
+	if opened < 0 or closed <= opened + TAG_OPEN.length() - 1:
+		return ""
+	var from: int = opened + TAG_OPEN.length()
+	return line.substr(from, closed - from)
+
+
 static func generate_tags_file(tags: Array[StringName]) -> bool:
 	var output_path: String = GASEngineProjectSettings.get_generated_tag_script_path()
 	# The directory does not exist in a fresh checkout. Creating it is the

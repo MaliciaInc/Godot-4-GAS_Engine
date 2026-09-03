@@ -92,7 +92,6 @@ static func init_project_settings() -> void:
 			push_error("GAS_Engine: failed to save migrated project settings.")
 	_init_generated_tag_script_path()
 	_init_registry_cue()
-	_init_registry_tag()
 	_init_editor_tag_property_editor()
 
 
@@ -179,7 +178,12 @@ static func get_registry_cue_path() -> String:
 	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY, DEFAULT_PATH_CUES_REGISTRY)
 
 
-static func get_registry_tag_path() -> String:
+## Where a tag registry resource used to live.
+##
+## Still read, and never written: a project that set this before the tags moved
+## into their own script has one, and its tags are folded in once. Not declared
+## any more, so it does not appear in Project Settings for a file nothing keeps.
+static func get_legacy_registry_tag_path() -> String:
 	return _setting_or_default(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY, DEFAULT_PATH_TAGS_REGISTRY)
 
 
@@ -218,14 +222,6 @@ static func _init_registry_cue() -> void:
 		PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY,
 		DEFAULT_PATH_CUES_REGISTRY,
 		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY)
-	)
-
-
-static func _init_registry_tag() -> void:
-	_declare(
-		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY,
-		DEFAULT_PATH_TAGS_REGISTRY,
-		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY)
 	)
 
 

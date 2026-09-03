@@ -27,6 +27,14 @@ const SAVE_FAILED: String = "GAS_Engine: could not save the tag registry to %s."
 
 @export var tags: Array[StringName] = []
 
+## Whether this registry is the project's, rather than somebody's working copy.
+##
+## Only the project's registry writes. A copy made in memory - by a test, by a
+## caller about to try something - must not rewrite everybody's tags, and the
+## old rule for that was "was it loaded from a file"; there is no file to load
+## from now, so the loader says so instead.
+var speaks_for_project: bool = false
+
 ## Compiled once for the whole class, not once per registry.
 ##
 ## The grammar has one owner, and everything that validates a tag - the
@@ -121,35 +129,25 @@ func _compare_tags(left: StringName, right: StringName) -> bool:
 ## Returns whether both landed. The generator used to be called and its answer
 ## dropped, so a failed write left the tag in memory, no constant on disk, and
 ## the caller believing it had succeeded.
-## Save this registry, and keep the generated constants in step with it.
+## Write the project's tags.
 ##
-## A registry nothing has saved anywhere is somebody's working copy, and it
-## does not regenerate the project's constants: doing so would replace every
-## constant in the project with whatever that copy happened to hold. Only the
-## registry that lives on disk speaks for the project.
+## One file, so one write and one rollback. This used to save a resource and
+## then generate a script from it, which is two places a tag could live and one
+## chance for them to disagree - and they did, the moment anybody edited the
+## resource by hand. The script is the registry now.
+##
+## A working copy writes nothing. Doing so would replace every tag in the
+## project with whatever that copy happened to hold.
 func _persist(previous_tags: Array[StringName]) -> bool:
-	if resource_path.is_empty():
+	if not speaks_for_project:
 		return true
-
-	var save_error: Error = ResourceSaver.save(self, resource_path)
-	if save_error != OK:
-		tags.assign(previous_tags)
-		emit_changed()
-		push_error(SAVE_FAILED % resource_path)
-		return false
-
 	if GameplayTagGenerator.generate_tags_file(tags):
 		return true
 
 	tags.assign(previous_tags)
 	emit_changed()
-
-	var rollback_registry_error: Error = ResourceSaver.save(self, resource_path)
-	var rollback_generated: bool = GameplayTagGenerator.generate_tags_file(tags)
-	if rollback_registry_error != OK or not rollback_generated:
-		push_error(
-			"GameplayTagRegistry: rollback failed after generated tag script write failure."
-		)
+	if not GameplayTagGenerator.generate_tags_file(tags):
+		push_error("GameplayTagRegistry: rollback failed after a failed write.")
 	return false
 
 
