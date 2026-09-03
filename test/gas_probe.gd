@@ -27,6 +27,9 @@ const HEAL: String = "Heal"
 const FOCUS: String = "Focus"
 
 ## Enough rounds to reach the far side of a four-turn cooldown.
+## What Godot calls the display server when there is not one.
+const HEADLESS: String = "headless"
+
 const MAX_ROUNDS: int = 9
 const SETTLE: float = 2.5
 ## Wall-clock only. Turns are counted, so nothing about the fight changes.
@@ -43,6 +46,9 @@ var _seen_round: int = 0
 ## Round number -> the roster state read at the top of it.
 var _log: Dictionary[int, String] = {}
 var _notes: PackedStringArray = PackedStringArray()
+
+## How many pictures were not taken because there was nothing to photograph.
+var _shots_skipped: int = 0
 var _finished: bool = false
 var _victory: bool = false
 ## Set once, the first time the punched enemy is seen below full health.
@@ -72,6 +78,11 @@ func _ready() -> void:
 	print("\n===== PROBE NOTES =====")
 	for note: String in _notes:
 		print("[probe] note: %s" % note)
+	if _shots_skipped > 0:
+		# Said out loud. A run that quietly took no pictures looks exactly
+		# like a run that took them, and the difference matters to whoever
+		# asked for them as evidence.
+		print("[probe] note: %d screenshots skipped - no renderer" % _shots_skipped)
 	get_tree().quit(0)
 
 
@@ -336,7 +347,20 @@ func _collect(node: Node, found: Array[Node]) -> void:
 
 func _shoot(label: String) -> void:
 	await _sweep_menus()
+	if not _can_draw():
+		# Headless has no renderer, so `frame_post_draw` never comes. Awaiting it
+		# does not fail - it waits forever, which is worse: the probe stops
+		# without saying anything and the run has to be killed from outside.
+		# There is nothing to photograph here, so it says so and carries on.
+		_shots_skipped += 1
+		return
 	await RenderingServer.frame_post_draw
 	var image: Image = get_viewport().get_texture().get_image()
-	image.save_png("%s/%s.png" % [SHOTS, label])
+	if image != null:
+		image.save_png("%s/%s.png" % [SHOTS, label])
+
+
+## Whether there is anything on screen to photograph.
+static func _can_draw() -> bool:
+	return DisplayServer.get_name() != HEADLESS
 #endregion
