@@ -9,7 +9,7 @@
 ## supports both has to mirror them.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GameplayAbility
 
 @export var damage: GameplayEffect

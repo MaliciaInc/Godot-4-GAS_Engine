@@ -16,7 +16,7 @@
 ## asked again on the next frame, and the frame after that, for as long as it
 ## lived - which was for ever, because nothing here takes it down.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

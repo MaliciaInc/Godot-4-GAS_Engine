@@ -37,10 +37,6 @@ $PassBanner = 'GAS_ENGINE_VERIFY_PASS'
 $ResultPrefix = 'RESULT:'
 $PassWord = 'PASS'
 
-$EngineEvidence = [ordered]@{
-    'godot-import' = 'mcp-godot-import.txt'
-    'gut-suite'    = 'mcp-gut.txt'
-}
 
 
 function Get-TimeoutSeconds {
@@ -159,29 +155,22 @@ function Invoke-CheckedProcess {
 
 
 function Test-EngineEvidence {
-    # Stages 3 and 4 are executed through the Godot MCP servers, not here. This
-    # reads their verdicts. Absent evidence is a failure, not a skip: a Full run
-    # that never touched the engine must not be able to report success.
+    # Two stages are driven from outside this chain and leave a receipt behind.
+    # Reading one is a small contract - which files, what a verdict looks like,
+    # what it must have run against - and spelling that contract here as well
+    # would be two implementations free to drift into agreeing on a wrong
+    # answer. tooling/engine_evidence.py both writes and checks it, so this
+    # asks and believes the exit code.
     param([string] $ReceiptDirectory)
 
-    $allPassed = $true
-    foreach ($stage in $EngineEvidence.Keys) {
-        $path = Join-Path $ReceiptDirectory $EngineEvidence[$stage]
-        if (-not (Test-Path -LiteralPath $path)) {
-            Write-Host ($stage + ': MISSING engine evidence at ' + $path)
-            $allPassed = $false
-            continue
-        }
-        $first = (Get-Content -LiteralPath $path -TotalCount 1)
-        $verdict = ($first -replace [regex]::Escape($ResultPrefix), '').Trim()
-        if ($verdict -ne $PassWord) {
-            Write-Host ($stage + ': engine evidence reports ' + $verdict)
-            $allPassed = $false
-            continue
-        }
-        Write-Host ($stage + ': ' + $PassWord + ' (from ' + $EngineEvidence[$stage] + ')')
-    }
-    return $allPassed
+    # Write-Host, not the pipeline: anything this function emits uncaptured
+    # becomes part of what it returns, and a non-empty array is true. Returned
+    # plainly, the verdict below would be a list with the answer at the end of
+    # it, and every caller would read the list as a pass.
+    $reported = (& python 'tooling/engine_evidence.py' $ReceiptDirectory 2>&1)
+    $trusted = ($LASTEXITCODE -eq 0)
+    foreach ($line in $reported) { Write-Host $line }
+    return $trusted
 }
 
 

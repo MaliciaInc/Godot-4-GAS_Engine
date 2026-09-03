@@ -5,7 +5,7 @@
 ## and AbilitySystemComponent, so a catalog that could hold only one of them
 ## could not draw the other - and this is the same shape, from outside.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends RefCounted
 
 var spent: float = 0.0

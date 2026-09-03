@@ -7,7 +7,7 @@
 ## honestly.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 @abstract
 class_name GameplayMagnitude extends Resource
 

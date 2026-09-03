@@ -6,7 +6,7 @@
 ## writer that fails either does not damage files loudly - it damages them
 ## quietly, and the damage is found when an ability misbehaves in a game.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const PATH: String = "res://abilities/fireball.gd"

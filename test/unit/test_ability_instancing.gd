@@ -2,7 +2,7 @@
 ## granted; PER_EXECUTION makes a fresh one per activation, so several casts
 ## of the same ability can run at once without sharing state.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

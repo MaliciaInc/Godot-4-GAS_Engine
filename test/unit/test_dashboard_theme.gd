@@ -11,7 +11,7 @@
 ## Headless is exactly that unsynced state - `Engine.is_editor_hint()` is false
 ## here - so these run against the real failure without standing up an editor.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const TREE_SELECTED: String = "selected"

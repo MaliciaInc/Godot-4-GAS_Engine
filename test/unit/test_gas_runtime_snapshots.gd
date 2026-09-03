@@ -4,7 +4,7 @@
 ## from what the runtime actually holds, not to test the runtime itself
 ## again.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

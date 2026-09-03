@@ -6,7 +6,7 @@
 ## `false`. Staying open here does not depend on any field surviving that
 ## trip at all.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ChannelingAbility extends GameplayAbility
 
 ## Held open by the test until it decides this activation is done.

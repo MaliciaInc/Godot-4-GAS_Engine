@@ -6,7 +6,7 @@
 ## complete the same quest again, forever. The last test in this file is the one
 ## that matters most: it builds exactly that configuration on purpose.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

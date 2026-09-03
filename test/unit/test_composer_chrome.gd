@@ -4,7 +4,7 @@
 ## describing the same fact agree, and that a panel says plainly when it has
 ## nothing to show. Both are failures a person meets late and trusts least.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Sample = preload("res://test/fixtures/composer_sample_graph.gd")

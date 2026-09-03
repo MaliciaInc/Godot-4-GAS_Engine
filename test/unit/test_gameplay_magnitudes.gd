@@ -6,7 +6,7 @@
 ## already covered in test_gameplay_scalable_float.gd and (through a real
 ## modifier) test_modifier_magnitudes.gd; this file does not repeat them.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

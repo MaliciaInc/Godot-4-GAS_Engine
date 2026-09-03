@@ -15,7 +15,7 @@
 ## belongs to which value; this only draws the answer.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerInspector extends Control
 
 const TITLE: String = "INSPECTOR"

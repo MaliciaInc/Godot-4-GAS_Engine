@@ -4,7 +4,7 @@
 ## cancel" and "hold to charge, release to fire" are the subclass's business -
 ## so a test can only see whether routing worked by subclassing and counting.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ProbeAbility extends GameplayAbility
 
 ## Emitted by the test to let a channelled activation finish.

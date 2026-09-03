@@ -16,7 +16,7 @@
 ## built its class cache, and this project has to parse on a checkout that has
 ## never had one.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends RefCounted
 
 const CueManagerScript = preload("res://addons/GAS_Engine/managers/gameplay_cue_manager.gd")

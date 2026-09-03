@@ -11,7 +11,7 @@
 ## its Output panel. Collapsing them would mean a person who asked to see their
 ## ability got a dialog saying no and nothing on screen.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const REFERENCE: String = "res://addons/GAS_Engine/reference/instant_damage.gd"

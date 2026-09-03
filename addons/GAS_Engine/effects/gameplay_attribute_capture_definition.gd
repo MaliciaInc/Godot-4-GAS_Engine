@@ -6,7 +6,7 @@
 ## autocomplete rather than a string a consumer might misspell differently.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAttributeCaptureDefinition extends Resource
 
 ## Whose attribute this reads: the instigator of the effect, or whoever it is

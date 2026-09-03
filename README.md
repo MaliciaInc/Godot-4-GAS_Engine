@@ -387,7 +387,7 @@ GAS_Engine source is publicly readable, but the Community Use License reserves m
 
 ### Third-party material
 
-Third-party software or historical third-party portions, where present, retain their own applicable license terms. Those notices are documented separately in `THIRD_PARTY.md` and do not make the root GAS_Engine project MIT-licensed.
+Third-party software, where present, retains its own applicable license terms. Those notices are documented separately in `THIRD_PARTY.md` and do not relicense GAS_Engine itself.
 
 ## Copyright
 

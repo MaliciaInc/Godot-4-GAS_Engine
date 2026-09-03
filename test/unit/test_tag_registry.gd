@@ -5,7 +5,7 @@
 ## mangles or refuses is a tag gameplay can never match, and the mismatch shows
 ## up far from here as a query that quietly returns nothing.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 ## Somewhere to write that nothing tracks. The project's own generated file

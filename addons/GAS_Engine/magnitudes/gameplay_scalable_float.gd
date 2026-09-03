@@ -5,7 +5,7 @@
 ## how to turn a level into a value.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayScalableFloat extends Resource
 
 @export var value: float = 0.0

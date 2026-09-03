@@ -10,7 +10,7 @@
 ## global class cache exists on a checkout that was never imported.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayCueParams extends RefCounted
 
 ## This script's own type, preloaded rather than named.

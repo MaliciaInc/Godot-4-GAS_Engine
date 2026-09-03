@@ -5,7 +5,7 @@
 ## comes back with no nodes rather than with some of them. A partial graph is
 ## the dangerous outcome, because it looks complete.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const PATH: String = "res://abilities/fireball.gd"

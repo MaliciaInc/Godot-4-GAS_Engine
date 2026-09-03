@@ -6,7 +6,7 @@
 ## without one.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayRaycastRequest2D extends RefCounted
 
 var from: Vector2 = Vector2.ZERO

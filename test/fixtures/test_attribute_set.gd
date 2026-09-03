@@ -13,7 +13,7 @@
 ## maximum, the excess is lost from the base and reapplying the buff does not
 ## bring it back. Health that was only ever borrowed does not become durable.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 @tool
 class_name TestAttributeSet extends AttributeSet
 

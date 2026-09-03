@@ -4,7 +4,7 @@
 ## allowed to touch. Everything else a real quest carries - objectives, rewards,
 ## its own state machine - belongs to the addon that owns it.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FakeQuest extends RefCounted
 
 var id: int = 0

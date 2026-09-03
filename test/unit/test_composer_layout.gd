@@ -7,7 +7,7 @@
 ## means a person cannot recognise their own ability between two opens, and the
 ## second means every edit throws away the map they had in their head.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Sample = preload("res://test/fixtures/composer_sample_graph.gd")

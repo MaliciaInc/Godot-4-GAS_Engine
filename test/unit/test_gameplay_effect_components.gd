@@ -1,7 +1,7 @@
 ## The GameplayEffectComponent framework: hook order, preparation/discard,
 ## preflight refusal atomicity, and the six concrete components Task 8 adds.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

@@ -5,7 +5,7 @@
 ## preceded it would fire the moment the player started charging.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityTaskWaitInput extends GameplayAbilityTask
 
 

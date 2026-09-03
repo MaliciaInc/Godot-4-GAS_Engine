@@ -5,7 +5,7 @@
 ## `item_equipped` and found it still empty would grant nothing and report
 ## success.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FakeGlootSlot extends Node
 
 signal item_equipped()

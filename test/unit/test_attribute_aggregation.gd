@@ -9,7 +9,7 @@
 ## upstream's delta model gave whichever of the two the array happened to
 ## produce.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

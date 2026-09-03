@@ -4,7 +4,7 @@
 ## than approximated. The tests moved; none were duplicated, because two
 ## copies of an assertion drift the first time either is tuned.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

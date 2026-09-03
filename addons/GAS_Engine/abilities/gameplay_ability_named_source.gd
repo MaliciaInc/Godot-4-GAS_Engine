@@ -2,7 +2,7 @@
 ## quest id, or any other identity a bridge already tracks its own way.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAbilityNamedSource extends GameplayAbilitySource
 
 var id: StringName = &""

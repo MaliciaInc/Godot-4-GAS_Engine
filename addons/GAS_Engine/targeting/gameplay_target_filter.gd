@@ -10,7 +10,7 @@
 ## service that is keeping the running total applies it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTargetFilter extends RefCounted
 
 ## The candidate must have all of these.

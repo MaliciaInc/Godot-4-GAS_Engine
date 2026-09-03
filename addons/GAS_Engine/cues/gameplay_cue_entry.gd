@@ -4,8 +4,8 @@
 ## instantiated or pooled when a specific cue tag is executed.
 ##
 ## @meta_addon: GAS_Engine Version 1 (See plugin version for exact version)
-## @meta_author: YulRun (https://YulRun.Dev)
-## @meta_license: MIT
+## @meta_author: MaliciaInc
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 @icon("res://addons/GAS_Engine/icons/gas_engine_asc.svg")

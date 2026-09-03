@@ -12,7 +12,7 @@
 ## place a broken resolver would be caught, and a function nothing calls with
 ## a bad shape is not the same as a function that cannot be called with one.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")

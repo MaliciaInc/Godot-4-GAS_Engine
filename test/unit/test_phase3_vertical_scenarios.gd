@@ -7,7 +7,7 @@
 ## Split into single-feature tests, each would still pass while the joins
 ## between them failed.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

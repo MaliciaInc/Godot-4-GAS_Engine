@@ -6,7 +6,7 @@
 ## understand builds a graph that looks complete, and the writer then deletes
 ## the skipped line from the file.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const ENTRY: String = "func _activate_ability() -> void:"

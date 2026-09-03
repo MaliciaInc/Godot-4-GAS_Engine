@@ -5,7 +5,7 @@
 ## carry several catalogues for several kinds of wearer.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GlootGasEquipmentCatalog extends Resource
 
 @export var grants: Array[GlootGasEquipmentGrant] = []

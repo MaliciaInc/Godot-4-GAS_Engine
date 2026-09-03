@@ -9,7 +9,7 @@
 ## it came from, which is the one thing a person cannot work out from the canvas.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerTopBar extends Control
 
 const CODE_TAB: String = "Code"

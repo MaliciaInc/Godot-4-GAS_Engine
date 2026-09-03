@@ -8,7 +8,7 @@
 ## `matches_tag_naming` is static, so this asks it directly rather than standing
 ## up an EditorInspectorPlugin the editor is the only thing that can drive.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Plugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")

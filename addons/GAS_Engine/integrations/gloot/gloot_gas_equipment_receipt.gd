@@ -8,7 +8,7 @@
 ## what was intended.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GlootGasEquipmentReceipt extends RefCounted
 
 var prototype_id: StringName = &""

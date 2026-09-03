@@ -12,7 +12,7 @@
 ## the file parses, that the hooks it declares really override the ones
 ## AttributeSet declares, and that the clamps it writes clamp.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Writer = preload("res://addons/GAS_Engine/editor/attribute_set_script_writer.gd")

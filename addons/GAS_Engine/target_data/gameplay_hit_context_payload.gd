@@ -3,7 +3,7 @@
 ## redeclaring its fields a second time.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayHitContextPayload extends GameplayEffectContextPayload
 
 ## Immutable once populated by whoever builds this payload, exactly like a

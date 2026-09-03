@@ -5,7 +5,7 @@
 ## overwrote the first and the effect silently did half its job. The key is the
 ## modifier's index inside `effect_def.modifiers`, stable for the spec's life.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

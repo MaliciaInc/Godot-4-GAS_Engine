@@ -8,7 +8,7 @@
 ## rather than dropped or run unbounded in one frame.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityTaskRepeat extends GameplayAbilityTask
 
 ## Same cap as GameplayEffectScheduler.MAX_PERIODIC_CATCH_UP_TICKS_PER_FRAME -

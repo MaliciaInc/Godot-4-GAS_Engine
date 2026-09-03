@@ -2,7 +2,7 @@
 ## while it is active, retiring them per grant's own removal policy - reusing
 ## Task 4's grant pipeline exactly, never a second validator.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

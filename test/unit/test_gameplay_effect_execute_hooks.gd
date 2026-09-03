@@ -7,7 +7,7 @@
 ## DURATION/INFINITE contribution never does, because it never stages a base
 ## write at all.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

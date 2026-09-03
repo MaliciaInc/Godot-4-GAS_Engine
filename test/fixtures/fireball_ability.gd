@@ -10,7 +10,7 @@
 ## caller-supplied SetByCaller value, and Fase 3's own RPG-cast scenario
 ## needs one.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FireballAbility extends GameplayAbility
 
 var payload: GameplayEffect = null

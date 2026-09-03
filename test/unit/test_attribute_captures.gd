@@ -7,7 +7,7 @@
 ## everything" need the real pipeline, so those go through Factory.apply()
 ## and apply_effect_spec_to_target() instead.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

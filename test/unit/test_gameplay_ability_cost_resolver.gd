@@ -5,7 +5,7 @@
 ## snapshot. This file proves the boundary each GameplayAbilityCost entry has
 ## to clear before any of that arithmetic runs at all.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

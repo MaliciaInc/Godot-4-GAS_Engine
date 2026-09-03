@@ -5,7 +5,7 @@
 ## or wakes a passive, is worse than a crash: the world moved and the ledger
 ## says it did not.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

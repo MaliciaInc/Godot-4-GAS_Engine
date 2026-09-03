@@ -10,7 +10,7 @@
 ## Every playback goes through the real GameplayCueManager autoload, with a
 ## recording cue installed under a tag by CueProbe.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

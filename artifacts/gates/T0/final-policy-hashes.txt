@@ -4,14 +4,15 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Composer context menu verbs that collide with an icon key and a name suffix
+# Test-EngineEvidence returned its own stdout: PowerShell folds uncaptured output into a function's return value, so the verdict was an array ending in the answer and every caller read it as a pass. The guard did nothing on its first run.
 #
 # python: 3.14.6
-# date-utc: 2026-09-02T23:24:52Z
-# commit-previo: 05fac32a37ab4e1c33f05a3fc1b3ad82039d8740
-# files: 23
-f12765e7bbbecb674446670a7fceca32b1f7f40967f9f7d03f08a6bd2af7f0f3  tooling/.quality-gates.json
+# date-utc: 2026-09-03T15:20:57Z
+# commit-previo: a4de79ad8d3009f71c67455bc7823bfa5fc65831
+# files: 24
+92062462ab1ad75c0300aaa5cd7c5c08c6bafeaff26478e644a709cf5712fb28  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
+d98454aa9d273aaeb42fa5c7d5fcdaec2626ac2a19d64535d086ed1084eb5fb1  tooling/engine_evidence.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json
 89250cd31ce232a8dbb189d615912b1800f0ab68509381a29f0be82e7ae2cc38  tooling/gates/lib/__init__.py
@@ -28,8 +29,8 @@ f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/
 5049d71c49ec0f0323ca82e8e4aa48ab2d58537f4adf3a825d61a7670e83fbbe  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
-031af0ce46e2ba5a6513ab093117053ff7ce03178d66366b301146220be222c8  tooling/product_identity.py
+139a74abf256811f46aaaa7fb1850c465378a88149bc77ecba33f93f6ea1a28a  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
-5d462e78928dbfeb8fabd321b5576d7b282a2a0d13b6609782230a4f22e0eccf  tooling/verify.ps1
+dbcf49d0a25e438de74f0621d69ed92948aa134a049166b5f3b7a197a4147576  tooling/verify.ps1

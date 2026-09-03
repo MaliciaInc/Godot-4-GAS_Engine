@@ -6,7 +6,7 @@
 ## you stand still for.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GameplayAbility
 
 ## HAS_DURATION. It runs on after this ability has already finished.

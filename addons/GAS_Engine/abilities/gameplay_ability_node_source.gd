@@ -1,7 +1,7 @@
 ## A grant caused by an ordinary scene-tree Node - a weapon, a caster, a trap.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAbilityNodeSource extends GameplayAbilitySource
 
 var node: Node = null

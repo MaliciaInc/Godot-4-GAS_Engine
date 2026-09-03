@@ -9,7 +9,7 @@
 ## Bodies need a physics frame before the server knows about them, so every test
 ## that queries awaits one first.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const AttributeSetScript = preload("res://test/fixtures/test_attribute_set.gd")

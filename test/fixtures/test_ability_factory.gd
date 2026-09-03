@@ -11,7 +11,7 @@
 ## GameplayAbility subclass follows: configuration lives in the scene,
 ## observation happens on the running Node.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name TestAbilityFactory extends RefCounted
 
 

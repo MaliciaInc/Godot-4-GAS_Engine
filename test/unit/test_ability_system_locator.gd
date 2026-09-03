@@ -9,7 +9,7 @@
 ## shortcut. A renamed component still resolves; a decoy wearing the name does
 ## not.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 ## Borrowed rather than respelled: the locator owns what this name is.

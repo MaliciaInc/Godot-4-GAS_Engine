@@ -6,7 +6,7 @@
 ## if a test ever needs to add a field, the bridge has started reading item data
 ## to decide gameplay, and every loot edit becomes a balance change.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FakeGlootItem extends RefCounted
 
 

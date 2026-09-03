@@ -1,7 +1,7 @@
 ## Whether a GameplayTagQuery is a legal definition, and why not when it is not.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTagQueryValidationResult extends RefCounted
 
 enum Status {

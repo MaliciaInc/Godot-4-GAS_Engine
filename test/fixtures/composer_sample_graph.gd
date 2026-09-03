@@ -5,7 +5,7 @@
 ## the product to cover that up would put a second source of nodes beside the
 ## one that is supposed to be the only one.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerSampleGraph extends RefCounted
 
 const EXEC_IN: StringName = &"exec_in"

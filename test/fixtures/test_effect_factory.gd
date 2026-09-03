@@ -4,7 +4,7 @@
 ## nothing: a factory that did its own arithmetic would let a test pass against
 ## the factory's idea of the maths rather than the engine's.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name TestEffectFactory extends RefCounted
 
 

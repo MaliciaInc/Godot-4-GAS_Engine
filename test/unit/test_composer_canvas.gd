@@ -5,7 +5,7 @@
 ## in, cards come out sized to their content, and nothing is left drawn at the
 ## wrong depth or at a size nobody set.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Sample = preload("res://test/fixtures/composer_sample_graph.gd")

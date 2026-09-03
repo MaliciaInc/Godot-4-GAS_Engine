@@ -8,7 +8,7 @@
 ## `active_count() == 0` a checkable claim after teardown.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityTaskRuntime extends RefCounted
 
 var owner_asc: AbilitySystemComponent = null

@@ -13,20 +13,6 @@ SPEC.loader.exec_module(product_identity)
 
 
 class ProductIdentityTests(unittest.TestCase):
-    def test_third_party_legacy_section_is_the_only_markdown_legacy_exception(self) -> None:
-        text = "\n".join(
-            [
-                "# Third-party dependencies and notices",
-                "current " + "Godot" + "GAS",
-                product_identity.LEGACY_SECTION_START,
-                "historical " + "Godot" + "GAS",
-                product_identity.LEGACY_SECTION_END,
-            ]
-        )
-        allowed = product_identity.third_party_legacy_lines(text)
-        self.assertNotIn(2, allowed)
-        self.assertIn(4, allowed)
-
     def test_forbidden_vocabulary_contains_every_legacy_identity_family(self) -> None:
         joined = "\n".join(product_identity.FORBIDDEN)
         self.assertIn("Arhalies" + "_GAS", joined)

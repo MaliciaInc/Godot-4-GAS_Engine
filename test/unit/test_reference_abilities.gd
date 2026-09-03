@@ -14,7 +14,7 @@
 ## Nothing here depends on a game. Every one of these runs against a plain ASC
 ## fixture, which is the same claim the engine makes about itself.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

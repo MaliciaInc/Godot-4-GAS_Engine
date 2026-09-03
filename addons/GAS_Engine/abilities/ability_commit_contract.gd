@@ -10,7 +10,7 @@
 ## get out of step with the ability that consults it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityCommitContract extends RefCounted
 
 

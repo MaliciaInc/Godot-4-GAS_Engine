@@ -5,7 +5,7 @@
 ## pretty way. Somebody who knows the engine types `wait_target`; being made to
 ## type `Wait Target Data` is the palette asking them to translate.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const GAME_SCRIPT: String = "res://test/fixtures/game_composer_nodes.gd"

@@ -14,7 +14,7 @@
 ## this project's policy. The suppression below is scoped to exactly that
 ## boundary. Nothing in `addons/GAS_Engine` or in the tests relies on it.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends Node
 
 const GUT_RUNNER_SCENE: String = "res://addons/gut/gui/GutRunner.tscn"

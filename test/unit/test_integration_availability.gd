@@ -11,7 +11,7 @@
 ## fooled, and the bridges cover the present case with doubles that implement
 ## only the third party's published contract.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 

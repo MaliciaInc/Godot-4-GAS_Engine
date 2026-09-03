@@ -7,7 +7,7 @@
 ## stage, before the incoming effect's own components are even asked.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectImmunityComponent extends GameplayEffectComponent
 
 @export var incoming_effect_query: GameplayEffectQuery = null

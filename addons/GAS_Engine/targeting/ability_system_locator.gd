@@ -16,7 +16,7 @@
 ## still resolves and a decoy with the right name does not.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilitySystemLocator extends RefCounted
 
 ## The name the component is conventionally given. An optimisation, not a rule.

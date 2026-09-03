@@ -9,7 +9,7 @@
 ## and what the spec it names actually holds - which is what this task's own
 ## acceptance list asks for.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

@@ -17,7 +17,7 @@
 ## know the canvas had caught up would have nothing to wait on.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerDocument extends RefCounted
 
 const NOTHING_OPEN: String = "no ability is open"

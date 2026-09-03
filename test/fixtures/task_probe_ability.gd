@@ -5,7 +5,7 @@
 ## real channelled cast suspends inside `_activate_ability` on something it
 ## registered, and nothing else reproduces that shape.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name TaskProbeAbility extends GameplayAbility
 
 

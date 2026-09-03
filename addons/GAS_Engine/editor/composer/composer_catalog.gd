@@ -19,7 +19,7 @@
 ## stops being tested.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerCatalog extends RefCounted
 
 const ABILITY: StringName = &"Ability"
@@ -423,7 +423,8 @@ static func _parameters(described: Dictionary) -> Array[ComposerNode.Field]:
 	var declared: Array = described["args"]
 	for argument: Dictionary in declared:
 		var field: ComposerNode.Field = ComposerNode.Field.new()
-		field.label = String(argument["name"]).capitalize()
+		var called: String = argument["name"]
+		field.label = called.capitalize()
 		field.type_name = StringName(_type_of(argument))
 		found.append(field)
 	return found

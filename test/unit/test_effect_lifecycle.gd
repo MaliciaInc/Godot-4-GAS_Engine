@@ -4,7 +4,7 @@
 ## `current_value` themselves. Every one of them goes through the safe API here,
 ## and the tests say what happens when they do.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

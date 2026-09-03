@@ -11,7 +11,7 @@
 ## normalisation is applied - `.gitattributes` already pins LF in the checkout,
 ## so normalising here could only hide a drift rather than reveal one.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 

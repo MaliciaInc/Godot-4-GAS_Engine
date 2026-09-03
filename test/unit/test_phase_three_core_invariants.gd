@@ -17,7 +17,7 @@
 ##     second way to move an attribute and the canonical formula must not
 ##     know or care which one moved it.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

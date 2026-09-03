@@ -6,7 +6,7 @@
 ## the same failure drift apart the moment one of them is easier to write.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AttributeEvaluationResult extends RefCounted
 
 ## Every way an evaluation can end. Closed on purpose: a caller that switches

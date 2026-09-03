@@ -6,7 +6,7 @@
 ## read from the engine - so it is the only half that can drift, and a name that
 ## drifts produces a node printing an argument nobody accepts.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 

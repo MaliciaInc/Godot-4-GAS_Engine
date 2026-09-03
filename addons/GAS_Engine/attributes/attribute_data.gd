@@ -14,8 +14,8 @@
 ## than replaying deltas.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
-## @meta_license: MIT
+## @meta_author: MaliciaInc
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 @icon("res://addons/GAS_Engine/icons/gas_engine_asc.svg")

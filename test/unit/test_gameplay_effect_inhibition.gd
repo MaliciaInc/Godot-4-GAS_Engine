@@ -3,7 +3,7 @@
 ## and tags without removing it, and a satisfied removal query removes it
 ## outright.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

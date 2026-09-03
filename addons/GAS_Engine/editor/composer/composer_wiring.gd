@@ -10,7 +10,7 @@
 ## would make a graph that has to be read in two directions at once.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerWiring extends RefCounted
 
 ## Where a card's first port sits, measured down from its top edge. Level with

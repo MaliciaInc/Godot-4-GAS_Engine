@@ -4,7 +4,7 @@
 ## requirements change, converging even when its own activation is what
 ## changed them.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")

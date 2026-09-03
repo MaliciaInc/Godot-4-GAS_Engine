@@ -11,7 +11,7 @@
 ## checkout with no cache is exactly the state this addon has to work in.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayCuePoolBucket extends RefCounted
 
 const CueNotify = preload("res://addons/GAS_Engine/cues/gameplay_cue_notify.gd")

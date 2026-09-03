@@ -7,7 +7,7 @@
 ## Composer is either refusing legal code or promising illegal code, and both
 ## are worse than no type system at all.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const EXEC_IN: StringName = &"exec_in"

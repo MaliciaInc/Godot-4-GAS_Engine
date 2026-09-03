@@ -9,7 +9,7 @@
 ## whatever the project happens to ship would make them pass or fail on
 ## somebody's tag list.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const GASEngineProjectSettings = preload("res://addons/GAS_Engine/utilities/project_settings.gd")

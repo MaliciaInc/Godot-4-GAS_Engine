@@ -9,7 +9,7 @@
 ## this repository, and planting a fake `addons/dialogic` would only prove the
 ## availability check can be fooled.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FakeDialogic extends Node
 
 ## Dialogic's general-purpose bus. Everything a timeline says goes through here,

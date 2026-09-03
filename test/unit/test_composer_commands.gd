@@ -10,7 +10,7 @@
 ## cannot read is refused before it happens, not discovered afterwards. Blanking
 ## somebody's canvas and then explaining why is not a recovery.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const SOURCE: String = """extends GameplayAbility

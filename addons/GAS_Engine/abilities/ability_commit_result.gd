@@ -10,7 +10,7 @@
 ## needs prose to be understood is the wrong status.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityCommitResult extends RefCounted
 
 

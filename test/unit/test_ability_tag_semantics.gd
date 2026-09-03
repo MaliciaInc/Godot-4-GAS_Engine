@@ -2,7 +2,7 @@
 ## required/blocked queries, activation-owned tags, cancel/block queries -
 ## both an ability's own and an effect's - and target requirements.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")

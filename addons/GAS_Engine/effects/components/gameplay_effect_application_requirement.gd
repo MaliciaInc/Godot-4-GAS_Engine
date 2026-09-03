@@ -5,7 +5,7 @@
 ## designer can author and reuse rather than code wired at one call site.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 @abstract
 class_name GameplayEffectApplicationRequirement extends Resource
 

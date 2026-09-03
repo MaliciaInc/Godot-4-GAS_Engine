@@ -4,7 +4,7 @@
 ## These tests use a recording GameplayCueNotify and check what it actually
 ## received: how many times, on which node, with which parameters.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

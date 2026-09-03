@@ -2,7 +2,7 @@
 ## is AND'd together, and an empty query matches everything.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectQuery extends Resource
 
 enum InhibitionFilter {

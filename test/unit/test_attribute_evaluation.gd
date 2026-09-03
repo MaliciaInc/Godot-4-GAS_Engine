@@ -4,7 +4,7 @@
 ## call it directly, so what is asserted is the staging, not a value that
 ## happened to come out the far end of the whole pipeline.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

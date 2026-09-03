@@ -10,7 +10,7 @@
 ## FireballAbility for why that matters for anything PackedScene.pack() has
 ## to duplicate.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name StaysActiveAbility extends GameplayAbility
 
 signal channel_gate

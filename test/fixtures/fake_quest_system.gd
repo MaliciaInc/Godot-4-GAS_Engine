@@ -5,7 +5,7 @@
 ## the shape that would loop forever if the bridge did not guard against
 ## re-entry, and so is worth being able to reproduce here.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name FakeQuestSystem extends Node
 
 signal new_available_quest(quest: Object)

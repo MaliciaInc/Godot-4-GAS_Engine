@@ -16,7 +16,7 @@
 ## a specific price authors a fresh probe (and, for level, passes it to the
 ## grant) before granting, never edits `ability` afterward.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

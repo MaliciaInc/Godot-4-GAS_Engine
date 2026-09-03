@@ -6,7 +6,7 @@
 ## would make every item edit a gameplay change nobody reviewed.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GlootGasEquipmentGrant extends Resource
 
 @export var prototype_id: StringName = &""

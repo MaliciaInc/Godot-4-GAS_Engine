@@ -5,7 +5,7 @@
 ## quietly: editability is read from the diagnostics, a missing value is its own
 ## state, and a node knows the lines it came from.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const NODE_ID: StringName = &"n1"

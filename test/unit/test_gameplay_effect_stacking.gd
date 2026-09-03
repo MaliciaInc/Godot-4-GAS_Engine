@@ -1,6 +1,6 @@
 ## Advanced stacking: identity, growth limits, overflow, factor_in_stack_count,
 ## and the three expiration policies.
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

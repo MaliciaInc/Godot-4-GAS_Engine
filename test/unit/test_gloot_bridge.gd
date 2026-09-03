@@ -7,7 +7,7 @@
 ## look-it-up-again version and leaves the wearer with either too much or too
 ## little.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

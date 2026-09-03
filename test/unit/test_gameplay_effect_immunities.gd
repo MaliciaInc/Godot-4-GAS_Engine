@@ -1,7 +1,7 @@
 ## GameplayEffectImmunityComponent: an active effect that blocks a matching
 ## incoming application before anything about it becomes observable.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

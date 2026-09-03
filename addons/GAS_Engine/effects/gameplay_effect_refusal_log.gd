@@ -4,7 +4,7 @@
 ## `enabled = true` costs one append per refusal.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectRefusalLog extends RefCounted
 
 const DEFAULT_CAPACITY: int = 32

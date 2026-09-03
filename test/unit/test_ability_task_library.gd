@@ -5,7 +5,7 @@
 ## generically, in test_ability_tasks.gd - except for the direct-signal-
 ## connect shape these tasks introduce, proven here instead.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")

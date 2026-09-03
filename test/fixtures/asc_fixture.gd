@@ -10,7 +10,7 @@
 ## Source and target are separate owners, so a test cannot accidentally pass
 ## because both sides were the same node.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ASCFixture extends RefCounted
 
 const AttributeSetScript = preload("res://test/fixtures/test_attribute_set.gd")

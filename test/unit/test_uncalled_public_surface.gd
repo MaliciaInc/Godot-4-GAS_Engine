@@ -10,7 +10,7 @@
 ## covering those turned up a real defect: removal was announced to subscribers
 ## after the effect had already been emptied. So this file is not a formality.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const EffectFactory = preload("res://test/fixtures/test_effect_factory.gd")

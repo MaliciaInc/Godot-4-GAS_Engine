@@ -3,7 +3,7 @@
 ## on_premature_removal, on_any_removal - and the chain_depth guard they
 ## share with Task 12's overflow_effects.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

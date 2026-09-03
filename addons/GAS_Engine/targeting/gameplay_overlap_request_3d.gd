@@ -4,7 +4,7 @@
 ## a caller cannot hand a flat centre to a query that needs a point in space.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayOverlapRequest3D extends RefCounted
 
 var center: Vector3 = Vector3.ZERO

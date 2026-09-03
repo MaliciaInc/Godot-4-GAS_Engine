@@ -8,7 +8,7 @@
 ## script, so what a node needs is a method a person can point at - not a base
 ## class, not an interface, not a registration of any other kind.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends RefCounted
 
 var stamina_spent: float = 0.0

@@ -8,7 +8,7 @@
 ##   has_tag matched by bare prefix, so `Damage.Fire` matched `Damage.Firestorm`
 ##   and `A` matched `AB`.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

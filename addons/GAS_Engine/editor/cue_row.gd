@@ -8,7 +8,7 @@
 ## can bind them to the entry's index in the registry, which only the tab knows.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name CueRow extends RefCounted

@@ -7,7 +7,7 @@
 ## and guesses; the value of refusing is that a half-understood hit never
 ## reaches them looking valid.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const ORIGIN_2D: Vector2 = Vector2(3.0, 4.0)

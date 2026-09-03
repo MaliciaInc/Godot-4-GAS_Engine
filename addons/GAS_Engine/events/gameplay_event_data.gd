@@ -5,7 +5,7 @@
 ## failed silently, because a missing key reads as null rather than as an error.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEventData extends RefCounted
 
 ## The hierarchical tag this event was broadcast under, e.g. Event.Damage.Taken.

@@ -11,7 +11,7 @@
 ## between the aggregator's cache and its own arithmetic is caught the moment it
 ## happens, whatever caused it.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

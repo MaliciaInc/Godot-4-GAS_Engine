@@ -10,7 +10,7 @@
 ## done. The second is that a save either leaves the file correct or leaves it
 ## alone - there is no third outcome.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 ## Real GDScript, because the reader loads the file it is handed: it resolves a
@@ -53,6 +53,13 @@ func _activate_ability() -> void:
 """
 
 ## Two locals of the same type, so one cable has somewhere else to go.
+## Two locals, each read twice over, and the first statement is the one edited.
+##
+## The spare readers are not decoration. Rewiring an argument away from a local
+## takes a reader off it, and a local nothing reads any more is a warning in the
+## file the Composer just wrote - which would fail this test for a reason that
+## has nothing to do with cables. Every local here keeps a reader in both
+## states, so what is left to observe is only the cable moving.
 const REWIRE: String = """extends GameplayAbility
 
 @export var burning: GameplayEffect
@@ -62,6 +69,8 @@ func _activate_ability() -> bool:
 	var level: float = get_ability_level()
 	var louder: float = get_ability_level()
 	owner_asc.apply_gameplay_effect(burning, owner_asc, level)
+	owner_asc.apply_gameplay_effect(burning, owner_asc, level)
+	owner_asc.apply_gameplay_effect(burning, owner_asc, louder)
 	end_ability()
 	return true
 """

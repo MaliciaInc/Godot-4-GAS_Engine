@@ -2,7 +2,7 @@
 ## GameplayAbilityActivationResult's closed Status, remove_ability()'s two
 ## policies, and give_and_activate_once() on top of them.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")

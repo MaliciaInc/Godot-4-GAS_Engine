@@ -11,7 +11,7 @@
 ## when the caller most needs to be woken up.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAbilityTask extends RefCounted
 
 

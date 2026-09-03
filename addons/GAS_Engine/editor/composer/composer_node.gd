@@ -6,7 +6,7 @@
 ## engine stay the only thing that runs.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerNode extends RefCounted
 
 ## What a diagnostic found here, if anything.

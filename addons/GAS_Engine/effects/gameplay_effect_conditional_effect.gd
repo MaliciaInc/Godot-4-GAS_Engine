@@ -3,7 +3,7 @@
 ## unset one imposes no condition.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectConditionalEffect extends Resource
 
 @export var effect: GameplayEffect = null

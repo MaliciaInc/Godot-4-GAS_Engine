@@ -7,7 +7,7 @@
 ## query evaluation lives, never reimplemented here.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityTaskWaitTagQuery extends GameplayAbilityTask
 
 var target_asc: AbilitySystemComponent = null

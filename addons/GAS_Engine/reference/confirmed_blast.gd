@@ -6,7 +6,7 @@
 ## committed after the confirmation and not before it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GameplayAbility
 
 @export var blast: GameplayEffect

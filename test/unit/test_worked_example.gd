@@ -23,7 +23,7 @@
 ## from the same formula the engine uses would agree with the engine no matter
 ## what either of them did.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

@@ -11,7 +11,7 @@
 ## that read input could not be tested without one.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTargetingService extends RefCounted
 
 ## Borrowed from the type that owns it, not respelled here.

@@ -4,7 +4,7 @@
 ## always goes through packing a Node into a scene: an anonymous inline class
 ## has no script resource of its own to pack reliably, and this one does.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name RecordingAbility extends GameplayAbility
 
 var activations: int = 0

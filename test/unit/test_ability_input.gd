@@ -9,7 +9,7 @@
 ## that two abilities answer, or a press that reaches an ability nobody granted,
 ## is a bug the activation tests cannot see.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

@@ -224,6 +224,18 @@
         "reason": "The gate's own name, spelled in two files that mean different things by it: the runner uses it as the command name and the report basename, and the gate uses it as the policy section it reads. Giving either a different spelling to satisfy this rule would make the policy section harder to find than the repetition is to notice."
       },
       {
+        "literal": "*.gd",
+        "reason": "The pathspec engine_evidence.py hands git to list the scripts the driven stages load, spelled independently of project_invariants.py's own scans. Both are standalone scripts outside the gates' shared plumbing, and neither can import from the other without dragging one script's concerns into the other's."
+      },
+      {
+        "literal": "*.tscn",
+        "reason": "The pathspec engine_evidence.py hands git for scenes, which the suite loads and must therefore fingerprint. It collides with a file-dialog filter in the cue manager tab - the same four characters meaning the same file kind for two entirely unrelated jobs."
+      },
+      {
+        "literal": "RESULT:",
+        "reason": "The first line of every gate receipt in this repository. verify.ps1 writes one per stage it runs, and engine_evidence.py writes the two the chain cannot run itself; the format belongs to the repository, so each writer spells it. A shared constant is impossible across PowerShell and Python."
+      },
+      {
         "literal": "--project-root",
         "reason": "product_identity.py is a standalone script with its own argparse, spelled independently of gate_io.py's shared CLI helper - it is not one of the gates that helper serves, so it cannot import the constant without importing the gates' own CLI plumbing for a script that isn't one."
       },

@@ -17,7 +17,7 @@
 ## people to ignore the panel, and a panel nobody reads is worse than none.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerValidator extends RefCounted
 
 const MISSING_ARGUMENT: String = "%s needs %s"

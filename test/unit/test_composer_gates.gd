@@ -7,7 +7,7 @@
 ## than for the one a test happened to pick, and the promise that the catalog
 ## covers the engine rather than whatever somebody remembered to list.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const REFERENCE: String = "res://addons/GAS_Engine/reference/%s.gd"

@@ -8,7 +8,7 @@
 ## Split from test_effect_lifecycle.gd so the plan's file list is real. The
 ## tests moved; none were duplicated.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

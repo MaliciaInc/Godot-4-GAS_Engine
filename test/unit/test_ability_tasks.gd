@@ -9,7 +9,7 @@
 ## waiting: every path that closes an ability closes its tasks, every ending
 ## says why, and after teardown the count is zero rather than merely small.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

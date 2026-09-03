@@ -22,7 +22,7 @@
 ## editing `ability` afterward - the same discipline a real designer's scene
 ## follows, since the scene is exactly what the snapshot reads.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

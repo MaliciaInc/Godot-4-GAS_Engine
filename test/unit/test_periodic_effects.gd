@@ -8,7 +8,7 @@
 ## Real time and turns are separate axes: a hundred frames advance a turn-based
 ## effect by exactly zero turns.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

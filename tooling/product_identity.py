@@ -42,9 +42,6 @@ SKIP_PREFIXES = (
     "artifacts/gates/",
 )
 
-LEGACY_SECTION_START = "## Legacy MIT source notice"
-LEGACY_SECTION_END = "## GUT (Godot Unit Test)"
-
 
 def tracked_files(root: Path) -> list[str]:
     done = subprocess.run(
@@ -58,25 +55,7 @@ def tracked_files(root: Path) -> list[str]:
     return [line.strip().replace("\\", "/") for line in done.stdout.splitlines() if line.strip()]
 
 
-def third_party_legacy_lines(text: str) -> set[int]:
-    lines = text.splitlines()
-    inside = False
-    allowed: set[int] = set()
-    for index, line in enumerate(lines, start=1):
-        if line.strip() == LEGACY_SECTION_START:
-            inside = True
-        if inside:
-            allowed.add(index)
-        if line.strip() == LEGACY_SECTION_END:
-            inside = False
-            allowed.discard(index)
-    return allowed
-
-
 def occurrence_allowed(path: str, line_number: int, line: str) -> bool:
-    if path == "THIRD_PARTY.md":
-        text = Path(path).read_text(encoding="utf-8") if Path(path).is_file() else ""
-        return line_number in third_party_legacy_lines(text)
     if path in (PROJECT_SETTINGS, COMMAND_PARSER) and "LEGACY_" in line:
         return True
     if path == "tooling/gates/tests/test_product_identity.py":

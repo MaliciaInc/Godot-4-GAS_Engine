@@ -13,7 +13,7 @@
 ## knowing anything about geometry.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerCanvas extends Control
 
 ## Held down to drag the graph about. The middle button because the left one

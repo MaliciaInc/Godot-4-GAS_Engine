@@ -3,7 +3,7 @@
 ## that GameplayTagQuery.validate()/GameplayEffectComponent.validate_definition()
 ## are themselves correct - those already have their own suites.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")

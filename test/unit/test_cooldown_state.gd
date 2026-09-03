@@ -10,7 +10,7 @@
 ## before granting it - editing `ability.cooldown_effect` after the grant would
 ## simply not reach what get_cooldown_state() reads.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

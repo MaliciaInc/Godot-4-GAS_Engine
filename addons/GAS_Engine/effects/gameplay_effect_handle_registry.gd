@@ -8,7 +8,7 @@
 ## runtime already keeps.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectHandleRegistry extends RefCounted
 
 var owner_asc: AbilitySystemComponent = null

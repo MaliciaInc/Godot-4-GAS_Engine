@@ -2,7 +2,7 @@
 ## grant, in the same order as GameplayEffectGrantAbilitiesComponent.grants.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectGrantAbilitiesState extends GameplayEffectComponentState
 
 var prepared_grants: Array[PreparedAbilityGrant] = []

@@ -6,7 +6,7 @@
 ## been widened twice - so without this the page goes quietly out of date and
 ## the person it misleads is the one furthest from being able to check.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const README: String = "res://README.md"

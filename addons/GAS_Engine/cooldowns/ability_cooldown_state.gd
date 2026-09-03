@@ -10,7 +10,7 @@
 ## flattening them into one number would make "3" ambiguous.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityCooldownState extends RefCounted
 
 ## Whether the ability is on cooldown at all. True when any of its cooldown tags

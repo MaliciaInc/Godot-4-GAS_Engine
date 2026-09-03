@@ -11,7 +11,7 @@
 ## gone, the failure mode is a hang rather than a wrong answer, so these tests
 ## are also the thing that would notice.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const EffectFactory = preload("res://test/fixtures/test_effect_factory.gd")

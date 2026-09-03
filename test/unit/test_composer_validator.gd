@@ -10,7 +10,7 @@
 ## rendered twice. A card sitting clean beside a row complaining about it is the
 ## contradiction that makes someone stop believing either.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const HEAD: String = "extends GameplayAbility\n\n\nfunc _activate_ability() -> void:\n"

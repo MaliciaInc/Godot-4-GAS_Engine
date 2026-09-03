@@ -2,7 +2,7 @@
 ## is active.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectAbilityGrant extends Resource
 
 ## What happens to the granted spec when the granting effect is removed.

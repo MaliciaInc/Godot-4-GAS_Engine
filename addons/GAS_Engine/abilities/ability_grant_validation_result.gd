@@ -1,7 +1,7 @@
 ## Why preparing an ability grant refused, when it did.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityGrantValidationResult extends RefCounted
 
 enum Status {

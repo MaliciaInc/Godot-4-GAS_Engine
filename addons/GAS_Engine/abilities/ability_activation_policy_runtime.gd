@@ -8,7 +8,7 @@
 ## the logic lives here.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityActivationPolicyRuntime extends RefCounted
 
 ## A cap on reevaluation passes, not on how many passives exist - a passive

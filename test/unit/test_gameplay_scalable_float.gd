@@ -1,6 +1,6 @@
 ## GameplayScalableFloat: a number, optionally scaled by level via a curve.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const TOLERANCE: float = 0.0001

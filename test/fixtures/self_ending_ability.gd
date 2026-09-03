@@ -5,7 +5,7 @@
 ## ending itself as a direct result of the transition it just received must
 ## not make the loop skip its neighbour.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name SelfEndingAbility extends GameplayAbility
 
 ## Held open by the test until it decides this activation is done.

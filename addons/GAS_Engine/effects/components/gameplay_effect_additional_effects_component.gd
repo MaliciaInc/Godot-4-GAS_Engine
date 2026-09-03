@@ -8,7 +8,7 @@
 ## overflow_effects (Task 12) - that stays the sole overflow owner.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectAdditionalEffectsComponent extends GameplayEffectComponent
 
 ## After this effect's own application has committed.

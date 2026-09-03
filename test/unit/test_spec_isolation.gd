@@ -6,7 +6,7 @@
 ## it to every target, so target A's execution calculation mutating a magnitude
 ## changed the damage target B took.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

@@ -11,7 +11,7 @@
 ## 100 is silently clamped straight back down, masking the very reactivity
 ## these tests exist to prove.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")

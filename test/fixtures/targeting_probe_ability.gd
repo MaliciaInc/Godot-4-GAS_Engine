@@ -10,7 +10,7 @@
 ## cast cancelled halfway and a cast that ran to the end both leave `is_active`
 ## false and a test that only asked that would pass either way.
 ##
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name TargetingProbeAbility extends GameplayAbility
 
 ## The effect fired at whatever targets arrive.
