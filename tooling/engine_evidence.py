@@ -24,9 +24,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-## The file kinds the driven stages load. Spelled here, independently of any
-## other scan in tooling, because this script decides for itself what it covers.
-COVERED: tuple[str, ...] = ("*.gd", "*.tscn", "project.godot")
+## What the driven stages load. Spelled here, independently of any other scan in
+## tooling, because this script decides for itself what it covers.
+##
+## README.md is in the list for a reason that is easy to miss: a test reads it,
+## so it is a source the suite loads rather than prose beside the code. Left out,
+## an edit to the quick start would leave the receipt claiming to have run
+## against a README that no longer says what it said.
+COVERED: tuple[str, ...] = ("*.gd", "*.tscn", "project.godot", "README.md")
 
 ## Which receipt belongs to which stage. The chain asks for the verdict and is
 ## told; it does not know these names.

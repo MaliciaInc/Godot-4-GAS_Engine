@@ -167,16 +167,18 @@ Put the same component on a second node, add that node to the `enemies` group, a
 
 Read a value back with `asc.get_attribute_current(&"health")`, and watch it move by connecting `asc.attribute_changed`.
 
-### Why none of this is a `.tres`
+### Why the effect is built in code
 
-Effects, costs and cooldowns are built in GDScript from numbers authored on the ability's scene. There is deliberately no authored-resource alternative sitting beside them: two ways to say what an ability does is two places to look when it does the wrong thing, and the hand-written one is the one nothing can check.
+Effects, costs and cooldowns are built in GDScript from numbers authored on the ability's scene, never as an authored resource beside them. There is deliberately no authored-resource alternative sitting beside them: two ways to say what an ability does is two places to look when it does the wrong thing, and the hand-written one is the one nothing can check.
 
 ### Where to go from here
 
 - `addons/GAS_Engine/reference/` holds six complete abilities, written by hand and commented: an instant hit, a paid strike, a timed buff, an aimed-then-confirmed blast, an area sweep, and one that fires cues.
-- The **Ability Composer** below opens any ability as a graph and writes your edits back to the same file.
+- The **Dashboard** and the **Ability Composer** below are the two editor surfaces: one for the data an ability names, one that draws the ability itself.
 - The rest of this document explains what each subsystem guarantees, and why.
 
+
+## Scope and support model
 
 ### Project Model
 
@@ -194,8 +196,8 @@ Networking is intentionally outside the scope of the framework and may be implem
 
 A suite proves a framework against itself. It cannot prove that a game built on
 the framework behaves, and several of this engine's defects were found exactly
-there - invisible to thirty thousand assertions, and plain the first time a game
-used the engine for real.
+there - invisible to every assertion in the suite, and plain the first time a
+game used the engine for real.
 
 So the engine is also driven through a complete integration: a turn-based RPG
 whose combat system is built on GAS_Engine and nothing else. An automated probe
@@ -387,6 +389,23 @@ None of them is required by the core runtime. The integrations are intentionally
 
 Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
 
+## The Dashboard
+
+**Project → Tools → GAS_Engine Dashboard** opens the editor surface for the data an ability system needs before any ability can name it. Four tabs:
+
+| Tab | What it is for |
+| --- | --- |
+| **Attribute Sets** | Author a set and generate it as a GDScript `AttributeSet` — the file you would otherwise write by hand, with its attributes and clamp hooks in place. |
+| **Tag Manager** | The project's gameplay tag registry, and the generated constants script that lets an ability name a tag without spelling the string. |
+| **Cue Manager** | Which cue answers which tag, so an effect can ask for feedback without knowing what plays it. |
+| **Runtime Debugger** | What GAS_Engine sees in the scene currently open: the components, their attributes, and what is active on them. |
+
+By default the project's own GAS_Engine data lives under `res://gas_engine/` — `tag_registry.tres` and `cue_registry.tres` for the two registries, and `gameplay_tags.gd` for the constants generated from the tags. The paths are project settings, so a project that keeps its data elsewhere says so once.
+
+Enabling the plugin seeds the two registries with a small default set, so a new project has something to look at rather than an empty tab.
+
+Nothing here is required. Every registry the Dashboard writes can be edited as a file, and every script it generates is a script you could have written; the tabs exist so that the common case is not hand-work.
+
 ## Ability Composer
 
 The Composer is a visual editor for abilities that is a **view of the code**, not a second way to author them. There is no JSON, no cached graph, no `.tres`, no interpreter: the `.gd` file is the ability, and the canvas is read out of it every time it is opened. Opening an ability and saving it without changing anything gives the file back byte for byte, comments and formatting included.
@@ -420,7 +439,7 @@ A local must carry a written type. `var level := 1.0` is refused where `var leve
 
 Every public method of `GameplayAbility`, `AbilitySystemComponent`, `GameplayTargetingService`, `AbilityTaskFactory` and `GameplayAbilityTargetData`, read from those scripts rather than listed anywhere. A method added to the engine appears the next time the editor starts; one that is renamed takes its node with it.
 
-A game can offer calls of its own through `ComposerCatalog.register(method, group, script, suspends)`, and they are admitted on exactly the same terms the engine's own are. There are no privileged nodes: every node prints as its own call and reads back the same way, so a custom one needs a signature and nothing else.
+A game can offer calls of its own through `ComposerCatalog.register(method, group, path, suspends)`, and they are admitted on exactly the same terms the engine's own are. There are no privileged nodes: every node prints as its own call and reads back the same way, so a custom one needs a signature and nothing else.
 
 ### It never reaches a running game
 
@@ -495,23 +514,6 @@ The repository itself is the executable specification: important gameplay rules 
 
 A suite proves the framework against itself. What a real game proved it does is at the top of this file, under [Proven in a real game](#proven-in-a-real-game).
 
-## Using GAS_Engine in a game
-
-GAS_Engine is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
-
-Under the free Community Use License, you may build game-specific systems using techniques such as:
-
-- composition;
-- subclasses;
-- resources and authored data;
-- custom magnitude calculations;
-- typed context payloads;
-- adapters and integration scripts;
-- project-side ability/effect definitions;
-- public runtime APIs and signals.
-
-These forms of normal game development do not become paid merely because the resulting game is commercial.
-
 ## License
 
 GAS_Engine uses a **source-available dual licensing model**.
@@ -534,6 +536,23 @@ It allows you to use the **unmodified** GAS_Engine framework free of charge in:
 You may sell and commercially distribute a game that uses unmodified GAS_Engine. You do **not** owe a royalty, revenue share, per-seat fee, or per-game fee merely because your game makes money.
 
 Your game's own source code does not have to become open source simply because it uses GAS_Engine.
+
+### What you may build on it
+
+GAS_Engine is designed to be extended **around its public APIs**, not by editing framework internals for every game-specific mechanic.
+
+Under the free Community Use License, you may build game-specific systems using techniques such as:
+
+- composition;
+- subclasses;
+- resources and authored data;
+- custom magnitude calculations;
+- typed context payloads;
+- adapters and integration scripts;
+- project-side ability/effect definitions;
+- public runtime APIs and signals.
+
+These forms of normal game development do not become paid merely because the resulting game is commercial.
 
 ### Commercial Modification License: paid
 
