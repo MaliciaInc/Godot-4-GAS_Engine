@@ -363,6 +363,32 @@ func test_a_refusal_offers_to_open_one_and_the_screen_passes_that_on() -> void:
 	assert_eq(asked.size(), 1, "and pressing it reaches whoever owns the editor")
 
 
+## Mounted the way the editor mounts it: inside a container.
+##
+## `EditorInterface.get_editor_main_screen()` is a container, and a container
+## sizes its children by their size flags and ignores their anchors completely.
+## The screen was added with an anchors preset and no flags, so it was given its
+## minimum height - a strip - and everything inside it went where a strip puts
+## things: the palette overflowed its own bounds, the canvas was a sliver, and
+## the Output panel was laid out at the top of the window instead of the bottom.
+## From the editor it read as most of the interface being missing.
+##
+## Every other test here sets `size` by hand, which is why none of them could
+## have caught it. This one refuses to, and asks the container instead.
+func test_mounted_in_a_container_the_screen_is_given_the_whole_of_it() -> void:
+	var mount: VBoxContainer = VBoxContainer.new()
+	add_child_autofree(mount)
+	mount.size = Vector2(1280.0, 900.0)
+
+	var screen: ComposerScreen = ComposerScreen.new()
+	mount.add_child(screen)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	assert_almost_eq(screen.size.y, 900.0, 4.0, "the height it was offered")
+	assert_almost_eq(screen.size.x, 1280.0, 4.0, "and the width")
+
+
 #region What the spec fixes about how things read
 ## One missing argument, one severity.
 ##
