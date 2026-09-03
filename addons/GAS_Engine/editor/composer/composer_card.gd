@@ -34,7 +34,7 @@ var node_id: StringName = &""
 
 var _glass: ColorRect = null
 var _column: VBoxContainer = null
-var _ring: ReferenceRect = null
+var _ring: Panel = null
 var _title: Control = null
 var _rows: Array[Control] = []
 var _state: ComposerNode.State = ComposerNode.State.CLEAN
@@ -72,12 +72,14 @@ func build(node: ComposerNode) -> void:
 	if node.awaits:
 		add_child(_await_mark())
 
-	# Drawn rather than styled: a ReferenceRect is a border and nothing else,
-	# which is all a selection needs to be.
-	_ring = ReferenceRect.new()
-	_ring.editor_only = false
-	_ring.border_color = ComposerTheme.ACCENT
-	_ring.border_width = ComposerTheme.RING_WIDTH
+	# A ReferenceRect drew this, and a ReferenceRect can only draw a rectangle:
+	# a hard square around a rounded card, which reads as a debug artifact
+	# rather than as a selection. Styled instead, so it has the card's corners.
+	_ring = Panel.new()
+	_ring.add_theme_stylebox_override(
+		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.picked_box()
+	)
+	_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring.visible = false
 	add_child(_ring)

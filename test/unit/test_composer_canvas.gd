@@ -385,3 +385,40 @@ func test_pulling_back_empties_a_card_without_resizing_it() -> void:
 	for row: Control in card._rows:
 		assert_false(row.visible, "and its fields are not being drawn")
 #endregion
+
+
+## Opening an ability never opens it unreadable.
+##
+## Framing used to clamp at ZOOM_MIN, so any graph wider than the canvas landed
+## below DETAIL_FULL and every card opened as a bare title - the Composer
+## showing less than the file it had just read, which is the first thing anyone
+## saw. Part of a readable graph beats all of an unreadable one.
+func test_framing_never_opens_a_graph_below_the_level_that_shows_values() -> void:
+	canvas.size = Vector2(420.0, 260.0)
+	await canvas.show_graph(Sample.build())
+
+	canvas.frame_all()
+
+	assert_gte(
+		canvas.zoom(), ComposerCanvas.DETAIL_FULL, "framed, and still showing its values"
+	)
+	assert_eq(
+		ComposerCanvas.detail_at(canvas.zoom()), ComposerCard.Detail.FULL,
+		"which is what that threshold means"
+	)
+
+
+## A selection is shaped like the thing it selects.
+##
+## It was a ReferenceRect, which can only draw a rectangle: a hard square around
+## a rounded card. Reported as "a rectangle that should never appear", and that
+## is a fair reading - a square outline on a rounded card looks like something
+## the editor left behind rather than something anybody drew.
+func test_the_edge_on_a_picked_card_has_the_card_s_corners() -> void:
+	var edge: StyleBoxFlat = ComposerTheme.picked_box()
+
+	assert_eq(
+		edge.corner_radius_top_left, ComposerTheme.RADIUS_PANEL, "the card's own radius"
+	)
+	assert_eq(edge.bg_color.a, 0.0, "an edge, not a fill over the card")
+	assert_eq(edge.border_color, ComposerTheme.ACCENT, "and it reads as a selection")

@@ -388,7 +388,9 @@ func _frame(bounds: Rect2) -> void:
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0 or size.x <= 0.0 or size.y <= 0.0:
 		return
 	var room: Vector2 = bounds.size + Vector2(FRAME_MARGIN, FRAME_MARGIN) * 2.0
-	_set_scale(clampf(minf(size.x / room.x, size.y / room.y), ZOOM_MIN, ZOOM_MAX))
+	# Floored at DETAIL_FULL, not ZOOM_MIN: framing used to land below it, so
+	# every card opened as a bare title and the graph knew less than the file.
+	_set_scale(clampf(minf(size.x / room.x, size.y / room.y), DETAIL_FULL, ZOOM_MAX))
 	_world.position = size * 0.5 - bounds.get_center() * _zoom
 #endregion
 

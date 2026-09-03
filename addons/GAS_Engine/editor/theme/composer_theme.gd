@@ -92,7 +92,6 @@ const LANE_STEP: float = 210.0
 const SELECTION_FILL: Color = Color(0.482, 0.361, 1.0, 0.14)
 
 ## How thick the outline around a picked card is.
-const RING_WIDTH: float = 1.0
 
 const BLOOM_SCALE: float = 1.9
 
@@ -139,6 +138,20 @@ static func disc(fill: Color, radius: float) -> StyleBoxFlat:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = fill
 	style.set_corner_radius_all(ceili(radius))
+	return style
+
+
+## The edge a picked card wears.
+##
+## The card's own corner radius, because a square outline around a rounded card
+## reads as something the editor drew there by accident - which is exactly how
+## it was described the first time somebody saw it.
+static func picked_box() -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = TRANSPARENT
+	style.border_color = ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(RADIUS_PANEL)
 	return style
 
 
