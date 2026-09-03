@@ -219,17 +219,22 @@ func _settle_expiring(active: ActiveGameplayEffect, new_count: int) -> void:
 	var old_count: int = active.stack_count
 	var evaluation: GameplayEffectEvaluationResult = _evaluate_at(active.spec, active, new_count)
 	if not evaluation.is_ok():
+		# The stack survives exactly as it was found - `_evaluate_at` put the
+		# count back - and its clock is restarted anyway.
+		#
+		# That last part is not a mutation the refusal snuck through: it is the
+		# runtime declining to spin. The scheduler expires whatever has run out
+		# of time on every single update, so an effect left at zero that cannot
+		# settle is asked again on the next frame, and the frame after that, for
+		# as long as it lives - which is for ever, because nothing here takes it
+		# down. One refusal per duration is a signal somebody can read. One per
+		# frame is a log nobody can.
+		_restart_clocks(active)
 		effects.report_refusal(evaluation)
 		return
 
 	replace_stack_state(active, active.spec, evaluation, new_count)
-	var effect: GameplayEffect = active.get_effect_def()
-	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
-		active.time_remaining = active.spec.duration
-	elif effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
-		active.spec.remaining_turns = effect.duration_turns
-	if active.is_periodic():
-		active.restart_period_clock()
+	_restart_clocks(active)
 
 	effects.recompose_and_emit(active.spec)
 	if active.spec.period <= 0.0:
@@ -240,12 +245,45 @@ func _settle_expiring(active: ActiveGameplayEffect, new_count: int) -> void:
 
 
 #region Shared helpers
+## Whatever expiration leaves behind, the clock is not left at zero.
+##
+## Unconditional here, unlike a successful reapplication which restarts per
+## stack_duration_refresh_policy/stack_period_reset_policy: "the clock ran out
+## and the stack is still here" has to mean the clock starts again, or the
+## scheduler asks the same question on the next frame.
+func _restart_clocks(active: ActiveGameplayEffect) -> void:
+	var effect: GameplayEffect = active.get_effect_def()
+	if effect.policy == GameplayEffect.DurationPolicy.DURATION:
+		active.time_remaining = active.spec.duration
+	elif effect.policy == GameplayEffect.DurationPolicy.TURN_BASED:
+		active.spec.remaining_turns = effect.duration_turns
+	if active.is_periodic():
+		active.restart_period_clock()
+
+
 ## `spec.stack_count` is set before evaluating so factor_in_stack_count
 ## scales the resolved magnitude by the count this application would settle
 ## at - grown, unchanged at the ceiling, or one fewer after expiration.
+##
+## Put back when the evaluation refuses, and that matters for exactly one of
+## the callers. `_grow` and `_refresh_without_growing` are handed the incoming
+## spec, which is discarded on a refusal, so nothing keeps the mutation.
+## `_settle_expiring` is handed `active.spec` - the living spec of an effect
+## that stays on the component - and a refusal after this point left the
+## receipt saying one count and the spec saying another, with nothing
+## downstream able to tell which was right.
+##
+## Undone here rather than at that one call site, because the trap is the
+## helper: the next caller to pass a living spec would walk into it again.
 func _evaluate_at(spec: GameplayEffectSpec, existing: ActiveGameplayEffect, count: int) -> GameplayEffectEvaluationResult:
+	var found: int = spec.stack_count
 	spec.stack_count = count
-	return effects.evaluate_spec(spec, existing.application_order, existing.handle)
+	var evaluation: GameplayEffectEvaluationResult = effects.evaluate_spec(
+		spec, existing.application_order, existing.handle
+	)
+	if not evaluation.is_ok():
+		spec.stack_count = found
+	return evaluation
 
 
 func _evaluation_failure(
