@@ -31,6 +31,9 @@ const PLUGIN_ICON_PATH: String = "res://addons/GAS_Engine/icons/gas_engine.svg"
 ## reading it rather than by agreeing to spell it the same way.
 const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
 const SCRIPT_SCREEN: String = "Script"
+
+## The editor's word that something on disk is not where it was.
+const FILES_MOVED: StringName = &"filesystem_changed"
 const MENU_SIZE: Vector2i = Vector2i(520, 420)
 const SCRIPT_FILTER: String = "*.gd"
 const RESOURCE_PREFIX: String = "res://"
@@ -149,9 +152,7 @@ func _enter_tree() -> void:
 	# The editor already knows when a file appeared, moved or was deleted, so
 	# the remembered list is dropped on its word rather than on a guess about
 	# how long an answer stays true.
-	EditorInterface.get_resource_filesystem().filesystem_changed.connect(
-		ComposerLibrary.forget
-	)
+	ComposerLibrary.listen_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
 	_make_visible(false)
@@ -172,6 +173,7 @@ func _disable_plugin() -> void:
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
+	ComposerLibrary.stop_listening_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
 	if _composer_instance != null:

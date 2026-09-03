@@ -7,10 +7,10 @@
 ## or burying a bead underneath one. With layers, each pass fills its own and
 ## the stacking is a fact of the tree.
 ##
-## Nothing here decides where a node goes. `ComposerLayout` does, in grid
-## coordinates, and this is the only place those become pixels - which is what
-## lets a card's own measured height push its lane apart without the layout
-## knowing anything about geometry.
+## Nothing here decides where a node goes. `ComposerLayout` does, and it decides
+## twice: once before the cards exist, from the minimum a card can be, and again
+## once every card has been measured - which is what lets a card's own width and
+## height push its column and its lane apart.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -146,13 +146,17 @@ func _add_card(node: ComposerNode, at: Vector2) -> void:
 ## card's light.
 func _fit_cards() -> void:
 	var widths: Dictionary[StringName, float] = {}
+	var heights: Dictionary[StringName, float] = {}
 	for id: StringName in _cards:
 		_cards[id].fit()
 		widths[id] = _cards[id].size.x
+		heights[id] = _cards[id].size.y
 
 	# Placed again now that the cards have a size: the first pass could only
 	# guess, and a column is only as wide as what it turned out to hold.
-	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(_placements, widths)
+	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(
+		_placements, widths, heights
+	)
 	for id: StringName in _cards:
 		var card: ComposerCard = _cards[id]
 		card.position = placed[id]
@@ -224,14 +228,14 @@ func _press(button: InputEventMouseButton) -> void:
 		_box.position = _box_from
 		_box.size = Vector2.ZERO
 		_box.visible = true
-		if not _adding(button):
+		if not ComposerSelection.adding(button):
 			_pick([])
 		return
 
 	_dragging = hit
 	_drag_from = button.position
-	if _adding(button):
-		_pick(_with(hit))
+	if ComposerSelection.adding(button):
+		_pick(ComposerSelection.toggled(picked(), hit))
 	elif not _picked.has(hit):
 		# A card already in the selection is left alone: clicking one of several
 		# to drag them all should not throw the others away first.
@@ -254,12 +258,12 @@ func _release(button: InputEventMouseButton) -> void:
 	var swept: Array[StringName] = _inside(Rect2(_box.position, _box.size))
 	if swept.is_empty():
 		return
-	_pick(_joined(swept) if _adding(button) else swept)
+	_pick(
+		ComposerSelection.joined(picked(), swept) if ComposerSelection.adding(button)
+		else swept
+	)
 
 
-## Whether this click adds to the selection rather than replacing it.
-static func _adding(button: InputEventMouseButton) -> bool:
-	return button.shift_pressed or button.ctrl_pressed
 #endregion
 
 
@@ -273,24 +277,6 @@ func _pick(ids: Array[StringName]) -> void:
 		var card: ComposerCard = _cards[card_id]
 		card.pick(_picked.has(card_id))
 	selection_changed.emit(picked())
-
-
-## The selection with `id` added, or taken out if it was already in it.
-func _with(id: StringName) -> Array[StringName]:
-	var next: Array[StringName] = picked()
-	if next.has(id):
-		next.erase(id)
-	else:
-		next.append(id)
-	return next
-
-
-func _joined(swept: Array[StringName]) -> Array[StringName]:
-	var next: Array[StringName] = picked()
-	for id: StringName in swept:
-		if not next.has(id):
-			next.append(id)
-	return next
 
 
 ## Whether what is being dragged is a call this canvas can take.

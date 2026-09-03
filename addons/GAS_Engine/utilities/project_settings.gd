@@ -44,9 +44,6 @@ const PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH: String = PROJECT_S
 const PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_ON: String = PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH + "/on"
 const PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_TYPE: String = PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH + "/type"
 const PROJECT_SETTINGS_NAME_RESOURCES: String = PROJECT_SETTINGS_NAME + "/resources"
-const PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES: String = PROJECT_SETTINGS_NAME_RESOURCES + "/attributes"
-const PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE: String = PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES + "/draft_configuration_file"
-const PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR: String = PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES + "/output_directory"
 const PROJECT_SETTINGS_NAME_RESOURCES_CUES: String = PROJECT_SETTINGS_NAME_RESOURCES + "/cues"
 const PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY: String = PROJECT_SETTINGS_NAME_RESOURCES_CUES + "/registry_file"
 const PROJECT_SETTINGS_NAME_RESOURCES_TAGS: String = PROJECT_SETTINGS_NAME_RESOURCES + "/tags"
@@ -63,8 +60,6 @@ const DEFAULT_TAG_PROPERTY_EDITOR_MATCH_ON: String = "gas_tag,gas_tags"
 const DEFAULT_TAG_PROPERTY_EDITOR_MATCH_TYPE: Self.EditorTagsTagEditorPropertyMatchType = EditorTagsTagEditorPropertyMatchType.SUFFIX
 
 const DEFAULT_PATH: String = "res://gas_engine"
-const DEFAULT_PATH_ATTRIBUTES_DRAFT_CONFIG_FILE: String = DEFAULT_PATH + "/attributes_draft.cfg"
-const DEFAULT_PATH_ATTRIBUTES_OUTPUT_DIR: String = DEFAULT_PATH + "/attributes"
 const DEFAULT_PATH_CUES_REGISTRY: String = DEFAULT_PATH + "/cue_registry.tres"
 const DEFAULT_PATH_TAGS_REGISTRY: String = DEFAULT_PATH + "/tag_registry.tres"
 const DEFAULT_PATH_TAGS_GENERATED_SCRIPT: String = DEFAULT_PATH + "/gameplay_tags.gd"
@@ -83,8 +78,6 @@ const MIGRATED_SETTING_NAMES: Array[String] = [
 	PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_ENABLE,
 	PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_ON,
 	PROJECT_SETTINGS_NAME_EDITOR_TAG_PROPERTY_EDITOR_MATCH_TYPE,
-	PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE,
-	PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR,
 	PROJECT_SETTINGS_NAME_RESOURCES_CUES_REGISTRY,
 	PROJECT_SETTINGS_NAME_RESOURCES_TAGS_REGISTRY,
 	PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT,
@@ -97,8 +90,6 @@ static func init_project_settings() -> void:
 		var save_error: Error = ProjectSettings.save()
 		if save_error != OK:
 			push_error("GAS_Engine: failed to save migrated project settings.")
-	_init_attributes_draft_config_path()
-	_init_attributes_output_dir()
 	_init_generated_tag_script_path()
 	_init_registry_cue()
 	_init_registry_tag()
@@ -178,19 +169,6 @@ static func _file_info(setting_name: String) -> Dictionary:
 
 
 #region Accessors
-static func get_attributes_draft_config_path() -> String:
-	return _setting_or_default(
-		PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE,
-		DEFAULT_PATH_ATTRIBUTES_DRAFT_CONFIG_FILE
-	)
-
-
-static func get_attributes_output_dir_path() -> String:
-	return _setting_or_default(
-		PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR, DEFAULT_PATH_ATTRIBUTES_OUTPUT_DIR
-	)
-
-
 static func get_generated_tag_script_path() -> String:
 	return _setting_or_default(
 		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT, DEFAULT_PATH_TAGS_GENERATED_SCRIPT
@@ -227,29 +205,6 @@ static func get_editor_tag_property_editor_match_type() -> Self.EditorTagsTagEdi
 
 
 #region Initialisers
-static func _init_attributes_output_dir() -> void:
-	_declare(
-		PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR,
-		DEFAULT_PATH_ATTRIBUTES_OUTPUT_DIR,
-		{
-			INFO_NAME: PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR,
-			INFO_TYPE: TYPE_STRING,
-			INFO_HINT: PROPERTY_HINT_DIR,
-		}
-	)
-	var output_dir: String = ProjectSettings.get_setting(PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_OUTPUT_DIR)
-	if not DirAccess.dir_exists_absolute(output_dir):
-		DirAccess.make_dir_recursive_absolute(output_dir)
-
-
-static func _init_attributes_draft_config_path() -> void:
-	_declare(
-		PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE,
-		DEFAULT_PATH_ATTRIBUTES_DRAFT_CONFIG_FILE,
-		_file_info(PROJECT_SETTINGS_NAME_RESOURCES_ATTRIBUTES_DRAFT_CONFIG_FILE)
-	)
-
-
 static func _init_generated_tag_script_path() -> void:
 	_declare(
 		PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT,

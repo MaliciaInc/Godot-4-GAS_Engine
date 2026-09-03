@@ -132,7 +132,21 @@ func _activate_ability() -> bool:
 
 
 func _payload() -> GameplayEffect:
-	pass  # exactly as in step 2
+	var how_much: GameplayScalableFloat = GameplayScalableFloat.new()
+	how_much.value = -damage
+
+	var magnitude: GameplayScalableMagnitude = GameplayScalableMagnitude.new()
+	magnitude.value = how_much
+
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = HeroAttributes.HEALTH
+	modifier.operation = GameplayEffectModifier.Operation.ADD
+	modifier.magnitude = magnitude
+
+	var effect: GameplayEffect = GameplayEffect.new()
+	effect.policy = GameplayEffect.DurationPolicy.INSTANT
+	effect.modifiers = [modifier] as Array[GameplayEffectModifier]
+	return effect
 ```
 
 Save it as a scene — one `Node` with this script attached, `fireball.tscn` — and set `damage` in the Inspector. **The scene carries the numbers; the script carries the behaviour.** That is how every ability in this framework is authored.

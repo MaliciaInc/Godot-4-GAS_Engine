@@ -135,3 +135,41 @@ func test_it_does_not_walk_the_vendored_dependency() -> void:
 	for path: String in _found():
 		assert_false(path.begins_with("res://addons/gut"), "nothing from gut: %s" % path)
 #endregion
+
+
+#region Listening for the editor's word
+## Any signal will do to ask the question; `renamed` is one every Node has.
+const MOVED: StringName = &"renamed"
+
+
+func _connections(source: Node) -> int:
+	return source.get_signal_connection_list(MOVED).size()
+
+
+## Enable, disable, enable - the sequence the editor actually puts a plugin
+## through, and the one nothing had ever run.
+##
+## Walked in one pass rather than split into cases, because what is being tested
+## is the order: each step only means anything after the one before it. Letting
+## go twice is in here on purpose - an exit path that is only safe when
+## something else ran first is one that eventually meets the case where it did
+## not.
+func test_the_enable_disable_enable_round_trip_leaves_exactly_one_connection() -> void:
+	var source: Node = Node.new()
+	add_child_autofree(source)
+
+	ComposerLibrary.listen_to(source, MOVED)
+	assert_eq(_connections(source), 1, "enabling connects")
+
+	ComposerLibrary.stop_listening_to(source, MOVED)
+	assert_eq(_connections(source), 0, "disabling lets go")
+
+	ComposerLibrary.stop_listening_to(source, MOVED)
+	assert_eq(_connections(source), 0, "and being asked again is not an error")
+
+	ComposerLibrary.listen_to(source, MOVED)
+	assert_eq(_connections(source), 1, "enabling again connects once, not twice")
+
+	ComposerLibrary.listen_to(source, MOVED)
+	assert_eq(_connections(source), 1, "and asking twice over is still once")
+#endregion

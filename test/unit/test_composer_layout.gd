@@ -193,6 +193,12 @@ func test_an_empty_graph_places_nothing() -> void:
 
 
 ## Columns make room for what they hold, or the next one lands on top.
+##
+## Its mirror is below, and the pair exists because only the horizontal half was
+## written the first time: lanes kept a fixed step of 210 while a card of three
+## fields is 230 tall, so a branch put its second node twenty pixels inside its
+## first. A comment two files away claimed heights already pushed lanes apart,
+## which is the worst way for a thing to be wrong - stated, and untrue.
 func test_a_wide_card_pushes_the_next_column_clear_of_it() -> void:
 	var placements: Dictionary[StringName, Vector2i] = {
 		&"wide": Vector2i(0, 0), &"next": Vector2i(1, 0),
@@ -205,3 +211,34 @@ func test_a_wide_card_pushes_the_next_column_clear_of_it() -> void:
 		placed[&"next"].x, 400.0 + ComposerTheme.COLUMN_GAP,
 		"the second column starts past the first card, not on top of it"
 	)
+
+
+## And lanes make room the same way.
+##
+## Two heights, one behaviour, so they are one test: the first dwarfs the old
+## fixed step of 210 and the second is the case that was actually reachable -
+## a card of three fields is 230 tall, and 230 was already enough to put the
+## next lane twenty pixels inside it.
+const LANE_CASES: Array[Array] = [
+	[478.0, "a card that dwarfs the old step"],
+	[230.0, "and the three-field card that quietly exceeded it"],
+]
+
+
+func test_a_tall_card_pushes_the_next_lane_clear_of_it() -> void:
+	for row: Array in LANE_CASES:
+		var height: float = row[0]
+		var described: String = row[1]
+		var placements: Dictionary[StringName, Vector2i] = {
+			&"tall": Vector2i(0, 0), &"under": Vector2i(0, 1),
+		}
+		var heights: Dictionary[StringName, float] = {&"tall": height, &"under": 106.0}
+
+		var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(
+			placements, {}, heights
+		)
+
+		assert_gte(
+			placed[&"under"].y, height + ComposerTheme.LANE_GAP,
+			"%s: the next lane starts below it, not inside it" % described
+		)
