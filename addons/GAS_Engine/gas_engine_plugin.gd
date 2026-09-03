@@ -147,7 +147,6 @@ func _enter_tree() -> void:
 
 	_composer_instance = ComposerScreen.new()
 	_composer_instance.visible = false
-	_composer_instance.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_composer_instance.code_requested.connect(_on_code_requested)
 	_composer_instance.open_requested.connect(_ask_for_an_ability)
 	EditorInterface.get_editor_main_screen().add_child(_composer_instance)

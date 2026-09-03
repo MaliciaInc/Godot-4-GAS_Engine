@@ -46,6 +46,13 @@ var _output: ComposerOutput = null
 
 
 func _ready() -> void:
+	# The editor's main screen is a container, and a container sizes its children
+	# by these flags and ignores anchors. Without them this was given its minimum
+	# height - the palette overflowed, the canvas was a strip, and the Output
+	# panel sat at the top of the window. It read as half the interface missing.
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
+
 	var back: ColorRect = ComposerPanel.backdrop(ComposerTheme.CHROME)
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(back)
