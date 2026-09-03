@@ -76,6 +76,9 @@ const FONT_LABEL: int = 10
 ## canvas.
 const NODE_MIN_WIDTH: float = 232.0
 const NODE_MAX_WIDTH: float = 420.0
+
+## What an unmeasured card counts as while it has no height yet.
+const NODE_MIN_HEIGHT: float = 106.0
 const PAD_X: float = 14.0
 const PAD_Y: float = 12.0
 
@@ -86,13 +89,14 @@ const RADIUS_ROW: int = 8
 ## mesh changes pitch instead, so pulling out never turns them into smudges.
 const GRID_SPACING: float = 26.0
 
-## How far apart the layout's columns and lanes sit once they become pixels.
-## The layout deals in grid coordinates; this is the only place they gain a
-## size, so a card's own measured height can still push its lane apart.
 ## The space between one column of cards and the next. A step no longer works:
 ## columns are as wide as their widest card, so what is fixed is the gap.
 const COLUMN_GAP: float = 88.0
-const LANE_STEP: float = 210.0
+
+## The space between one lane of cards and the next, for the reason COLUMN_GAP
+## is a gap: a lane is as tall as its tallest card. A fixed step of 210 put a
+## three-field card, which is 230 tall, twenty pixels into the lane below it.
+const LANE_GAP: float = 88.0
 
 ## An ellipse rather than a circle, at this multiple of the card it belongs to.
 ## A circle around a short wide card spills far above and below it.

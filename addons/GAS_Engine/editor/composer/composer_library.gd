@@ -49,6 +49,25 @@ static func forget() -> void:
 	_remembered = PackedStringArray()
 
 
+## Start listening for somebody's word that files moved, exactly once.
+##
+## The editor's filesystem outlives the plugin, and `forget` is static, so a
+## plugin that connects on enable and never lets go has connected twice by its
+## second enable. Godot refuses that with an error rather than ignoring it - and
+## disable-then-enable is not an unusual thing to do, it is the documented way
+## to reload a plugin after its files change on disk.
+static func listen_to(source: Object, moved: StringName) -> void:
+	if not source.is_connected(moved, forget):
+		source.connect(moved, forget)
+
+
+## And stop. Safe to call when it was never listening, because an exit path that
+## has to be sure it ran first is an exit path that eventually does not.
+static func stop_listening_to(source: Object, moved: StringName) -> void:
+	if source.is_connected(moved, forget):
+		source.disconnect(moved, forget)
+
+
 ## Every file whose base chain reaches GameplayAbility, sorted so the list a
 ## person sees does not reshuffle itself between two openings.
 static func abilities_in_project() -> PackedStringArray:

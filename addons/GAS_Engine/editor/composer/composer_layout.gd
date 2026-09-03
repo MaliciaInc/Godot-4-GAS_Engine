@@ -59,29 +59,62 @@ static func arrange(graph: ComposerGraph) -> Dictionary[StringName, Vector2i]:
 ## turned out to be.
 static func origins(
 	placements: Dictionary[StringName, Vector2i],
-	widths: Dictionary[StringName, float] = {}
+	widths: Dictionary[StringName, float] = {},
+	heights: Dictionary[StringName, float] = {}
 ) -> Dictionary[StringName, Vector2]:
-	var widest: Dictionary[int, float] = {}
-	for id: StringName in placements:
-		var column: int = placements[id].x
-		var width: float = widths[id] if widths.has(id) else ComposerTheme.NODE_MIN_WIDTH
-		widest[column] = maxf(widest[column] if widest.has(column) else 0.0, width)
+	var starts: Dictionary[int, float] = _offsets(
+		_extents(placements, widths, true), ComposerTheme.COLUMN_GAP
+	)
 
-	var columns: Array[int] = []
-	columns.assign(widest.keys())
-	columns.sort()
-
-	var starts: Dictionary[int, float] = {}
-	var running: float = 0.0
-	for column: int in columns:
-		starts[column] = running
-		running += widest[column] + ComposerTheme.COLUMN_GAP
+	var tops: Dictionary[int, float] = _offsets(
+		_extents(placements, heights, false), ComposerTheme.LANE_GAP
+	)
 
 	var found: Dictionary[StringName, Vector2] = {}
 	for id: StringName in placements:
 		var at: Vector2i = placements[id]
-		found[id] = Vector2(starts[at.x], float(at.y) * ComposerTheme.LANE_STEP)
+		found[id] = Vector2(starts[at.x], tops[at.y])
 	return found
+
+
+## The largest card in each column, or in each lane.
+##
+## One walk for both axes: a column is as wide as its widest card and a lane is
+## as tall as its tallest, which is the same question asked twice. Written once
+## because the horizontal half was written first and the vertical half was not,
+## and a graph whose lanes overlapped is what that cost.
+static func _extents(
+	placements: Dictionary[StringName, Vector2i],
+	sizes: Dictionary[StringName, float],
+	across: bool
+) -> Dictionary[int, float]:
+	var largest: Dictionary[int, float] = {}
+	for id: StringName in placements:
+		var slot: int = placements[id].x if across else placements[id].y
+		var span: float = sizes[id] if sizes.has(id) else _least(across)
+		largest[slot] = maxf(largest[slot] if largest.has(slot) else 0.0, span)
+	return largest
+
+
+## What an unmeasured card counts as. Cards have no size until a frame has gone
+## by, so the first placement guesses and the second, once they are fitted, does
+## not have to.
+static func _least(across: bool) -> float:
+	return ComposerTheme.NODE_MIN_WIDTH if across else ComposerTheme.NODE_MIN_HEIGHT
+
+
+## Where each slot starts, laid end to end with a gap between them.
+static func _offsets(largest: Dictionary[int, float], gap: float) -> Dictionary[int, float]:
+	var slots: Array[int] = []
+	slots.assign(largest.keys())
+	slots.sort()
+
+	var starts: Dictionary[int, float] = {}
+	var running: float = 0.0
+	for slot: int in slots:
+		starts[slot] = running
+		running += largest[slot] + gap
+	return starts
 
 
 static func _sorted_ids(graph: ComposerGraph) -> Array[StringName]:
