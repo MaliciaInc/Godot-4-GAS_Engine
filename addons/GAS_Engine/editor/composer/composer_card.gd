@@ -34,7 +34,7 @@ var node_id: StringName = &""
 
 var _glass: ColorRect = null
 var _column: VBoxContainer = null
-var _ring: ReferenceRect = null
+var _ring: Panel = null
 var _title: Control = null
 var _rows: Array[Control] = []
 var _state: ComposerNode.State = ComposerNode.State.CLEAN
@@ -44,10 +44,10 @@ var _state: ComposerNode.State = ComposerNode.State.CLEAN
 func build(node: ComposerNode) -> void:
 	node_id = node.id
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	custom_minimum_size = Vector2(ComposerTheme.NODE_WIDTH, 0.0)
+	custom_minimum_size = Vector2(ComposerTheme.NODE_MIN_WIDTH, 0.0)
 
 	_glass = ColorRect.new()
-	_glass.size = Vector2(ComposerTheme.NODE_WIDTH, 1.0)
+	_glass.size = Vector2(ComposerTheme.NODE_MIN_WIDTH, 1.0)
 	_glass.material = ComposerShaders.glass_material(_glass.size)
 	_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_glass)
@@ -55,7 +55,7 @@ func build(node: ComposerNode) -> void:
 	_column = VBoxContainer.new()
 	_column.position = Vector2(ComposerTheme.PAD_X, ComposerTheme.PAD_Y)
 	_column.custom_minimum_size = Vector2(
-		ComposerTheme.NODE_WIDTH - ComposerTheme.PAD_X * 2.0, 0.0
+		ComposerTheme.NODE_MIN_WIDTH - ComposerTheme.PAD_X * 2.0, 0.0
 	)
 	_column.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S3 - 1.0))
 	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -72,12 +72,14 @@ func build(node: ComposerNode) -> void:
 	if node.awaits:
 		add_child(_await_mark())
 
-	# Drawn rather than styled: a ReferenceRect is a border and nothing else,
-	# which is all a selection needs to be.
-	_ring = ReferenceRect.new()
-	_ring.editor_only = false
-	_ring.border_color = ComposerTheme.ACCENT
-	_ring.border_width = ComposerTheme.RING_WIDTH
+	# A ReferenceRect drew this, and a ReferenceRect can only draw a rectangle:
+	# a hard square around a rounded card, which reads as a debug artifact
+	# rather than as a selection. Styled instead, so it has the card's corners.
+	_ring = Panel.new()
+	_ring.add_theme_stylebox_override(
+		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.picked_box()
+	)
+	_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring.visible = false
 	add_child(_ring)
@@ -87,16 +89,45 @@ func build(node: ComposerNode) -> void:
 ##
 ## Call one frame after the card is in the tree, never before: the column has no
 ## measured height until then.
+## The width this card needs, bounded.
+##
+## Taken from the column inside it, so it counts the title, every argument's
+## name and every value - not the title alone. A node called `End` can carry an
+## argument called `Blocked By Tag Query`, and a card sized to its title would
+## cut the argument off.
+func wanted_width() -> float:
+	if _column == null:
+		return ComposerTheme.NODE_MIN_WIDTH
+	return clampf(
+		_column.get_combined_minimum_size().x + ComposerTheme.PAD_X * 2.0,
+		ComposerTheme.NODE_MIN_WIDTH, ComposerTheme.NODE_MAX_WIDTH
+	)
+
+
 func fit() -> void:
 	if _column == null or _glass == null:
 		return
+	var width: float = wanted_width()
+	_column.custom_minimum_size.x = width - ComposerTheme.PAD_X * 2.0
+	# Only now, with the width settled, does a value that still does not fit get
+	# trimmed - and only that one.
+	for row: Control in _rows:
+		_clip_long_values(row)
 	var height: float = _column.size.y + ComposerTheme.PAD_Y * 2.0
-	var span: Vector2 = Vector2(ComposerTheme.NODE_WIDTH, height)
+	var span: Vector2 = Vector2(width, height)
 	_glass.size = span
 	ComposerShaders.resize_glass(_glass.material as ShaderMaterial, span)
 	size = span
 	if _ring != null:
 		_ring.size = span
+
+
+static func _clip_long_values(row: Node) -> void:
+	for child: Node in row.get_children():
+		var label: Label = child as Label
+		if label != null:
+			label.clip_text = true
+		_clip_long_values(child)
 
 
 ## Whether this card is one of the ones being worked on.
@@ -184,7 +215,6 @@ func _field_row(field: ComposerNode.Field) -> Control:
 		),
 		ComposerTheme.FONT_VALUE
 	)
-	value.clip_text = true
 	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(value)
 
@@ -200,7 +230,7 @@ func _await_mark() -> Control:
 		AWAIT_LABEL, ComposerTheme.ACCENT_SOFT, ComposerTheme.FONT_LABEL
 	)
 	mark.position = Vector2(
-		ComposerTheme.NODE_WIDTH - 58.0, ComposerTheme.PAD_Y + 1.0
+		ComposerTheme.NODE_MIN_WIDTH - 58.0, ComposerTheme.PAD_Y + 1.0
 	)
 	return mark
 

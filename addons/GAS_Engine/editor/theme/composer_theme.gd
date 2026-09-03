@@ -68,7 +68,14 @@ const FONT_LABEL: int = 10
 
 ## Fixed. Anything that does not fit goes to the Inspector rather than making
 ## one card wider than its neighbours.
-const NODE_WIDTH: float = 232.0
+## A card is as wide as the longest thing it has to say, between these.
+##
+## The minimum keeps a graph of short nodes from looking ragged. The maximum is
+## where a card stops growing and starts truncating instead, because one node
+## carrying a long resource path should not push the whole column across the
+## canvas.
+const NODE_MIN_WIDTH: float = 232.0
+const NODE_MAX_WIDTH: float = 420.0
 const PAD_X: float = 14.0
 const PAD_Y: float = 12.0
 
@@ -82,7 +89,9 @@ const GRID_SPACING: float = 26.0
 ## How far apart the layout's columns and lanes sit once they become pixels.
 ## The layout deals in grid coordinates; this is the only place they gain a
 ## size, so a card's own measured height can still push its lane apart.
-const COLUMN_STEP: float = 320.0
+## The space between one column of cards and the next. A step no longer works:
+## columns are as wide as their widest card, so what is fixed is the gap.
+const COLUMN_GAP: float = 88.0
 const LANE_STEP: float = 210.0
 
 ## An ellipse rather than a circle, at this multiple of the card it belongs to.
@@ -92,7 +101,6 @@ const LANE_STEP: float = 210.0
 const SELECTION_FILL: Color = Color(0.482, 0.361, 1.0, 0.14)
 
 ## How thick the outline around a picked card is.
-const RING_WIDTH: float = 1.0
 
 const BLOOM_SCALE: float = 1.9
 
@@ -139,6 +147,20 @@ static func disc(fill: Color, radius: float) -> StyleBoxFlat:
 	var style: StyleBoxFlat = StyleBoxFlat.new()
 	style.bg_color = fill
 	style.set_corner_radius_all(ceili(radius))
+	return style
+
+
+## The edge a picked card wears.
+##
+## The card's own corner radius, because a square outline around a rounded card
+## reads as something the editor drew there by accident - which is exactly how
+## it was described the first time somebody saw it.
+static func picked_box() -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = TRANSPARENT
+	style.border_color = ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(RADIUS_PANEL)
 	return style
 
 
