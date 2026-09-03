@@ -139,8 +139,7 @@ import/fbx/enabled=false
 
 [gas_engine]
 
-resources/cues/registry_file="res://gas_engine/cue_registry.tres"
-resources/tags/registry_file="res://gas_engine/tag_registry.tres"
+internal/source_registry_migration=1
 
 [gui]
 

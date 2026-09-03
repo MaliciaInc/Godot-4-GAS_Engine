@@ -138,7 +138,7 @@ func _enter_tree() -> void:
 		GASEngineProjectSettings.owns_cue_manager_autoload()
 		and _autoload_points_to_gas_engine()
 	)
-	seed_default_registries()
+	ensure_project_sources()
 
 	_tag_inspector = GameplayTagInspectorPlugin.new()
 	add_inspector_plugin(_tag_inspector)
@@ -302,62 +302,46 @@ func _on_code_requested(source_path: String) -> void:
 
 #region Project seeding
 ## Create the default registry resources when they do not exist yet.
-func seed_default_registries() -> void:
-	_seed_cue_registry()
-	_seed_tag_registry()
+## Make sure the project has the two files its tags and cues live in.
+##
+## Reads, and writes only when there is nothing to read. A startup that
+## re-rendered a file it had just read would canonicalise it every time the
+## editor opened - losing a comment somebody added, an order they chose, and any
+## shape the printer does not happen to produce. "Safe to edit by hand" has to
+## survive the next restart to mean anything.
+func ensure_project_sources() -> void:
+	# Saved here and nowhere else: the fold records itself in a setting, and
+	# ProjectSettings.save() rewrites project.godot whole - so it happens once,
+	# where the cost is expected, rather than wherever a value changed.
+	if GASSourceMigration.pending() and GASSourceMigration.run():
+		if ProjectSettings.save() != OK:
+			push_error("GAS_Engine: could not record that the registry fold happened.")
+	_ensure_gameplay_tags_source()
+	_ensure_gameplay_cues_source()
 
 
-func _seed_cue_registry() -> void:
-	if not GameplayCueGenerator.generate_cues_file(_bindings_to_seed()):
-		push_error("GAS_Engine: could not write the project's gameplay cues.")
-
-
-## What the cues file should hold: whatever it already holds, plus anything a
-## registry resource from before the bindings lived in a file still names.
-func _bindings_to_seed() -> Dictionary[StringName, String]:
-	var found: Dictionary[StringName, String] = GameplayCueGenerator.bindings_in_file()
-	var legacy: String = GASEngineProjectSettings.get_legacy_registry_cue_path()
-	if not FileAccess.file_exists(legacy):
-		return found
-
-	var registry: GameplayCueRegistry = load(legacy) as GameplayCueRegistry
-	if registry == null:
-		return found
-	for entry: GameplayCueEntry in registry.entries:
-		if entry == null or entry.tag == &"" or entry.scene == null:
-			continue
-		if not found.has(entry.tag):
-			found[entry.tag] = entry.scene.resource_path
-	return found
-
-
-func _seed_tag_registry() -> void:
-	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
-	registry.tags.assign(GameplayTagGenerator.tags_in_file())
-	var found: int = registry.tags.size()
-
-	for tag: StringName in _tags_from_a_legacy_registry():
-		registry.add_tag(String(tag))
-	if registry.tags.is_empty():
-		for tag: String in EXAMPLE_TAGS:
-			registry.add_tag(tag)
-
-	if registry.tags.size() == found and found > 0:
+## Write the tags file when the project has none, and leave it alone when it has.
+func _ensure_gameplay_tags_source() -> void:
+	if FileAccess.file_exists(GASEngineProjectSettings.get_generated_tag_script_path()):
 		return
+
+	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
+	for tag: String in EXAMPLE_TAGS:
+		registry.add_tag(tag)
 	if not GameplayTagGenerator.generate_tags_file(registry.tags):
 		push_error("GAS_Engine: could not write the project's gameplay tags.")
 
 
-## Read once, folded in, and never written to again.
-func _tags_from_a_legacy_registry() -> Array[StringName]:
-	var found: Array[StringName] = []
-	var path: String = GASEngineProjectSettings.get_legacy_registry_tag_path()
-	if not FileAccess.file_exists(path):
-		return found
-	var registry: GameplayTagRegistry = load(path) as GameplayTagRegistry
-	if registry != null:
-		found.assign(registry.tags)
-	return found
+## And the cues file, which starts empty: a project has no cues until it does.
+func _ensure_gameplay_cues_source() -> void:
+	if FileAccess.file_exists(GASEngineProjectSettings.get_generated_cue_script_path()):
+		return
+
+	var none: Dictionary[StringName, String] = {}
+	if not GameplayCueGenerator.generate_cues_file(none):
+		push_error("GAS_Engine: could not write the project's gameplay cues.")
+
+
 #endregion
 
 
