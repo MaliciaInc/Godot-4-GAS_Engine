@@ -7,7 +7,7 @@
 ## nothing about it can change after it was taken.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayLiveMagnitudeBinding extends RefCounted
 
 ## The still-active effect this binding keeps updated.

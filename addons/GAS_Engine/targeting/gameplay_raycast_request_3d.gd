@@ -6,7 +6,7 @@
 ## caller to have set the right one.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayRaycastRequest3D extends RefCounted
 
 var from: Vector3 = Vector3.ZERO

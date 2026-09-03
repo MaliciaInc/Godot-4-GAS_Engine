@@ -22,7 +22,7 @@
 ## complicating to reproduce an unobserved corner of the old ordering.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectPurgeTransaction extends RefCounted
 
 ## What removing one grant of one tag, from one purged effect, found. Captured

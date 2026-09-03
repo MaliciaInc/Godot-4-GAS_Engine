@@ -17,7 +17,7 @@
 ##   the two disagree, the write is refused and the file is left alone.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerWriter extends RefCounted
 
 const TAB: String = "\t"

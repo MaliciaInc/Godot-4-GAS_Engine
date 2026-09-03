@@ -4,7 +4,7 @@
 ## the fact sees exactly what was decided, not what the attributes hold now.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayResolvedCostEntry extends RefCounted
 
 var target_attribute: StringName = &""

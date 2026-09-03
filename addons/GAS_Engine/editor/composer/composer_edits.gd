@@ -11,7 +11,7 @@
 ## one is worse than either keeping both or dropping both.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerEdits extends RefCounted
 
 ## What a body says when it says nothing. GDScript needs a statement, and this

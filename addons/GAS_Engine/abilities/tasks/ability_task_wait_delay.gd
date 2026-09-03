@@ -6,7 +6,7 @@
 ## effect scheduler running beside it. One clock, or the two eventually disagree.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityTaskWaitDelay extends GameplayAbilityTask
 
 ## How long to wait. Never negative: a negative wait is a caller's mistake, and

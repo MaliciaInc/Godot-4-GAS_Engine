@@ -8,7 +8,7 @@
 ## subset it understands is wrong, not the file.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 extends GameplayAbility
 
 ## INSTANT. Applied once and gone; nothing to remove afterwards.

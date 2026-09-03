@@ -6,7 +6,7 @@
 ## builds its own request, so each carries its own draw.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectChanceToApplyComponent extends GameplayEffectComponent
 
 @export_range(0.0, 1.0) var chance: float = 1.0

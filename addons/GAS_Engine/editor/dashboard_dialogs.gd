@@ -5,7 +5,7 @@
 ## node per message. Two copies meant two places to forget it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name DashboardDialogs extends RefCounted

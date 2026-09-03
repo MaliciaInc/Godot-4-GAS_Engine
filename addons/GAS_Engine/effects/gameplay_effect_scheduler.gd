@@ -10,7 +10,7 @@
 ## and silently drop two, and the drift would compound for the effect's life.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectScheduler extends RefCounted
 
 ## Ticks paid per effect per update. A backlog beyond this is carried, never

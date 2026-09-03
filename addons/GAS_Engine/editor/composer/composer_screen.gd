@@ -12,7 +12,7 @@
 ## coordinates the layout decided, not by any container.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerScreen extends Control
 
 const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"

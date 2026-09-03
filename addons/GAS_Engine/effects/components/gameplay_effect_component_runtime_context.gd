@@ -7,7 +7,7 @@
 ## one effect share the same definition but never the same state.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectComponentRuntimeContext extends RefCounted
 
 var spec: GameplayEffectSpec = null

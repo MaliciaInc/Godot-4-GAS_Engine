@@ -9,7 +9,7 @@
 ## satisfying nothing, the same answer `validate()` gives it as a definition.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTagQuery extends Resource
 
 @export var root: GameplayTagQueryExpression = null

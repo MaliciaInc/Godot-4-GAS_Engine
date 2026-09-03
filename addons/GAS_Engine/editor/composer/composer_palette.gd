@@ -8,7 +8,7 @@
 ## cannot quietly become a second opinion about what the Composer can express.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerPalette extends Control
 
 const TITLE: String = "PALETTE"

@@ -6,7 +6,7 @@
 ## reach through .spec itself.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GasEffectSnapshot extends RefCounted
 
 var handle: GameplayEffectHandle = null

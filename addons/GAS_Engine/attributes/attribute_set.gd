@@ -12,8 +12,8 @@
 ## a full heal. Preventing exactly that is what the base clamp is for.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_author: YulRun (https://YulRun.Dev), Arhalies fork
-## @meta_license: MIT
+## @meta_author: MaliciaInc
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool @abstract
 @icon("res://addons/GAS_Engine/icons/gas_engine_asc.svg")

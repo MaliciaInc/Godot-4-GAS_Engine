@@ -5,7 +5,7 @@
 ## caller should not have to leave application-only fields blank to build one.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectComponentRemovalContext extends RefCounted
 
 var spec: GameplayEffectSpec = null

@@ -14,7 +14,7 @@
 ## never rewritten, which is why `body_span()` exists before any parsing does.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerSubset extends RefCounted
 
 ## The method a visual ability is a view of.
@@ -125,7 +125,8 @@ static func classify(line: String) -> Verdict:
 		return verdict
 
 	for rule: Array in REFUSED:
-		if text.begins_with(rule[0]) or text.contains(" " + rule[0]):
+		var forbidden: String = rule[0]
+		if text.begins_with(forbidden) or text.contains(" " + forbidden):
 			verdict.reason = rule[1]
 			return verdict
 
@@ -134,7 +135,8 @@ static func classify(line: String) -> Verdict:
 		return verdict
 
 	for opener: Array in OPENERS:
-		if text.begins_with(opener[0]):
+		var begins: String = opener[0]
+		if text.begins_with(begins):
 			verdict.kind = opener[1]
 			return _checked(verdict, text)
 

@@ -12,7 +12,7 @@
 ## simply either there or not.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayIntegrationAvailability extends RefCounted
 
 const DIALOGIC_PLUGIN_PATH: String = "res://addons/dialogic/plugin.cfg"

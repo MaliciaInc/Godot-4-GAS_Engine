@@ -10,7 +10,7 @@
 ## here, rather than at each call site.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name AttributeSetDrafts extends RefCounted

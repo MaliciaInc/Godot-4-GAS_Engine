@@ -9,7 +9,7 @@
 ## belongs in that emitter, next to the code that decides its shape.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name GDScriptSource extends RefCounted
@@ -19,6 +19,6 @@ class_name GDScriptSource extends RefCounted
 const TOOL_ANNOTATION: String = "@tool"
 
 ## The licence line every generated file carries, matching this addon's.
-const LICENSE_DOC_LINE: String = "## @meta_license: MIT"
+const LICENSE_DOC_LINE: String = "## @meta_license: GAS_Engine Community Use License 1.0"
 
 const NEWLINE: String = "\n"

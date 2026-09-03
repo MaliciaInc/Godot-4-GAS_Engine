@@ -15,7 +15,7 @@
 ## nothing, but unbounded is not a size - it is a decision nobody made.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerHistory extends RefCounted
 
 const DEPTH: int = 64

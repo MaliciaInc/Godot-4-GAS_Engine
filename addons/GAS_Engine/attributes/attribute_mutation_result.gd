@@ -9,7 +9,7 @@
 ## value fields describe the untouched attribute.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AttributeMutationResult extends RefCounted
 
 ## Which attribute this result is about. Carried on the result so a caller

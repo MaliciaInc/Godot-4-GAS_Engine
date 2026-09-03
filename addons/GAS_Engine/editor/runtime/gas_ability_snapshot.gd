@@ -1,7 +1,7 @@
 ## A read-only picture of one granted ability spec, for the runtime debugger.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GasAbilitySnapshot extends RefCounted
 
 var handle: GameplayAbilityHandle = null

@@ -10,7 +10,7 @@
 ## after the grant must not retroactively change what the spec charges.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAbilityDefinitionSnapshot extends RefCounted
 
 var ability_scene: PackedScene = null

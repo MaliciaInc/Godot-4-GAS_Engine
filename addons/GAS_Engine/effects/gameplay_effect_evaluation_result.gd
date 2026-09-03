@@ -9,7 +9,7 @@
 ## `contributions` only when `is_ok()` holds for the whole transaction.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectEvaluationResult extends RefCounted
 
 var status: AttributeEvaluationResult.Status = AttributeEvaluationResult.Status.OK

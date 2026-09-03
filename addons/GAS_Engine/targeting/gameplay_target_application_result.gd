@@ -8,7 +8,7 @@
 ## instead of inferring from a number that came back lower than expected.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTargetApplicationResult extends RefCounted
 
 ## Every node the target data offered, before any of them were resolved or

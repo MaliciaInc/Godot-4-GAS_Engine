@@ -12,7 +12,7 @@
 ## what cannot be drawn than by a dialog that says no and shows nothing.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerHost extends RefCounted
 
 ## Borrowed rather than restated: the words for a path that holds nothing are

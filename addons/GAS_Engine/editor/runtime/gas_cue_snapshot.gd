@@ -10,7 +10,7 @@
 ## asking the manager for a second one.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GasCueSnapshot extends RefCounted
 
 const CueManagerScript = preload("res://addons/GAS_Engine/managers/gameplay_cue_manager.gd")

@@ -8,7 +8,7 @@
 ## has no reason to carry.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GasAttributeSnapshot extends RefCounted
 
 ## One contribution, with the active effect it belongs to resolved in.

@@ -5,7 +5,7 @@
 ## is load-bearing here: OVERRIDE resolution depends on it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AttributeModifierContribution extends RefCounted
 
 ## The attribute this contribution writes to.

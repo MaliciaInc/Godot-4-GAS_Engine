@@ -8,7 +8,7 @@
 ## register or free it. `give_ability` does both; nothing else validates.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityRuntime extends RefCounted
 
 ## Why an activation was refused. Closed, so a switch cannot silently miss one.

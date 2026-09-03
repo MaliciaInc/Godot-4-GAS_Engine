@@ -9,7 +9,7 @@
 ## already covers, a query naming an empty/cyclic GameplayTagQuery.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAssetValidator extends RefCounted
 
 const Result = preload("res://addons/GAS_Engine/editor/gameplay_asset_validation_result.gd")

@@ -6,7 +6,7 @@
 ## `give_and_activate_once()` are thin wrappers there, the logic lives here.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name AbilityLifecycleRuntime extends RefCounted
 
 var ability_runtime: AbilityRuntime = null

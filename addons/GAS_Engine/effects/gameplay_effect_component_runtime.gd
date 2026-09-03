@@ -8,7 +8,7 @@
 ## it owns no active-effect registry of its own.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectComponentRuntime extends RefCounted
 
 ## The one RNG every random-dependent component (ChanceToApply) draws from.

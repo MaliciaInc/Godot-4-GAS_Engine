@@ -6,7 +6,7 @@
 ## finer-grained status) is one closed type, never a second vocabulary.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectRefusalRecord extends RefCounted
 
 var result: GameplayEffectApplicationResult = null

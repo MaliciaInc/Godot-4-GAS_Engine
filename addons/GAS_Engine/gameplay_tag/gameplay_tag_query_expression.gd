@@ -6,7 +6,7 @@
 ## condition, and the operator does not distinguish between them.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTagQueryExpression extends Resource
 
 enum Operator {

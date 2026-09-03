@@ -4,7 +4,7 @@
 ## design-time check, not a per-application decision.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayEffectComponentValidationResult extends RefCounted
 
 enum Status {

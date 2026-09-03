@@ -12,7 +12,7 @@
 ## than no generator: it produces a file that looks authored.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name AttributeSetScriptWriter extends RefCounted

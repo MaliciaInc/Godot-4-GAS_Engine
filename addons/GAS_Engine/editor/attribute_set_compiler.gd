@@ -5,7 +5,7 @@
 ## dialog, which is what lets the decision be tested without a UI.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 
 @tool
 class_name AttributeSetCompiler extends RefCounted

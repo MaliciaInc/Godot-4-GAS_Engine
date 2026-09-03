@@ -23,7 +23,7 @@
 ##   in their head at the moment they most need it.
 ##
 ## @meta_addon: GAS_Engine
-## @meta_license: MIT
+## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerLayout extends RefCounted
 
 const FIRST_COLUMN: int = 0
