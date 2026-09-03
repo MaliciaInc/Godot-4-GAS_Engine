@@ -27,6 +27,11 @@ const OUTPUT_HEIGHT: float = 132.0
 ## view that knows about Godot's docks.
 signal code_requested(source_path: String)
 
+## Asked for an ability to open. Forwarded, not answered: choosing a file is
+## the editor's job, and a view that popped its own dialog would be a view
+## that knows about Godot's docks.
+signal open_requested
+
 var _top: ComposerTopBar = null
 var _graph: ComposerGraph = null
 
@@ -75,6 +80,7 @@ func _ready() -> void:
 	_canvas.node_dropped.connect(_on_node_dropped)
 	_canvas.menu_requested.connect(_on_menu_requested)
 	_output.row_picked.connect(_on_row_picked)
+	_output.open_requested.connect(func _asked() -> void: open_requested.emit())
 	_inspector.value_edited.connect(_on_value_edited)
 	_palette.node_picked.connect(_on_node_picked)
 

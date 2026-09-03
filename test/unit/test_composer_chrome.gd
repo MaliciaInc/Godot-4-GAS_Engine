@@ -19,6 +19,17 @@ func _mounted(control: Control, span: Vector2) -> Control:
 	return control
 
 
+## Press the button carrying this exact text, wherever it is.
+func _press_titled(parent: Node, title: String) -> bool:
+	for child: Node in parent.get_children():
+		if child is Button and (child as Button).text == title:
+			(child as Button).pressed.emit()
+			return true
+		if _press_titled(child, title):
+			return true
+	return false
+
+
 func _labels(parent: Node, found: Array[String]) -> Array[String]:
 	for child: Node in parent.get_children():
 		if child is Label:
@@ -296,6 +307,60 @@ func test_a_refused_open_still_leaves_the_screen_showing_the_reason() -> void:
 	assert_true(shown.has(ComposerTopBar.NO_ABILITY), "the bar says nothing is open")
 	assert_true(shown.has("there is nothing at res://nowhere.gd"), "and the panel says why")
 	assert_null(screen.graph(), "with no graph behind it")
+
+
+## What a palette row actually emits when it is pressed.
+##
+## The suite called the screen's handler directly, which proved the handler and
+## never the wire between them. The wire was broken the whole time: the row
+## emitted the catalog entry where the signal declares a StringName, so Godot
+## refused the call at the connection and every palette click did nothing at
+## all - silently, because the refusal happened before any code that could have
+## reported it. A click reported from a real editor is what found it.
+func test_pressing_a_palette_row_emits_a_key_the_catalog_can_find() -> void:
+	var palette: ComposerPalette = _mounted(
+		ComposerPalette.new(), Vector2(PANEL_WIDTH, PANEL_HEIGHT)
+	) as ComposerPalette
+	await get_tree().process_frame
+
+	var wanted: StringName = ComposerCatalog.all().keys()[0]
+	var row: Button = palette._entry_row(wanted) as Button
+	add_child_autofree(row)
+
+	var heard: Array = []
+	palette.node_picked.connect(func _picked(what: Variant) -> void: heard.append(what))
+	row.pressed.emit()
+
+	assert_eq(heard.size(), 1, "the press was heard")
+	assert_eq(
+		typeof(heard[0]), TYPE_STRING_NAME, "as the StringName the signal declares"
+	)
+	# Guarded, because the second claim only means anything once the first holds:
+	# with the defect present this array held an Object, and looking a key up
+	# from one would fail as a crash rather than as a message.
+	if typeof(heard[0]) == TYPE_STRING_NAME:
+		var emitted: StringName = heard[0]
+		assert_not_null(ComposerCatalog.find(emitted), "and the catalog knows it")
+
+
+## A refusal offers the way out, it does not only describe it.
+##
+## Telling somebody who arrived through a menu to go and open a file themselves
+## is telling them the tool cannot do what they just asked for. The screen
+## forwards the request rather than answering it, because choosing a file is
+## the editor's business and this view knows nothing about docks.
+func test_a_refusal_offers_to_open_one_and_the_screen_passes_that_on() -> void:
+	var screen: ComposerScreen = _mounted(
+		ComposerScreen.new(), Vector2(1280.0, 720.0)
+	) as ComposerScreen
+	await get_tree().process_frame
+	await screen.show_refusal("the script editor has nothing open")
+
+	var asked: Array[bool] = []
+	screen.open_requested.connect(func _heard() -> void: asked.append(true))
+
+	assert_true(_press_titled(screen, ComposerOutput.PICK_ONE), "the offer is on screen")
+	assert_eq(asked.size(), 1, "and pressing it reaches whoever owns the editor")
 
 
 #region What the spec fixes about how things read
