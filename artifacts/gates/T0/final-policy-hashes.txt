@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# risky-test guard in the headless runner; the fold happens once and seeds a fresh project
+# the two generated files are read the way GDScript reads them; the identity gate looks for the word
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T22:42:49Z
-# commit-previo: 64d37cd599b1bb8ada104397586a544f95464ad0
+# date-utc: 2026-09-03T23:16:07Z
+# commit-previo: 30813ee461e289cc534253f5b283fe80865d564f
 # files: 24
 82a3ecb02ae2b6f458affbb6ca3aae6c449ad192f7ebc1362fae68e80aa0257c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
@@ -29,7 +29,7 @@ f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/
 5049d71c49ec0f0323ca82e8e4aa48ab2d58537f4adf3a825d61a7670e83fbbe  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
-b24449e92426153f9d07aa111e2eb03010a4be2e857a68f99bba805c2fc5d8a7  tooling/product_identity.py
+019f345fb922a584d02c5d2b521274d630f7a9d14fc3e3fd0076995827bb4014  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py

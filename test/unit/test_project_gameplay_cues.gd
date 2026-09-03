@@ -88,3 +88,56 @@ func test_every_binding_names_a_scene_that_exists() -> void:
 		"and one that is not does not - an empty file above is an answer, not a shrug"
 	)
 #endregion
+
+
+#region The file says what GDScript says it says
+## What a person leaves in the file, read back.
+func _bindings_in(lines: Array[String]) -> Dictionary[StringName, String]:
+	var read: Variant = HandEditedSource.read(
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT,
+		lines,
+		GameplayCueGenerator.bindings_in_file
+	)
+	var found: Dictionary[StringName, String] = read
+	return found
+
+
+## A binding somebody commented out is a binding that is gone.
+##
+## The reader used to take any line holding `&"..."` and `preload("...")`, in
+## any position, so a `#` in front of one changed nothing for it while changing
+## everything for Godot. The two disagreed about what the file said, and the
+## reader is the one the cue manager builds its table from - so the cue was
+## dead in the editor, absent from the export that no longer saw the
+## dependency, and still being asked for at runtime.
+func test_a_commented_out_binding_is_not_a_binding() -> void:
+	var found: Dictionary[StringName, String] = _bindings_in([
+		GameplayCueGenerator.BINDINGS_DECLARATION,
+		'	&"Cue.Kept": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		'	# &"Cue.TakenOut": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		"}",
+	])
+
+	assert_true(found.has(&"Cue.Kept"), "the one that is there is there")
+	assert_false(found.has(&"Cue.TakenOut"), "and the one behind a # is not")
+
+
+## And a binding-shaped line that is not in the bindings is not one either.
+##
+## The same hole seen from the other side: an example in a doc comment above the
+## declaration, and a second dictionary below it, both read as bindings. A file
+## a person is invited to edit will eventually contain both.
+func test_only_what_is_inside_the_bindings_counts() -> void:
+	var found: Dictionary[StringName, String] = _bindings_in([
+		'## For example: &"Cue.FromTheDocs": preload("%s")' % A_SCENE_THAT_EXISTS,
+		GameplayCueGenerator.BINDINGS_DECLARATION,
+		'	&"Cue.Real": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		"}",
+		"",
+		"const SOMETHING_OF_MY_OWN: Dictionary[StringName, PackedScene] = {",
+		'	&"Cue.Mine": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		"}",
+	])
+
+	assert_eq(found.keys(), [&"Cue.Real"] as Array[StringName], "only the body counts")
+#endregion

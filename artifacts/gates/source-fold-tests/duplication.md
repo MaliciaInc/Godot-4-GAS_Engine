@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `C:\Users\Edward\Documents\Projectos\GAS_Engine`
-- Source files scanned: 317
+- Source files scanned: 318
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 1305
-- Units by language: gdscript 1271, powershell 4, python 30
+- Units scanned: 1312
+- Units by language: gdscript 1278, powershell 4, python 30
 - Findings: 334
-- Elapsed: 5.570s
+- Elapsed: 5.512s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 34 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13240 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13327 (raise with --max-pairs)
 
 ## Structural
 
@@ -239,6 +239,7 @@
 - 0.826 [executable]: `addons/GAS_Engine/cues/gameplay_cue_notify.gd:43-65:execute_cue` <-> `addons/GAS_Engine/gas_engine_plugin.gd:115-132:_enable_plugin`
 - 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_tag_semantics.gd:84-98:test_an_active_ability_blocks_another_matching_its_block_query`
 - 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_task_library.gd:323-339:test_wait_ability_activated_matches_by_tag_query`
+- 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_immunities.gd:201-216:test_an_immune_effect_never_purges_other_active_effects`
 - 0.821 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:364-378:stage_gameplay_effect_base_write` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:384-409:commit_base_write`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:62-70:wait_tag_query` <-> `test/unit/test_composer_layout.gd:33-41:_node`
@@ -251,7 +252,6 @@
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 0.818 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result` <-> `addons/GAS_Engine/effects/gameplay_effect_inhibition_runtime.gd:101-108:_apply_removal_if_due`
-- 0.818 [executable]: `addons/GAS_Engine/cues/gameplay_cue_generator.gd:75-87:bindings_in_file` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_tree.gd:49-71:build`
 - 0.818 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:392-403:capture_definition`
 - 0.818 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/unit/test_gameplay_effect_components.gd:185-194:_refusal_stage_cases`
 - 0.818 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_target_application.gd:95-108:test_a_target_without_an_ability_system_is_named_rather_than_missed`
@@ -318,7 +318,6 @@
 - 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_cues.gd:340-366:test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else`
 - 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_chains.gd:80-104:test_a_removal_chain_survives_the_source_having_despawned`
 - 0.793 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:151-171:evaluate` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:364-378:stage_gameplay_effect_base_write`
-- 0.793 [executable]: `addons/GAS_Engine/cues/gameplay_cue_generator.gd:75-87:bindings_in_file` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_generator.gd:80-95:tags_in_file`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:19-29:get_cooldown_tags` <-> `addons/GAS_Engine/components/ability_runtime.gd:418-430:_deliver_input`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query` <-> `addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:48-57:can_apply_all`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query` <-> `addons/GAS_Engine/integrations/quest_system/quest_system_gas_bridge.gd:235-245:_on_gameplay_event`
@@ -355,6 +354,7 @@
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_instancing.gd:158-170:test_removing_the_spec_cancels_every_execution`
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_attribute_captures.gd:277-292:test_an_execution_calculation_receives_already_resolved_captures`
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_chains.gd:41-50:test_on_application_applies_the_child_to_the_same_target`
+- 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_immunities.gd:144-155:test_a_target_tag_condition_gates_the_immunity`
 
 ## Scan Issues
 

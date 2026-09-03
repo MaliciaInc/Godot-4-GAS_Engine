@@ -56,6 +56,25 @@ func after_each() -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
+## Do something while one of the two files has nowhere to go.
+##
+## A directory sitting exactly where a file wants to be: FileAccess cannot open
+## it, which is the same shape as a lock, a full disk, or a permission the
+## editor does not have. Written once because both failure tests need it and
+## only the blocked setting and the question differ.
+func _with_nowhere_to_write(setting: String, doing: Callable) -> Variant:
+	var blocked: String = "user://test_migration_blocked"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(blocked))
+	ProjectSettings.set_setting(setting, blocked)
+
+	_expect_engine_error()
+	var answer: Variant = doing.call()
+	_handle_tracked_errors()
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(blocked))
+	return answer
+
+
 ## A project from before the files, with something in both resources.
 func _give_the_project_a_past() -> void:
 	var tags: GameplayTagRegistry = GameplayTagRegistry.new()
@@ -110,18 +129,59 @@ func test_what_is_deleted_after_the_fold_does_not_come_back() -> void:
 ## would be no second attempt left to lose them in.
 func test_a_half_finished_fold_is_not_recorded() -> void:
 	_give_the_project_a_past()
-	var blocked: String = "user://test_migration_blocked_cues"
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(blocked))
-	ProjectSettings.set_setting(CUES_SETTING, blocked)
 
-	_expect_engine_error()
-	var finished: bool = GASSourceMigration.run()
-	_handle_tracked_errors()
+	var finished: bool = _with_nowhere_to_write(CUES_SETTING, GASSourceMigration.run)
 
 	assert_false(finished, "it could not finish")
 	assert_true(GASSourceMigration.pending(), "so it is still pending, and will try again")
+#endregion
 
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(blocked))
+
+#region The order a startup happens in
+## A fold that failed is not followed by treating the project as a new one.
+##
+## Ordering, and worth its own test because the two halves look independent and
+## are not. Seeding is what a NEW project needs; a project part-way through a
+## migration is not one. Running it anyway writes the files the next attempt is
+## supposed to fold the old registry into - and the old project quietly acquires
+## the example tags of a fresh install it never was.
+##
+## The tags write is the one blocked here, on purpose. Block the cues write
+## instead and the tags file exists by then, so seeding skips it and the test
+## passes whether or not the ordering is right. With tags blocked, the seeding
+## still has a cues file it can create, and whether that file exists afterwards
+## is the whole answer.
+func test_a_fold_that_failed_is_not_seeded_over() -> void:
+	_give_the_project_a_past()
+
+	var recorded: bool = _with_nowhere_to_write(
+		TAGS_SETTING, GASSourceMigration.bring_project_up_to_date.bind(SOME_EXAMPLES)
+	)
+
+	assert_false(recorded, "there is nothing finished to persist")
+	assert_true(GASSourceMigration.pending(), "and it will try the fold again")
+	assert_false(
+		FileAccess.file_exists(SCRATCH_CUES),
+		"seeding did not run, so the file the next fold writes into is still absent"
+	)
+
+
+## And a project with no past comes out of the same call seeded and recorded.
+##
+## The other branch of the same order, and the one where seeding is visible: an
+## old project that folds successfully has both files by then, so the seeding
+## does nothing and a test could not tell whether it ran. Here the fold records
+## itself without writing anything, and the seeding is what creates the files -
+## so what is on disk afterwards is the answer, and the returned `true` is what
+## tells the plugin there is a setting to persist.
+func test_a_project_with_no_past_comes_out_seeded_and_recorded() -> void:
+	assert_true(GASSourceMigration.bring_project_up_to_date(SOME_EXAMPLES), "recorded")
+	assert_false(GASSourceMigration.pending(), "and done")
+	assert_true(
+		GameplayTagGenerator.tags_in_file().has(&"Example.From.A.Fresh.Install"),
+		"with the examples a new project starts with"
+	)
+	assert_true(FileAccess.file_exists(SCRATCH_CUES), "and somewhere to put its first cue")
 #endregion
 
 

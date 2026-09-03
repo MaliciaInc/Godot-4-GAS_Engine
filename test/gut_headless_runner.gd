@@ -31,7 +31,7 @@ const TEST_DIRECTORY: String = "res://test/unit"
 const RESULT_PATH: String = "user://gut/last-run.txt"
 
 ## Prefix a caller can grep for in the debug output.
-const RESULT_PREFIX: String = "ARHALIES_GUT_RESULT:"
+const RESULT_PREFIX: String = "GAS_ENGINE_GUT_RESULT:"
 
 var _runner: Node = null
 

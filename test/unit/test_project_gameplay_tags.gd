@@ -76,6 +76,41 @@ func test_a_registry_made_by_hand_does_not_speak_for_the_project() -> void:
 #endregion
 
 
+#region The file says what GDScript says it says
+## A note at the end of a line is a note, not part of the tag.
+##
+## The reader took the LAST quote on the line as the tag's closing one, so
+## `const Noted: StringName = &"Status.Noted"  # they call it "big"` came back
+## as a tag named `Status.Noted"  # they call it "big`. Not a tag the grammar
+## would accept, and it would have been written straight back into the file the
+## next time anything edited it.
+##
+## A commented-out constant was already safe, and stays here as the other half
+## of the pair: a comment does not begin with `const `, so it never got in.
+func test_a_note_at_the_end_of_a_line_is_not_part_of_the_tag() -> void:
+	var read: Variant = HandEditedSource.read(
+		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_TAGS_GENERATED_SCRIPT,
+		[
+			"class_name ProbeTags",
+			"",
+			'const Plain: StringName = &"Status.Plain"',
+			'const Noted: StringName = &"Status.Noted"  # the one they call "big"',
+			'# const Gone: StringName = &"Status.Gone"',
+		],
+		GameplayTagGenerator.tags_in_file
+	)
+	var found: Array[StringName] = read
+	var expected: Array[StringName] = [&"Status.Plain", &"Status.Noted"]
+
+	assert_eq(found, expected, "the note stayed out and so did the commented one")
+	for tag: StringName in found:
+		assert_true(
+			GameplayTagRegistry.is_valid_tag_string(String(tag)),
+			"%s is a tag the grammar accepts" % tag
+		)
+#endregion
+
+
 #region A failed write leaves the file it was replacing alone
 ## The file is the project's only copy of its tags now, so the moment to find
 ## out a write cannot happen is before the old one is gone.

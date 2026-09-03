@@ -1,13 +1,13 @@
 {
-  "units": 1305,
-  "units_by_language": "gdscript 1271, powershell 4, python 30",
-  "elapsed_seconds": 5.5698884000012185,
+  "units": 1312,
+  "units_by_language": "gdscript 1278, powershell 4, python 30",
+  "elapsed_seconds": 5.512291699997149,
   "scan_issues": [],
   "shape_only_pairs": 34,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 13240
+    "behavioral": 13327
   },
   "blocking": 0,
   "findings": [
@@ -951,6 +951,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row",
+      "right": "test/unit/test_gameplay_effect_immunities.gd:201-216:test_an_immune_effect_never_purges_other_active_effects",
+      "score": 0.8260869565217391,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:364-378:stage_gameplay_effect_base_write",
       "right": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:384-409:commit_base_write",
       "score": 0.8214285714285714,
@@ -1030,13 +1037,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result",
       "right": "addons/GAS_Engine/effects/gameplay_effect_inhibition_runtime.gd:101-108:_apply_removal_if_due",
-      "score": 0.8181818181818182,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/cues/gameplay_cue_generator.gd:75-87:bindings_in_file",
-      "right": "addons/GAS_Engine/gameplay_tag/gameplay_tag_tree.gd:49-71:build",
       "score": 0.8181818181818182,
       "category": "executable"
     },
@@ -1504,13 +1504,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/cues/gameplay_cue_generator.gd:75-87:bindings_in_file",
-      "right": "addons/GAS_Engine/gameplay_tag/gameplay_tag_generator.gd:80-95:tags_in_file",
-      "score": 0.7931034482758621,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:19-29:get_cooldown_tags",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:418-430:_deliver_input",
       "score": 0.7916666666666666,
@@ -1758,6 +1751,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row",
       "right": "test/unit/test_gameplay_effect_chains.gd:41-50:test_on_application_applies_the_child_to_the_same_target",
+      "score": 0.782608695652174,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row",
+      "right": "test/unit/test_gameplay_effect_immunities.gd:144-155:test_a_target_tag_condition_gates_the_immunity",
       "score": 0.782608695652174,
       "category": "executable"
     },

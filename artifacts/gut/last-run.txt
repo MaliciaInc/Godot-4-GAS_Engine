@@ -1,4 +1,0 @@
-RESULT: PASS
-written: 2026-08-30T11:03:00
-ARHALIES_GUT_RESULT: PASS passed=19149 failed=0 pending=0 orphans=0
-detail: none

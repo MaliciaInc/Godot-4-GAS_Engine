@@ -15,21 +15,23 @@ PROJECT_SETTINGS = ADDON_ROOT + "/utilities/project_settings.gd"
 
 COMMAND_PARSER = ADDON_ROOT + "/integrations/dialogic/dialogic_gas_command_parser.gd"
 
-#: The list enumerated three separators and missed the fourth spelling: none at
-#: all. `Godot` + `GAS` was already here in exactly that concatenated form, so
-#: the shape was on the list's mind for one family and simply absent for the
-#: other - and one live instance was sitting behind the hole, in a wire protocol
-#: string a designer types into a Dialogic timeline.
+#: Matched case-insensitively, and against the bare product word rather than
+#: the `<name><separator>GAS` shapes this list used to enumerate.
+#:
+#: It enumerated separators twice and was caught out twice. The first time it
+#: missed the spelling with no separator at all. The second time it missed two
+#: live occurrences that are not `<name>GAS` in any casing: `ARHALIES_GUT_RESULT`,
+#: the verdict line the headless runner printed on every single run, and a
+#: lowercase module label inside one of these gates' own tests. A list of
+#: spellings only ever catches the spellings somebody thought of, so the word
+#: itself is the token now and the case no longer matters.
+#:
+#: The longer paths that used to be listed are gone rather than lost: each one
+#: contained one of these, so each one still matches.
 FORBIDDEN = (
-    "Arhalies" + "_GAS",
-    "Arhalies" + " GAS",
-    "Arhalies" + "-GAS",
-    "Arhalies" + "GAS",
-    "Godot" + "GAS",
+    "arhalies",
+    "godot" + "gas",
     "godot" + "_gas",
-    "addons/" + "Godot" + "GAS",
-    "res://addons/" + "Godot" + "GAS",
-    "res://" + "godot" + "_gas",
 )
 
 TEXT_SUFFIXES = {
@@ -78,8 +80,9 @@ def text_problems(root: Path, files: list[str]) -> list[str]:
         except UnicodeDecodeError:
             continue
         for line_number, line in enumerate(lines, start=1):
+            lowered = line.lower()
             for token in FORBIDDEN:
-                if token not in line:
+                if token not in lowered:
                     continue
                 if occurrence_allowed(relative, line_number, line):
                     continue
@@ -92,8 +95,9 @@ def path_problems(files: list[str]) -> list[str]:
     for relative in files:
         if relative.startswith(SKIP_PREFIXES):
             continue
+        lowered = relative.lower()
         for token in FORBIDDEN:
-            if token in relative:
+            if token in lowered:
                 found.append(f"{relative}: forbidden identity in tracked path {token!r}")
     return found
 

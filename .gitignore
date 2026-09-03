@@ -10,3 +10,7 @@ docs/
 # Local verify receipts. Task receipts (T7, GAS_ENGINE_FINAL) are committed;
 # a per-run "full" directory is machine output that changes every invocation.
 artifacts/gates/full/
+
+# Machine output from a suite run; the runner writes the real one to user://
+# and the evidence that is checked lives in artifacts/gates/<task>/.
+artifacts/gut/

@@ -108,7 +108,7 @@ GUT_SUITE_BY_PATH = (
 
 def load_gate() -> Any:
     """Import the hyphenated gate entrypoint as a module."""
-    spec = importlib.util.spec_from_file_location("arhalies_test_location_gate", GATE_PATH)
+    spec = importlib.util.spec_from_file_location("gas_engine_test_location_gate", GATE_PATH)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import gate at {GATE_PATH}")
     module = importlib.util.module_from_spec(spec)
