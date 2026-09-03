@@ -272,3 +272,71 @@ func test_an_argument_a_cable_arrives_at_is_marked_as_wired() -> void:
 		"and the one beside it was typed"
 	)
 	assert_true(fed.fields[1].is_satisfied(), "a wired value is a value")
+
+
+## A statement that reaches into a local still depends on it.
+##
+## `pick.target_data` is not `pick`, but the statement plainly needs what `pick`
+## produced, and a canvas that draws no cable there is hiding something the file
+## states. Tying the cable to the exact spelling drew almost nothing on real
+## code: nine locals across the reference abilities and two cables between them,
+## because real code reaches into a local far more often than it passes one
+## whole.
+func test_a_statement_that_reaches_into_a_local_is_cabled_to_it() -> void:
+	var graph: ComposerGraph = _read([
+		"var pick: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, pick.target_data)",
+	])
+
+	var cabled: int = 0
+	for wire: ComposerGraph.Connection in graph.connections:
+		if wire.from_port == ComposerReader.VALUE_OUT:
+			cabled += 1
+			assert_eq(wire.to_node, graph.nodes[1].id, "to the statement that needs it")
+	assert_eq(cabled, 1, "one cable, to the argument that reaches in")
+
+
+## Depending on a local and being one are two different things.
+##
+## One table, because they are the same statement with one character's
+## difference and opposite answers. Passed whole, the argument *is* the local
+## and can be swapped for another name. Reached into, it is an expression
+## somebody wrote, and offering to swap the whole thing would throw away the
+## `.target_data` they meant - so it stays text they can type over.
+const FED: Array[Array] = [
+	[
+		"apply_gameplay_effect(burning, target)", ComposerNode.ValueSource.WIRED,
+		false, "passed whole, so it is the local",
+	],
+	[
+		"apply_gameplay_effect(burning, target.data)", ComposerNode.ValueSource.LITERAL,
+		true, "reached into, so it is an expression",
+	],
+]
+
+
+func test_being_fed_by_a_local_is_not_the_same_as_being_it() -> void:
+	for row: Array in FED:
+		var written: String = row[0]
+		var expected: ComposerNode.ValueSource = row[1]
+		var typable: bool = row[2]
+		var described: String = row[3]
+
+		var graph: ComposerGraph = _read([
+			"var target: Node = await wait_target_data()", written,
+		])
+		var fed: ComposerNode = graph.nodes[1]
+
+		assert_eq(fed.fields[1].source, expected, described)
+		assert_eq(fed.may_type(fed.fields[1]), typable, "%s: typable" % described)
+
+
+## A name inside a longer one is a coincidence of spelling, not a dependency.
+func test_a_longer_name_is_not_a_dependency() -> void:
+	var graph: ComposerGraph = _read([
+		"var pick: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, picked_earlier)",
+	])
+
+	for wire: ComposerGraph.Connection in graph.connections:
+		assert_ne(wire.from_port, ComposerReader.VALUE_OUT, "no cable was invented")

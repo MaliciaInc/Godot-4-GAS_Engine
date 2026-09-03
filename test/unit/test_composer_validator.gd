@@ -122,18 +122,34 @@ func test_a_local_no_later_statement_names_is_a_warning() -> void:
 
 ## The check that is easy to get wrong.
 ##
-## The reader only draws a cable when an argument is exactly the name of the
-## local, so a value used inside an expression has no wire. Deciding this from
-## the wires would call working code dead - and one false warning costs more
-## trust than a real one buys.
+## Decided on the text of the later statements, not on the cables. A cable is
+## drawn wherever an argument depends on a local, expression and all - but an
+## argument is not the only way to read one. `if paid.is_ok():` reads `paid` in
+## a branch, which has no argument for a cable to land on, and deciding from the
+## cables would call that local dead. One false warning costs more trust than a
+## real one buys.
 func test_a_local_read_inside_an_expression_is_not_reported() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray([
 		"var level: float = get_ability_level()",
 		"apply_gameplay_effect(fire, caster, level + 1.0)",
 	]))
 
-	assert_eq(graph.connections.size(), 1, "no data cable was drawn for it")
-	assert_eq(graph.diagnostics.size(), 0, "and it is still read: %s" % [_messages(graph)])
+	assert_eq(graph.diagnostics.size(), 0, "it is read: %s" % [_messages(graph)])
+
+
+## And one read where no cable can reach is read all the same.
+func test_a_local_read_only_by_a_branch_is_not_reported() -> void:
+	var graph: ComposerGraph = _read(PackedStringArray([
+		"var paid: AbilityCommitResult = commit_ability()",
+		"if not paid.is_ok():",
+		"	end_ability()",
+	]))
+
+	var cabled: int = 0
+	for wire: ComposerGraph.Connection in graph.connections:
+		cabled += 1 if wire.from_port == ComposerReader.VALUE_OUT else 0
+	assert_eq(cabled, 0, "a branch has no argument for a cable to land on")
+	assert_eq(graph.diagnostics.size(), 0, "and it is read anyway: %s" % [_messages(graph)])
 
 
 func test_a_name_buried_in_a_longer_one_does_not_count_as_a_read() -> void:

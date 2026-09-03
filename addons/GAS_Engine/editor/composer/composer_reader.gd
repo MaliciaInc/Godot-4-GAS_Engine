@@ -50,7 +50,6 @@ static func read(source: String, path: String) -> ComposerGraph:
 	_build_nodes(graph, lines, span, path)
 	_wire_execution(graph, lines)
 	_wire_data(graph, lines)
-	_mark_wired_fields(graph)
 
 	# The findings come back with the graph rather than being asked for later.
 	# A caller that forgot to validate would draw a file with every card clean
@@ -342,19 +341,6 @@ static func _opener(previous: Dictionary[int, StringName], depth: int) -> String
 	return previous[nearest] if nearest >= 0 else &""
 
 
-## A field whose value arrives on a cable says so.
-##
-## The card already knew how to draw one - a chevron where the text would be -
-## and nothing ever set it, so the mark was unreachable. A person could not tell
-## which of a statement's arguments they had typed and which came from the line
-## above, which is the one thing the wire was drawn to show.
-static func _mark_wired_fields(graph: ComposerGraph) -> void:
-	for node: ComposerNode in graph.nodes:
-		for position: int in node.fields.size():
-			if graph.is_port_connected(node.id, StringName(ARGUMENT % position)):
-				node.fields[position].source = ComposerNode.ValueSource.WIRED
-
-
 ## A local's value reaches every later statement that names it.
 ##
 ## Read by name rather than by scope analysis, which the subset makes safe: a
@@ -368,12 +354,41 @@ static func _wire_data(graph: ComposerGraph, lines: PackedStringArray) -> void:
 		for other: ComposerNode in graph.nodes:
 			if other.span.first_line <= node.span.last_line:
 				continue
-			var slot: int = _argument_naming(other.text, declared)
-			if slot < 0:
-				continue
-			graph.connections.append(
-				wire(node.id, VALUE_OUT, other.id, StringName(ARGUMENT % slot))
-			)
+			_wire_into(graph, node, other, declared)
+
+
+## Join `node`'s value to whichever argument of `other` depends on it.
+##
+## Two different things used to be one. A cable says "this statement needs what
+## that one produced", and that is true of `apply(damage, pick.target_data)` -
+## the statement plainly depends on `pick`. It is separately true, and only
+## sometimes, that the argument *is* the local and can be re-pointed at another
+## one; that is the exact spelling, and only that spelling.
+##
+## Tying both to the exact spelling drew almost nothing on real code, because
+## real code reaches into a local far more often than it passes one whole:
+## nine locals across the reference abilities and two cables between them. The
+## canvas was hiding dependencies the file states plainly, which is the one
+## thing a view of a file may not do.
+static func _wire_into(
+	graph: ComposerGraph, node: ComposerNode, other: ComposerNode, declared: String
+) -> void:
+	var slot: int = _argument_naming(other.text, declared)
+	var exact: bool = slot >= 0
+	if not exact:
+		slot = _argument_using(other.text, declared)
+	if slot < 0:
+		return
+
+	graph.connections.append(
+		wire(node.id, VALUE_OUT, other.id, StringName(ARGUMENT % slot))
+	)
+	# Marked as fed only when the argument is the local and nothing else. An
+	# argument that merely reaches into it is an expression somebody wrote, and
+	# offering to swap the whole thing for another name would throw away the
+	# `.target_data` they meant.
+	if exact and slot < other.fields.size():
+		other.fields[slot].source = ComposerNode.ValueSource.WIRED
 
 
 static func _local_name(line: String) -> String:
@@ -385,6 +400,22 @@ static func _local_name(line: String) -> String:
 	if stop < 0:
 		return ""
 	return rest.substr(0, stop).strip_edges()
+
+
+## Which argument of `line` depends on `word` without being it, or -1.
+##
+## `pick.target_data` uses `pick`; `picked` does not. Whole names only, which is
+## the difference between a dependency and a coincidence of spelling.
+static func _argument_using(line: String, word: String) -> int:
+	var open: int = line.find(OPEN_BRACKET)
+	if open < 0:
+		return -1
+	var position: int = 0
+	for argument: String in ComposerSubset.arguments_of(line.substr(open + 1)):
+		if ComposerValidator.names(argument, word):
+			return position
+		position += 1
+	return -1
 
 
 ## Which argument of `line` is exactly `word`, or -1 when none is.
