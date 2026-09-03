@@ -174,7 +174,7 @@ Effects, costs and cooldowns are built in GDScript from numbers authored on the 
 ### Where to go from here
 
 - `addons/GAS_Engine/reference/` holds six complete abilities, written by hand and commented: an instant hit, a paid strike, a timed buff, an aimed-then-confirmed blast, an area sweep, and one that fires cues.
-- The **Dashboard** and the **Ability Composer** below are the two editor surfaces: one for the data an ability names, one that draws the ability itself.
+- The **Ability Composer** below draws any ability as a graph, and writes your edits back to the same file. Choose it from **Project → Tools** and it finds your abilities for you.
 - The rest of this document explains what each subsystem guarantees, and why.
 
 
@@ -388,23 +388,6 @@ The addon contains optional integration bridges for:
 None of them is required by the core runtime. The integrations are intentionally kept at narrow public API boundaries so installing one optional addon does not turn it into an architectural dependency of the gameplay system.
 
 Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
-
-## The Dashboard
-
-**Project → Tools → GAS_Engine Dashboard** opens the editor surface for the data an ability system needs before any ability can name it. Four tabs:
-
-| Tab | What it is for |
-| --- | --- |
-| **Attribute Sets** | Author a set and generate it as a GDScript `AttributeSet` — the file you would otherwise write by hand, with its attributes and clamp hooks in place. |
-| **Tag Manager** | The project's gameplay tag registry, and the generated constants script that lets an ability name a tag without spelling the string. |
-| **Cue Manager** | Which cue answers which tag, so an effect can ask for feedback without knowing what plays it. |
-| **Runtime Debugger** | What GAS_Engine sees in the scene currently open: the components, their attributes, and what is active on them. |
-
-By default the project's own GAS_Engine data lives under `res://gas_engine/` — `tag_registry.tres` and `cue_registry.tres` for the two registries, and `gameplay_tags.gd` for the constants generated from the tags. The paths are project settings, so a project that keeps its data elsewhere says so once.
-
-Enabling the plugin seeds the two registries with a small default set, so a new project has something to look at rather than an empty tab.
-
-Nothing here is required. Every registry the Dashboard writes can be edited as a file, and every script it generates is a script you could have written; the tabs exist so that the common case is not hand-work.
 
 ## Ability Composer
 

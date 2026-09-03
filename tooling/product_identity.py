@@ -105,7 +105,6 @@ def authority_problems(root: Path) -> list[str]:
         PLUGIN_CFG,
         PLUGIN_SCRIPT,
         CUE_MANAGER,
-        "addons/GAS_Engine/editor/gas_engine_dashboard.tscn",
         "gas_engine/gameplay_tags.gd",
     )
     for relative in required_files:

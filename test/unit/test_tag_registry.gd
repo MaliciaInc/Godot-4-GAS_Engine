@@ -44,7 +44,7 @@ func test_each_segment_gets_a_capital_and_the_dots_are_kept() -> void:
 ##
 ## It did not. `Cue.NeverUsed` came back as `Cue.Neverused`, and that tag is
 ## already used in this repository's own tests: a designer registering it
-## through the dashboard got a different tag from the one the code refers to,
+## through an editor got a different tag from the one the code refers to,
 ## with nothing reported. The formatter and the grammar have to agree, and the
 ## grammar is the declared contract.
 func test_a_capital_inside_a_segment_survives() -> void:

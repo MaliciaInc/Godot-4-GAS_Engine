@@ -6,9 +6,9 @@
 ## written back unchanged: a property authored as PackedStringArray that comes
 ## back as Array is a silent type change in the user's scene.
 ##
-## The tree itself is built by GameplayTagTree, shared with both dashboard tabs.
-## This file used to walk the tag hierarchy itself, which made four walks of one
-## hierarchy in the addon and four places for a tag to be grouped differently.
+## The tree itself is built by GameplayTagTree. This file used to walk the tag
+## hierarchy itself, which made two walks of one hierarchy in the addon and two
+## places for a tag to be grouped differently.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_author: MaliciaInc
@@ -278,7 +278,7 @@ func _refresh_tree() -> void:
 	style.checkable = true
 	style.checked = _current_tags
 	style.leaf_button = EditorInterface.get_editor_theme().get_icon(
-		DashboardTheme.ICON_REMOVE, DashboardTheme.EDITOR_ICON_THEME
+		GASEditorTheme.ICON_REMOVE, GASEditorTheme.EDITOR_ICON_THEME
 	)
 	style.leaf_button_id = DELETE_BUTTON_ID
 	style.leaf_button_tooltip = DELETE_TOOLTIP
@@ -384,10 +384,10 @@ func _set_status(message: String, is_success: bool) -> void:
 	_status_label.text = message
 	var editor_theme: Theme = EditorInterface.get_editor_theme()
 	var color_name: String = (
-		DashboardTheme.SUCCESS_COLOR if is_success else DashboardTheme.ERROR_COLOR
+		GASEditorTheme.SUCCESS_COLOR if is_success else GASEditorTheme.ERROR_COLOR
 	)
 	_status_label.add_theme_color_override(
-		DashboardTheme.FONT_COLOR,
-		editor_theme.get_color(color_name, DashboardTheme.EDITOR_THEME_TYPE)
+		GASEditorTheme.FONT_COLOR,
+		editor_theme.get_color(color_name, GASEditorTheme.EDITOR_THEME_TYPE)
 	)
 #endregion

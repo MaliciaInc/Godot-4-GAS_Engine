@@ -4,9 +4,9 @@
 ## once however many tags share it. Only leaves carry the full tag as metadata,
 ## so a caller cannot mistake a grouping node for a selectable tag.
 ##
-## Extracted from the cue dashboard so the tag picker is one implementation. Two
-## trees drawing the same registry differently is how a tag looks available in
-## one place and taken in another.
+## One implementation of the tag picker, wherever it is drawn. Two trees over
+## one registry is how a tag comes to look available in one place and taken in
+## another.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0

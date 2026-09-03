@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# README.md joins the evidence fingerprint: test_readme_quick_start.gd reads it, so it is a source the suite loads and an edit to it must age the receipt.
+# extends joins the GDScript keywords two tools each have to name: the duplication gate's grammar and the Composer's ability scan.
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T16:31:24Z
-# commit-previo: 6d1f7b32c2d552bf9493059a6a220e173c10cd93
+# date-utc: 2026-09-03T18:54:40Z
+# commit-previo: 31db8ef1292d8968357ff7d833cd0f27bfc2d94e
 # files: 24
-e5d16939eb597f2c517b6c4f30787a99a110a46603589149ea974ce0b1de7c85  tooling/.quality-gates.json
+82a3ecb02ae2b6f458affbb6ca3aae6c449ad192f7ebc1362fae68e80aa0257c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 34987991f5e1ddf22edc80bc7365bee35c384145d878e709f628a4cdc668b284  tooling/gates/duplication-gate.py
@@ -29,7 +29,7 @@ f085461984516d1d95d8ed6f4fca8f49e27941880f511d0b3b28b6913ca27290  tooling/gates/
 5049d71c49ec0f0323ca82e8e4aa48ab2d58537f4adf3a825d61a7670e83fbbe  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 2730ca24fa7ce83e5666859d2f27934d68d60645896359a20d66eac971ea1d04  tooling/gates/test-location-gate.py
-139a74abf256811f46aaaa7fb1850c465378a88149bc77ecba33f93f6ea1a28a  tooling/product_identity.py
+b24449e92426153f9d07aa111e2eb03010a4be2e857a68f99bba805c2fc5d8a7  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py

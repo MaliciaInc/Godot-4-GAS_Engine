@@ -1,6 +1,6 @@
 ## The tag picker's tree: one branch per segment, however many tags share it.
 ##
-## Every dashboard tab and the inspector property draw the registry through
+## The inspector property draws the registry through
 ## this one builder, so a grouping mistake here is the same mistake in four
 ## places. It had no tests.
 ##

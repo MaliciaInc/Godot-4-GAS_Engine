@@ -5,7 +5,7 @@
 ## complete a tag name, and it is never edited by hand.
 ##
 ## Two tracked files that are supposed to agree will not stay agreeing on their
-## own: someone edits the registry through the dashboard, the generated file is
+## own: someone edits the registry, the generated file is
 ## rewritten, and only one of the two gets committed. This test reads both from
 ## disk exactly as they are tracked and demands they match byte for byte. No
 ## normalisation is applied - `.gitattributes` already pins LF in the checkout,

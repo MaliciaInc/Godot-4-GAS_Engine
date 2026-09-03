@@ -236,8 +236,8 @@ func _set_cue_state(cue: CueNotify, active: bool) -> void:
 			spatial.visible = active
 
 
-## How many dormant instances are pooled for a tag. Exists for tests and for the
-## dashboard; nothing in the runtime branches on it.
+## How many dormant instances are pooled for a tag. An observation point for
+## tests and tools; nothing in the runtime branches on it.
 func get_pooled_count(tag: StringName) -> int:
 	return _bucket_for(tag).size()
 #endregion

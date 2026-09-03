@@ -116,6 +116,10 @@
         "reason": "@export_range hint on three properties. GDScript requires a parse-time literal here: Godot rejects a constant with \"isn't a constant expression\", so naming this value is not expressible in the language."
       },
       {
+        "literal": "extends",
+        "reason": "A GDScript keyword. Any tool that reasons about GDScript has to name it: the duplication gate's grammar table finds where a unit begins, and ComposerLibrary reads it to work out what a script is based on. Same word, two tools, neither able to borrow the other's copy."
+      },
+      {
         "literal": "class_name",
         "reason": "The addon emits GDScript and the Python gates describe GDScript's grammar, so both mention this keyword. Two languages cannot share one constant."
       },
@@ -165,7 +169,7 @@
       },
       {
         "literal": "normal",
-        "reason": "A RichTextLabel theme slot in the dashboard theme and a raycast hit's surface normal; unrelated meanings."
+        "reason": "A theme slot Godot names for a control at rest, and a raycast hit's surface normal. One word, two meanings, neither borrowed from the other."
       },
       {
         "literal": "params",
@@ -174,10 +178,6 @@
       {
         "literal": "loc",
         "reason": "The gate's own name, in the gate and in the runner's roster of gates."
-      },
-      {
-        "literal": "State Management",
-        "reason": "An inspector category two unrelated resources legitimately share. Renaming one to satisfy the gate would make the editor read worse."
       },
       {
         "literal": "gates",
@@ -396,12 +396,8 @@
         "reason": "Two different facts that happen to be spelled the same. AbilitySystemLocator uses it as the name a component is conventionally given in a scene - a convention, and its own comment says so - while the Ability Composer uses it as the class whose public calls it offers. Tying one to the other would mean renaming the scene convention silently changed which class the palette reads."
       },
       {
-        "literal": "Copy",
-        "reason": "Three different things spelled the same. The Ability Composer's context menu offers it as a verb a person reads; the attribute set drafts append it to a name to mark a duplicate; neither invented the English word. Tying them together would mean renaming a menu item changed what a duplicated draft is called."
-      },
-      {
         "literal": "Remove",
-        "reason": "A verb on the Ability Composer's context menu and, elsewhere, the name of an icon in the dashboard's theme. A menu label and a theme key are not the same kind of thing, and borrowing one for the other would make a change to the icon set rewrite the menu."
+        "reason": "A verb on the Ability Composer's context menu, and the name of an icon Godot ships. A menu label and a theme key are not the same kind of thing, and borrowing one for the other would make a change to the icon set rewrite the menu."
       }
     ],
     "allow_globs": [],
