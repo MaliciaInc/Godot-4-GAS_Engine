@@ -14,8 +14,8 @@
 @tool
 class_name GDScriptSource extends RefCounted
 
-## Marks a generated script as editor-runnable, which both emitters need
-## because both write classes the dashboard instantiates.
+## Marks a generated script as editor-runnable, which anything generated here
+## needs: a class the editor is expected to read has to run in the editor.
 const TOOL_ANNOTATION: String = "@tool"
 
 ## The licence line every generated file carries, matching this addon's.

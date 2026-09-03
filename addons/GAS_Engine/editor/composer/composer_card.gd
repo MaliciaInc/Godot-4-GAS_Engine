@@ -57,7 +57,7 @@ func build(node: ComposerNode) -> void:
 	_column.custom_minimum_size = Vector2(
 		ComposerTheme.NODE_WIDTH - ComposerTheme.PAD_X * 2.0, 0.0
 	)
-	_column.add_theme_constant_override(DashboardTheme.SEPARATION, int(ComposerTheme.S3 - 1.0))
+	_column.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S3 - 1.0))
 	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_column)
 
@@ -129,7 +129,7 @@ func show_detail(level: ComposerCard.Detail) -> void:
 ## The title, and the dot that carries this node's diagnostic state.
 func _title_row(node: ComposerNode) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override(DashboardTheme.SEPARATION, int(ComposerTheme.S2 + 1.0))
+	row.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S2 + 1.0))
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var holder: CenterContainer = CenterContainer.new()
@@ -139,7 +139,7 @@ func _title_row(node: ComposerNode) -> Control:
 		ComposerNode.severity_of(node.state)
 	)
 	dot.add_theme_stylebox_override(
-		DashboardTheme.PANEL_STYLEBOX, ComposerTheme.disc(tint, 3.5)
+		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.disc(tint, 3.5)
 	)
 	holder.add_child(dot)
 	row.add_child(holder)
@@ -156,14 +156,14 @@ func _title_row(node: ComposerNode) -> Control:
 ## making it wider.
 func _field_row(field: ComposerNode.Field) -> Control:
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override(DashboardTheme.SEPARATION, int(ComposerTheme.S1))
+	column.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S1))
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(
 		_label(field.label, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_LABEL)
 	)
 
 	var slot: PanelContainer = PanelContainer.new()
-	slot.add_theme_stylebox_override(DashboardTheme.PANEL_STYLEBOX, ComposerTheme.field_box())
+	slot.add_theme_stylebox_override(GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.field_box())
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(slot)
 
@@ -208,8 +208,8 @@ func _await_mark() -> Control:
 func _label(text: String, tint: Color, font_size: int) -> Label:
 	var label: Label = Label.new()
 	label.text = text
-	label.add_theme_color_override(DashboardTheme.FONT_COLOR, tint)
-	label.add_theme_font_size_override(DashboardTheme.FONT_SIZE, font_size)
+	label.add_theme_color_override(GASEditorTheme.FONT_COLOR, tint)
+	label.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, font_size)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 #endregion

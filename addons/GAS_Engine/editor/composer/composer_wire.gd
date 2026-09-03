@@ -65,7 +65,7 @@ static func ring_into(parent: Node, at: Vector2) -> void:
 	var ring: Panel = Panel.new()
 	ring.position = at - Vector2(ComposerTheme.PORT_RING, ComposerTheme.PORT_RING) * 0.5
 	ring.size = Vector2(ComposerTheme.PORT_RING, ComposerTheme.PORT_RING)
-	ring.add_theme_stylebox_override(DashboardTheme.PANEL_STYLEBOX, ComposerTheme.ring())
+	ring.add_theme_stylebox_override(GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.ring())
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(ring)
 
@@ -74,7 +74,7 @@ static func _disc_into(parent: Node, at: Vector2, radius: float, fill: Color) ->
 	var disc: Panel = Panel.new()
 	disc.position = at - Vector2(radius, radius)
 	disc.size = Vector2(radius * 2.0, radius * 2.0)
-	disc.add_theme_stylebox_override(DashboardTheme.PANEL_STYLEBOX, ComposerTheme.disc(fill, radius))
+	disc.add_theme_stylebox_override(GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.disc(fill, radius))
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(disc)
 

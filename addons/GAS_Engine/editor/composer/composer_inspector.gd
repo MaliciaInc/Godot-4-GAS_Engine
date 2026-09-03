@@ -54,7 +54,7 @@ func _ready() -> void:
 	_grip.flat = true
 	_grip.position = Vector2(-ComposerTheme.S3 - 1.0, ComposerTheme.S4)
 	_grip.custom_minimum_size = Vector2(ComposerTheme.S4, ComposerTheme.S4)
-	_grip.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)
+	_grip.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)
 	_grip.pressed.connect(toggle)
 	add_child(_grip)
 
@@ -120,8 +120,8 @@ func _feeds(node: ComposerNode, position: int) -> Control:
 	var field: ComposerNode.Field = node.fields[position]
 	var choice: OptionButton = OptionButton.new()
 	choice.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
-	choice.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT)
-	choice.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
+	choice.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT)
+	choice.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
 
 	var offered: Array[String] = [field.display]
 	for port: ComposerNode.Port in _reachable(node, field):
@@ -175,11 +175,11 @@ func _box(node: ComposerNode, position: int) -> Control:
 	written.text = node.fields[position].display
 	written.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
 	written.add_theme_stylebox_override(
-		DashboardTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
+		GASEditorTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
 	)
-	written.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT)
+	written.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT)
 	written.add_theme_font_size_override(
-		DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
+		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
 	)
 	written.text_submitted.connect(
 		func _submitted(text: String) -> void: _commit(node.id, position, text)

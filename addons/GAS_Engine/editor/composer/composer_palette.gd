@@ -98,9 +98,9 @@ func _entry_row(key: StringName) -> Control:
 	button.text = entry.title if entry != null else String(key)
 	button.flat = true
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)
+	button.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)
 	button.add_theme_font_size_override(
-		DashboardTheme.FONT_SIZE, ComposerTheme.FONT_LABEL + 1
+		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_LABEL + 1
 	)
 	# The key, not the entry. The signal declares a StringName and the screen
 	# looks the entry up again from it; emitting the object satisfied neither and

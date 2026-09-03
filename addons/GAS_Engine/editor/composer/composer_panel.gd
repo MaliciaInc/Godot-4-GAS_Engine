@@ -13,8 +13,8 @@ class_name ComposerPanel extends RefCounted
 static func label(text: String, tint: Color, font_size: int) -> Label:
 	var made: Label = Label.new()
 	made.text = text
-	made.add_theme_color_override(DashboardTheme.FONT_COLOR, tint)
-	made.add_theme_font_size_override(DashboardTheme.FONT_SIZE, font_size)
+	made.add_theme_color_override(GASEditorTheme.FONT_COLOR, tint)
+	made.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, font_size)
 	made.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return made
 
@@ -33,7 +33,7 @@ static func slot(text: String, tint: Color, width: float) -> PanelContainer:
 	var box: PanelContainer = PanelContainer.new()
 	box.custom_minimum_size = Vector2(width, 0.0)
 	box.add_theme_stylebox_override(
-		DashboardTheme.PANEL_STYLEBOX, ComposerTheme.field_box()
+		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.field_box()
 	)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -67,13 +67,13 @@ static func backdrop(tint: Color) -> ColorRect:
 ## A column with the project's spacing already on it.
 static func column(separation: float) -> VBoxContainer:
 	var made: VBoxContainer = VBoxContainer.new()
-	made.add_theme_constant_override(DashboardTheme.SEPARATION, int(separation))
+	made.add_theme_constant_override(GASEditorTheme.SEPARATION, int(separation))
 	made.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return made
 
 
 static func row(separation: float) -> HBoxContainer:
 	var made: HBoxContainer = HBoxContainer.new()
-	made.add_theme_constant_override(DashboardTheme.SEPARATION, int(separation))
+	made.add_theme_constant_override(GASEditorTheme.SEPARATION, int(separation))
 	made.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return made

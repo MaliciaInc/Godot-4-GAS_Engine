@@ -47,10 +47,10 @@ func _ready() -> void:
 	_query.position = Vector2(ComposerTheme.S3, ComposerTheme.S3)
 	_query.custom_minimum_size = Vector2(WIDTH - ComposerTheme.S3 * 2.0, 0.0)
 	_query.add_theme_stylebox_override(
-		DashboardTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
+		GASEditorTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
 	)
-	_query.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.TEXT)
-	_query.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_TITLE)
+	_query.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT)
+	_query.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_TITLE)
 	_query.text_changed.connect(_on_typed)
 	add_child(_query)
 

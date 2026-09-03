@@ -1,4 +1,4 @@
-## The editor plugin: dashboard, Ability Composer, tag inspector, and one-time
+## The editor plugin: the Ability Composer, the tag inspector, and one-time
 ## project seeding.
 ##
 ## `project.godot` declares the GameplayCueManager autoload directly so a clean
@@ -26,14 +26,20 @@ const CUE_MANAGER_PATH: String = "res://addons/GAS_Engine/managers/gameplay_cue_
 const PLUGIN_DISPLAY_NAME: String = GASEngineProjectSettings.ADDON_NAME
 const PLUGIN_ICON_PATH: String = "res://addons/GAS_Engine/icons/gas_engine.svg"
 
-const DASHBOARD_SCENE: PackedScene = preload("res://addons/GAS_Engine/editor/gas_engine_dashboard.tscn")
 
 ## The screen names itself; the menu that opens it says the same word by
 ## reading it rather than by agreeing to spell it the same way.
 const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
-const DASHBOARD_MENU: String = "GAS_Engine Dashboard"
 const SCRIPT_SCREEN: String = "Script"
+const MENU_SIZE: Vector2i = Vector2i(520, 420)
 const SCRIPT_FILTER: String = "*.gd"
+const RESOURCE_PREFIX: String = "res://"
+const BROWSE_INSTEAD: String = "Browse…"
+const LOOK_AGAIN: String = "Re-scan abilities"
+const NONE_FOUND: String = (
+	"This project has no abilities yet. A script that extends GameplayAbility "
+	+ "is one; there are six to copy from in addons/GAS_Engine/reference/."
+)
 const SCRIPT_FILTER_NAME: String = "GDScript"
 ## What the log says when the Composer was asked for and had nothing to draw.
 ##
@@ -81,19 +87,12 @@ const EXAMPLE_TAGS: Array[String] = [
 ## singleton by hand lost it simply by turning the plugin off.
 var _owns_cue_manager_autoload: bool = false
 
-var _dashboard_instance: Control = null
 var _composer_instance: ComposerScreen = null
+
+## What the open-ability menu is currently offering, in the order it offers
+## it, so an id coming back means the same file it named.
+var _choices: PackedStringArray = PackedStringArray()
 var _tag_inspector: EditorInspectorPlugin = null
-
-## Which of the two the main screen shows when it is asked to appear.
-##
-## The Composer and the dashboard share one main screen because a plugin has one
-## to share. Remembering which was last asked for is what lets the Code chip
-## leave for the script editor and the person come back to the ability they were
-## looking at, rather than to a dashboard they did not ask for - the two views
-## are meant to feel like one thing seen two ways.
-var _showing_composer: bool = false
-
 
 #region Plugin Lifecycle
 ## Register the autoload, unless the project already declares it.
@@ -141,18 +140,20 @@ func _enter_tree() -> void:
 	_tag_inspector = GameplayTagInspectorPlugin.new()
 	add_inspector_plugin(_tag_inspector)
 
-	_dashboard_instance = DASHBOARD_SCENE.instantiate()
-	_dashboard_instance.visible = false
-	EditorInterface.get_editor_main_screen().add_child(_dashboard_instance)
-
 	_composer_instance = ComposerScreen.new()
 	_composer_instance.visible = false
 	_composer_instance.code_requested.connect(_on_code_requested)
-	_composer_instance.open_requested.connect(_ask_for_an_ability)
+	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
 	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
 
+	# The editor already knows when a file appeared, moved or was deleted, so
+	# the remembered list is dropped on its word rather than on a guess about
+	# how long an answer stays true.
+	EditorInterface.get_resource_filesystem().filesystem_changed.connect(
+		ComposerLibrary.forget
+	)
+
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
-	add_tool_menu_item(DASHBOARD_MENU, _open_dashboard)
 	_make_visible(false)
 
 
@@ -171,12 +172,8 @@ func _disable_plugin() -> void:
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
-	remove_tool_menu_item(DASHBOARD_MENU)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
-	if _dashboard_instance != null:
-		_dashboard_instance.queue_free()
-		_dashboard_instance = null
 	if _composer_instance != null:
 		_composer_instance.queue_free()
 		_composer_instance = null
@@ -195,31 +192,71 @@ func _open_composer() -> void:
 	var opened: ComposerHost.Opened = ComposerHost.open(
 		script.resource_path if script != null else ""
 	)
-	if not opened.is_ok():
-		# Said where the person is looking, not only in the console. The warning
-		# stays for the log, but the Output dock is not where somebody who just
-		# chose Ability Composer is looking, and an unchanged main screen reads
-		# as the menu item doing nothing at all.
-		push_warning(COMPOSER_REFUSED % opened.refusal)
-		_showing_composer = true
-		_composer_instance.show_refusal(opened.refusal)
-		EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
-		_make_visible(true)
+	if opened.is_ok():
+		_show_composer()
+		_composer_instance.open(opened.source, opened.graph.source_path)
 		return
 
-	_showing_composer = true
-	_composer_instance.open(opened.source, opened.graph.source_path)
+	# Whatever was open is not an ability, which is not a reason to refuse.
+	# Somebody who chose Ability Composer asked for their abilities; go and find
+	# them rather than explain what they should have opened first.
+	_offer_abilities(opened.refusal)
+
+
+func _show_composer() -> void:
 	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
 	_make_visible(true)
 
 
-func _open_dashboard() -> void:
-	_showing_composer = false
-	EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
-	_make_visible(true)
+## Put the project's abilities in front of somebody, and get out of the way.
+##
+## One ability is opened rather than offered: a menu with a single item is a
+## question with one answer, and asking it is the friction this exists to
+## remove. Several are offered as a list. None means the project has no
+## abilities yet, which is worth saying plainly - it is not the same as the
+## Composer being unable to find them.
+func _offer_abilities(reason: String) -> void:
+	var found: PackedStringArray = ComposerLibrary.abilities_in_project()
+	if found.is_empty():
+		push_warning(COMPOSER_REFUSED % reason)
+		_show_composer()
+		_composer_instance.show_refusal(NONE_FOUND)
+		return
+	if found.size() == 1:
+		_draw_ability_at(found[0])
+		return
+
+	_show_composer()
+	_choices = found
+	var menu: PopupMenu = PopupMenu.new()
+	for at: String in found:
+		menu.add_item(String(at).trim_prefix(RESOURCE_PREFIX))
+	menu.add_separator()
+	menu.add_item(LOOK_AGAIN)
+	menu.add_item(BROWSE_INSTEAD)
+	menu.id_pressed.connect(_on_ability_chosen)
+	menu.close_requested.connect(menu.queue_free)
+	EditorInterface.get_base_control().add_child(menu)
+	menu.popup_centered(MENU_SIZE)
 
 
-## Choose an ability to draw, without going to find it first.
+## The last item is the way out of a list that did not have it: the scan reads
+## `extends` and resolves it, and an ability reached by some route it cannot see
+## would otherwise be an ability nobody can open.
+func _on_ability_chosen(chosen: int) -> void:
+	if chosen >= 0 and chosen < _choices.size():
+		_draw_ability_at(_choices[chosen])
+		return
+	if chosen == _choices.size() + 1:
+		# The list is remembered between openings, so this is the button that
+		# makes an ability written a moment ago appear without restarting.
+		ComposerLibrary.forget()
+		_offer_abilities("")
+		return
+	_ask_for_an_ability()
+
+
+## Browse for an ability by hand, when the list did not have it.
 ##
 ## The Composer draws whatever the Script editor has open, which is right when
 ## somebody is already looking at an ability and wrong as the only way in: a
@@ -330,12 +367,10 @@ func _get_plugin_name() -> String:
 
 
 func _get_plugin_icon() -> Texture2D:
-	return DashboardTheme.icon(PLUGIN_ICON_PATH)
+	return GASEditorTheme.icon(PLUGIN_ICON_PATH)
 
 
 func _make_visible(next_visible: bool) -> void:
-	if _dashboard_instance != null:
-		_dashboard_instance.visible = next_visible and not _showing_composer
 	if _composer_instance != null:
-		_composer_instance.visible = next_visible and _showing_composer
+		_composer_instance.visible = next_visible
 #endregion

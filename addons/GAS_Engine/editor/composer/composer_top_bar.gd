@@ -69,8 +69,8 @@ func _ready() -> void:
 	_open = Button.new()
 	_open.text = OPEN_ONE
 	_open.flat = true
-	_open.add_theme_color_override(DashboardTheme.FONT_COLOR, ComposerTheme.ACCENT)
-	_open.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
+	_open.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.ACCENT)
+	_open.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
 	_open.pressed.connect(func _asked() -> void: open_requested.emit())
 	add_child(_open)
 
@@ -110,10 +110,10 @@ func _tab(text: String, active: bool) -> Button:
 	made.text = text
 	made.flat = true
 	made.add_theme_color_override(
-		DashboardTheme.FONT_COLOR,
+		GASEditorTheme.FONT_COLOR,
 		ComposerTheme.TEXT if active else ComposerTheme.TEXT_DIM
 	)
-	made.add_theme_font_size_override(DashboardTheme.FONT_SIZE, ComposerTheme.FONT_TITLE)
+	made.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_TITLE)
 	return made
 
 
