@@ -33,7 +33,16 @@ const DASHBOARD_SCENE: PackedScene = preload("res://addons/GAS_Engine/editor/gas
 const COMPOSER_MENU: String = ComposerTopBar.COMPOSER_TAB
 const DASHBOARD_MENU: String = "GAS_Engine Dashboard"
 const SCRIPT_SCREEN: String = "Script"
-const COMPOSER_REFUSED: String = "GAS_Engine: %s"
+## What the log says when the Composer was asked for and had nothing to draw.
+##
+## It carries the way out, not just the complaint. It also reads differently
+## from the bare "GAS_Engine: %s" it replaced, on purpose: that line was
+## identical before and after the screen learned to answer, so somebody reading
+## the console could not tell a fixed plugin from a stale one.
+const COMPOSER_REFUSED: String = (
+	"GAS_Engine: the Ability Composer has nothing to draw - %s. Open an ability "
+	+ "in the Script editor, then choose Ability Composer again."
+)
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
