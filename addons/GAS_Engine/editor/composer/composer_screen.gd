@@ -119,6 +119,17 @@ func _on_row_picked(node_id: StringName, _line: int) -> void:
 	_canvas.reveal(node_id)
 
 
+## Nothing could be opened, and here is why.
+##
+## The screen still comes forward. A refusal that leaves the editor where it was
+## is indistinguishable from a menu item that does nothing, which is how this
+## was actually experienced: the console carried the reason and the person
+## carried the impression that the Composer was broken.
+func show_refusal(reason: String) -> void:
+	await show_graph(null)
+	_output.show_refusal(reason)
+
+
 ## Open a file.
 func open(source: String, path: String) -> void:
 	_doc.open(source, path)

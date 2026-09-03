@@ -15,6 +15,11 @@ const NOTHING: String = "Nothing to report"
 const NODE_WORD: String = "node"
 const NOTE_WORD: String = "note"
 const READ_ONLY: String = "Read-only — "
+const NOT_DRAWN: String = "Nothing to draw"
+const HOW_TO_OPEN: String = (
+	"Open an ability in the Script editor, then choose Ability Composer again. "
+	+ "There are six to start from in addons/GAS_Engine/reference/."
+)
 const ROW_PITCH: float = 28.0
 const COUNT_INSET: float = 190.0
 
@@ -89,6 +94,23 @@ func show_graph(graph: ComposerGraph) -> void:
 
 	for found: ComposerGraph.Diagnostic in graph.diagnostics:
 		_rows.add_child(_row(found, graph.source_path))
+
+
+## Say why there is nothing on the canvas, and what to do about it.
+##
+## Distinct from `show_graph(null)`, which is the panel holding nothing because
+## nothing has happened yet. This is the panel holding nothing *for a reason*,
+## and the reason is the whole value: a person who just chose a menu item and
+## got an unchanged screen has been told the tool is broken.
+func show_refusal(reason: String) -> void:
+	show_graph(null)
+	_count.text = NOT_DRAWN
+	_rows.add_child(
+		ComposerPanel.label(reason, ComposerTheme.TEXT, ComposerTheme.FONT_VALUE)
+	)
+	_rows.add_child(
+		ComposerPanel.label(HOW_TO_OPEN, ComposerTheme.TEXT_FAINT, ComposerTheme.FONT_VALUE)
+	)
 
 
 func _row(found: ComposerGraph.Diagnostic, source_path: String) -> Control:

@@ -150,6 +150,26 @@ func test_a_clean_graph_says_so_instead_of_showing_an_empty_list() -> void:
 		_labels(output, [] as Array[String]).has(ComposerOutput.NOTHING),
 		"silence and success look the same otherwise"
 	)
+
+## A refusal is not silence.
+##
+## `show_graph(null)` and a refusal both leave the canvas empty, and for a while
+## they were reported identically - which is how choosing Ability Composer with
+## the wrong file open came to look like a menu item that did nothing. The
+## reason has to be on the panel, and so does what to do about it.
+func test_a_refusal_says_why_and_what_to_do_rather_than_reading_as_empty() -> void:
+	var output: ComposerOutput = _mounted(
+		ComposerOutput.new(), Vector2(700.0, 132.0)
+	) as ComposerOutput
+	output.show_refusal("gas_engine_plugin.gd does not extend GameplayAbility")
+
+	var shown: Array[String] = _labels(output, [] as Array[String])
+	assert_true(
+		shown.has("gas_engine_plugin.gd does not extend GameplayAbility"),
+		"the reason is on the panel: %s" % [shown]
+	)
+	assert_true(shown.has(ComposerOutput.HOW_TO_OPEN), "and so is the way out")
+	assert_false(shown.has(ComposerOutput.NOTHING), "not reported as nothing to report")
 #endregion
 
 
@@ -258,6 +278,24 @@ func test_clicking_an_output_row_reveals_that_node_on_the_canvas() -> void:
 		screen.canvas().picked(), [graph.diagnostics[0].node_id] as Array[StringName],
 		"the node the row was about"
 	)
+
+
+## The whole screen comes forward on a refusal, not just the panel.
+##
+## This is the half that was missing when the bug was reported: the reason was
+## pushed to the console and the editor stayed on whatever screen it was on, so
+## from where the person sat, choosing the menu item did nothing at all.
+func test_a_refused_open_still_leaves_the_screen_showing_the_reason() -> void:
+	var screen: ComposerScreen = _mounted(
+		ComposerScreen.new(), Vector2(1280.0, 720.0)
+	) as ComposerScreen
+	await get_tree().process_frame
+	await screen.show_refusal("there is nothing at res://nowhere.gd")
+
+	var shown: Array[String] = _labels(screen, [] as Array[String])
+	assert_true(shown.has(ComposerTopBar.NO_ABILITY), "the bar says nothing is open")
+	assert_true(shown.has("there is nothing at res://nowhere.gd"), "and the panel says why")
+	assert_null(screen.graph(), "with no graph behind it")
 
 
 #region What the spec fixes about how things read

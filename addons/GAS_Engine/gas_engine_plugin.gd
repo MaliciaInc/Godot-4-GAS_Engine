@@ -185,9 +185,15 @@ func _open_composer() -> void:
 		script.resource_path if script != null else ""
 	)
 	if not opened.is_ok():
-		# Said out loud rather than swallowed. A menu item that appears to do
-		# nothing is worse than one that explains itself.
+		# Said where the person is looking, not only in the console. The warning
+		# stays for the log, but the Output dock is not where somebody who just
+		# chose Ability Composer is looking, and an unchanged main screen reads
+		# as the menu item doing nothing at all.
 		push_warning(COMPOSER_REFUSED % opened.refusal)
+		_showing_composer = true
+		_composer_instance.show_refusal(opened.refusal)
+		EditorInterface.set_main_screen_editor(PLUGIN_DISPLAY_NAME)
+		_make_visible(true)
 		return
 
 	_showing_composer = true
