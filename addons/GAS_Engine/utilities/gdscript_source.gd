@@ -78,20 +78,23 @@ static func _store(path: String, source: String) -> bool:
 	return true
 
 
-## Put the staged file where the real one is. The only destructive step, and it
-## does not happen until the replacement is known to be complete.
+## Put the staged file where the real one is, in one move.
+##
+## One move, and no delete before it. Removing the destination first and then
+## renaming looks equivalent and is not: a rename that fails after the delete
+## leaves nothing where the file used to be, which is the outcome this whole
+## shape exists to prevent. Measured rather than assumed - `DirAccess.rename()`
+## overwrites an existing destination here, returning OK with the replacement in
+## place and the staged file gone.
 static func _swap_in(path: String, staged: String) -> bool:
 	var folder: DirAccess = DirAccess.open(path.get_base_dir())
 	if folder == null:
 		push_error(WRITE_FAILED % path)
 		_discard(staged)
 		return false
-	if folder.file_exists(path.get_file()) and folder.remove(path.get_file()) != OK:
-		push_error(WRITE_FAILED % path)
-		_discard(staged)
-		return false
 	if folder.rename(staged.get_file(), path.get_file()) != OK:
 		push_error(WRITE_FAILED % path)
+		_discard(staged)
 		return false
 	return true
 
