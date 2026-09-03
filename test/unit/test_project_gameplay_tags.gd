@@ -104,6 +104,46 @@ func test_a_write_that_cannot_be_staged_leaves_the_original_untouched() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
+## And the other half of the window: staged fine, could not be put in place.
+##
+## The write is two moments and the test above only covers the first. This is
+## the second: the staged file is written and the swap is what fails. What it
+## pins is that a swap that did not happen is reported as not having happened,
+## that the file is still the file, and that the staged copy is cleaned up
+## rather than left in the project folder for somebody to find.
+##
+## The failure is provoked rather than simulated: an open handle on the target
+## makes the rename fail, measured, which is what a virus scanner or another
+## editor holding the file looks like from here.
+##
+## It does not, on its own, pin that the swap no longer deletes the target
+## first - Windows will not delete a file this test is holding open, so the
+## delete would fail harmlessly here. `test_tag_registry.gd` is what catches
+## that, by putting a directory where the target goes.
+func test_a_write_that_cannot_be_committed_leaves_the_original_untouched() -> void:
+	var path: String = "user://test_commit_target.gd"
+	var before: String = "# the only copy the project has"
+
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	out.store_string(before)
+	out.close()
+	var held: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	_expect_engine_error()
+	var wrote: bool = GDScriptSource.write(path, "# a replacement nobody gets")
+	_handle_tracked_errors()
+	held.close()
+
+	assert_false(wrote, "it could not be put in place")
+	assert_eq(FileAccess.get_file_as_string(path), before, "so the file is still the file")
+	assert_false(
+		FileAccess.file_exists(path + GDScriptSource.STAGED_SUFFIX),
+		"and the half-written one was cleared away"
+	)
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
 ## The engine is expected to complain here: a write it cannot make is a write
 ## it should say it cannot make.
 func _expect_engine_error() -> void:

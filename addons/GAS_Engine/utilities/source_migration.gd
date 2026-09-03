@@ -20,6 +20,9 @@
 @tool
 class_name GASSourceMigration extends RefCounted
 
+const TAGS_UNWRITABLE: String = "GAS_Engine: could not write the project's gameplay tags."
+const CUES_UNWRITABLE: String = "GAS_Engine: could not write the project's gameplay cues."
+
 
 ## Whether the fold still has to happen in this project.
 static func pending() -> bool:
@@ -36,6 +39,17 @@ static func run() -> bool:
 	if not pending():
 		return true
 
+	# Nothing to carry is not the same as nothing to do, and it is certainly not
+	# the same as writing two empty files. A project that never had the old
+	# resources gets its files from `ensure_sources()`, which knows what a new
+	# one should start with; folding here would hand it two empty ones first and
+	# leave the examples in a branch nothing reaches. It also means upgrading a
+	# project that has a hand-edited file and no legacy resource does not
+	# canonicalise it on the way past.
+	if not _has_a_legacy_registry():
+		GASEngineProjectSettings.mark_source_migration_done()
+		return true
+
 	var tags: Array[StringName] = _folded_tags()
 	var cues: Dictionary[StringName, String] = _folded_cues()
 	if not GameplayTagGenerator.generate_tags_file(tags):
@@ -45,6 +59,38 @@ static func run() -> bool:
 
 	GASEngineProjectSettings.mark_source_migration_done()
 	return true
+
+
+## Whether this project has a registry resource from before the files.
+static func _has_a_legacy_registry() -> bool:
+	return (
+		FileAccess.file_exists(GASEngineProjectSettings.get_legacy_registry_tag_path())
+		or FileAccess.file_exists(GASEngineProjectSettings.get_legacy_registry_cue_path())
+	)
+
+
+## Make sure the project has both files, and leave them alone when it has.
+##
+## The seeding a new project needs, kept beside the fold because between them
+## they are the whole answer to "what does this project start with" - and kept
+## out of the plugin because the plugin cannot be driven without an editor, and
+## this is the half worth proving.
+static func ensure_sources(example_tags: Array[String]) -> void:
+	if not FileAccess.file_exists(
+		GASEngineProjectSettings.get_generated_tag_script_path()
+	):
+		var registry: GameplayTagRegistry = GameplayTagRegistry.new()
+		for tag: String in example_tags:
+			registry.add_tag(tag)
+		if not GameplayTagGenerator.generate_tags_file(registry.tags):
+			push_error(TAGS_UNWRITABLE)
+
+	if not FileAccess.file_exists(
+		GASEngineProjectSettings.get_generated_cue_script_path()
+	):
+		var none: Dictionary[StringName, String] = {}
+		if not GameplayCueGenerator.generate_cues_file(none):
+			push_error(CUES_UNWRITABLE)
 
 
 ## What the tags file holds, plus anything a legacy registry still names.

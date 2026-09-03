@@ -1,0 +1,5 @@
+RESULT: PASS
+SOURCE: 23ac0e57419d2507bd52ea4926adc6253fcb87fe97634808d21fd0a45c88c5e2
+stage: strict-typing validation of every engine script
+files: 197 (all of addons/GAS_Engine), 0 with problems
+driven under tooling/strict_typing_pass.py enter/leave; project.godot restored clean

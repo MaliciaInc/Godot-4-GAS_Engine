@@ -316,30 +316,7 @@ func ensure_project_sources() -> void:
 	if GASSourceMigration.pending() and GASSourceMigration.run():
 		if ProjectSettings.save() != OK:
 			push_error("GAS_Engine: could not record that the registry fold happened.")
-	_ensure_gameplay_tags_source()
-	_ensure_gameplay_cues_source()
-
-
-## Write the tags file when the project has none, and leave it alone when it has.
-func _ensure_gameplay_tags_source() -> void:
-	if FileAccess.file_exists(GASEngineProjectSettings.get_generated_tag_script_path()):
-		return
-
-	var registry: GameplayTagRegistry = GameplayTagRegistry.new()
-	for tag: String in EXAMPLE_TAGS:
-		registry.add_tag(tag)
-	if not GameplayTagGenerator.generate_tags_file(registry.tags):
-		push_error("GAS_Engine: could not write the project's gameplay tags.")
-
-
-## And the cues file, which starts empty: a project has no cues until it does.
-func _ensure_gameplay_cues_source() -> void:
-	if FileAccess.file_exists(GASEngineProjectSettings.get_generated_cue_script_path()):
-		return
-
-	var none: Dictionary[StringName, String] = {}
-	if not GameplayCueGenerator.generate_cues_file(none):
-		push_error("GAS_Engine: could not write the project's gameplay cues.")
+	GASSourceMigration.ensure_sources(EXAMPLE_TAGS)
 
 
 #endregion

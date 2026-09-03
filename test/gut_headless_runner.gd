@@ -102,7 +102,23 @@ func _on_run_finished() -> void:
 		)
 		return
 
-	_report(passes, failures, pending, _failing_test_names(), orphans)
+	var risky: String = _test_names_matching(_asserted_nothing)
+	if risky != "none":
+		# A test that ran and asserted nothing proves nothing, and this line
+		# reported PASS over one. Vacuous is the cheapest way for a suite to be
+		# wrong: a loop over an empty collection skips every assertion inside it
+		# and the failure count is still zero. GUT notices and totals it apart
+		# from the failures, which is exactly how it stayed green.
+		_report(
+			passes,
+			maxi(failures, 1),
+			pending,
+			"NO ASSERTIONS: " + risky + " ran without asserting anything",
+			orphans
+		)
+		return
+
+	_report(passes, failures, pending, _test_names_matching(_did_not_pass), orphans)
 
 
 ## Nodes still alive after GUT finished, counted by GUT itself.
@@ -147,23 +163,44 @@ func _test_files_on_disk() -> int:
 	return count
 
 
-## The tests that did not pass, script by script.
+## The tests a question is true of, script by script.
 ##
 ## A result that says only "13 failed" sends the reader back to the console
 ## they may no longer have. Naming them is the difference between a report
-## and a scoreboard.
-func _failing_test_names() -> String:
+## and a scoreboard, and two kinds of test need naming - the ones that failed
+## and the ones that asserted nothing. Only the question differs, so only the
+## question is written twice.
+func _test_names_matching(question: Callable) -> String:
 	var names: Array[String] = []
 	@warning_ignore_start("unsafe_method_access", "unsafe_property_access")
 	var gut: Object = _runner.get_gut()
 	for script: Object in gut.get_test_collector().scripts:
 		for test: Object in script.tests:
-			if test.was_run and not test.is_passing():
+			var matches: bool = question.call(test)
+			if matches:
 				names.append(str(script.get_full_name()) + "::" + str(test.name))
 	@warning_ignore_restore("unsafe_method_access", "unsafe_property_access")
 	if names.is_empty():
 		return "none"
 	return (", ").join(names)
+
+
+## Ran, and did not come out passing.
+func _did_not_pass(test: Object) -> bool:
+	@warning_ignore_start("unsafe_method_access", "unsafe_property_access")
+	var ran: bool = test.was_run
+	var passing: bool = test.is_passing()
+	@warning_ignore_restore("unsafe_method_access", "unsafe_property_access")
+	return ran and not passing
+
+
+## Ran and asserted nothing, or was skipped. GUT calls this risky and totals it
+## apart from the failures, which is exactly how one sat in a green run.
+func _asserted_nothing(test: Object) -> bool:
+	@warning_ignore_start("unsafe_method_access")
+	var risky: bool = test.is_risky()
+	@warning_ignore_restore("unsafe_method_access")
+	return risky
 
 
 ## `orphans` is -1 when the run ended before the count could be taken, which is

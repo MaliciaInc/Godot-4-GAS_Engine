@@ -1,0 +1,5 @@
+RESULT: PASS
+SOURCE: 23ac0e57419d2507bd52ea4926adc6253fcb87fe97634808d21fd0a45c88c5e2
+ARHALIES_GUT_RESULT: PASS passed=37460 failed=0 pending=0 orphans=0
+scripts: 84 loaded, 84 on disk; tests: 1088 passing, 0 risky
+the runner now fails on a risky test, so a vacuous one cannot sit in a green run

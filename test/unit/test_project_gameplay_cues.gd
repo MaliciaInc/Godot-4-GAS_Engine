@@ -14,7 +14,10 @@
 extends GutTest
 
 const A_TAG: StringName = &"Example.Cue.Probe"
-const A_SCENE: String = "res://addons/GAS_Engine/editor/gas_engine_composer_probe.tscn"
+## Rendering must not care whether the scene is there, so this one is not.
+const A_SCENE: String = "res://addons/GAS_Engine/a_scene_a_game_would_bind.tscn"
+## And this one is, for the check that needs a real answer.
+const A_SCENE_THAT_EXISTS: String = "res://test/gut_headless_runner.tscn"
 
 
 #region What is written comes back
@@ -65,8 +68,23 @@ func test_the_project_has_a_cues_file_and_it_parses() -> void:
 ## A binding that preloads a path nothing answers is a cue that fails at load
 ## rather than when it is asked for, and the file is the only place it can be
 ## wrong now.
+##
+## The check is proved to have teeth in the same test, because the project ships
+## with no cues yet: the loop had nothing to walk, asserted nothing, and passed.
+## That is not the check working, it is the check being absent - so the last two
+## lines pin what the loop would say if a binding ever were wrong.
 func test_every_binding_names_a_scene_that_exists() -> void:
-	for tag: StringName in GameplayCueGenerator.bindings_in_file():
-		var at: String = GameplayCueGenerator.bindings_in_file()[tag]
-		assert_true(ResourceLoader.exists(at), "%s names %s, which is there" % [tag, at])
+	var bound: Dictionary[StringName, String] = GameplayCueGenerator.bindings_in_file()
+	for tag: StringName in bound:
+		assert_true(
+			ResourceLoader.exists(bound[tag]), "%s names %s, which is there" % [tag, bound[tag]]
+		)
+
+	assert_true(
+		ResourceLoader.exists(A_SCENE_THAT_EXISTS), "a scene that is there reads as there"
+	)
+	assert_false(
+		ResourceLoader.exists("res://nothing_answers_this.tscn"),
+		"and one that is not does not - an empty file above is an answer, not a shrug"
+	)
 #endregion

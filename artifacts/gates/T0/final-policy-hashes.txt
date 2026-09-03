@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# extends joins the GDScript keywords two tools each have to name: the duplication gate's grammar and the Composer's ability scan.
+# risky-test guard in the headless runner; the fold happens once and seeds a fresh project
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T18:54:40Z
-# commit-previo: 31db8ef1292d8968357ff7d833cd0f27bfc2d94e
+# date-utc: 2026-09-03T22:42:49Z
+# commit-previo: 64d37cd599b1bb8ada104397586a544f95464ad0
 # files: 24
 82a3ecb02ae2b6f458affbb6ca3aae6c449ad192f7ebc1362fae68e80aa0257c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
