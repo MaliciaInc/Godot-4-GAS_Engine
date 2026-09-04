@@ -1,12 +1,21 @@
 RESULT: PASS
 stage:      git-diff-check
 command:    git diff --check
-started:    2026-09-01T15:46:22.8380881Z
-ended:      2026-09-01T15:46:22.8903731Z
-duration_s: 0.052
+started:    2026-09-04T00:25:42.0026909Z
+ended:      2026-09-04T00:25:42.0517955Z
+duration_s: 0.049
 exit_code:  0
 
 --- stdout ---
 
 --- stderr ---
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/duplication.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/gate-self-tests.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/git-diff-check.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/loc.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/magic-string.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/policy-seal.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/product-identity.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/project-invariants.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/GAS_ENGINE_FINAL/test-location.log', CRLF will be replaced by LF the next time Git touches it
 

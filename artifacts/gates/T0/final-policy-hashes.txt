@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# the export smoke, and the claim it disproved
+# freeze at 6db48da: the identity gate reads the release receipt set
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T00:22:13Z
-# commit-previo: 33c185c260fa1e0da710e9434487dc86514336c6
+# date-utc: 2026-09-04T00:25:18Z
+# commit-previo: 6db48dac670b22c38551eb21d34e8e78d0f515ee
 # files: 24
 1200cd49fad650a55ee650bea398d11993499f67226033059c9499ca27813be0  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
@@ -29,7 +29,7 @@ a3c7d0dc88aa826e4df3a164f535ed9b1f08890bb8cfb6183fa9347863ad18a8  tooling/gates/
 e81c73d8b53208301944119dc38e02ba8153e6abd392fde00976f586d9c90a06  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 1c3e982abdc41c322376e2dd33415fe3a254fa28b7abdd41f41f9fd3a6373cb7  tooling/gates/test-location-gate.py
-5b93fa17992cfd6f9db84ce5ebde2bb044aec0416e5af8def3211ba290662540  tooling/product_identity.py
+1764b29efbee2bb19d1807bdf1616d3c0205e19c0a18e294141b44c8e0458de2  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py

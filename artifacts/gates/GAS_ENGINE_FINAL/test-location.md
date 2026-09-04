@@ -1,11 +1,11 @@
 # Test Location Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\Arhalies_GAS`
-- Source files scanned: 279
+- Project: `<repo>`
+- Source files scanned: 341
 - Blocking findings: 0
 - Scan issues: 0
-- Test files recognized: 81
+- Test files recognized: 121
 
 ## Violations
 

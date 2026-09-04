@@ -44,9 +44,21 @@ TEXT_SUFFIXES = {
     ".json", ".md", ".txt", ".svg", ".import", ".log",
 }
 
+#: The vendored dependency, and the receipt sets from phases that ran before
+#: the rename. Those record the name the project had at the time, which is a
+#: true record and not something to rewrite - so history is skipped and the
+#: release set, `artifacts/gates/GAS_ENGINE_FINAL/`, is read like any other
+#: tracked file. It was regenerated clean at the freeze; see
+#: `tooling/RECEIPT-HYGIENE.md`.
 SKIP_PREFIXES = (
     "addons/gut/",
-    "artifacts/gates/",
+    "artifacts/gates/GAS_ENGINE_REBRAND_BASELINE/",
+    "artifacts/gates/T0/",
+    "artifacts/gates/T0-baseline/",
+    "artifacts/gates/T1/",
+    "artifacts/gates/T2/",
+    "artifacts/gates/T7/",
+    "artifacts/gates/T11/",
 )
 
 

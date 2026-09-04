@@ -1,9 +1,12 @@
 # Regenerating the release receipt set
 
-`artifacts/gates/GAS_ENGINE_FINAL/` holds the release evidence. It is
-deliberately **stale** right now — regenerating it was deferred until the
-freeze, because work was still landing — so what follows is the procedure for
-that regeneration, not a claim about the files as they stand.
+`artifacts/gates/GAS_ENGINE_FINAL/` holds the release evidence.
+
+**This procedure has been run.** The set was regenerated at the freeze on
+2026-09-03, checked against every point below, and the identity gate now reads
+it. `FREEZE.md` in that directory names the commit. What follows is kept
+because there will be another release, and because the reasoning is what makes
+the steps safe to repeat rather than copy.
 
 ## Why this note is not in there
 
@@ -21,11 +24,11 @@ the strings a checker looks for. Where a shape is needed, it points at the file
 that already enumerates it. `GAS_ENGINE_FINAL/` holds evidence; it does not hold
 the instructions for producing evidence.
 
-## What is stale in there, and why
+## What was stale in there, and why
 
-Nine of its files carry an absolute path from the machine that produced them,
-and the suite receipt carries the verdict prefix from before the rename. Neither
-was an accident: the generators emitted them.
+Before the freeze, nine of its files carried an absolute path from the machine
+that produced them, and the suite receipt carried the verdict prefix from
+before the rename. Neither was an accident: the generators emitted them.
 
 That is fixed at the source, in three places, so a regenerated set comes out
 clean rather than being cleaned afterwards:
@@ -92,11 +95,12 @@ found the third; the first two were visible from the source.
 
 ## Do step 2's change last, not early
 
-While the set is deliberately old, the skip is correct: scanning it would fail
-`verify.ps1` on every run between now and the freeze, over files nobody is
-allowed to touch yet. Clean the set first, then let the gate hold it — in that
-order, and in one commit, so the tree is never in a state where the gate is
-armed against evidence that has not been regenerated.
+While a set is still old, skipping it is correct: scanning it would fail
+`verify.ps1` on every run until the regeneration, over files nobody is allowed
+to touch yet. Clean the set first, then let the gate hold it — in that order,
+and in one commit, so the tree is never in a state where the gate is armed
+against evidence that has not been regenerated. That is the order this freeze
+followed.
 
 A set produced after all three fixes has been checked this way and is clean:
 `artifacts/gates/source-fold-tests/`, 2026-09-03.

@@ -1,20 +1,20 @@
 RESULT: PASS
 stage:      test-location
-command:    python C:\Users\Edward\Documents\Projectos\Arhalies_GAS\tooling\gates\run_gate.py test-location C:\Users\Edward\Documents\Projectos\Arhalies_GAS\artifacts\gates\GAS_ENGINE_FINAL
-started:    2026-09-01T15:46:18.4665192Z
-ended:      2026-09-01T15:46:18.9836998Z
-duration_s: 0.517
+command:    python tooling\gates\run_gate.py test-location artifacts\gates\GAS_ENGINE_FINAL
+started:    2026-09-04T00:25:24.5592376Z
+ended:      2026-09-04T00:25:25.2685016Z
+duration_s: 0.709
 exit_code:  0
 
 --- stdout ---
 # Test Location Gate
 
 - Status: **PASS**
-- Project: `C:\Users\Edward\Documents\Projectos\Arhalies_GAS`
-- Source files scanned: 279
+- Project: `<repo>`
+- Source files scanned: 341
 - Blocking findings: 0
 - Scan issues: 0
-- Test files recognized: 81
+- Test files recognized: 121
 
 ## Violations
 
