@@ -8,11 +8,15 @@
 ## a value that is absent reads `not connected` here too, and in the same red,
 ## because both ask the field rather than deciding for themselves.
 ##
-## Not every value is offered the same way. One that arrives on a cable is
-## offered as a choice of what feeds it - the locals above it that fit - because
-## that is what a cable is: a name in an argument. Choosing a different one
-## rewires; typing a value instead disconnects. The node answers which control
-## belongs to which value; this only draws the answer.
+## The control is the same one the card puts in its own rows. Two panels drawing
+## one argument two ways is two pictures of one fact, and they disagree the
+## moment either is wrong - a bool the card ticks and the panel spells, a name
+## the card writes `&"fire"` and the panel writes `fire`. There is one control,
+## it belongs to neither of them, and both ask it.
+##
+## A value fed by a cable is not typed here either. The cable is the edit, and
+## this panel offers to take it off rather than a second way to set the same
+## argument behind it.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -31,12 +35,15 @@ signal value_edited(node_id: StringName, position: int, written: String)
 
 const WIRED_MARK: String = "⌄ "
 
-## The entry that is not a local: taking the cable off.
-const UNPLUGGED: String = "— not from a cable —"
+## What the button that takes a cable off says.
+const UNPLUGGED: String = "Disconnect"
+
+## Somebody asked for the cable on this argument to come off. Carries where, not
+## what: the panel never decides what unplugging writes.
+signal disconnect_requested(node_id: StringName, position: int)
 
 var _collapsed: bool = false
 var _shown: ComposerNode = null
-var _graph: ComposerGraph = null
 var _may_write: bool = false
 var _body: VBoxContainer = null
 var _grip: Button = null
@@ -68,13 +75,14 @@ func _ready() -> void:
 ##
 ## An empty panel and a panel showing nothing look the same, and one of them is
 ## a bug. Saying it removes the question.
-func show_node(
-	node: ComposerNode, may_write: bool = false, graph: ComposerGraph = null
-) -> void:
-	_graph = graph
+func show_node(node: ComposerNode, may_write: bool = false) -> void:
 	_shown = node
 	_may_write = may_write
+	# Detached before it is freed: `queue_free` waits for the end of the frame,
+	# so a panel only queued is still a child, still laid out and still reachable
+	# by index in the same frame this rebuilt it.
 	for child: Node in _body.get_children():
+		_body.remove_child(child)
 		child.queue_free()
 
 	_body.add_child(ComposerPanel.caption(TITLE))
@@ -103,44 +111,45 @@ func _field_block(node: ComposerNode, position: int) -> Control:
 	)
 	if not _may_write or not node.may_edit(field):
 		block.add_child(_read_only(field))
-	elif node.may_type(field):
-		block.add_child(_box(node, position))
-	else:
-		block.add_child(_feeds(node, position))
+		return block
+
+	_edit(block, node, position)
+	if field.source == ComposerNode.ValueSource.WIRED:
+		block.add_child(_unplug(node, position))
 	return block
 
 
-## What a cable could be attached to instead.
+## Put the one control a value is edited with into `block`.
 ##
-## The locals above this statement that fit the argument, and one entry that is
-## not a local at all: choosing it writes an empty value, which is how a cable
-## is taken off. Free text is not offered here because a cable is a name, and a
-## box inviting anything would invite the thing that is not one.
-func _feeds(node: ComposerNode, position: int) -> Control:
-	var field: ComposerNode.Field = node.fields[position]
-	var choice: OptionButton = OptionButton.new()
-	choice.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
-	choice.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT)
-	choice.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
-
-	var offered: Array[String] = [field.display]
-	for port: ComposerNode.Port in _reachable(node, field):
-		if port.label != field.display:
-			offered.append(port.label)
-	offered.append(UNPLUGGED)
-
-	for name: String in offered:
-		choice.add_item(name)
-	choice.selected = 0
-	choice.item_selected.connect(
-		func _took(index: int) -> void:
-			_commit(node.id, position, "" if offered[index] == UNPLUGGED else offered[index])
+## Added to the tree and then configured, in that order and to match the card:
+## the control it builds resolves its theme from its parent, and one built
+## outside the tree measures itself against nothing.
+func _edit(block: Control, node: ComposerNode, position: int) -> void:
+	var editor: ComposerValueEditor = ComposerValueEditor.new()
+	editor.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
+	editor.committed.connect(
+		func _typed(source_text: String) -> void: _commit(node.id, position, source_text)
 	)
-	return choice
+	block.add_child(editor)
+	editor.configure(node.fields[position], node.may_edit(node.fields[position]))
 
 
-func _reachable(node: ComposerNode, field: ComposerNode.Field) -> Array[ComposerNode.Port]:
-	return _graph.locals_reaching(node, field.type_name) if _graph != null else []
+## Take the cable off this argument.
+##
+## An intention, not an edit: the panel says what somebody asked for and the
+## screen decides whether the file can say it. Writing the declared default here
+## would be this panel holding a second opinion about what unplugging means,
+## beside the one the connection controller already has.
+func _unplug(node: ComposerNode, position: int) -> Control:
+	var button: Button = Button.new()
+	button.text = UNPLUGGED
+	button.add_theme_font_size_override(
+		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_LABEL
+	)
+	button.pressed.connect(
+		func _asked() -> void: disconnect_requested.emit(node.id, position)
+	)
+	return button
 
 
 ## A value that cannot be typed, shown as what it is.
@@ -163,31 +172,6 @@ func _read_only(field: ComposerNode.Field) -> Control:
 	elif wired:
 		tint = ComposerTheme.TEXT_DIM
 	return ComposerPanel.slot(text, tint, _width - ComposerTheme.S4 * 2.0)
-
-
-## A value somebody can type over.
-##
-## Committed when the box is left or the line is submitted, not on every
-## keystroke: a graph that redrew itself per character would fight the person
-## typing, and a save is the only thing that reaches the file anyway.
-func _box(node: ComposerNode, position: int) -> Control:
-	var written: LineEdit = LineEdit.new()
-	written.text = node.fields[position].display
-	written.custom_minimum_size = Vector2(_width - ComposerTheme.S4 * 2.0, 0.0)
-	written.add_theme_stylebox_override(
-		GASEditorTheme.NORMAL_STYLEBOX, ComposerTheme.field_box()
-	)
-	written.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT)
-	written.add_theme_font_size_override(
-		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
-	)
-	written.text_submitted.connect(
-		func _submitted(text: String) -> void: _commit(node.id, position, text)
-	)
-	written.focus_exited.connect(
-		func _left() -> void: _commit(node.id, position, written.text)
-	)
-	return written
 
 
 func _commit(node_id: StringName, position: int, written: String) -> void:

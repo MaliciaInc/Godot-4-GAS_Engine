@@ -183,3 +183,162 @@ func test_a_call_dragged_from_the_palette_is_taken_by_the_canvas() -> void:
 	canvas._drop_data(Vector2.ZERO, carried)
 
 	assert_eq(asked, [wanted] as Array[StringName], "and reports the call that landed")
+
+
+#region One control, drawn in two places
+## The panel and the card have to mean the same thing by one argument.
+##
+## They used to draw it two different ways: the card printed the source text and
+## the Inspector typed into a raw line, so a bool read `true` on one and was
+## spelled by hand on the other, and a name the card showed as `&"fire"` the
+## panel showed as `&"fire"` and wrote back as the String `"&\"fire\""`. One
+## control means there is one answer to ask.
+const SHARED: Array = [
+	[&"bool", "true", "a bool"],
+	[&"float", "1.5", "a number"],
+	[&"StringName", "&\"fire\"", "a name, marks and all"],
+	[&"String", "\"burn\"", "a string"],
+	[&"float", "pick.strength", "an expression neither may touch"],
+]
+
+
+## A node with one argument holding `written`.
+func _holding(type_name: StringName, written: String) -> ComposerNode:
+	var node: ComposerNode = Sample.build().find_node(Sample.APPLY)
+	node.fields.clear()
+	var field: ComposerNode.Field = ComposerNode.Field.new()
+	field.label = "Level"
+	field.type_name = type_name
+	field.display = written
+	node.fields.append(field)
+	return node
+
+
+## The value control inside whatever panel was handed in.
+func _control_in(panel: Node) -> ComposerValueEditor:
+	var found: Array[Node] = panel.find_children("", "ComposerValueEditor", true, false)
+	return found[0] if not found.is_empty() else null
+
+
+func _card_showing(node: ComposerNode) -> ComposerCard:
+	var types: ComposerPortTypes = ComposerPortTypes.new()
+	types.rebuild(Sample.build())
+	var card: ComposerCard = ComposerCard.new()
+	add_child_autofree(card)
+	card.build(node, types)
+	await get_tree().process_frame
+	return card
+
+
+func _panel_showing(node: ComposerNode) -> ComposerInspector:
+	var inspector: ComposerInspector = _mounted(
+		ComposerInspector.new(), Vector2(PANEL_WIDTH, PANEL_HEIGHT)
+	) as ComposerInspector
+	inspector.show_node(node, true)
+	await get_tree().process_frame
+	return inspector
+
+
+func test_a_card_and_the_inspector_say_the_same_thing_about_one_argument() -> void:
+	for row: Array in SHARED:
+		var type_name: StringName = row[0]
+		var written: String = row[1]
+		var described: String = row[2]
+
+		var card: ComposerCard = await _card_showing(_holding(type_name, written))
+		var panel: ComposerInspector = await _panel_showing(_holding(type_name, written))
+		var on_card: ComposerValueEditor = _control_in(card)
+		var on_panel: ComposerValueEditor = _control_in(panel)
+
+		assert_not_null(on_card, "%s: the card offers a control" % described)
+		assert_not_null(on_panel, "%s: and so does the panel" % described)
+		assert_eq(on_card.source_text(), written, "%s: the card round trips" % described)
+		assert_eq(
+			on_panel.source_text(),
+			on_card.source_text(),
+			"%s: and the panel agrees with it" % described
+		)
+
+
+## An argument fed by a cable is not typed into, in either place.
+func test_a_wired_argument_is_typed_into_nowhere() -> void:
+	var node: ComposerNode = _holding(&"float", "strength")
+	node.fields[0].source = ComposerNode.ValueSource.WIRED
+
+	var card: ComposerCard = await _card_showing(node)
+	var panel: ComposerInspector = await _panel_showing(node)
+
+	for panel_or_card: Node in [card, panel]:
+		assert_eq(
+			panel_or_card.find_children("", "SpinBox", true, false).size(),
+			0,
+			"nothing to spin in %s" % panel_or_card.get_class()
+		)
+	assert_eq(
+		_control_in(panel).source_text(),
+		"strength",
+		"and the panel still says which local feeds it"
+	)
+
+
+## The panel offers to take the cable off, and only offers.
+##
+## An intention rather than an edit. What unplugging writes is the connection
+## controller's one answer, and a panel that wrote its own would be a second.
+func test_the_inspector_asks_to_unplug_rather_than_unplugging() -> void:
+	var node: ComposerNode = _holding(&"float", "strength")
+	node.fields[0].source = ComposerNode.ValueSource.WIRED
+	var panel: ComposerInspector = await _panel_showing(node)
+	watch_signals(panel)
+	var before: String = node.fields[0].display
+
+	var pressed: bool = _press_titled(panel, ComposerInspector.UNPLUGGED)
+
+	assert_true(pressed, "the panel offers it")
+	assert_signal_emitted(panel, "disconnect_requested", "and says so")
+	assert_eq(node.fields[0].display, before, "without touching the model")
+#endregion
+
+
+#region The menu offered on a card
+## The menu reports what was clicked by name, not by where it sat.
+##
+## An index is a number two lists have to keep agreeing about, and they stop
+## agreeing the first time somebody inserts an item - at which point Remove
+## silently becomes Copy. TASK 12 adds items to this menu, so the property is
+## worth holding before it does.
+func test_the_card_menu_reports_the_item_by_name() -> void:
+	var menu: ComposerCardMenu = ComposerCardMenu.new()
+	add_child_autofree(menu)
+	menu.offer(["Remove", "Repeat", "Copy"] as Array[String])
+	watch_signals(menu)
+
+	menu.id_pressed.emit(2)
+
+	var said: Array = get_signal_parameters(menu, "chose")
+	var chosen: String = said[0]
+	assert_eq(chosen, "Copy", "the item that was clicked")
+
+
+## An index nothing was offered at says nothing at all.
+func test_the_card_menu_says_nothing_about_an_item_it_never_offered() -> void:
+	var menu: ComposerCardMenu = ComposerCardMenu.new()
+	add_child_autofree(menu)
+	menu.offer(["Remove"] as Array[String])
+	watch_signals(menu)
+
+	menu.id_pressed.emit(7)
+
+	assert_signal_not_emitted(menu, "chose", "there is no eighth item")
+
+
+## Offered again, it holds what it was offered last and nothing from before.
+func test_offering_again_replaces_what_the_menu_holds() -> void:
+	var menu: ComposerCardMenu = ComposerCardMenu.new()
+	add_child_autofree(menu)
+	menu.offer(["Remove", "Repeat", "Copy"] as Array[String])
+
+	menu.offer(["Disconnect"] as Array[String])
+
+	assert_eq(menu.item_count, 1, "one item, not four")
+#endregion

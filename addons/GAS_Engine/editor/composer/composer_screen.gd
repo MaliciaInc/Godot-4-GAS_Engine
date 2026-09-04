@@ -43,7 +43,10 @@ var _doc: ComposerDocument = ComposerDocument.new()
 ## The one thing allowed to turn a dropped wire into GDScript. The canvas
 ## asks; this answers, or says why not.
 var _wires: ComposerConnectionController = ComposerConnectionController.new()
-var _menu: PopupMenu = null
+
+## What the selected statements can be made to do.
+var _statements: ComposerStatementOps = ComposerStatementOps.new()
+var _menu: ComposerCardMenu = null
 var _finder: ComposerFinder = null
 var _chords: ComposerChords = ComposerChords.new()
 var _palette: ComposerPalette = null
@@ -95,16 +98,18 @@ func _ready() -> void:
 	_canvas.disconnection_requested.connect(_on_disconnection_requested)
 	_canvas.value_edited.connect(_on_value_edited)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
-	_canvas.node_requested.connect(_on_call_dropped)
+	_canvas.node_requested.connect(_on_node_picked)
 	_canvas.menu_requested.connect(_on_menu_requested)
 	# Every refusal the wiring can produce is said out loud in one place, so a
 	# gesture that does nothing always says why it did nothing.
 	_wires.bind(_doc)
+	_statements.bind(_doc)
 	_wires.refused.connect(_on_refused)
 	_output.row_picked.connect(_on_row_picked)
 	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
 	_top.create_requested.connect(func _asked() -> void: create_requested.emit())
 	_inspector.value_edited.connect(_on_value_edited)
+	_inspector.disconnect_requested.connect(_on_inspector_disconnect)
 	_palette.node_picked.connect(_on_node_picked)
 
 	_build_chords()
@@ -138,8 +143,7 @@ func show_graph(graph: ComposerGraph) -> void:
 func _on_selection_changed(picked: Array[StringName]) -> void:
 	_inspector.show_node(
 		_graph.find_node(picked[0]) if not picked.is_empty() and _graph != null else null,
-		_graph != null and _graph.is_editable(),
-		_graph
+		_graph != null and _graph.is_editable()
 	)
 
 
@@ -209,38 +213,25 @@ func graph() -> ComposerGraph:
 
 
 #region Statements, as things you can move about
-## The spans of what is picked, in the order the file has them.
-func _picked_spans() -> Array[ComposerSpan]:
-	var found: Array[ComposerSpan] = []
-	for id: StringName in _canvas.picked():
-		var node: ComposerNode = _doc.graph().find_node(id) if _doc.is_open() else null
-		if node != null:
-			found.append(node.span)
-	return found
-
-
+## Each of these hands the selection to the one place that knows what the
+## operation means, and redraws if the document accepted it.
 func remove_picked() -> bool:
-	var spans: Array[ComposerSpan] = _picked_spans()
-	return await _did(_doc.remove(spans)) if not spans.is_empty() else false
+	var picked: Array[StringName] = _canvas.picked()
+	return not picked.is_empty() and await _did(_statements.remove(picked))
 
 
 func repeat_picked() -> bool:
-	var spans: Array[ComposerSpan] = _picked_spans()
-	return await _did(_doc.repeat(spans)) if not spans.is_empty() else false
+	var picked: Array[StringName] = _canvas.picked()
+	return not picked.is_empty() and await _did(_statements.repeat(picked))
 
 
-## The picked statements, as the text they are.
-##
-## The system clipboard as well, because a statement is GDScript and somebody
-## who copies one here should be able to paste it into the script editor beside
-## this one - but the text is returned, so the operation can be asked a question
-## on a machine that has no clipboard at all.
+## The picked statements as text, and on the system clipboard, so somebody can
+## paste one into the script editor beside this one. The text is returned as
+## well, so the operation can be asked a question where there is no clipboard.
 func copy_picked() -> String:
-	var spans: Array[ComposerSpan] = _picked_spans()
-	if spans.is_empty():
-		return ""
-	var taken: String = _doc.copy(spans)
-	DisplayServer.clipboard_set(taken)
+	var taken: String = _statements.copy(_canvas.picked())
+	if not taken.is_empty():
+		DisplayServer.clipboard_set(taken)
 	return taken
 
 
@@ -248,33 +239,20 @@ func paste() -> bool:
 	return await paste_text(DisplayServer.clipboard_get())
 
 
-## Anything at all may be on a clipboard, so what comes off one is read back
-## before it is accepted, like every other edit.
 func paste_text(written: String) -> bool:
-	if not _doc.is_open() or written.strip_edges().is_empty():
+	if written.strip_edges().is_empty():
 		return false
-	return await _did(_doc.insert(written, _doc.after(_picked_spans())))
+	return await _did(_statements.paste(_canvas.picked(), written))
 
 
-## A node picked out of the palette becomes a statement in the body.
-func _on_node_picked(key: StringName) -> void:
-	if not _doc.may_write():
-		return
-	var written: String = ComposerWriter.call_for(
-		ComposerCatalog.find(key), _doc.path()
-	)
-	if not written.is_empty():
-		await _did(_doc.insert(written, _doc.after(_picked_spans())))
-
-
-## A call dragged in from the palette, inserted exactly as a clicked one is.
+## A call somebody chose, from the palette, the finder or a drag onto the canvas.
 ##
-## Where it was dropped is carried but not yet honoured: placing the new card
-## there needs the id of a statement that does not exist until after the insert
-## and the reread, which is the placement transaction TASK 13 builds. Said out
-## loud rather than left as a docstring that claims more than the code does.
-func _on_call_dropped(call_id: StringName, _graph_position: Vector2) -> void:
-	await _on_node_picked(call_id)
+## One handler for all three. Where it was dropped is carried and not yet
+## honoured - placing the new card there needs the id of a statement that does
+## not exist until after the insert and the reread, which is the placement
+## transaction TASK 13 builds.
+func _on_node_picked(key: StringName, _at: Vector2 = Vector2.ZERO) -> void:
+	await _did(_statements.insert_call(_canvas.picked(), key))
 
 
 ## Dragging cards changes only where they are drawn.
@@ -293,19 +271,41 @@ func _on_nodes_positioned(positions: Dictionary[StringName, Vector2]) -> void:
 	await _redraw()
 
 
-## A wire somebody dropped, handed to the one thing allowed to write one.
-func _on_connection_requested(edge: ComposerGraph.Connection) -> void:
-	if _wires.connect_edge(edge):
+## A wire change took, so everything that draws the file is asked again.
+##
+## Written once for all three ways in. A second copy is a second place to forget
+## the redraw, and a canvas that was not asked again keeps drawing the cable the
+## file no longer has.
+func _rewired(done: bool) -> void:
+	if done:
 		await _redraw()
+
+
+func _on_connection_requested(edge: ComposerGraph.Connection) -> void:
+	await _rewired(_wires.connect_edge(edge))
 
 
 func _on_disconnection_requested(edge: ComposerGraph.Connection) -> void:
-	if _wires.disconnect_edge(edge):
-		await _redraw()
+	await _rewired(_wires.disconnect_edge(edge))
 
 
 func _on_refused(message: String) -> void:
 	push_warning(message)
+
+
+## The Inspector asked for the cable on one argument to come off.
+##
+## The same controller a pulled wire goes to, so unplugging from the panel and
+## unplugging on the canvas are one operation with one answer about what the
+## argument is left holding. An argument takes one cable, so there is one to find.
+func _on_inspector_disconnect(node_id: StringName, position: int) -> void:
+	if not _doc.is_open():
+		return
+	var wires: Array[ComposerGraph.Connection] = _doc.graph().connections_to(
+		node_id, StringName(ComposerReader.ARGUMENT % position)
+	)
+	if not wires.is_empty():
+		await _rewired(_wires.disconnect_edge(wires[0]))
 
 
 ## What can be done to a card, offered where the pointer is.
@@ -313,7 +313,10 @@ func _on_refused(message: String) -> void:
 ## The same three operations the chords do, said out loud. A tool whose only way
 ## in is a chord is a tool you have to be told about, and nobody is there to
 ## tell somebody opening it for the first time.
-const MENU_ITEMS: Array[String] = ["Remove", "Repeat", "Copy"]
+const REMOVE: String = "Remove"
+const REPEAT: String = "Repeat"
+const COPY: String = "Copy"
+const MENU_ITEMS: Array[String] = [REMOVE, REPEAT, COPY]
 
 
 func _on_menu_requested(node_id: StringName, at: Vector2) -> void:
@@ -325,26 +328,25 @@ func _on_menu_requested(node_id: StringName, at: Vector2) -> void:
 	if not node_id.is_empty() and not _canvas.picked().has(node_id):
 		_canvas.reveal(node_id)
 	if _menu == null:
-		_menu = PopupMenu.new()
-		for item: String in MENU_ITEMS:
-			_menu.add_item(item)
-		_menu.id_pressed.connect(_on_menu_chosen)
+		_menu = ComposerCardMenu.new()
+		_menu.offer(MENU_ITEMS)
+		_menu.chose.connect(_on_menu_chosen)
 		add_child(_menu)
 	# `at` is already where the pointer is in the viewport. Adding this screen's
 	# own position again would open the menu that far down and to the right of
 	# the card it belongs to.
-	_menu.position = Vector2i(at)
-	_menu.reset_size()
-	_menu.popup()
+	_menu.open_at(at)
 
 
-func _on_menu_chosen(chosen: int) -> void:
+## Matched on the name it was offered under, not on an index two lists have to
+## keep agreeing about.
+func _on_menu_chosen(chosen: String) -> void:
 	match chosen:
-		0:
+		REMOVE:
 			await remove_picked()
-		1:
+		REPEAT:
 			await repeat_picked()
-		2:
+		COPY:
 			copy_picked()
 #endregion
 

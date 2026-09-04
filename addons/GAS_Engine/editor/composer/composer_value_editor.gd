@@ -42,6 +42,11 @@ const FLOAT_STEP: float = 0.01
 const MOST_DECIMALS: int = 6
 const COMPONENT_WIDTH: float = 58.0
 
+## The vector types written with whole components.
+const INTEGER_VECTORS: Array[StringName] = [
+	ComposerTypes.VECTOR2I, ComposerTypes.VECTOR3I, ComposerTypes.VECTOR4I,
+]
+
 ## The order a vector's components are written in, which is also the order they
 ## are read back in. One list rather than two, so a four-component vector cannot
 ## be built one way and read the other.
@@ -396,6 +401,14 @@ func _ranged(spin: SpinBox) -> void:
 	spin.allow_lesser = _hint_string.contains(OR_LESS)
 
 
+## Whether this argument holds whole numbers.
+##
+## Named against the actual integer vector types rather than tested for a
+## trailing "i". A game is free to declare a class called `Yuki` or `Ashi`, and
+## a spinner that rounded its value because of how the name ends is a control
+## that quietly deletes the fraction of somebody's number.
 func _integer() -> bool:
-	return _type_name == ComposerTypes.INT or _type_name.ends_with("i")
+	if _type_name == ComposerTypes.INT:
+		return true
+	return INTEGER_VECTORS.has(_type_name)
 #endregion
