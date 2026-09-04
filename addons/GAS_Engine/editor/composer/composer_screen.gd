@@ -48,6 +48,7 @@ var _routes: ComposerWiringRoutes = ComposerWiringRoutes.new()
 var _statements: ComposerStatementOps = ComposerStatementOps.new()
 ## The menus this screen opens. It says when; they say what was picked.
 var _menus: ComposerMenus = ComposerMenus.new()
+
 var _finder: ComposerFinder = null
 var _chords: ComposerChords = ComposerChords.new()
 var _palette: ComposerPalette = null
@@ -96,10 +97,8 @@ func _ready() -> void:
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_canvas.nodes_positioned.connect(_on_nodes_positioned)
 	_canvas.value_edited.connect(_on_value_edited)
-	_canvas.pin_context_requested.connect(_on_pin_context_requested)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
 	_canvas.node_requested.connect(_on_node_picked)
-	_canvas.menu_requested.connect(_on_menu_requested)
 	# The routes hear the canvas themselves. A gesture added there is connected
 	# beside the others rather than in a list here that has to be remembered.
 	_routes.bind(_doc)
@@ -107,7 +106,10 @@ func _ready() -> void:
 	_routes.changed.connect(_on_wiring_changed)
 	_routes.refused.connect(_on_refused)
 	add_child(_menus)
+	_menus.bind(_doc)
+	_menus.listen_to(_canvas)
 	_menus.chose.connect(_on_menu_chosen)
+	_menus.entry_chosen.connect(_on_entry_chosen)
 	_statements.bind(_doc)
 	_output.row_picked.connect(_on_row_picked)
 	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
@@ -291,26 +293,12 @@ func _on_inspector_disconnect(node_id: StringName, position: int) -> void:
 	_routes.unplug_argument(_doc, node_id, position)
 
 
-## Right-click, on a pin or on a card.
-##
-## The canvas asks about a pin first, because a pin sits on a card and asking
-## about the card would answer for both.
-func _on_pin_context_requested(
-	node_id: StringName, port_id: StringName, at: Vector2
+## A call picked from the catalog becomes a statement and, where the drag came
+## out of a pin, the cable joining it - as one change.
+func _on_entry_chosen(
+	entry_key: StringName, context: ComposerActionMenu.Context
 ) -> void:
-	if _doc.may_write():
-		_menus.open_for_pin(node_id, port_id, at)
-
-
-func _on_menu_requested(node_id: StringName, at: Vector2) -> void:
-	if not _doc.may_write():
-		return
-	# The card menu acts on what is selected, so right-clicking a card has to
-	# select it first. Without this the items operate on whatever was picked
-	# before - a person right-clicks one node and removes another.
-	if not node_id.is_empty() and not _canvas.picked().has(node_id):
-		_canvas.reveal(node_id)
-	_menus.open_for_card(node_id, at)
+	_routes.create_and_connect(ComposerCatalog.find(entry_key), context)
 
 
 ## One place where a menu item becomes an operation, whichever menu offered it.

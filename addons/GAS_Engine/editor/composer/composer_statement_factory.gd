@@ -38,7 +38,7 @@ static func call_statement(entry: ComposerCatalog.Entry, path: String) -> String
 static func local_call(
 	entry: ComposerCatalog.Entry, path: String, used_names: PackedStringArray
 ) -> String:
-	if entry == null or entry.result_type.is_empty() or entry.awaits:
+	if entry == null or not ComposerTypes.is_a_value(entry.result_type) or entry.awaits:
 		return ""
 	return "%svar %s: %s = %s" % [
 		TAB,

@@ -66,6 +66,18 @@ signal pin_context_requested(
 	node_id: StringName, port_id: StringName, screen_position: Vector2
 )
 
+## A wire dragged out of a pin and let go over empty canvas. What is offered
+## next is decided by which pin it came out of, so both ends are carried.
+signal connection_to_empty_requested(
+	node_id: StringName, port_id: StringName, screen_position: Vector2
+)
+signal connection_from_empty_requested(
+	node_id: StringName, port_id: StringName, screen_position: Vector2
+)
+
+## Right-click on the canvas itself, where there is neither pin nor card.
+signal graph_menu_requested(graph_position: Vector2, screen_position: Vector2)
+
 
 var _graph: ComposerGraph = null
 var _cards: Dictionary[StringName, ComposerCard] = {}
@@ -82,9 +94,8 @@ var _detail: ComposerCard.Detail = ComposerCard.Detail.FULL
 ## announcements that takes are reported as the one change it is.
 var _revealing: bool = false
 
-## The pin a Ctrl-drag started on, while one is in progress. Held nowhere
-## else and written to nothing: a cancelled drag must leave no trace.
-var _moving: ComposerPins.Pin = ComposerPins.Pin.new()
+## What a mouse event on this canvas meant, if it meant anything.
+var _gestures: ComposerCanvasGestures = ComposerCanvasGestures.new()
 
 
 func _ready() -> void:
@@ -106,6 +117,8 @@ func _ready() -> void:
 	end_node_move.connect(_on_move_ended)
 	popup_request.connect(_on_popup_request)
 	gui_input.connect(_on_gui_input)
+	connection_to_empty.connect(_on_connection_to_empty)
+	connection_from_empty.connect(_on_connection_from_empty)
 
 
 #region Showing a graph
@@ -134,7 +147,7 @@ func show_graph(graph: ComposerGraph) -> void:
 	# connect, and `_graph` is whatever it set - possibly null.
 	if _graph != graph:
 		return
-	_place(placements)
+	ComposerLayout.settle(_cards, placements, _graph)
 	_connect_all()
 	_apply_detail()
 
@@ -146,27 +159,6 @@ func _add_card(node: ComposerNode, at: Vector2) -> void:
 	card.position_offset = at
 	card.value_edited.connect(_on_value_edited)
 	_cards[node.id] = card
-
-
-## Put every card where the layout wants it, now that they have been measured.
-##
-## A card the person has moved themselves keeps where they put it. Overruling
-## that on every redraw would move somebody's graph back under them each time
-## they edited a field.
-func _place(placements: Dictionary[StringName, Vector2i]) -> void:
-	var widths: Dictionary[StringName, float] = {}
-	var heights: Dictionary[StringName, float] = {}
-	for id: StringName in _cards:
-		widths[id] = _cards[id].size.x
-		heights[id] = _cards[id].size.y
-
-	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(
-		placements, widths, heights
-	)
-	for id: StringName in _cards:
-		var model: ComposerNode = _graph.find_node(id)
-		if model != null and not model.has_layout_position and placed.has(id):
-			_cards[id].position_offset = placed[id]
 
 
 ## Draw every cable the graph holds, translated into the widget's numbering.
@@ -198,38 +190,35 @@ func _clear() -> void:
 
 
 #region Turning a gesture into a request
-## A dropped wire, in the graph's own words.
+## A wire dropped or pulled off, in the graph's own words.
+##
+## Both go through one translation and differ only in what is said afterwards.
+## Written twice, the two would be two chances for one of them to be told about
+## a change to the numbering and the other not.
 func _on_connection_request(
 	from_node: StringName, from_port: int, to_node: StringName, to_port: int
 ) -> void:
-	var edge: ComposerGraph.Connection = _edge(from_node, from_port, to_node, to_port)
-	if edge != null:
-		connection_requested.emit(edge)
+	_report(connection_requested, from_node, from_port, to_node, to_port)
 
 
 func _on_disconnection_request(
 	from_node: StringName, from_port: int, to_node: StringName, to_port: int
 ) -> void:
-	var edge: ComposerGraph.Connection = _edge(from_node, from_port, to_node, to_port)
+	_report(disconnection_requested, from_node, from_port, to_node, to_port)
+
+
+func _report(
+	asking: Signal,
+	from_node: StringName,
+	from_port: int,
+	to_node: StringName,
+	to_port: int
+) -> void:
+	var edge: ComposerGraph.Connection = ComposerPins.edge_of(
+		_cards, from_node, from_port, to_node, to_port
+	)
 	if edge != null:
-		disconnection_requested.emit(edge)
-
-
-## Translate two drawn pin numbers into the two ports they stand for.
-##
-## Nothing is emitted when either end cannot be named. The widget's numbering is
-## its own, and a request carrying a port id nobody recognises would be answered
-## by the controller with a refusal about a pin the person never touched.
-func _edge(
-	from_node: StringName, from_port: int, to_node: StringName, to_port: int
-) -> ComposerGraph.Connection:
-	if not _cards.has(from_node) or not _cards.has(to_node):
-		return null
-	var out: StringName = _cards[from_node].right_port_of_drawn(from_port)
-	var into: StringName = _cards[to_node].left_port_of_drawn(to_port)
-	if out.is_empty() or into.is_empty():
-		return null
-	return ComposerReader.wire(from_node, out, to_node, into)
+		asking.emit(edge)
 
 
 func _on_node_selected(_node: Object) -> void:
@@ -282,7 +271,16 @@ func _on_popup_request(_at_position: Vector2) -> void:
 	if pin.is_found():
 		pin_context_requested.emit(pin.node_id, pin.port_id, there)
 		return
-	menu_requested.emit(_card_at(here), there)
+	var card: StringName = _card_at(here)
+	if not card.is_empty():
+		# Right-clicking a card selects it, the way it does in every other
+		# editor. Without this the menu's items would act on whatever was picked
+		# before - somebody right-clicks one node and removes another.
+		if not picked().has(card):
+			reveal(card)
+		menu_requested.emit(card, there)
+		return
+	graph_menu_requested.emit(graph_point_of(here), there)
 
 
 func _on_value_edited(
@@ -303,53 +301,45 @@ func _on_value_edited(
 ## event was accepted, which is exactly the "take these two, leave the rest"
 ## this needs.
 func _on_gui_input(event: InputEvent) -> void:
-	var button: InputEventMouseButton = event as InputEventMouseButton
-	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
+	var meant: ComposerCanvasGestures.Reading = _gestures.read(event, _cards, zoom)
+	if not meant.is_consumed():
 		return
-	if button.pressed and button.alt_pressed:
-		_break_pin_under(button.position)
-		return
-	if button.pressed and button.ctrl_pressed:
-		_start_moving_from(button.position)
-		return
-	if not button.pressed and _moving.is_found():
-		_finish_moving_at(button.position)
-
-
-func _break_pin_under(at: Vector2) -> void:
-	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
-	if not pin.is_found():
-		return
-	break_all_requested.emit(pin.node_id, pin.port_id)
 	accept_event()
-
-
-## Remember which pin a Ctrl-drag started on. Nothing is written yet, and the
-## document is not told: a drag that is never finished has to leave no trace.
-func _start_moving_from(at: Vector2) -> void:
-	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
-	if not pin.is_found():
+	if meant.kind == ComposerCanvasGestures.Kind.BREAK:
+		break_all_requested.emit(meant.from.node_id, meant.from.port_id)
 		return
-	_moving = pin
-	accept_event()
+	if meant.kind == ComposerCanvasGestures.Kind.MOVE:
+		move_connections_requested.emit(
+			meant.from.node_id, meant.from.port_id, meant.to.node_id, meant.to.port_id
+		)
+#endregion
 
 
-## Ask for the move, if it landed somewhere it could mean one.
+#region Turning a released wire into a question
+## A wire let go over nothing. Which pin it left tells the screen what may be
+## offered, and where it was let go is where the new card goes.
 ##
-## The two pins have to face the same way. Moving what is on an output onto an
-## input is not a move at all - it is a different wire, and the drag that means
-## that one is the ordinary one the widget already handles.
-func _finish_moving_at(at: Vector2) -> void:
-	var from: ComposerPins.Pin = _moving
-	_moving = ComposerPins.Pin.new()
-	accept_event()
+## The widget reports the release in its own coordinates, so it is turned into a
+## point on the graph here - the one place that knows what the scroll and the
+## zoom are.
+func _on_connection_to_empty(
+	from_node: StringName, from_port: int, release_position: Vector2
+) -> void:
+	var port: StringName = ComposerPins.port_of(_cards, from_node, from_port, true)
+	if not port.is_empty():
+		connection_to_empty_requested.emit(
+			from_node, port, release_position + global_position
+		)
 
-	var to: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
-	if not to.is_found() or to.is_output != from.is_output:
-		return
-	if to.is_same_as(from):
-		return
-	move_connections_requested.emit(from.node_id, from.port_id, to.node_id, to.port_id)
+
+func _on_connection_from_empty(
+	to_node: StringName, to_port: int, release_position: Vector2
+) -> void:
+	var port: StringName = ComposerPins.port_of(_cards, to_node, to_port, false)
+	if not port.is_empty():
+		connection_from_empty_requested.emit(
+			to_node, port, release_position + global_position
+		)
 #endregion
 
 
@@ -385,9 +375,17 @@ func card_for(node_id: StringName) -> ComposerCard:
 	return _cards.get(node_id)
 
 
+## Where a point in this canvas's own coordinates falls on the graph.
+##
+## The one place that turns the two apart, because the scroll and the zoom are
+## the canvas's and nothing outside it should have to know them.
+func graph_point_of(at: Vector2) -> Vector2:
+	return (at + scroll_offset) / zoom
+
+
 ## Which card is under a point in this canvas's own coordinates, or nothing.
 func _card_at(at: Vector2) -> StringName:
-	var point: Vector2 = (at + scroll_offset) / zoom
+	var point: Vector2 = graph_point_of(at)
 	for id: StringName in _cards:
 		var card: ComposerCard = _cards[id]
 		if Rect2(card.position_offset, card.size).has_point(point):
@@ -440,5 +438,5 @@ func _can_drop_data(_at: Vector2, data: Variant) -> bool:
 func _drop_data(at: Vector2, data: Variant) -> void:
 	var carried: Dictionary = data
 	var call_id: StringName = carried[ComposerCatalog.DRAGGED_CALL]
-	node_requested.emit(call_id, (at + scroll_offset) / zoom)
+	node_requested.emit(call_id, graph_point_of(at))
 #endregion

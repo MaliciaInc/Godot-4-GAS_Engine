@@ -126,6 +126,17 @@ static func spelled_type(argument: Dictionary) -> String:
 	return type_string(code)
 
 
+## Whether a type names something a local could actually hold.
+##
+## Reflection reports a method that returns nothing as returning `Nil`, which is
+## not empty and *is* in `UNTYPED` - so asking "does it hand something back" with
+## `is_empty()` says yes for every void call, and asking `accepts()` says that
+## nothing fits everything. Both are how `var x: Nil = end_ability()` gets
+## offered as a way to fill an argument.
+static func is_a_value(type_name: StringName) -> bool:
+	return not UNTYPED.has(type_name)
+
+
 static func accepts(target: StringName, source: StringName) -> bool:
 	if UNTYPED.has(target) or UNTYPED.has(source):
 		return true

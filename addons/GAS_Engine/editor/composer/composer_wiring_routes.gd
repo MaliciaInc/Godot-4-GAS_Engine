@@ -26,6 +26,7 @@ signal changed()
 signal refused(message: String)
 
 var _wires: ComposerConnectionController = ComposerConnectionController.new()
+var _document: ComposerDocument = null
 
 
 func _init() -> void:
@@ -33,6 +34,7 @@ func _init() -> void:
 
 
 func bind(document: ComposerDocument) -> void:
+	_document = document
 	_wires.bind(document)
 
 
@@ -69,6 +71,32 @@ func move_pin(
 	return _announce(
 		_wires.move_connections(from_node_id, from_port_id, to_node_id, to_port_id)
 	)
+
+
+## Make a call and join it to whatever the drag came out of, as one change.
+##
+## The statement and the cable together: a person who dragged a wire into empty
+## canvas and picked a call did one thing, so there is one thing to undo. A
+## version that inserted the call and then connected it would leave a half-made
+## node on screen whenever the second half was refused.
+func create_and_connect(
+	entry: ComposerCatalog.Entry, context: ComposerActionMenu.Context
+) -> bool:
+	if _document == null or not _document.may_write():
+		refused.emit(ComposerDocument.NOTHING_OPEN)
+		return false
+
+	var made: ComposerCreation.Result = ComposerCreation.made(
+		_document.printed(), _document.graph(), entry, context
+	)
+	if not made.is_ok():
+		refused.emit(made.message)
+		return false
+	var refusal: ComposerGraph.Diagnostic = _document.commit(made.source)
+	if refusal != null:
+		refused.emit(refusal.message)
+		return false
+	return _announce(true)
 
 
 ## Text somebody typed into one argument, through the same door a cable uses.

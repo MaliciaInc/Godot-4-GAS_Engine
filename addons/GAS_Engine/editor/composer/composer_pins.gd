@@ -106,3 +106,37 @@ static func _place_of(
 		else card.get_input_port_position(index)
 	)
 	return card.position + local * zoom
+
+
+#region What a drawn index means
+## The semantic port a drawn index stands for on one card, or nothing.
+static func port_of(
+	cards: Dictionary[StringName, ComposerCard],
+	node_id: StringName,
+	index: int,
+	outgoing: bool
+) -> StringName:
+	if not cards.has(node_id):
+		return &""
+	var card: ComposerCard = cards[node_id]
+	return card.right_port_of_drawn(index) if outgoing else card.left_port_of_drawn(index)
+
+
+## Two drawn pin numbers as the connection they stand for, or nothing.
+##
+## Nothing when either end cannot be named. The widget's numbering is its own,
+## and a request carrying a port id nobody recognises would be answered with a
+## refusal about a pin the person never touched.
+static func edge_of(
+	cards: Dictionary[StringName, ComposerCard],
+	from_node: StringName,
+	from_port: int,
+	to_node: StringName,
+	to_port: int
+) -> ComposerGraph.Connection:
+	var out: StringName = port_of(cards, from_node, from_port, true)
+	var into: StringName = port_of(cards, to_node, to_port, false)
+	if out.is_empty() or into.is_empty():
+		return null
+	return ComposerReader.wire(from_node, out, to_node, into)
+#endregion

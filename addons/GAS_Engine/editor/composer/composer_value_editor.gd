@@ -372,7 +372,7 @@ func _settled(spin: SpinBox) -> void:
 func _let_escape_undo(control: Control) -> void:
 	control.gui_input.connect(
 		func _pressed(event: InputEvent) -> void:
-			if not event.is_action_pressed(&"ui_cancel"):
+			if not event.is_action_pressed(ComposerKeys.CANCEL):
 				return
 			var restore: String = _original
 			reset_to(restore)
