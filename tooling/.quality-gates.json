@@ -46,6 +46,11 @@
         "glob": "addons/GAS_Engine/editor/composer/composer_catalog.gd",
         "max_lines": 500,
         "reason": "Composer 3.2 needs what reflection knows about a parameter, not just its name and type: the hint decides whether an int is a number or a dropdown, the declared default decides what a created call writes, and the return type decides whether a node dragged from a data pin can be given a local. All of it is copied off the method description here because this is the one place that reads a method description. The file grew by what it now carries, not by doing a second job."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_subset.gd",
+        "max_lines": 500,
+        "reason": "Composer 3.2 taught the subset two more kinds of line, and this is the one place that decides what a line is. `if false: # @composer-detached` holds statements somebody unplugged and `return ... # @composer-flow-stop` ends the live path after that happened; both are ordinary GDScript that only counts as machinery when it carries the exact marker, so the recognition has to live beside the recognition of everything else. The file grew by the vocabulary it now knows, not by taking on a second job."
       }
     ],
     "function_parameter_allowlist": [

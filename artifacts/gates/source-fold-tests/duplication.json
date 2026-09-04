@@ -1,13 +1,13 @@
 {
-  "units": 1363,
-  "units_by_language": "gdscript 1329, powershell 4, python 30",
-  "elapsed_seconds": 5.329516499999954,
+  "units": 1385,
+  "units_by_language": "gdscript 1351, powershell 4, python 30",
+  "elapsed_seconds": 6.396342000000004,
   "scan_issues": [],
   "shape_only_pairs": 34,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 14310
+    "behavioral": 14524
   },
   "blocking": 0,
   "findings": [
@@ -140,7 +140,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:282-289:port",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:290-297:port",
       "score": 1.0,
       "category": "executable"
     },
@@ -175,7 +175,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:396-405:wire",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:404-413:wire",
       "score": 1.0,
       "category": "executable"
     },
@@ -301,7 +301,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:396-405:wire",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:404-413:wire",
       "score": 0.9,
       "category": "executable"
     },
@@ -350,7 +350,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:396-405:wire",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:404-413:wire",
       "score": 0.9,
       "category": "executable"
     },
@@ -476,7 +476,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:396-405:wire",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:404-413:wire",
       "score": 0.8888888888888888,
       "category": "executable"
     },
@@ -525,7 +525,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:282-289:port",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:290-297:port",
       "score": 0.8888888888888888,
       "category": "executable"
     },
@@ -611,6 +611,13 @@
       "left": "addons/GAS_Engine/attributes/attribute_modifier_contribution.gd:1-28:<file>",
       "right": "addons/GAS_Engine/effects/components/gameplay_effect_component_runtime_context.gd:1-17:<file>",
       "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card",
+      "right": "test/unit/test_composer_flow_edits.gd:161-171:test_nothing_can_be_run_after_the_end",
+      "score": 0.8666666666666667,
       "category": "executable"
     },
     {
@@ -994,7 +1001,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:396-405:wire",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:404-413:wire",
       "score": 0.8181818181818182,
       "category": "executable"
     },
@@ -1183,7 +1190,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:282-289:port",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:290-297:port",
       "score": 0.8,
       "category": "executable"
     },
@@ -1232,7 +1239,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:282-289:port",
+      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:290-297:port",
       "score": 0.8,
       "category": "executable"
     },
@@ -1407,13 +1414,6 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped",
-      "right": "test/unit/test_ability_tasks.gd:55-62:before_each",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped",
       "right": "test/unit/test_gameplay_asset_validator.gd:48-57:test_an_empty_tag_in_a_query_is_reported",
       "score": 0.8,
       "category": "executable"
@@ -1436,6 +1436,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card",
       "right": "addons/GAS_Engine/editor/composer/composer_canvas.gd:345-353:_drop_data",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card",
+      "right": "test/unit/test_composer_flow_edits.gd:145-157:test_a_connection_that_would_loop_is_refused",
       "score": 0.8,
       "category": "executable"
     },
@@ -1485,13 +1492,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready",
       "right": "docs/Fases/composer-mock/addons/uiprobe/plugin.gd:11-32:_enter_tree",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row",
-      "right": "test/unit/test_gameplay_cues.gd:340-366:test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else",
       "score": 0.8,
       "category": "executable"
     },

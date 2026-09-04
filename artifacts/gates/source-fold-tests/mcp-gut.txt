@@ -1,5 +1,5 @@
 RESULT: PASS
-SOURCE: 06d3fb373ab305294fe016ae5589c85f90ec7b91b080932adb75caa1caefa274
-GAS_ENGINE_GUT_RESULT: PASS passed=38675 failed=0 pending=0 orphans=0
-scripts: 88 loaded, 88 on disk; tests: 1127 passing, 0 risky
-Composer 3.2 TASK 2: typed defaults and one statement factory
+SOURCE: 9dce4dfdb40d71e811c160fa603f0e3b90a0892b1a82a17fd5e616be801f21c9
+GAS_ENGINE_GUT_RESULT: PASS passed=38851 failed=0 pending=0 orphans=0
+scripts: 89 loaded, 89 on disk; tests: 1134 passing, 0 risky
+Composer 3.2 TASK 3: execution links are source transformations

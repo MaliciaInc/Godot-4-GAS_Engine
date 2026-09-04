@@ -59,7 +59,10 @@ static func entry_node() -> ComposerNode:
 static func main_end(graph: ComposerGraph) -> ComposerNode:
 	var found: ComposerNode = null
 	for node: ComposerNode in graph.nodes:
-		if node.terminal:
+		# The one a person can see. A support return put in to end a live path
+		# after something was unplugged is terminal too, and is not the End they
+		# mean when they ask for the end of the method.
+		if node.terminal and node.visible_in_graph:
 			found = node
 	return found
 
@@ -113,11 +116,23 @@ static func insertion_before_main_end(graph: ComposerGraph) -> int:
 static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> void:
 	var previous: Dictionary[int, StringName] = {}
 	var started: bool = false
+	var island_depth: int = -1
 
 	for node: ComposerNode in graph.nodes:
 		if not node.source_backed or not node.span.is_valid():
 			continue
 		var depth: int = ComposerSubset.indent_of(lines[node.span.last_line - 1])
+
+		# An island is a dead end on purpose, and so is everything inside it.
+		# `if false:` is how Composer holds statements somebody unplugged: no
+		# execution goes in and none comes out, which is what the canvas has to
+		# draw and what tells a reachability check those cards stopped running.
+		if island_depth >= 0 and depth > island_depth:
+			continue
+		island_depth = -1
+		if _is_island(node):
+			island_depth = depth
+			continue
 
 		if not started:
 			graph.connections.append(
@@ -147,7 +162,7 @@ static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> v
 ## Join two statements, unless the first one ends the method.
 static func _join(graph: ComposerGraph, from_id: StringName, to_id: StringName) -> void:
 	var from: ComposerNode = graph.find_node(from_id)
-	if from == null or from.terminal:
+	if from == null or from.terminal or _is_island(from):
 		return
 	graph.connections.append(
 		ComposerReader.wire(from_id, ComposerReader.EXEC_OUT, to_id, ComposerReader.EXEC_IN)
@@ -161,3 +176,32 @@ static func _opener(previous: Dictionary[int, StringName], depth: int) -> String
 		if open_depth < depth and open_depth > nearest:
 			nearest = open_depth
 	return previous[nearest] if nearest >= 0 else &""
+
+
+## The island name a detached marker carries, or "" when the line carries none.
+static func island_name(line: String) -> String:
+	var at: int = line.find(ComposerSubset.DETACHED_MARK)
+	if at < 0:
+		return ""
+	return line.substr(at + ComposerSubset.DETACHED_MARK.length()).strip_edges()
+
+
+## The first island number nothing in these lines is using.
+##
+## Counted rather than made unique by chance: a file that is read, changed and
+## written back has to produce the same names, or every save is a diff.
+static func free_island_name(lines: PackedStringArray) -> String:
+	var taken: Dictionary[String, bool] = {}
+	for line: String in lines:
+		var found: String = island_name(line)
+		if not found.is_empty():
+			taken[found] = true
+	var number: int = 1
+	while taken.has("detached_%d" % number):
+		number += 1
+	return "detached_%d" % number
+
+
+## Whether this node is the `if false:` Composer wraps an unplugged island in.
+static func _is_island(node: ComposerNode) -> bool:
+	return not island_name(node.text).is_empty()

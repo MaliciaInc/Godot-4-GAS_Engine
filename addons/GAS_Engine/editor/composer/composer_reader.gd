@@ -117,7 +117,10 @@ static func _node(
 
 	node.entry = ComposerCatalog.entry_for(node.type_id, node.receiver, path, locals)
 	node.title = _title(node, verdict)
-	node.terminal = verdict.kind == ComposerSubset.Kind.RETURN
+	node.terminal = (
+		verdict.kind == ComposerSubset.Kind.RETURN
+		or verdict.kind == ComposerSubset.Kind.FLOW_STOP
+	)
 	node.projection_kind = _projection_of(verdict.kind)
 	node.visible_in_graph = (
 		node.projection_kind != ComposerNode.ProjectionKind.SUPPORT
@@ -182,7 +185,12 @@ static func _projection_of(kind: ComposerSubset.Kind) -> ComposerNode.Projection
 		return ComposerNode.ProjectionKind.BRANCH
 	if kind == ComposerSubset.Kind.MATCH:
 		return ComposerNode.ProjectionKind.SWITCH
-	if kind == ComposerSubset.Kind.BRANCH_ELSE or kind == ComposerSubset.Kind.MATCH_CASE:
+	if (
+		kind == ComposerSubset.Kind.BRANCH_ELSE
+		or kind == ComposerSubset.Kind.MATCH_CASE
+		or kind == ComposerSubset.Kind.DETACHED
+		or kind == ComposerSubset.Kind.FLOW_STOP
+	):
 		return ComposerNode.ProjectionKind.SUPPORT
 	return ComposerNode.ProjectionKind.STATEMENT
 
