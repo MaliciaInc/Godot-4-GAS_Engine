@@ -320,11 +320,11 @@ func _activate_ability() -> void:
 		graph.diagnostics[0].severity, ComposerGraph.Severity.ERROR, "and says it is an error"
 	)
 	assert_eq(
-		graph.nodes[0].state, ComposerNode.State.ERROR, "and the card carries the same"
+		ComposerProjection.statements(graph)[0].state, ComposerNode.State.ERROR, "and the card carries the same"
 	)
 	assert_eq(
 		ComposerTheme.severity_color(
-			ComposerNode.severity_of(graph.nodes[0].state)
+			ComposerNode.severity_of(ComposerProjection.statements(graph)[0].state)
 		),
 		ComposerTheme.severity_color(graph.diagnostics[0].severity),
 		"so both are drawn in one colour"

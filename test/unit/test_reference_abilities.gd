@@ -81,7 +81,7 @@ func test_the_composer_opens_every_reference_ability() -> void:
 		assert_true(
 			graph.is_editable(), "%s: %s" % [ability_name, graph.blocked_reason()]
 		)
-		assert_gt(graph.nodes.size(), 0, "%s draws something" % ability_name)
+		assert_gt(ComposerProjection.statements(graph).size(), 0, "%s draws something" % ability_name)
 
 
 ## Every line of every body belongs to exactly one node.
@@ -95,7 +95,7 @@ func test_no_line_of_a_reference_ability_is_lost_or_claimed_twice() -> void:
 		var body: ComposerSpan = ComposerSubset.body_span(lines)
 		var claimed: Dictionary[int, StringName] = {}
 
-		for node: ComposerNode in _graph(ability_name).nodes:
+		for node: ComposerNode in ComposerProjection.statements(_graph(ability_name)):
 			for line: int in range(node.span.first_line, node.span.last_line + 1):
 				assert_false(
 					claimed.has(line), "%s line %d is claimed once" % [ability_name, line]
@@ -133,7 +133,7 @@ func test_saving_an_unedited_reference_ability_changes_nothing() -> void:
 func test_a_call_on_the_ability_system_is_named_by_the_catalog() -> void:
 	var graph: ComposerGraph = _graph("timed_buff")
 	var applied: ComposerNode = null
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		if node.type_id == &"apply_gameplay_effect":
 			applied = node
 

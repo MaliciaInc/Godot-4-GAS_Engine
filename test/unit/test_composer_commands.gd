@@ -55,7 +55,7 @@ func _open(tag: int, source: String = SOURCE) -> void:
 
 
 func _pick(title: String) -> void:
-	for node: ComposerNode in screen.graph().nodes:
+	for node: ComposerNode in ComposerProjection.statements(screen.graph()):
 		if node.title == title:
 			screen.canvas().reveal(node.id)
 			return
@@ -63,7 +63,7 @@ func _pick(title: String) -> void:
 
 func _titles() -> PackedStringArray:
 	var found: PackedStringArray = PackedStringArray()
-	for node: ComposerNode in screen.graph().nodes:
+	for node: ComposerNode in ComposerProjection.statements(screen.graph()):
 		found.append(node.title)
 	return found
 
@@ -99,7 +99,7 @@ func test_removing_every_statement_leaves_a_body_behind() -> void:
 
 func _all_ids() -> Array[StringName]:
 	var found: Array[StringName] = []
-	for node: ComposerNode in screen.graph().nodes:
+	for node: ComposerNode in ComposerProjection.statements(screen.graph()):
 		found.append(node.id)
 	return found
 #endregion
@@ -264,8 +264,9 @@ func test_pasting_a_statement_puts_it_in() -> void:
 func test_dragging_a_card_onto_another_moves_its_statement() -> void:
 	await _open(14)
 	var titles: PackedStringArray = _titles()
-	var last: StringName = screen.graph().nodes[screen.graph().nodes.size() - 1].id
-	var first: StringName = screen.graph().nodes[0].id
+	var read: Array[ComposerNode] = ComposerProjection.statements(screen.graph())
+	var last: StringName = read[read.size() - 1].id
+	var first: StringName = read[0].id
 
 	screen._on_node_dropped(last, first)
 	await wait_frames(2)
@@ -292,7 +293,7 @@ func test_a_move_and_an_undo_leave_the_file_untouched() -> void:
 func test_dropping_a_card_on_itself_changes_nothing() -> void:
 	await _open(16)
 	var before: String = screen.printed()
-	var only: StringName = screen.graph().nodes[0].id
+	var only: StringName = ComposerProjection.statements(screen.graph())[0].id
 
 	screen._on_node_dropped(only, only)
 	await wait_frames(2)

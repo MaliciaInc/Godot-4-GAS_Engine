@@ -117,7 +117,7 @@ func test_every_ability_outside_the_subset_is_refused_with_a_reason() -> void:
 		var graph: ComposerGraph = _read(path)
 
 		assert_false(graph.is_editable(), "%s is outside the subset" % path.get_file())
-		assert_eq(graph.nodes.size(), 0, "%s drew nothing" % path.get_file())
+		assert_eq(ComposerProjection.statements(graph).size(), 0, "%s drew nothing" % path.get_file())
 		assert_eq(graph.diagnostics.size(), 1, "%s said so once" % path.get_file())
 		assert_eq(
 			graph.diagnostics[0].severity, ComposerGraph.Severity.NOT_REPRESENTABLE,
@@ -235,12 +235,12 @@ func _activate_ability() -> void:
 		)
 		var graph: ComposerGraph = ComposerReader.read(source, entry.source)
 
-		assert_eq(graph.nodes.size(), 1, "%s drew one node: %s" % [entry.type_id, written])
+		assert_eq(ComposerProjection.statements(graph).size(), 1, "%s drew one node: %s" % [entry.type_id, written])
 		assert_eq(
-			graph.nodes[0].type_id, entry.type_id, "%s read back as itself" % entry.type_id
+			ComposerProjection.statements(graph)[0].type_id, entry.type_id, "%s read back as itself" % entry.type_id
 		)
 		assert_eq(
-			graph.nodes[0].fields.size(), entry.parameters.size(),
+			ComposerProjection.statements(graph)[0].fields.size(), entry.parameters.size(),
 			"%s kept all its arguments" % entry.type_id
 		)
 
@@ -324,7 +324,7 @@ func test_opening_editing_and_saving_leaves_the_file_compiling() -> void:
 
 	var doc: ComposerDocument = ComposerDocument.new()
 	doc.open(AN_ABILITY, path)
-	var node: ComposerNode = doc.graph().nodes[1]
+	var node: ComposerNode = ComposerProjection.statements(doc.graph())[1]
 	node.fields[0].display = "freezing"
 	node.dirty = true
 	var printed: ComposerWriter.Result = ComposerWriter.apply(
@@ -356,7 +356,7 @@ func test_nothing_in_the_history_is_a_graph_the_writer_would_refuse() -> void:
 	var body: ComposerSpan = ComposerSubset.body_span(doc.printed().split("
 "))
 	doc.insert("	abort_ability()", body.last_line)
-	doc.remove([doc.graph().nodes[0].span] as Array[ComposerSpan])
+	doc.remove([ComposerProjection.statements(doc.graph())[0].span] as Array[ComposerSpan])
 
 	for _step: int in 3:
 		doc.undo()

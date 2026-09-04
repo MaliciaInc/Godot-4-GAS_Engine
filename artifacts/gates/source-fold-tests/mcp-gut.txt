@@ -1,5 +1,5 @@
 RESULT: PASS
-SOURCE: e804b52bbb62b73174896a7bac75fe623b0b7ffed5db4b60b52a3fe474d061ab
-GAS_ENGINE_GUT_RESULT: PASS passed=37809 failed=0 pending=0 orphans=0
-scripts: 85 loaded, 85 on disk; tests: 1101 passing, 0 risky
-Composer 3.1: eight new regression tests, each proved red against its own guard
+SOURCE: 314b220926c02553e905b9da6f1e25015dae340119bd38c55a30dcce6cd43216
+GAS_ENGINE_GUT_RESULT: PASS passed=37999 failed=0 pending=0 orphans=0
+scripts: 87 loaded, 87 on disk; tests: 1113 passing, 0 risky
+Composer 3.2 TASK 1: entry, terminal end, and data wires that can be moved

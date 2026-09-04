@@ -152,7 +152,7 @@ func test_a_local_carries_its_written_type_onto_its_port() -> void:
 		"\tvar target: GameplayAbilityTargetData = await wait_target_data()",
 	]))
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
-	var value: ComposerNode.Port = graph.nodes[0].find_port(ComposerReader.VALUE_OUT)
+	var value: ComposerNode.Port = ComposerProjection.statements(graph)[0].find_port(ComposerReader.VALUE_OUT)
 
 	assert_not_null(value, "the local offers a value")
 	assert_eq(

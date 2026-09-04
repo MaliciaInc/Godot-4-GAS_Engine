@@ -41,7 +41,7 @@ func test_a_required_argument_left_out_is_an_error() -> void:
 
 ## The panel and the card say the same thing, because they are the same pass.
 func test_the_gap_reaches_the_card_as_a_field() -> void:
-	var node: ComposerNode = _read(PackedStringArray(["add_tag()"])).nodes[0]
+	var node: ComposerNode = ComposerProjection.statements(_read(PackedStringArray(["add_tag()"])))[0]
 
 	assert_eq(node.fields.size(), 1, "the card grew the argument it is short")
 	assert_eq(node.fields[0].label, "Tag", "named by the engine")
@@ -56,7 +56,7 @@ func test_an_argument_with_a_default_is_not_a_gap() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray(["apply_gameplay_effect(fire)"]))
 
 	assert_eq(graph.diagnostics.size(), 0, "nothing to say: %s" % [_messages(graph)])
-	assert_eq(graph.nodes[0].fields.size(), 1, "and no field was invented")
+	assert_eq(ComposerProjection.statements(graph)[0].fields.size(), 1, "and no field was invented")
 
 
 ## A call outside the catalog has no declared arity, so there is nothing to
@@ -90,10 +90,10 @@ func test_the_refusal_is_reported_against_the_statement_that_receives_it() -> vo
 	]))
 
 	assert_eq(
-		graph.diagnostics[0].node_id, graph.nodes[1].id, "the call, not the declaration"
+		graph.diagnostics[0].node_id, ComposerProjection.statements(graph)[1].id, "the call, not the declaration"
 	)
-	assert_eq(graph.nodes[1].state, ComposerNode.State.ERROR, "and its dot says so")
-	assert_eq(graph.nodes[0].state, ComposerNode.State.CLEAN, "while the source is fine")
+	assert_eq(ComposerProjection.statements(graph)[1].state, ComposerNode.State.ERROR, "and its dot says so")
+	assert_eq(ComposerProjection.statements(graph)[0].state, ComposerNode.State.CLEAN, "while the source is fine")
 
 
 func test_a_value_landing_where_it_fits_is_not_reported() -> void:
@@ -178,7 +178,7 @@ func test_no_card_disagrees_with_the_panel() -> void:
 		blamed.append(entry.node_id)
 	assert_gt(blamed.size(), 1, "the body is wrong in more than one way")
 
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		var marked: bool = node.state != ComposerNode.State.CLEAN
 		assert_eq(marked, blamed.has(node.id), "%s: dot and panel agree" % node.title)
 
@@ -191,7 +191,7 @@ func test_an_error_outranks_a_warning_on_the_same_card() -> void:
 	]))
 
 	assert_eq(graph.diagnostics.size(), 2, "short an argument, and never read")
-	assert_eq(graph.nodes[0].state, ComposerNode.State.ERROR, "the louder of the two")
+	assert_eq(ComposerProjection.statements(graph)[0].state, ComposerNode.State.ERROR, "the louder of the two")
 
 
 ## Re-reading a file someone just edited comes through here. A second pass that
@@ -199,12 +199,12 @@ func test_an_error_outranks_a_warning_on_the_same_card() -> void:
 func test_looking_twice_says_the_same_thing() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray(["add_tag()"]))
 	var first: PackedStringArray = _messages(graph)
-	var fields: int = graph.nodes[0].fields.size()
+	var fields: int = ComposerProjection.statements(graph)[0].fields.size()
 
 	ComposerValidator.apply(graph)
 
 	assert_eq(_messages(graph), first, "the same findings")
-	assert_eq(graph.nodes[0].fields.size(), fields, "and the card did not grow")
+	assert_eq(ComposerProjection.statements(graph)[0].fields.size(), fields, "and the card did not grow")
 #endregion
 
 
@@ -218,7 +218,7 @@ func test_an_ability_with_nothing_wrong_reports_nothing() -> void:
 	]))
 
 	assert_eq(graph.diagnostics.size(), 0, "a correct ability: %s" % [_messages(graph)])
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		assert_eq(node.state, ComposerNode.State.CLEAN, "%s carries no mark" % node.title)
 
 

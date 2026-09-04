@@ -26,7 +26,7 @@ func test_a_reference_ability_opens() -> void:
 
 	assert_true(opened.is_ok(), "opened: %s" % opened.refusal)
 	assert_not_null(opened.graph, "and there is a graph to draw")
-	assert_gt(opened.graph.nodes.size(), 0, "with something in it")
+	assert_gt(ComposerProjection.statements(opened.graph).size(), 0, "with something in it")
 	assert_eq(opened.graph.source_path, REFERENCE, "that knows where it came from")
 
 

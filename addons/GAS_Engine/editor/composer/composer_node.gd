@@ -22,6 +22,30 @@ enum PortKind { EXECUTION, DATA }
 
 enum PortDirection { INPUT, OUTPUT }
 
+## What a node is a projection of.
+##
+## STATEMENT is the ordinary case: a line of the body. ENTRY is where the method
+## begins and is not written anywhere. BRANCH and SWITCH fan execution out, so
+## they carry more than one exec output. SUPPORT is a line the projection needs
+## to read but nobody should be shown - an `else:` header has no card.
+enum ProjectionKind {
+	STATEMENT,
+	ENTRY,
+	BRANCH,
+	SWITCH,
+	SUPPORT,
+}
+
+## How many wires a port may hold at once.
+##
+## One value produced can feed many arguments, so a data output is MULTIPLE. Any
+## input takes one, and execution leaves a statement by exactly one path per
+## port, so everything else is SINGLE.
+enum PortMultiplicity {
+	SINGLE,
+	MULTIPLE,
+}
+
 ## Where a field's value comes from.
 ##
 ## MISSING is not an error state of LITERAL: it is a third thing, and the whole
@@ -50,6 +74,9 @@ class Port extends RefCounted:
 	var type_name: StringName = &""
 	var kind: ComposerNode.PortKind = ComposerNode.PortKind.DATA
 	var direction: ComposerNode.PortDirection = ComposerNode.PortDirection.INPUT
+	var multiplicity: ComposerNode.PortMultiplicity = (
+		ComposerNode.PortMultiplicity.SINGLE
+	)
 
 	func is_execution() -> bool:
 		return kind == ComposerNode.PortKind.EXECUTION
@@ -152,17 +179,31 @@ var text: String = ""
 ## How deep this statement sits. Branch depth, and the indentation to reprint at.
 var indent: int = 0
 
-## Whether this node has been edited since it was read.
+## What this node is a projection of, and whether it is written down at all.
 ##
-## Only a dirty node is rebuilt from the model. A clean one goes back exactly as
-## it came, which is the difference between a tool that formats your file on
-## every save and one that does not.
+## Entry is the one node with no line behind it: `source_backed` false says the
+## writer must never look for it in the file. A support header - the `else:` of
+## a branch - is the opposite: it is in the file and must not be drawn.
+var projection_kind: ComposerNode.ProjectionKind = ComposerNode.ProjectionKind.STATEMENT
+var source_backed: bool = true
+var visible_in_graph: bool = true
+
+## Whether execution stops here. A terminal node never grows an exec output.
+var terminal: bool = false
+
+
 ## Optional visual placement written as a reserved comment immediately before
 ## this statement. Execution still comes from source order; this value is only
 ## where the projection is drawn.
 var has_layout_position: bool = false
 var layout_position: Vector2 = Vector2.ZERO
 
+
+## Whether this node has been edited since it was read.
+##
+## Only a dirty node is rebuilt from the model. A clean one goes back exactly as
+## it came, which is the difference between a tool that formats your file on
+## every save and one that does not.
 var dirty: bool = false
 
 

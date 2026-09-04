@@ -118,7 +118,7 @@ func test_a_corpus_of_bodies_all_survive_a_round_trip() -> void:
 ## graph said.
 func test_a_write_that_would_not_read_back_the_same_is_refused() -> void:
 	var graph: ComposerGraph = _read()
-	graph.nodes[0].type_id = &"apply_gameplay_effect"
+	ComposerProjection.statements(graph)[0].type_id = &"apply_gameplay_effect"
 
 	var result: ComposerWriter.Result = ComposerWriter.apply(graph, SOURCE)
 
@@ -160,7 +160,7 @@ func test_a_script_with_no_entry_point_is_refused() -> void:
 ## what makes a save a change to one statement rather than to the whole file.
 func test_only_an_edited_node_is_rebuilt_from_the_model() -> void:
 	var graph: ComposerGraph = _read()
-	var last: ComposerNode = graph.nodes[graph.nodes.size() - 1]
+	var last: ComposerNode = ComposerProjection.statements(graph)[ComposerProjection.statements(graph).size() - 1]
 	last.dirty = true
 
 	var body: PackedStringArray = ComposerWriter.print_body(graph)
@@ -174,7 +174,7 @@ func test_only_an_edited_node_is_rebuilt_from_the_model() -> void:
 
 func test_a_rendered_statement_keeps_its_arguments_in_order() -> void:
 	var graph: ComposerGraph = _read()
-	var node: ComposerNode = graph.find_node(graph.nodes[2].id)
+	var node: ComposerNode = graph.find_node(ComposerProjection.statements(graph)[2].id)
 
 	assert_eq(
 		ComposerWriter.render(node), "\tapply_effect_to_target_data(burning, target)",
@@ -203,7 +203,7 @@ func test_moving_a_statement_does_not_change_what_the_graph_is() -> void:
 func test_changing_an_argument_changes_what_the_graph_is() -> void:
 	var graph: ComposerGraph = _read()
 	var before: String = ComposerWriter.signature(graph)
-	graph.nodes[2].fields[0].display = "freezing"
+	ComposerProjection.statements(graph)[2].fields[0].display = "freezing"
 
 	assert_ne(
 		ComposerWriter.signature(graph), before,
@@ -224,7 +224,7 @@ func test_changing_an_argument_changes_what_the_graph_is() -> void:
 func test_rebuilding_a_local_keeps_the_declaration_in_front_of_it() -> void:
 	var graph: ComposerGraph = _read()
 	var local: ComposerNode = null
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		if node.type_id == &"wait_target_data":
 			local = node
 
@@ -243,7 +243,7 @@ func test_rebuilding_a_local_keeps_the_declaration_in_front_of_it() -> void:
 ## much later that a save had quietly deleted the note they wrote.
 func test_editing_a_statement_leaves_the_comment_above_it_alone() -> void:
 	var graph: ComposerGraph = _read()
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		if node.type_id == &"wait_target_data":
 			node.dirty = true
 
@@ -272,7 +272,7 @@ func test_rebuilding_a_call_keeps_what_it_was_called_on() -> void:
 	var graph: ComposerGraph = ComposerReader.read(source, PATH)
 
 	assert_eq(
-		ComposerWriter.render(graph.nodes[0]), "\towner_asc.add_tag(burning)",
+		ComposerWriter.render(ComposerProjection.statements(graph)[0]), "\towner_asc.add_tag(burning)",
 		"receiver and method, the way it was written"
 	)
 
@@ -288,7 +288,7 @@ func test_a_wrapped_statement_that_did_not_change_keeps_its_lines() -> void:
 		+ "\tapply_effect_to_target_data(\n\t\tburning, target\n\t)\n"
 	)
 	var graph: ComposerGraph = ComposerReader.read(wrapped, PATH)
-	graph.nodes[0].dirty = true
+	ComposerProjection.statements(graph)[0].dirty = true
 
 	var printed: PackedStringArray = ComposerWriter.print_body(graph)
 
@@ -310,8 +310,8 @@ func test_a_wrapped_statement_that_changed_is_rebuilt_and_still_verifies() -> vo
 		+ "\tapply_effect_to_target_data(\n\t\tburning, target\n\t)\n"
 	)
 	var graph: ComposerGraph = ComposerReader.read(wrapped, PATH)
-	graph.nodes[0].dirty = true
-	graph.nodes[0].fields[0].display = "freezing"
+	ComposerProjection.statements(graph)[0].dirty = true
+	ComposerProjection.statements(graph)[0].fields[0].display = "freezing"
 
 	var saved: ComposerWriter.Result = ComposerWriter.apply(graph, wrapped)
 

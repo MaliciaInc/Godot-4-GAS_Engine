@@ -38,7 +38,7 @@ func test_every_node_becomes_exactly_one_card() -> void:
 	var graph: ComposerGraph = Sample.build()
 	await canvas.show_graph(graph)
 
-	assert_eq(_cards().size(), graph.nodes.size(), "one card per node, no more")
+	assert_eq(_cards().size(), graph.visible_nodes().size(), "one card per node, no more")
 
 
 ## The two-step measure, seen from outside.
@@ -329,18 +329,19 @@ func test_framing_everything_puts_the_whole_graph_on_screen() -> void:
 		var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
 		assert_between(at.x, 0.0, canvas.size.x, "%s is on screen" % card.node_id)
 		assert_between(at.y, 0.0, canvas.size.y, "%s is on screen" % card.node_id)
-	assert_gt(graph.nodes.size(), 1, "and there was more than one to fit")
+	assert_gt(graph.visible_nodes().size(), 1, "and there was more than one to fit")
 
 
 func test_revealing_a_node_picks_it_and_brings_it_into_view() -> void:
 	var graph: ComposerGraph = await _shown()
-	var wanted: StringName = graph.nodes[graph.nodes.size() - 1].id
+	var drawn: Array[ComposerNode] = graph.visible_nodes()
+	var wanted: StringName = drawn[drawn.size() - 1].id
 	canvas._apply_zoom(2.0, Vector2.ZERO)
 
 	canvas.reveal(wanted)
 
 	assert_eq(canvas.picked(), [wanted] as Array[StringName], "picked")
-	var card: ComposerCard = _cards()[graph.nodes.size() - 1]
+	var card: ComposerCard = _cards()[graph.visible_nodes().size() - 1]
 	var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
 	assert_between(at.x, 0.0, canvas.size.x, "and on screen")
 	assert_between(at.y, 0.0, canvas.size.y, "and on screen")

@@ -106,9 +106,9 @@ func test_a_read_statement_takes_its_field_names_from_the_catalog() -> void:
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_eq(graph.nodes[0].title, "Add Tag", "named by the catalog")
-	assert_eq(graph.nodes[0].fields[0].label, "Tag", "and its argument too")
-	assert_eq(graph.nodes[0].fields[0].display, "state_burning", "carrying what was written")
+	assert_eq(ComposerProjection.statements(graph)[0].title, "Add Tag", "named by the catalog")
+	assert_eq(ComposerProjection.statements(graph)[0].fields[0].label, "Tag", "and its argument too")
+	assert_eq(ComposerProjection.statements(graph)[0].fields[0].display, "state_burning", "carrying what was written")
 
 
 ## A call the catalog does not offer still draws. A person may write anything
@@ -121,9 +121,9 @@ func test_a_call_outside_the_catalog_still_draws_with_positional_fields() -> voi
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_eq(graph.nodes.size(), 1, "it is drawn")
-	assert_eq(graph.nodes[0].fields[0].label, "#1", "claiming only the position")
-	assert_eq(graph.nodes[0].fields[1].display, "beta", "and carrying the text")
+	assert_eq(ComposerProjection.statements(graph).size(), 1, "it is drawn")
+	assert_eq(ComposerProjection.statements(graph)[0].fields[0].label, "#1", "claiming only the position")
+	assert_eq(ComposerProjection.statements(graph)[0].fields[1].display, "beta", "and carrying the text")
 #endregion
 
 
@@ -170,17 +170,17 @@ func test_a_registered_call_is_read_checked_and_printed_like_any_other() -> void
 	)
 
 	var before: ComposerGraph = ComposerReader.read(source, "res://a.gd")
-	assert_eq(before.nodes[1].fields[0].label, "#1", "unknown, so only the position")
+	assert_eq(ComposerProjection.statements(before)[1].fields[0].label, "#1", "unknown, so only the position")
 
 	assert_eq(_offer_stamina(), "", "admitted")
 	var after: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_eq(after.nodes.size(), before.nodes.size(), "the same file, the same nodes")
-	assert_eq(after.nodes[1].fields[0].label, "Amount", "now named by the game's script")
-	assert_eq(after.nodes[1].fields[0].type_name, &"float", "and typed by it")
+	assert_eq(ComposerProjection.statements(after).size(), ComposerProjection.statements(before).size(), "the same file, the same nodes")
+	assert_eq(ComposerProjection.statements(after)[1].fields[0].label, "Amount", "now named by the game's script")
+	assert_eq(ComposerProjection.statements(after)[1].fields[0].type_name, &"float", "and typed by it")
 	assert_eq(after.diagnostics.size(), 0, "nothing wrong with it")
 
-	after.nodes[1].dirty = true
+	ComposerProjection.statements(after)[1].dirty = true
 	var body: PackedStringArray = ComposerWriter.print_body(after)
 	assert_eq(body[1], "\tspend_stamina(cost)", "and it prints itself, with no template")
 
@@ -195,7 +195,7 @@ func test_an_unregistered_call_is_drawn_and_never_called_wrong() -> void:
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_eq(graph.nodes.size(), 1, "drawn")
+	assert_eq(ComposerProjection.statements(graph).size(), 1, "drawn")
 	assert_eq(graph.diagnostics.size(), 0, "and not accused of anything")
 
 
@@ -386,9 +386,9 @@ func _activate_ability() -> void:
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_eq(graph.nodes[1].receiver, "data", "the receiver was kept")
-	assert_not_null(graph.nodes[1].entry, "and the call was placed")
-	assert_eq(graph.nodes[1].title, "Get Target Nodes", "named by the catalog")
+	assert_eq(ComposerProjection.statements(graph)[1].receiver, "data", "the receiver was kept")
+	assert_not_null(ComposerProjection.statements(graph)[1].entry, "and the call was placed")
+	assert_eq(ComposerProjection.statements(graph)[1].title, "Get Target Nodes", "named by the catalog")
 
 
 ## A call on a class is placed by the class.
@@ -407,9 +407,9 @@ func _activate_ability() -> void:
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_not_null(graph.nodes[0].entry, "placed")
-	assert_eq(graph.nodes[0].title, "Wait Tag Added", "named by the catalog")
-	assert_true(graph.nodes[0].entry.awaits, "and known to be something you wait on")
+	assert_not_null(ComposerProjection.statements(graph)[0].entry, "placed")
+	assert_eq(ComposerProjection.statements(graph)[0].title, "Wait Tag Added", "named by the catalog")
+	assert_true(ComposerProjection.statements(graph)[0].entry.awaits, "and known to be something you wait on")
 
 
 ## A local of some other type does not borrow the entry.
@@ -430,8 +430,8 @@ func _activate_ability() -> void:
 	)
 	var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-	assert_null(graph.nodes[1].entry, "a Node has no add_tag the catalog knows")
-	assert_eq(graph.nodes[1].fields[0].label, "#1", "so its argument keeps its position")
+	assert_null(ComposerProjection.statements(graph)[1].entry, "a Node has no add_tag the catalog knows")
+	assert_eq(ComposerProjection.statements(graph)[1].fields[0].label, "#1", "so its argument keeps its position")
 	assert_eq(graph.diagnostics.size(), 0, "and it is not accused of anything")
 #endregion
 

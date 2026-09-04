@@ -42,7 +42,7 @@ func test_every_line_of_the_body_belongs_to_exactly_one_node() -> void:
 
 	for line: int in range(span.first_line, span.last_line + 1):
 		var owners: int = 0
-		for node: ComposerNode in graph.nodes:
+		for node: ComposerNode in ComposerProjection.statements(graph):
 			if node.span.contains(line):
 				owners += 1
 		assert_eq(owners, 1, "line %d has exactly one owner" % line)
@@ -53,9 +53,9 @@ func test_every_line_of_the_body_belongs_to_exactly_one_node() -> void:
 func test_a_comment_is_carried_by_the_statement_it_precedes() -> void:
 	var graph: ComposerGraph = _read(["# aim first", "commit_ability()"])
 
-	assert_eq(graph.nodes.size(), 1, "a comment is not a node of its own")
-	assert_eq(graph.nodes[0].span.first_line, 5, "but the node's span reaches up to it")
-	assert_eq(graph.nodes[0].span.last_line, 6, "through its own line")
+	assert_eq(ComposerProjection.statements(graph).size(), 1, "a comment is not a node of its own")
+	assert_eq(ComposerProjection.statements(graph)[0].span.first_line, 5, "but the node's span reaches up to it")
+	assert_eq(ComposerProjection.statements(graph)[0].span.last_line, 6, "through its own line")
 #endregion
 
 
@@ -69,7 +69,7 @@ func test_an_unreadable_file_comes_back_with_no_nodes_at_all() -> void:
 		"\tapply_gameplay_effect(burning, target)",
 	])
 
-	assert_eq(graph.nodes.size(), 0, "not one statement, not some of them")
+	assert_eq(ComposerProjection.statements(graph).size(), 0, "not one statement, not some of them")
 	assert_false(graph.is_editable(), "and the file is read-only")
 	assert_true(graph.blocked_reason().contains("loop"), "with the reason named")
 
@@ -86,15 +86,15 @@ func test_a_script_with_no_entry_point_is_refused_rather_than_empty() -> void:
 func test_a_call_is_named_the_way_a_person_would_say_it() -> void:
 	var graph: ComposerGraph = _read(["apply_gameplay_effect(burning, 1.0)"])
 
-	assert_eq(graph.nodes[0].title, "Apply Gameplay Effect", "spelled out, not snake_case")
-	assert_eq(graph.nodes[0].type_id, &"apply_gameplay_effect", "and the call is remembered")
+	assert_eq(ComposerProjection.statements(graph)[0].title, "Apply Gameplay Effect", "spelled out, not snake_case")
+	assert_eq(ComposerProjection.statements(graph)[0].type_id, &"apply_gameplay_effect", "and the call is remembered")
 
 
 ## Positional until the catalog names them. Inventing a parameter name here
 ## would put a word on the card the engine's API never used.
 func test_arguments_become_fields_in_order() -> void:
 	var graph: ComposerGraph = _read(["apply_gameplay_effect(burning, 1.0)"])
-	var fields: Array[ComposerNode.Field] = graph.nodes[0].fields
+	var fields: Array[ComposerNode.Field] = ComposerProjection.statements(graph)[0].fields
 
 	assert_eq(fields.size(), 2, "one field per argument")
 	assert_eq(fields[0].display, "burning", "the first, as written")
@@ -102,7 +102,10 @@ func test_arguments_become_fields_in_order() -> void:
 
 
 func test_a_call_with_no_arguments_has_no_fields() -> void:
-	assert_eq(_read(["commit_ability()"]).nodes[0].fields.size(), 0, "nothing to show")
+	assert_eq(
+		ComposerProjection.statements(_read(["commit_ability()"]))[0].fields.size(), 0,
+		"nothing to show"
+	)
 
 
 ## The card says `await` because the statement suspends the ability. Every card
@@ -112,8 +115,8 @@ func test_an_awaiting_statement_is_marked_as_one() -> void:
 		"var target: Node = await wait_target_data()", "commit_ability()"
 	])
 
-	assert_true(graph.nodes[0].awaits, "this one waits")
-	assert_false(graph.nodes[1].awaits, "and this one does not")
+	assert_true(ComposerProjection.statements(graph)[0].awaits, "this one waits")
+	assert_false(ComposerProjection.statements(graph)[1].awaits, "and this one does not")
 
 
 ## Only a local declaration produces something later lines can name, so it is
@@ -123,8 +126,8 @@ func test_only_a_local_offers_a_value() -> void:
 		"var target: Node = await wait_target_data()", "commit_ability()"
 	])
 
-	assert_not_null(graph.nodes[0].find_port(ComposerReader.VALUE_OUT), "it declares one")
-	assert_null(graph.nodes[1].find_port(ComposerReader.VALUE_OUT), "this one declares nothing")
+	assert_not_null(ComposerProjection.statements(graph)[0].find_port(ComposerReader.VALUE_OUT), "it declares one")
+	assert_null(ComposerProjection.statements(graph)[1].find_port(ComposerReader.VALUE_OUT), "this one declares nothing")
 #endregion
 
 
@@ -135,10 +138,12 @@ func test_statements_run_in_the_order_they_are_written() -> void:
 		"commit_ability()", "apply_gameplay_effect(burning, 1.0)", "end_ability()"
 	])
 
-	assert_eq(graph.connections.size(), 2, "two hops for three statements")
-	assert_eq(graph.connections[0].from_node, graph.nodes[0].id, "the first leads")
-	assert_eq(graph.connections[0].to_node, graph.nodes[1].id, "to the second")
-	assert_eq(graph.connections[1].to_node, graph.nodes[2].id, "and on to the third")
+	var flow: Array[ComposerGraph.Connection] = graph.execution_connections()
+	assert_eq(flow.size(), 3, "Entry into the first, then two hops for three statements")
+	assert_eq(flow[0].from_node, ComposerFlow.ENTRY_ID, "the method begins")
+	assert_eq(flow[0].to_node, ComposerProjection.statements(graph)[0].id, "at the first statement")
+	assert_eq(flow[1].to_node, ComposerProjection.statements(graph)[1].id, "which leads to the second")
+	assert_eq(flow[2].to_node, ComposerProjection.statements(graph)[2].id, "and on to the third")
 
 
 ## A statement inside a branch belongs to that branch. Joining across
@@ -148,8 +153,8 @@ func test_a_branch_does_not_run_into_the_statement_beside_it() -> void:
 		"if is_ready:", "\tcommit_ability()", "end_ability()"
 	])
 
-	var inside: ComposerNode = graph.nodes[1]
-	var after: ComposerNode = graph.nodes[2]
+	var inside: ComposerNode = ComposerProjection.statements(graph)[1]
+	var after: ComposerNode = ComposerProjection.statements(graph)[2]
 	for wire: ComposerGraph.Connection in graph.connections:
 		var crosses: bool = wire.from_node == inside.id and wire.to_node == after.id
 		assert_false(crosses, "the branch's body does not lead to the line after it")
@@ -169,12 +174,12 @@ func test_a_branch_leads_into_the_statement_it_opens() -> void:
 	])
 
 	assert_true(
-		graph.is_port_connected(graph.nodes[1].id, ComposerReader.EXEC_IN),
+		graph.is_port_connected(ComposerProjection.statements(graph)[1].id, ComposerReader.EXEC_IN),
 		"the body of the branch is reached"
 	)
 	var from_branch: int = 0
 	for wire: ComposerGraph.Connection in graph.connections:
-		if wire.from_node == graph.nodes[0].id:
+		if wire.from_node == ComposerProjection.statements(graph)[0].id:
 			from_branch += 1
 	assert_eq(from_branch, 2, "the branch leads both into its body and past it")
 
@@ -192,10 +197,10 @@ func test_every_statement_but_the_first_is_reached() -> void:
 		"end_ability()",
 	])
 
-	for index: int in range(1, graph.nodes.size()):
+	for index: int in range(1, ComposerProjection.statements(graph).size()):
 		assert_true(
-			graph.is_port_connected(graph.nodes[index].id, ComposerReader.EXEC_IN),
-			"%s is reached" % graph.nodes[index].title
+			graph.is_port_connected(ComposerProjection.statements(graph)[index].id, ComposerReader.EXEC_IN),
+			"%s is reached" % ComposerProjection.statements(graph)[index].title
 		)
 
 
@@ -212,7 +217,7 @@ func test_a_value_reaches_the_statement_that_uses_it() -> void:
 		if wire.from_port != ComposerReader.VALUE_OUT:
 			continue
 		data += 1
-		assert_eq(wire.to_node, graph.nodes[1].id, "to the statement that names it")
+		assert_eq(wire.to_node, ComposerProjection.statements(graph)[1].id, "to the statement that names it")
 	assert_eq(data, 1, "and to no other")
 
 
@@ -245,7 +250,7 @@ func test_a_value_lands_on_the_argument_that_names_it() -> void:
 	for wire: ComposerGraph.Connection in graph.connections:
 		if wire.from_port != ComposerReader.VALUE_OUT:
 			continue
-		var slot: ComposerNode.Port = graph.nodes[1].find_port(wire.to_port)
+		var slot: ComposerNode.Port = ComposerProjection.statements(graph)[1].find_port(wire.to_port)
 		assert_eq(slot.label, "Source Asc", "the second argument, where it was written")
 		assert_eq(slot.kind, ComposerNode.PortKind.DATA, "and a value port, not a run")
 #endregion
@@ -262,7 +267,7 @@ func test_an_argument_a_cable_arrives_at_is_marked_as_wired() -> void:
 		"apply_gameplay_effect(burning, target)",
 	])
 
-	var fed: ComposerNode = graph.nodes[1]
+	var fed: ComposerNode = ComposerProjection.statements(graph)[1]
 	assert_eq(
 		fed.fields[1].source, ComposerNode.ValueSource.WIRED,
 		"the argument the cable lands on"
@@ -274,26 +279,30 @@ func test_an_argument_a_cable_arrives_at_is_marked_as_wired() -> void:
 	assert_true(fed.fields[1].is_satisfied(), "a wired value is a value")
 
 
-## A statement that reaches into a local still depends on it.
+## A statement that reaches into a local is not cabled to it.
 ##
-## `pick.target_data` is not `pick`, but the statement plainly needs what `pick`
-## produced, and a canvas that draws no cable there is hiding something the file
-## states. Tying the cable to the exact spelling drew almost nothing on real
-## code: nine locals across the reference abilities and two cables between them,
-## because real code reaches into a local far more often than it passes one
-## whole.
-func test_a_statement_that_reaches_into_a_local_is_cabled_to_it() -> void:
+## This test said the opposite until Composer 3.2, and the old answer was the
+## more tempting one: `pick.target_data` plainly needs `pick`, so why not draw
+## the dependency? Because a cable on this canvas is something a person can take
+## hold of, and that one could not be. Unplugging it and dropping it on another
+## local would have had to rewrite `pick.target_data` into `other.target_data`,
+## which is not what a wire means anywhere else, and re-pointing it at a whole
+## value would have thrown away the `.target_data` they wrote.
+##
+## So the dependency is still visible - it is the argument text, on the card,
+## where it can be edited - and the cable is reserved for the case where the
+## argument *is* the local and moving it is honest.
+func test_a_statement_that_reaches_into_a_local_is_not_cabled_to_it() -> void:
 	var graph: ComposerGraph = _read([
 		"var pick: Node = await wait_target_data()",
 		"apply_gameplay_effect(burning, pick.target_data)",
 	])
 
-	var cabled: int = 0
-	for wire: ComposerGraph.Connection in graph.connections:
-		if wire.from_port == ComposerReader.VALUE_OUT:
-			cabled += 1
-			assert_eq(wire.to_node, graph.nodes[1].id, "to the statement that needs it")
-	assert_eq(cabled, 1, "one cable, to the argument that reaches in")
+	assert_eq(graph.data_connections().size(), 0, "no cable for an expression")
+	assert_eq(
+		ComposerProjection.statements(graph)[1].fields[1].display, "pick.target_data",
+		"and the dependency is on the card, in the words the file uses"
+	)
 
 
 ## Depending on a local and being one are two different things.
@@ -325,7 +334,7 @@ func test_being_fed_by_a_local_is_not_the_same_as_being_it() -> void:
 		var graph: ComposerGraph = _read([
 			"var target: Node = await wait_target_data()", written,
 		])
-		var fed: ComposerNode = graph.nodes[1]
+		var fed: ComposerNode = ComposerProjection.statements(graph)[1]
 
 		assert_eq(fed.fields[1].source, expected, described)
 		assert_eq(fed.may_type(fed.fields[1]), typable, "%s: typable" % described)

@@ -122,6 +122,11 @@ static func _arguments(node: ComposerNode) -> String:
 static func print_body(graph: ComposerGraph) -> PackedStringArray:
 	var body: PackedStringArray = PackedStringArray()
 	for node: ComposerNode in graph.nodes:
+		# Entry is where the method begins, not a line of it. It is in the graph
+		# so the canvas has somewhere to start a wire; asking the writer to print
+		# it would put a card into the file.
+		if not node.source_backed:
+			continue
 		# Whatever the node picked up on the way in goes back out untouched,
 		# edited or not. A rebuilt statement says nothing about the comment
 		# above it, so printing only the statement is how that comment is lost.
@@ -208,6 +213,11 @@ static func signature(graph: ComposerGraph) -> String:
 	var position: Dictionary[StringName, int] = {}
 	for index: int in graph.nodes.size():
 		var node: ComposerNode = graph.nodes[index]
+		# The signature answers "did a semantic edit change something the reread
+		# does not represent". Entry is represented by nothing, so counting it
+		# would make every file differ from itself.
+		if not node.source_backed:
+			continue
 		position[node.id] = index
 		parts.append(
 			"%s(%s)%s" % [

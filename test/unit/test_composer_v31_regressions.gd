@@ -29,9 +29,9 @@ func _activate_ability() -> bool:
 """
 	var graph: ComposerGraph = ComposerReader.read(source, SAMPLE_PATH)
 	assert_true(graph.is_editable(), graph.blocked_reason())
-	assert_eq(graph.nodes.size(), 1)
-	assert_true(graph.nodes[0].has_layout_position)
-	assert_eq(graph.nodes[0].layout_position, Vector2(412.5, 188.25))
+	assert_eq(ComposerProjection.statements(graph).size(), 1)
+	assert_true(ComposerProjection.statements(graph)[0].has_layout_position)
+	assert_eq(ComposerProjection.statements(graph)[0].layout_position, Vector2(412.5, 188.25))
 
 
 func test_positioned_replaces_existing_position_without_duplicate_comment() -> void:
@@ -45,7 +45,7 @@ func _activate_ability() -> bool:
 	var graph: ComposerGraph = ComposerReader.read(source, SAMPLE_PATH)
 	var changed: String = ComposerLayoutMetadata.positioned(
 		source,
-		graph.nodes[0],
+		ComposerProjection.statements(graph)[0],
 		Vector2(300.0, 400.0)
 	)
 
@@ -63,7 +63,7 @@ func _activate_ability() -> bool:
 	var graph: ComposerGraph = ComposerReader.read(source, SAMPLE_PATH)
 	var changed: String = ComposerLayoutMetadata.positioned(
 		source,
-		graph.nodes[0],
+		ComposerProjection.statements(graph)[0],
 		Vector2(111.25, 222.5)
 	)
 
@@ -92,7 +92,7 @@ func _activate_ability() -> bool:
 	var graph: ComposerGraph = ComposerReader.read(source, SAMPLE_PATH)
 	var repeated: String = ComposerEdits.repeat(
 		source,
-		[graph.nodes[0].span] as Array[ComposerSpan]
+		[ComposerProjection.statements(graph)[0].span] as Array[ComposerSpan]
 	)
 
 	assert_eq(repeated.count(ComposerLayoutMetadata.PREFIX), 1)

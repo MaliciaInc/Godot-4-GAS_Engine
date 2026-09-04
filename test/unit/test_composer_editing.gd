@@ -111,7 +111,7 @@ func _open(source: String, tag: int) -> ComposerGraph:
 
 
 func _applied(graph: ComposerGraph) -> ComposerNode:
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		if node.type_id == &"apply_gameplay_effect":
 			return node
 	return null
@@ -185,7 +185,7 @@ func test_a_statement_that_cannot_be_printed_back_is_not_edited() -> void:
 	var graph: ComposerGraph = await _open(SOURCE, 3)
 	var counted: int = 0
 
-	for node: ComposerNode in graph.nodes:
+	for node: ComposerNode in ComposerProjection.statements(graph):
 		if not node.type_id.is_empty():
 			continue
 		counted += 1
@@ -199,7 +199,7 @@ func test_nothing_is_offered_in_a_file_the_composer_cannot_draw() -> void:
 	var graph: ComposerGraph = await _open(OUTSIDE, 4)
 
 	assert_false(graph.is_editable(), "read-only: %s" % graph.blocked_reason())
-	assert_eq(graph.nodes.size(), 0, "and there is nothing on the canvas to offer")
+	assert_eq(ComposerProjection.statements(graph).size(), 0, "and there is nothing on the canvas to offer")
 #endregion
 
 
@@ -249,7 +249,7 @@ func test_only_the_values_that_can_be_typed_are_changed() -> void:
 func test_filling_in_a_missing_argument_keeps_what_was_typed() -> void:
 	await screen.open(SHORT, AN_ABILITY)
 	var graph: ComposerGraph = screen.graph()
-	var node: ComposerNode = graph.nodes[0]
+	var node: ComposerNode = ComposerProjection.statements(graph)[0]
 
 	assert_eq(node.fields[EFFECT].source, ComposerNode.ValueSource.MISSING, "a gap")
 	assert_eq(graph.diagnostics.size(), 1, "and the panel says so")
@@ -259,7 +259,7 @@ func test_filling_in_a_missing_argument_keeps_what_was_typed() -> void:
 
 	# Read again: an edit replaces the graph, so the one held before it is an
 	# ability that is no longer open.
-	var after: ComposerNode = screen.graph().nodes[0]
+	var after: ComposerNode = ComposerProjection.statements(screen.graph())[0]
 	assert_eq(after.fields[EFFECT].display, "state_burning", "what was typed survived")
 	assert_eq(
 		after.fields[EFFECT].source, ComposerNode.ValueSource.LITERAL, "as a real argument"
