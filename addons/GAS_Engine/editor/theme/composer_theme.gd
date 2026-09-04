@@ -36,6 +36,25 @@ const WARNING: Color = Color(0.851, 0.643, 0.255)
 const ERROR: Color = Color(0.878, 0.322, 0.322)
 const OK: Color = Color(0.239, 0.839, 0.549)
 
+## What a pin carries, by colour.
+##
+## Semantic rather than decorative: two pins of the same family look the same in
+## every ability somebody opens, so the shape of a graph can be read before any
+## of its words are. Chosen against this canvas, not taken from anyone else's
+## editor. Which type belongs to which family is `ComposerPortTypes`' business;
+## what each family looks like is the palette's, and it lives here so it can be
+## seen beside the surface it has to sit on.
+const PORT_EXECUTION: Color = Color(0.898, 0.906, 0.941)
+const PORT_BOOL: Color = Color(0.878, 0.322, 0.322)
+const PORT_INT: Color = Color(0.208, 0.788, 0.804)
+const PORT_FLOAT: Color = Color(0.400, 0.851, 0.510)
+const PORT_TEXT: Color = Color(0.902, 0.396, 0.808)
+const PORT_PATH: Color = Color(0.588, 0.278, 0.549)
+const PORT_VECTOR: Color = Color(0.933, 0.812, 0.353)
+const PORT_COLOUR: Color = Color(0.847, 0.859, 0.878)
+const PORT_OBJECT: Color = Color(0.361, 0.573, 0.965)
+const PORT_UNTYPED: Color = Color(0.541, 0.541, 0.600)
+
 const WIRE: Color = Color(0.820, 0.820, 0.902, 0.72)
 const WIRE_GLOW: Color = Color(0.482, 0.361, 1.0, 0.14)
 const BEAD_DISC: Color = Color(0.80, 0.78, 1.0, 0.92)
