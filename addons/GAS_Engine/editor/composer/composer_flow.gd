@@ -29,11 +29,28 @@ const ENTRY_TITLE: String = "Entry"
 static func build(graph: ComposerGraph, lines: PackedStringArray) -> void:
 	if graph.nodes.is_empty() and graph.source_path.is_empty():
 		return
-	graph.nodes.insert(0, entry_node())
+	graph.nodes.insert(0, _entry_placed(lines))
 	_wire_execution(graph, lines)
 
 
 ## The virtual node the method starts at.
+## Entry, with wherever somebody last left it.
+##
+## Its place is written against its id rather than above a line, because Entry is
+## drawn and is not a statement - there is no line of its own for a comment to
+## travel with.
+static func _entry_placed(lines: PackedStringArray) -> ComposerNode:
+	var node: ComposerNode = entry_node()
+	var saved: Variant = ComposerLayoutMetadata.virtual_position(
+		"
+".join(lines), ENTRY_ID
+	)
+	if saved is Vector2:
+		node.has_layout_position = true
+		node.layout_position = saved
+	return node
+
+
 static func entry_node() -> ComposerNode:
 	var node: ComposerNode = ComposerNode.new()
 	node.id = ENTRY_ID

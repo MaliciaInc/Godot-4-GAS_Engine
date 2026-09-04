@@ -267,14 +267,8 @@ func _on_node_picked(key: StringName, _at: Vector2 = Vector2.ZERO) -> void:
 ## selected cards did one thing, and four undos to put it back would be four
 ## more than they did.
 func _on_nodes_positioned(positions: Dictionary[StringName, Vector2]) -> void:
-	if not _doc.may_write():
-		return
-	for node_id: StringName in positions:
-		var refusal: ComposerGraph.Diagnostic = _doc.place(node_id, positions[node_id])
-		if refusal != null:
-			push_error(SAVE_REFUSED % refusal.message)
-			return
-	await _redraw()
+	if _doc.may_write():
+		await _did(_doc.place_many(positions))
 
 
 ## A gesture changed the file, so everything drawn from it is asked again.

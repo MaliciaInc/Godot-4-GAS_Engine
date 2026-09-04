@@ -127,12 +127,27 @@ func repeat(spans: Array[ComposerSpan]) -> ComposerGraph.Diagnostic:
 ## the resulting text back is still the authority, so Undo/Redo and reopening
 ## the file need no parallel state.
 func place(node_id: StringName, position: Vector2) -> ComposerGraph.Diagnostic:
+	var one: Dictionary[StringName, Vector2] = {node_id: position}
+	return place_many(one)
+
+
+## Put several cards where they were left, as one change.
+##
+## One commit for the whole gesture. Somebody who dragged four selected cards did
+## one thing, and four steps to take it back would be three more than they made -
+## which is what a placement per node produced.
+##
+## A card that is no longer in the ability is skipped rather than refused: the
+## positions arrive from a canvas that was drawn a moment ago, and a redraw in
+## between is not somebody's mistake.
+func place_many(
+	positions: Dictionary[StringName, Vector2]
+) -> ComposerGraph.Diagnostic:
 	if not may_write():
 		return ComposerWriter.refuse(NOTHING_OPEN)
-	var node: ComposerNode = _graph.find_node(node_id)
-	if node == null:
-		return ComposerWriter.refuse("the node to place is no longer in the ability")
-	return commit(ComposerLayoutMetadata.positioned(_source, node, position))
+	return commit(
+		ComposerLayoutMetadata.positioned_many(_source, _graph, positions)
+	)
 
 
 func insert(written: String, after: int) -> ComposerGraph.Diagnostic:
