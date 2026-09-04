@@ -247,6 +247,10 @@ static func _ports(
 		# against a promise the file never made.
 		value.type_name = StringName(_local_type(text))
 		value.label = _local_name(text)
+		# The one pin in this projection that carries more than one wire: a local
+		# can be passed to every argument that wants it, while an argument holds
+		# one value and a statement runs after exactly one other.
+		value.multiplicity = ComposerNode.PortMultiplicity.MULTIPLE
 		ports.append(value)
 	return ports
 
@@ -324,10 +328,30 @@ static func _fields(text: String, entry: ComposerCatalog.Entry) -> Array[Compose
 		var field: ComposerNode.Field = ComposerNode.Field.new()
 		field.label = declared.label if declared != null else "#%d" % (position + 1)
 		field.type_name = declared.type_name if declared != null else &""
+		# Everything else the engine said about this argument, carried onto the
+		# read field rather than left in the catalog. A control is chosen from the
+		# hint and an unplugged wire is replaced by the declared default, and both
+		# of those happen to a node that was read out of a file - so a field that
+		# knows only its type is a field neither of them can serve.
+		if declared != null:
+			_declare(field, declared)
 		field.display = argument.strip_edges()
 		fields.append(field)
 		position += 1
 	return fields
+
+
+## Copy what reflection said about an argument onto the field read for it.
+##
+## The display is not copied: that is what the file passes, and it is the one
+## thing here the person wrote rather than the engine.
+static func _declare(field: ComposerNode.Field, declared: ComposerNode.Field) -> void:
+	field.variant_type = declared.variant_type
+	field.class_id = declared.class_id
+	field.hint = declared.hint
+	field.hint_string = declared.hint_string
+	field.usage = declared.usage
+	field.default_expression = declared.default_expression
 #endregion
 
 

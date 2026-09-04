@@ -349,3 +349,32 @@ func test_a_longer_name_is_not_a_dependency() -> void:
 
 	for wire: ComposerGraph.Connection in graph.connections:
 		assert_ne(wire.from_port, ComposerReader.VALUE_OUT, "no cable was invented")
+
+
+#region What a pin can hold
+## Only a local's output fans out. Everything else takes one wire.
+##
+## The count is the difference between a value that can feed three statements
+## and an argument that holds one thing, and the canvas asks this before it lets
+## a drag land. Read off a real projection rather than asserted about the enum:
+## a field nobody assigns defaults to SINGLE and agrees with every rule anyone
+## writes down, which is how it sat unassigned in the first place.
+func test_only_a_value_output_carries_more_than_one_wire() -> void:
+	var graph: ComposerGraph = _read([
+		"var target: Node = await wait_target_data()",
+		"apply_gameplay_effect(burning, target)",
+	])
+
+	var fanning: int = 0
+	for node: ComposerNode in graph.nodes:
+		for pin: ComposerNode.Port in node.ports:
+			var many: bool = pin.multiplicity == ComposerNode.PortMultiplicity.MULTIPLE
+			var produces_a_value: bool = (
+				pin.kind == ComposerNode.PortKind.DATA
+				and pin.direction == ComposerNode.PortDirection.OUTPUT
+			)
+			assert_eq(many, produces_a_value, "%s on %s" % [pin.id, node.title])
+			fanning += 1 if many else 0
+
+	assert_eq(fanning, 1, "exactly the one local, so the rule was exercised")
+#endregion

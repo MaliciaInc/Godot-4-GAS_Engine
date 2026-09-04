@@ -36,6 +36,14 @@ func record(before: String) -> void:
 		_done.remove_at(0)
 
 
+## How many steps back there are. Not for undoing - for asking whether one
+## thing a person did was recorded as one thing, which is the only way to tell
+## an operation that commits once from one that commits four times and leaves
+## somebody pressing undo until it stops changing.
+func depth() -> int:
+	return _done.size()
+
+
 func can_undo() -> bool:
 	return not _done.is_empty()
 
