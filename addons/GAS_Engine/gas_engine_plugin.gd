@@ -39,6 +39,8 @@ const SCRIPT_FILTER: String = "*.gd"
 const RESOURCE_PREFIX: String = "res://"
 const BROWSE_INSTEAD: String = "Browse…"
 const LOOK_AGAIN: String = "Re-scan abilities"
+const NEW_ABILITY_NAME: String = "new_ability.gd"
+const CREATE_ABILITY_TITLE: String = "Create Gameplay Ability"
 const NONE_FOUND: String = (
 	"This project has no abilities yet. A script that extends GameplayAbility "
 	+ "is one; there are six to copy from in addons/GAS_Engine/reference/."
@@ -147,6 +149,7 @@ func _enter_tree() -> void:
 	_composer_instance.visible = false
 	_composer_instance.code_requested.connect(_on_code_requested)
 	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
+	_composer_instance.create_requested.connect(_ask_for_new_ability)
 	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
 
 	# The editor already knows when a file appeared, moved or was deleted, so
@@ -264,15 +267,52 @@ func _on_ability_chosen(chosen: int) -> void:
 ## somebody is already looking at an ability and wrong as the only way in: a
 ## person who picks Ability Composer from the Tools menu has asked for the
 ## Composer, not for a lecture about what they should have opened.
-func _ask_for_an_ability() -> void:
+## One builder, because opening an ability and choosing where to put a new one
+## differ only in the mode and in who is told about the choice.
+func _ability_picker(
+	mode: EditorFileDialog.FileMode, chosen: Callable
+) -> EditorFileDialog:
 	var picker: EditorFileDialog = EditorFileDialog.new()
-	picker.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
+	picker.file_mode = mode
 	picker.access = EditorFileDialog.ACCESS_RESOURCES
 	picker.add_filter(SCRIPT_FILTER, SCRIPT_FILTER_NAME)
-	picker.file_selected.connect(_draw_ability_at)
+	picker.file_selected.connect(chosen)
 	picker.canceled.connect(picker.queue_free)
+	return picker
+
+
+func _show_picker(picker: EditorFileDialog) -> void:
 	EditorInterface.get_base_control().add_child(picker)
 	picker.popup_file_dialog()
+
+
+func _ask_for_an_ability() -> void:
+	_show_picker(
+		_ability_picker(EditorFileDialog.FILE_MODE_OPEN_FILE, _draw_ability_at)
+	)
+
+
+## Choose where a new GameplayAbility script will live.
+func _ask_for_new_ability() -> void:
+	var picker: EditorFileDialog = _ability_picker(
+		EditorFileDialog.FILE_MODE_SAVE_FILE, _create_ability_at
+	)
+	picker.title = CREATE_ABILITY_TITLE
+	picker.current_file = NEW_ABILITY_NAME
+	_show_picker(picker)
+
+
+## Create exactly one normal GDScript and open it in Composer.
+func _create_ability_at(source_path: String) -> void:
+	var refusal: String = ComposerAbilityTemplate.create(source_path)
+	if not refusal.is_empty():
+		push_warning(COMPOSER_REFUSED % refusal)
+		_show_composer()
+		_composer_instance.show_refusal(refusal)
+		return
+
+	EditorInterface.get_resource_filesystem().scan()
+	_draw_ability_at(source_path)
 
 
 ## Draw the file that was chosen, or say why it cannot be drawn - on the screen

@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# freeze at 6db48da: the identity gate reads the release receipt set
+# Composer 3.1: layout metadata in the source, functional palette search, New ability
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T00:25:18Z
-# commit-previo: 6db48dac670b22c38551eb21d34e8e78d0f515ee
+# date-utc: 2026-09-04T16:54:06Z
+# commit-previo: 514006e311ed247a2d12ca4c2b4b10ca7e291585
 # files: 24
-1200cd49fad650a55ee650bea398d11993499f67226033059c9499ca27813be0  tooling/.quality-gates.json
+599acf686b2c3659f5ba9ca1b887454dcba27fad3d3bbfcc01b4775fc424abe9  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

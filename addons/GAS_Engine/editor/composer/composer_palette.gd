@@ -20,6 +20,8 @@ signal node_picked(type_id: StringName)
 
 var _open: StringName = ComposerCatalog.TASKS
 var _list: VBoxContainer = null
+var _search: LineEdit = null
+var _query: String = ""
 
 ## The vocabulary this was drawn from. A game may offer nodes after the panel is
 ## already on screen, and a palette that never asked again would be the reason
@@ -38,11 +40,23 @@ func _ready() -> void:
 	add_child(column)
 
 	column.add_child(ComposerPanel.caption(TITLE))
-	column.add_child(
-		ComposerPanel.slot(
-			SEARCH_HINT, ComposerTheme.TEXT_FAINT, size.x - ComposerTheme.S3 * 2.0
-		)
+	_search = LineEdit.new()
+	_search.placeholder_text = SEARCH_HINT.strip_edges()
+	_search.clear_button_enabled = true
+	_search.custom_minimum_size = Vector2(
+		size.x - ComposerTheme.S3 * 2.0,
+		ComposerTheme.S5
 	)
+	_search.add_theme_color_override(
+		GASEditorTheme.FONT_COLOR,
+		ComposerTheme.TEXT
+	)
+	_search.add_theme_font_size_override(
+		GASEditorTheme.FONT_SIZE,
+		ComposerTheme.FONT_LABEL + 1
+	)
+	_search.text_changed.connect(_on_search_changed)
+	column.add_child(_search)
 
 	_list = ComposerPanel.column(ComposerTheme.S2)
 	column.add_child(_list)
@@ -59,8 +73,13 @@ func _rebuild() -> void:
 	for child: Node in _list.get_children():
 		child.queue_free()
 
+	var searching: bool = not _query.is_empty()
 	for group: StringName in ComposerCatalog.groups():
-		var open: bool = group == _open
+		var matches: Array[StringName] = _matching_entries(group)
+		if searching and matches.is_empty():
+			continue
+
+		var open: bool = searching or group == _open
 		var head: HBoxContainer = ComposerPanel.row(ComposerTheme.S2)
 		head.add_child(
 			ComposerPanel.label(
@@ -84,7 +103,7 @@ func _rebuild() -> void:
 
 		if not open:
 			continue
-		for entry: StringName in ComposerCatalog.entries(group):
+		for entry: StringName in matches:
 			_list.add_child(_entry_row(entry))
 
 
@@ -137,6 +156,36 @@ static func carried_call(key: StringName) -> Dictionary:
 
 ## Open a group, closing whichever was open. One at a time, because a palette
 ## with everything expanded is a list nobody can scan.
+func _on_search_changed(text: String) -> void:
+	_query = text.strip_edges().to_lower()
+	_rebuild()
+
+
+func _matching_entries(group: StringName) -> Array[StringName]:
+	var found: Array[StringName] = []
+	for key: StringName in ComposerCatalog.entries(group):
+		if _query.is_empty() or _entry_matches(key, _query):
+			found.append(key)
+	return found
+
+
+static func _entry_matches(key: StringName, query: String) -> bool:
+	# Both sides, not just the haystack. The field lowers what a person types
+	# before storing it, but this is also called directly - and a matcher that
+	# is only case-insensitive when its caller remembers to be is not one.
+	var wanted: String = query.to_lower()
+	var entry: ComposerCatalog.Entry = ComposerCatalog.find(key)
+	if entry == null:
+		return String(key).to_lower().contains(wanted)
+	var haystack: String = " ".join([
+		entry.title,
+		String(entry.type_id),
+		String(entry.source),
+		String(key),
+	]).to_lower()
+	return haystack.contains(wanted)
+
+
 ## Draw again if what is offered has changed since last time.
 ##
 ## Compared rather than rebuilt unconditionally: every row is a Control, and
@@ -168,6 +217,8 @@ func toggle_group(group: StringName) -> void:
 
 
 func _on_head_input(event: InputEvent, group: StringName) -> void:
+	if not _query.is_empty():
+		return
 	var click: InputEventMouseButton = event as InputEventMouseButton
 	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
 		return

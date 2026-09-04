@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 318
+- Source files scanned: 321
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 1312
-- Units by language: gdscript 1278, powershell 4, python 30
+- Units scanned: 1329
+- Units by language: gdscript 1295, powershell 4, python 30
 - Findings: 334
-- Elapsed: 5.564s
+- Elapsed: 5.037s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 34 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13327 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13532 (raise with --max-pairs)
 
 ## Structural
 
@@ -123,18 +123,18 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/unit/test_quest_system_bridge.gd:71-78:_binding`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/unit/test_refusal_statuses.gd:37-44:_cost`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:50-62:_on_ended` <-> `addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:278-286:_evaluate_at`
-- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:258-265:port`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:260-267:port`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/unit/test_composer_graph.gd:33-40:_diagnostic`
-- 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:438-447:wire`
+- 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:440-449:wire`
 - 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:202-210:_at`
 - 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 1.000 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 0.929 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:251-273:recompose` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:384-409:commit_base_write`
-- 0.929 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `addons/GAS_Engine/editor/composer/composer_panel.gd:32-43:slot`
+- 0.929 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `addons/GAS_Engine/editor/composer/composer_panel.gd:32-43:slot`
 - 0.923 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_targeting_2d.gd:110-117:_sweep`
 - 0.923 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_targeting_3d.gd:109-116:_sweep`
 - 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/unit/test_readme_quick_start.gd:32-42:_character`
@@ -146,14 +146,14 @@
 - 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/fixtures/test_effect_factory.gd:392-403:capture_definition`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/unit/test_gameplay_effect_components.gd:185-194:_refusal_stage_cases`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:438-447:wire`
+- 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:440-449:wire`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:202-210:_at`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:62-70:wait_tag_query` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:75-85:wait_gameplay_effect_applied`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:438-447:wire`
+- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:440-449:wire`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:202-210:_at`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
@@ -171,14 +171,14 @@
 - 0.889 [executable]: `addons/GAS_Engine/abilities/prepared_ability_grant.gd:1-27:<file>` <-> `addons/GAS_Engine/targeting/gameplay_overlap_request_2d.gd:1-44:<file>`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/prepared_ability_grant.gd:1-27:<file>` <-> `addons/GAS_Engine/targeting/gameplay_overlap_request_3d.gd:1-42:<file>`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:62-70:wait_tag_query` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:164-172:play_animation_and_wait`
-- 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:438-447:wire`
+- 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:440-449:wire`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:202-210:_at`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/fixtures/test_effect_factory.gd:15-22:modifier`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 0.889 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:527-537:can_activate_ability` <-> `addons/GAS_Engine/effects/gameplay_effect_handle_registry.gd:90-99:duration_remaining`
-- 0.889 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:258-265:port`
+- 0.889 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:260-267:port`
 - 0.889 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid`
 - 0.889 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 0.889 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
@@ -191,7 +191,7 @@
 - 0.875 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create` <-> `test/unit/test_gameplay_magnitudes.gd:93-102:SnapshotActorCase._init`
 - 0.875 [executable]: `addons/GAS_Engine/attributes/attribute_modifier_contribution.gd:1-28:<file>` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_removal_context.gd:1-15:<file>`
 - 0.875 [executable]: `addons/GAS_Engine/attributes/attribute_modifier_contribution.gd:1-28:<file>` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_runtime_context.gd:1-17:<file>`
-- 0.867 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:137-149:test_an_evaluator_failure_discards_every_prepared_state`
+- 0.867 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:137-149:test_an_evaluator_failure_discards_every_prepared_state`
 - 0.864 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:403-412:apply_gameplay_effect_result` <-> `addons/GAS_Engine/effects/gameplay_effect_query.gd:73-82:matches_incoming`
 - 0.864 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_task_library.gd:195-209:test_wait_gameplay_effect_removed_matches_by_handle`
 - 0.864 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_task_library.gd:305-319:test_wait_ability_ended_matches_by_handle`
@@ -201,15 +201,15 @@
 - 0.857 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_runtime_context.gd:1-17:<file>`
 - 0.857 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/targeting/gameplay_raycast_request_2d.gd:1-24:<file>`
 - 0.857 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/targeting/gameplay_raycast_request_3d.gd:1-24:<file>`
-- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_attribute_captures.gd:260-272:test_a_non_finite_value_is_refused`
-- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_asset_validator.gd:93-100:test_a_percentage_cost_missing_its_reference_attribute_is_reported`
-- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:412-422:_set_scale` <-> `test/unit/test_integration_availability.gd:58-70:test_the_three_integrations_are_looked_for_separately`
+- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_attribute_captures.gd:260-272:test_a_non_finite_value_is_refused`
+- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_asset_validator.gd:93-100:test_a_percentage_cost_missing_its_reference_attribute_is_reported`
+- 0.857 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:472-482:_set_scale` <-> `test/unit/test_integration_availability.gd:58-70:test_the_three_integrations_are_looked_for_separately`
 - 0.850 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:329-341:set_attribute_base` <-> `addons/GAS_Engine/components/ability_system_component.gd:403-412:apply_gameplay_effect_result`
 - 0.846 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:50-62:_on_ended`
 - 0.846 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags` <-> `addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:278-286:_evaluate_at`
 - 0.846 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped`
 - 0.846 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_randomized_regression.gd:36-43:before_each`
-- 0.846 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `test/unit/test_gameplay_effect_inhibition.gd:186-204:test_a_self_oscillating_ongoing_query_stabilizes_inhibited_without_hanging`
+- 0.846 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `test/unit/test_gameplay_effect_inhibition.gd:186-204:test_a_self_oscillating_ongoing_query_stabilizes_inhibited_without_hanging`
 - 0.844 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:146-174:_wire_runtimes` <-> `test/unit/test_attribute_aggregation.gd:136-164:_removal_cases`
 - 0.842 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:98-105:cancel_conflicting_abilities` <-> `addons/GAS_Engine/components/ability_system_component.gd:527-537:can_activate_ability`
 - 0.839 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:384-409:commit_base_write` <-> `addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:425-449:can_afford`
@@ -228,24 +228,23 @@
 - 0.833 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/effects/components/gameplay_effect_additional_effects_component.gd:1-24:<file>`
 - 0.833 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/effects/components/gameplay_effect_grant_abilities_state.gd:1-16:<file>`
 - 0.833 [executable]: `addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-31:<file>` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_receipt.gd:1-21:<file>`
-- 0.833 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:307-314:picked` <-> `addons/GAS_Engine/editor/composer/composer_selection.gd:28-35:joined`
+- 0.833 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:356-363:picked` <-> `addons/GAS_Engine/editor/composer/composer_selection.gd:28-35:joined`
 - 0.833 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_activation_policies.gd:244-259:test_an_effect_granted_passive_activates_and_removal_retires_it`
 - 0.833 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_cost_pricing.gd:108-127:test_an_absolute_cost_scales_with_a_curve_and_level`
 - 0.833 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_tag_semantics.gd:230-245:test_target_blocked_query_is_enforced_at_effect_application`
 - 0.826 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:46-59:instance_for_activation` <-> `addons/GAS_Engine/magnitudes/gameplay_set_by_caller_magnitude.gd:21-30:resolve`
-- 0.826 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result` <-> `addons/GAS_Engine/editor/composer/composer_screen.gd:261-268:_on_node_dropped`
+- 0.826 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result` <-> `addons/GAS_Engine/editor/composer/composer_screen.gd:266-273:_on_node_dropped`
 - 0.826 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result` <-> `addons/GAS_Engine/magnitudes/gameplay_custom_magnitude.gd:17-26:resolve`
 - 0.826 [executable]: `addons/GAS_Engine/cues/gameplay_cue_notify.gd:43-65:execute_cue` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_tree.gd:107-119:load_registry`
-- 0.826 [executable]: `addons/GAS_Engine/cues/gameplay_cue_notify.gd:43-65:execute_cue` <-> `addons/GAS_Engine/gas_engine_plugin.gd:115-132:_enable_plugin`
+- 0.826 [executable]: `addons/GAS_Engine/cues/gameplay_cue_notify.gd:43-65:execute_cue` <-> `addons/GAS_Engine/gas_engine_plugin.gd:117-134:_enable_plugin`
 - 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_tag_semantics.gd:84-98:test_an_active_ability_blocks_another_matching_its_block_query`
 - 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_task_library.gd:323-339:test_wait_ability_activated_matches_by_tag_query`
-- 0.826 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_immunities.gd:201-216:test_an_immune_effect_never_purges_other_active_effects`
 - 0.821 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:364-378:stage_gameplay_effect_base_write` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:384-409:commit_base_write`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:62-70:wait_tag_query` <-> `test/unit/test_composer_layout.gd:33-41:_node`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/unit/test_target_data.gd:49-57:_space_cases`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target`
-- 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:438-447:wire`
+- 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:440-449:wire`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:202-210:_at`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/fixtures/test_effect_factory.gd:15-22:modifier`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
@@ -260,26 +259,26 @@
 - 0.812 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:307-314:execute_cue` <-> `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:22-36:raycast_2d`
 - 0.812 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:307-314:execute_cue` <-> `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:39-53:raycast_3d`
 - 0.812 [executable]: `addons/GAS_Engine/components/ability_runtime.gd:179-190:remove_ability` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_bridge.gd:210-218:_withdraw`
-- 0.812 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_refusal_statuses.gd:151-168:test_a_live_magnitude_reading_another_attribute_is_allowed`
-- 0.812 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:412-422:_set_scale` <-> `addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters`
+- 0.812 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_refusal_statuses.gd:151-168:test_a_live_magnitude_reading_another_attribute_is_allowed`
+- 0.812 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:472-482:_set_scale` <-> `addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters`
 - 0.810 [executable]: `addons/GAS_Engine/attributes/attribute_set.gd:72-80:get_attribute_names` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd:77-86:matches_tag_naming`
-- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `test/unit/test_ability_activation_policies.gd:150-166:test_passive_reevaluation_is_reentrancy_stable`
-- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `test/unit/test_ability_task_library.gd:143-162:test_wait_tag_query_nested_expression`
-- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `test/unit/test_cost_preview.gd:46-65:test_a_temporary_buff_does_not_subsidise_a_durable_cost`
-- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `addons/GAS_Engine/editor/composer/composer_palette.gd:95-113:_entry_row`
-- 0.806 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_editor_property.gd:231-266:_build_body`
+- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `test/unit/test_ability_activation_policies.gd:150-166:test_passive_reevaluation_is_reentrancy_stable`
+- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `test/unit/test_ability_task_library.gd:143-162:test_wait_tag_query_nested_expression`
+- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `test/unit/test_cost_preview.gd:46-65:test_a_temporary_buff_does_not_subsidise_a_durable_cost`
+- 0.808 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `addons/GAS_Engine/editor/composer/composer_palette.gd:114-132:_entry_row`
+- 0.806 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_editor_property.gd:231-266:_build_body`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:125-137:_reevaluate_one_spec` <-> `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/costs/gameplay_ability_cost.gd:1-35:<file>` <-> `addons/GAS_Engine/gameplay_tag/gameplay_tag_query_expression.gd:1-24:<file>`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:307-314:execute_cue` <-> `addons/GAS_Engine/managers/gameplay_cue_manager.gd:96-105:activate_persistent_cue`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create`
-- 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:258-265:port`
+- 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:260-267:port`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:19-26:for_tag` <-> `test/unit/test_composer_graph.gd:33-40:_diagnostic`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:75-85:wait_gameplay_effect_applied` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:164-172:play_animation_and_wait`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create`
-- 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:258-265:port`
+- 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:260-267:port`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:18-29:create` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
@@ -306,15 +305,16 @@
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_tag_removed.gd:17-24:create` <-> `addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:21-29:build_request`
 - 0.800 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_ability_tasks.gd:55-62:before_each`
 - 0.800 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_gameplay_asset_validator.gd:48-57:test_an_empty_tag_in_a_query_is_reported`
+- 0.800 [executable]: `addons/GAS_Engine/components/ability_system_component.gd:384-396:apply_effect_spec_to_target_result` <-> `addons/GAS_Engine/editor/composer/composer_ability_template.gd:27-40:create`
 - 0.800 [executable]: `addons/GAS_Engine/cues/gameplay_cue_params.gd:57-65:for_target` <-> `test/fixtures/test_effect_factory.gd:15-22:modifier`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `addons/GAS_Engine/editor/composer/composer_canvas.gd:296-304:_drop_data`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_asset_validator.gd:48-57:test_an_empty_tag_in_a_query_is_reported`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:152-162:test_an_invalid_component_rejects_the_definition_before_can_apply_ever_runs`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:272-279:_pick` <-> `test/unit/test_integration_availability.gd:58-70:test_the_three_integrations_are_looked_for_separately`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:272-279:_pick` <-> `test/unit/test_source_migration.gd:32-42:before_each`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:296-304:_drop_data` <-> `test/unit/test_attribute_captures.gd:260-272:test_a_non_finite_value_is_refused`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:412-422:_set_scale` <-> `test/unit/test_gameplay_asset_validator.gd:103-110:test_a_cost_missing_amount_and_target_reports_both`
-- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `docs/Fases/composer-mock/addons/uiprobe/plugin.gd:11-32:_enter_tree`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `addons/GAS_Engine/editor/composer/composer_canvas.gd:345-353:_drop_data`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_asset_validator.gd:48-57:test_an_empty_tag_in_a_query_is_reported`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:152-162:test_an_invalid_component_rejects_the_definition_before_can_apply_ever_runs`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:321-328:_pick` <-> `test/unit/test_integration_availability.gd:58-70:test_the_three_integrations_are_looked_for_separately`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:321-328:_pick` <-> `test/unit/test_source_migration.gd:32-42:before_each`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:345-353:_drop_data` <-> `test/unit/test_attribute_captures.gd:260-272:test_a_non_finite_value_is_refused`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:472-482:_set_scale` <-> `test/unit/test_gameplay_asset_validator.gd:103-110:test_a_cost_missing_amount_and_target_reports_both`
+- 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `docs/Fases/composer-mock/addons/uiprobe/plugin.gd:11-32:_enter_tree`
 - 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_cues.gd:340-366:test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else`
 - 0.800 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_chains.gd:80-104:test_a_removal_chain_survives_the_source_having_despawned`
 - 0.793 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:151-171:evaluate` <-> `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:364-378:stage_gameplay_effect_base_write`
@@ -335,7 +335,7 @@
 - 0.789 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_effect_applied.gd:29-42:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_tag_added.gd:19-26:create`
 - 0.789 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_effect_applied.gd:29-42:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_tag_removed.gd:17-24:create`
 - 0.789 [executable]: `addons/GAS_Engine/attributes/attribute_set.gd:72-80:get_attribute_names` <-> `addons/GAS_Engine/editor/composer/composer_library.gd:82-91:scan`
-- 0.789 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:363-371:_bounds` <-> `addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters`
+- 0.789 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:423-431:_bounds` <-> `addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:125-137:_reevaluate_one_spec` <-> `addons/GAS_Engine/effects/components/gameplay_effect_grant_abilities_component.gd:24-35:prepare_application`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:145-157:active_requirements_error` <-> `addons/GAS_Engine/targeting/gameplay_target_filter.gd:36-49:accepts`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags` <-> `addons/GAS_Engine/abilities/gameplay_ability.gd:307-314:execute_cue`
@@ -343,18 +343,18 @@
 - 0.786 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_gameplay_magnitudes.gd:216-223:test_a_required_set_by_caller_never_supplied_is_refused`
 - 0.786 [executable]: `addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:348-357:_stage_clamped` <-> `test/unit/test_readme_quick_start.gd:32-42:_character`
 - 0.786 [executable]: `addons/GAS_Engine/components/gameplay_tag_runtime.gd:31-38:add` <-> `addons/GAS_Engine/integrations/quest_system/quest_system_gas_bridge.gd:216-223:_quest_id_of`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_ability_commit.gd:191-200:test_an_instant_cooldown_is_refused`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:84-96:test_components_run_in_declared_order`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_effect_immunities.gd:120-129:test_a_source_tag_match_is_refused`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_effect_stacking.gd:63-70:test_aggregate_by_source_joins_only_the_same_source`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:128-139:_add_card` <-> `test/unit/test_gameplay_magnitudes.gd:216-223:test_a_required_set_by_caller_never_supplied_is_refused`
-- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:75-98:_ready` <-> `test/unit/test_ability_commit.gd:365-388:test_a_cost_written_after_the_grant_is_reported_not_swallowed`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_ability_commit.gd:191-200:test_an_instant_cooldown_is_refused`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_effect_components.gd:84-96:test_components_run_in_declared_order`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_effect_immunities.gd:120-129:test_a_source_tag_match_is_refused`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_effect_stacking.gd:63-70:test_aggregate_by_source_joins_only_the_same_source`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:138-149:_add_card` <-> `test/unit/test_gameplay_magnitudes.gd:216-223:test_a_required_set_by_caller_never_supplied_is_refused`
+- 0.786 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:80-103:_ready` <-> `test/unit/test_ability_commit.gd:365-388:test_a_cost_written_after_the_grant_is_reported_not_swallowed`
 - 0.783 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:46-59:instance_for_activation` <-> `addons/GAS_Engine/effects/gameplay_effect_chain_runtime.gd:30-43:fire_on_removal`
 - 0.783 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:85-95:mark_pending_removal` <-> `addons/GAS_Engine/integrations/quest_system/quest_system_gas_bridge.gd:136-149:_bindings_are_valid`
+- 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_canvas.gd:115-135:show_graph` <-> `test/unit/test_composer_writer.gd:224-236:test_rebuilding_a_local_keeps_the_declaration_in_front_of_it`
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_ability_instancing.gd:158-170:test_removing_the_spec_cancels_every_execution`
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_attribute_captures.gd:277-292:test_an_execution_calculation_receives_already_resolved_captures`
 - 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_chains.gd:41-50:test_on_application_applies_the_child_to_the_same_target`
-- 0.783 [executable]: `addons/GAS_Engine/editor/composer/composer_card.gd:161-181:_title_row` <-> `test/unit/test_gameplay_effect_immunities.gd:144-155:test_a_target_tag_condition_gates_the_immunity`
 
 ## Scan Issues
 

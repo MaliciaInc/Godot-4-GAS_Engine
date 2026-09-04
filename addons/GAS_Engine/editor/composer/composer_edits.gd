@@ -43,7 +43,9 @@ static func repeat(source: String, spans: Array[ComposerSpan]) -> String:
 	for span: ComposerSpan in _bottom_up(spans):
 		if not span.is_valid():
 			continue
-		var copied: PackedStringArray = lines.slice(span.first_line - 1, span.last_line)
+		var copied: PackedStringArray = ComposerLayoutMetadata.without_layout_lines(
+			lines.slice(span.first_line - 1, span.last_line)
+		)
 		for offset: int in copied.size():
 			lines.insert(span.last_line + offset, copied[offset])
 	return NEWLINE.join(lines)

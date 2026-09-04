@@ -31,6 +31,16 @@
         "glob": "addons/GAS_Engine/effects/gameplay_effect_runtime.gd",
         "max_lines": 500,
         "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task. Raised from 480 to 500 when the removal announcement was fixed: clearing an effect's receipts was split out of _detach() into discard_receipts() so it runs AFTER active_effect_removed/gameplay_effect_removal_finished rather than before, which is what lets a subscriber - AbilityTaskFactory.wait_gameplay_effect_removed_matching() among them - filter the removed effect on granted_tags at all. Seventeen lines: a four-line function, its 'why', and the three call sites that now discard explicitly. The doc block was already cut to the half that a reader reordering these calls back would need."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_canvas.gd",
+        "max_lines": 500,
+        "reason": "Composer 3.1 gave the canvas free placement, which is three things at once: a drag that moves the card rather than only remembering where it started, a release that has to tell reordering apart from placement, and two helpers - _sync_bloom() and _redraw_wires() - that exist because a card moving between frames drags its bloom and its wires with it. Splitting the file would put the press, the motion and the release of one gesture in different places, which is the shape that makes input code hard to follow."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_screen.gd",
+        "max_lines": 470,
+        "reason": "Composer 3.1 added one handler, _on_node_positioned(), which routes a canvas placement into ComposerDocument.place(). The screen was four lines under the limit before it. This file is the wiring between the panels and the document and is long because there are many panels, not because any part of it is doing two jobs."
       }
     ],
     "function_parameter_allowlist": [

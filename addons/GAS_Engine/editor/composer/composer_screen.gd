@@ -32,6 +32,9 @@ signal code_requested(source_path: String)
 ## that knows about Godot's docks.
 signal open_requested
 
+## Asked for a new ability file. The plugin owns filesystem/editor dialogs.
+signal create_requested
+
 var _top: ComposerTopBar = null
 var _graph: ComposerGraph = null
 
@@ -84,11 +87,13 @@ func _ready() -> void:
 	# panel to one that has not been made yet reads as done and is not.
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_canvas.node_dropped.connect(_on_node_dropped)
+	_canvas.node_positioned.connect(_on_node_positioned)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
 	_canvas.node_requested.connect(_on_node_picked)
 	_canvas.menu_requested.connect(_on_menu_requested)
 	_output.row_picked.connect(_on_row_picked)
 	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
+	_top.create_requested.connect(func _asked() -> void: create_requested.emit())
 	_inspector.value_edited.connect(_on_value_edited)
 	_palette.node_picked.connect(_on_node_picked)
 
@@ -266,6 +271,15 @@ func _on_node_dropped(moved: StringName, onto: StringName) -> void:
 	if from == null or to == null:
 		return
 	await _did(_doc.move(from.span, to.span))
+
+
+## Empty-space drag changes only the visual projection.
+func _on_node_positioned(node_id: StringName, world_position: Vector2) -> void:
+	if not _doc.may_write():
+		return
+	await _did(_doc.place(node_id, world_position))
+
+
 ## What can be done to a card, offered where the pointer is.
 ##
 ## The same three operations the chords do, said out loud. A tool whose only way
