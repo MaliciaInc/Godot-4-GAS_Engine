@@ -79,11 +79,31 @@ static func _escaped(value: String) -> String:
 	return value.replace("\\", "\\\\").replace(QUOTE, "\\" + QUOTE)
 
 
+## The digits a Color component actually carries.
+##
+## A Color holds float32s and everything else here is a float64, so `str()` on a
+## component prints the error of the conversion: `0.1` comes back
+## `0.10000000149012`. Writing that is the tool rewriting every colour in an
+## ability with fourteen digits of noise the moment somebody opens the card that
+## holds one - a diff nobody made, on a line nobody touched.
+const COLOR_DIGITS: int = 7
+
+
+static func _color_component(value: float) -> String:
+	var written: String = String.num(value, COLOR_DIGITS)
+	# Trailing zeros are the rounding showing through, not precision.
+	if written.contains("."):
+		written = written.rstrip("0")
+		if written.ends_with("."):
+			written += "0"
+	return written
+
+
 static func _color_text(value: Color) -> String:
 	return "%s(%s, %s, %s, %s)" % [
 		ComposerTypes.COLOR,
-		_float_text(value.r), _float_text(value.g),
-		_float_text(value.b), _float_text(value.a),
+		_color_component(value.r), _color_component(value.g),
+		_color_component(value.b), _color_component(value.a),
 	]
 
 
@@ -210,10 +230,16 @@ static func parse_color(source: String) -> Dictionary:
 static func is_literal(field: ComposerNode.Field) -> bool:
 	if field == null:
 		return false
-	return _read_as(field.type_name, field.display)[OK]
+	return read_as(field.type_name, field.display)[OK]
 
 
-static func _read_as(type_name: StringName, text: String) -> Dictionary:
+## What that text means as that type, or a refusal.
+##
+## Public because a control has to show the value, not only know that one is
+## there: a SpinBox needs the number, and asking twice - once "is this a
+## number" and once "what number" - would be two readings of one string that
+## can disagree.
+static func read_as(type_name: StringName, text: String) -> Dictionary:
 	if type_name == ComposerTypes.BOOL:
 		return parse_bool(text)
 	if type_name == ComposerTypes.INT:
@@ -255,7 +281,17 @@ static func _quoted_body(text: String, mark: String) -> Dictionary:
 
 	if body.length() < 2 or not body.begins_with(QUOTE) or not body.ends_with(QUOTE):
 		return _refused()
-	return _found(_unescaped(body.substr(1, body.length() - 2)))
+
+	# Beginning and ending with a quote is not enough to be one string.
+	# `"fire" if hot else "ice"` does both, and reading it as a literal turns a
+	# working expression into the text `"fire\" if hot else \"ice"` the moment
+	# anybody touches that argument. A well-formed body is one that survives
+	# being unescaped and escaped again; that one does not.
+	var inside: String = body.substr(1, body.length() - 2)
+	var read: String = _unescaped(inside)
+	if _escaped(read) != inside:
+		return _refused()
+	return _found(read)
 
 
 static func _unescaped(value: String) -> String:

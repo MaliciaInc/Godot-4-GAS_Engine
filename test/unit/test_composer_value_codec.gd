@@ -247,3 +247,44 @@ func _read(type_name: StringName, text: String) -> Dictionary:
 		"Vector4i":
 			return ComposerValueCodec.parse_vector4(text, true)
 	return {OK: false, VALUE: null}
+
+
+#region Text that only looks like text
+## An expression that begins and ends with a quote is not one string.
+##
+## `"fire" if hot else "ice"` does both. Read as a literal, the value editor
+## would offer it in a text box and write it back as the single string
+## `"fire\" if hot else \"ice"` - working code turned into a broken constant by
+## somebody clicking on the argument that holds it.
+const NOT_ONE_STRING: Array = [
+	["\"fire\" if hot else \"ice\"", "a conditional between two strings"],
+	["\"a\" + \"b\"", "two strings added"],
+	["\"%s\" % named", "a format expression"],
+]
+
+
+func test_an_expression_between_two_quotes_is_not_a_string_literal() -> void:
+	for row: Array in NOT_ONE_STRING:
+		var written: String = row[0]
+		var described: String = row[1]
+
+		var read: Dictionary = ComposerValueCodec.parse_string(written)
+		var understood: bool = read[ComposerValueCodec.OK]
+		assert_false(understood, described)
+
+
+## A real string still reads, including one carrying escaped quotes.
+func test_a_real_string_still_reads_escapes_and_all() -> void:
+	var plain: Dictionary = ComposerValueCodec.parse_string("\"burn\"")
+	var plain_ok: bool = plain[ComposerValueCodec.OK]
+	var plain_value: String = plain[ComposerValueCodec.VALUE] if plain_ok else ""
+	assert_true(plain_ok, "an ordinary string")
+	assert_eq(plain_value, "burn")
+
+	var quoted: String = ComposerValueCodec.encode_variant("he said \"go\"", &"String")
+	var read: Dictionary = ComposerValueCodec.parse_string(quoted)
+	var read_ok: bool = read[ComposerValueCodec.OK]
+	var read_value: String = read[ComposerValueCodec.VALUE] if read_ok else ""
+	assert_true(read_ok, "one this codec wrote: %s" % quoted)
+	assert_eq(read_value, "he said \"go\"", "round trips")
+#endregion
