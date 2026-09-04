@@ -172,6 +172,7 @@ func _run() -> void:
 	await _commands()
 	await _finding()
 	await _rewiring()
+	await _free_placement()
 	await _leaving()
 
 	_check(
@@ -435,4 +436,54 @@ func _leaving() -> void:
 	_check("the Code chip asks to be taken to the file", asked.size() == 1,
 		asked[0] if not asked.is_empty() else "nothing")
 	await _shot("15-final")
+
+
+## Dragging a card to empty space is a visual position, not a reorder.
+##
+## The unit tests cover reading and writing the comment. What only a real canvas
+## can show is the gesture reaching it: press, move, release over nothing, and a
+## line appearing in the source that survives being read back.
+func _free_placement() -> void:
+	var before: String = _screen.printed()
+	var order: PackedStringArray = _titles()
+	_check(
+		"nothing is positioned by hand until somebody does it",
+		not before.contains(ComposerLayoutMetadata.PREFIX)
+	)
+
+	await _drag(_on_card(0), _nowhere())
+	await _frames(SETTLE)
+	var placed: String = _screen.printed()
+
+	_check(
+		"dragging a card into empty space writes its position into the source",
+		placed.contains(ComposerLayoutMetadata.PREFIX)
+	)
+	_check("and moves nothing in the body", _titles() == order)
+	_check(
+		"one position line, not one per drag",
+		placed.count(ComposerLayoutMetadata.PREFIX) == 1
+	)
+	await _shot("16-free-placement")
+
+	var reopened: ComposerGraph = ComposerReader.read(placed, ABILITY)
+	var carried: int = 0
+	for node: ComposerNode in reopened.nodes:
+		if node.has_layout_position:
+			carried += 1
+	_check("and reading the file back finds it again", carried == 1)
+
+	await _screen.undo()
+	await _frames(SETTLE)
+	_check(
+		"undo takes the position with it",
+		not _screen.printed().contains(ComposerLayoutMetadata.PREFIX)
+	)
+
+	await _screen.redo()
+	await _frames(SETTLE)
+	_check(
+		"and redo brings it back",
+		_screen.printed().contains(ComposerLayoutMetadata.PREFIX)
+	)
 #endregion

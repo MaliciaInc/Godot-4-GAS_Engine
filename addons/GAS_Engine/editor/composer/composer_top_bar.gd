@@ -16,6 +16,7 @@ const CODE_TAB: String = "Code"
 const COMPOSER_TAB: String = "Ability Composer"
 const NO_ABILITY: String = "No ability open"
 const OPEN_ONE: String = "Open an ability…"
+const CREATE_ONE: String = "New ability"
 const DIVIDER: String = "│"
 
 const HEIGHT: float = 54.0
@@ -32,10 +33,12 @@ signal code_requested
 ## to open another belongs here - not buried in the diagnostics panel, where
 ## it was one clipped line at the bottom of the window.
 signal open_requested
+signal create_requested
 
 var _title: Label = null
 var _path: Label = null
 var _open: Button = null
+var _create: Button = null
 
 
 func _ready() -> void:
@@ -66,6 +69,14 @@ func _ready() -> void:
 	_path.position = Vector2(TITLE_AT, ComposerTheme.S4 + 14.0)
 	add_child(_path)
 
+	_create = Button.new()
+	_create.text = CREATE_ONE
+	_create.flat = true
+	_create.add_theme_color_override(GASEditorTheme.FONT_COLOR, ComposerTheme.TEXT_DIM)
+	_create.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE)
+	_create.pressed.connect(func _asked() -> void: create_requested.emit())
+	add_child(_create)
+
 	_open = Button.new()
 	_open.text = OPEN_ONE
 	_open.flat = true
@@ -80,10 +91,15 @@ func _ready() -> void:
 
 ## Kept against the right edge, which is where the bar ends however wide it is.
 func _place_open() -> void:
-	if _open == null:
+	if _open == null or _create == null:
 		return
 	_open.position = Vector2(
-		size.x - _open.size.x - ComposerTheme.S3, ComposerTheme.S3
+		size.x - _open.size.x - ComposerTheme.S3,
+		ComposerTheme.S3
+	)
+	_create.position = Vector2(
+		_open.position.x - _create.size.x - ComposerTheme.S2,
+		ComposerTheme.S3
 	)
 
 

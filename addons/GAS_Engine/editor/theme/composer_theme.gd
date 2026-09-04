@@ -61,6 +61,7 @@ const S1: float = 4.0
 const S2: float = 8.0
 const S3: float = 12.0
 const S4: float = 20.0
+const S5: float = 28.0
 
 const FONT_TITLE: int = 14
 const FONT_VALUE: int = 12

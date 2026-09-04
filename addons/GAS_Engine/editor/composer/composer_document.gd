@@ -131,6 +131,20 @@ func move(moved: ComposerSpan, before: ComposerSpan) -> ComposerGraph.Diagnostic
 	return commit(ComposerEdits.move(_source, moved, before))
 
 
+## Give one statement a visual position without changing where it executes.
+##
+## The position is written into the same GDScript as a reserved comment. Reading
+## the resulting text back is still the authority, so Undo/Redo and reopening
+## the file need no parallel state.
+func place(node_id: StringName, position: Vector2) -> ComposerGraph.Diagnostic:
+	if not may_write():
+		return ComposerWriter.refuse(NOTHING_OPEN)
+	var node: ComposerNode = _graph.find_node(node_id)
+	if node == null:
+		return ComposerWriter.refuse("the node to place is no longer in the ability")
+	return commit(ComposerLayoutMetadata.positioned(_source, node, position))
+
+
 func insert(written: String, after: int) -> ComposerGraph.Diagnostic:
 	if written.strip_edges().is_empty():
 		return ComposerWriter.refuse(BROKE_IT)
@@ -139,7 +153,9 @@ func insert(written: String, after: int) -> ComposerGraph.Diagnostic:
 
 ## The text those statements are made of.
 func copy(spans: Array[ComposerSpan]) -> String:
-	return ComposerEdits.lines_of(_source, spans)
+	return ComposerLayoutMetadata.without_layout_text(
+		ComposerEdits.lines_of(_source, spans)
+	)
 
 
 ## The line something new goes in after: the last of `spans`, or the end of the

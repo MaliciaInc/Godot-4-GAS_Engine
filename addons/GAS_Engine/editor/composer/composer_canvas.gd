@@ -44,6 +44,10 @@ signal selection_changed(picked: Array[StringName])
 ## decide - cards have no positions of their own here.
 signal node_dropped(moved: StringName, onto: StringName)
 
+## One card was left in empty space. Unlike node_dropped, this does not change
+## source order; it records only presentation metadata in the same GDScript.
+signal node_positioned(node_id: StringName, world_position: Vector2)
+
 ## Somebody asked a card what can be done to it.
 signal menu_requested(node_id: StringName, at: Vector2)
 
@@ -69,6 +73,7 @@ var _boxing: bool = false
 var _box_from: Vector2 = Vector2.ZERO
 var _dragging: StringName = &""
 var _drag_from: Vector2 = Vector2.ZERO
+var _drag_card_from: Vector2 = Vector2.ZERO
 var _box: ColorRect = null
 
 
@@ -116,7 +121,12 @@ func show_graph(graph: ComposerGraph) -> void:
 	_placements = ComposerLayout.arrange(graph)
 	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(_placements)
 	for node: ComposerNode in graph.nodes:
-		_add_card(node, placed[node.id])
+		var at: Vector2 = (
+			node.layout_position
+			if node.has_layout_position
+			else placed[node.id]
+		)
+		_add_card(node, at)
 
 	# Cards have no measured height until a frame has passed, and every wire
 	# endpoint depends on where a card's edges ended up.
@@ -159,11 +169,29 @@ func _fit_cards() -> void:
 	)
 	for id: StringName in _cards:
 		var card: ComposerCard = _cards[id]
-		card.position = placed[id]
-		var bloom: TextureRect = _blooms[id]
-		var reach: Vector2 = card.size * ComposerTheme.BLOOM_SCALE
-		bloom.position = card.position + card.size * 0.5 - reach * 0.5
-		bloom.size = reach
+		var model: ComposerNode = _graph.find_node(id)
+		if model == null or not model.has_layout_position:
+			card.position = placed[id]
+		_sync_bloom(id)
+
+
+func _sync_bloom(id: StringName) -> void:
+	if not _cards.has(id) or not _blooms.has(id):
+		return
+	var card: ComposerCard = _cards[id]
+	var bloom: TextureRect = _blooms[id]
+	var reach: Vector2 = card.size * ComposerTheme.BLOOM_SCALE
+	bloom.position = card.position + card.size * 0.5 - reach * 0.5
+	bloom.size = reach
+
+
+func _redraw_wires() -> void:
+	for layer: Control in [_wire_layer, _bead_layer]:
+		for child: Node in layer.get_children():
+			layer.remove_child(child)
+			child.queue_free()
+	if _graph != null:
+		ComposerWiring.draw(_graph, _cards, _wire_layer, _bead_layer)
 #endregion
 
 
@@ -210,6 +238,14 @@ func _on_motion(motion: InputEventMouseMotion) -> void:
 	if _panning:
 		_world.position += motion.relative
 		return
+
+	if not _dragging.is_empty() and _cards.has(_dragging):
+		var card: ComposerCard = _cards[_dragging]
+		card.position += motion.relative / _zoom
+		_sync_bloom(_dragging)
+		_redraw_wires()
+		return
+
 	if not _boxing:
 		return
 	# Built from the two corners rather than from a running total, so dragging
@@ -234,6 +270,7 @@ func _press(button: InputEventMouseButton) -> void:
 
 	_dragging = hit
 	_drag_from = button.position
+	_drag_card_from = _cards[hit].position
 	if ComposerSelection.adding(button):
 		_pick(ComposerSelection.toggled(picked(), hit))
 	elif not _picked.has(hit):
@@ -246,10 +283,22 @@ func _release(button: InputEventMouseButton) -> void:
 	if not _dragging.is_empty():
 		var moved: StringName = _dragging
 		_dragging = &""
-		if button.position.distance_to(_drag_from) > DRAG_SLACK:
-			var onto: StringName = _card_at(button.position)
-			if not onto.is_empty() and onto != moved:
-				node_dropped.emit(moved, onto)
+		var travelled: float = button.position.distance_to(_drag_from)
+
+		if travelled <= DRAG_SLACK:
+			if _cards.has(moved):
+				_cards[moved].position = _drag_card_from
+				_sync_bloom(moved)
+				_redraw_wires()
+			return
+
+		var onto: StringName = _card_at_except(button.position, moved)
+		if not onto.is_empty():
+			node_dropped.emit(moved, onto)
+			return
+
+		if _cards.has(moved):
+			node_positioned.emit(moved, _cards[moved].position)
 		return
 	if not _boxing:
 		return
@@ -318,6 +367,17 @@ func picked() -> Array[StringName]:
 func _card_at(at: Vector2) -> StringName:
 	var world_point: Vector2 = (at - _world.position) / _zoom
 	for id: StringName in _cards:
+		var card: ComposerCard = _cards[id]
+		if Rect2(card.position, card.size).has_point(world_point):
+			return id
+	return &""
+
+
+func _card_at_except(at: Vector2, excluded: StringName) -> StringName:
+	var world_point: Vector2 = (at - _world.position) / _zoom
+	for id: StringName in _cards:
+		if id == excluded:
+			continue
 		var card: ComposerCard = _cards[id]
 		if Rect2(card.position, card.size).has_point(world_point):
 			return id

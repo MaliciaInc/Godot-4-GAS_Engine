@@ -89,6 +89,8 @@ static func _build_nodes(
 		# carried them along would print itself and lose them.
 		node.carried = PackedStringArray(lines.slice(first - 1, made.first - 1))
 		node.source_text = PackedStringArray(lines.slice(made.first - 1, made.last))
+
+		ComposerLayoutMetadata.read_onto(node)
 		graph.nodes.append(node)
 
 

@@ -157,6 +157,12 @@ var indent: int = 0
 ## Only a dirty node is rebuilt from the model. A clean one goes back exactly as
 ## it came, which is the difference between a tool that formats your file on
 ## every save and one that does not.
+## Optional visual placement written as a reserved comment immediately before
+## this statement. Execution still comes from source order; this value is only
+## where the projection is drawn.
+var has_layout_position: bool = false
+var layout_position: Vector2 = Vector2.ZERO
+
 var dirty: bool = false
 
 
