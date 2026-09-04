@@ -122,6 +122,22 @@ static func port_of(
 	return card.right_port_of_drawn(index) if outgoing else card.left_port_of_drawn(index)
 
 
+## Which drawn pin on that card a semantic port is, or -1.
+static func drawn_index(
+	cards: Dictionary[StringName, ComposerCard],
+	node_id: StringName,
+	port_id: StringName,
+	outgoing: bool
+) -> int:
+	if not cards.has(node_id):
+		return -1
+	var card: ComposerCard = cards[node_id]
+	return (
+		card.right_index_for_port(port_id) if outgoing
+		else card.left_index_for_port(port_id)
+	)
+
+
 ## Two drawn pin numbers as the connection they stand for, or nothing.
 ##
 ## Nothing when either end cannot be named. The widget's numbering is its own,

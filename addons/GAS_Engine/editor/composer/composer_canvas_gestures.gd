@@ -19,13 +19,16 @@ class_name ComposerCanvasGestures extends RefCounted
 ## request at all, but the widget must not also treat it as the start of a card
 ## drag - so "nothing to report" and "nothing happened" have to be different
 ## answers.
-enum Kind { NONE, TAKEN, BREAK, MOVE }
+enum Kind { NONE, TAKEN, BREAK, MOVE, NUDGE, FRAME }
 
 
 class Reading extends RefCounted:
 	var kind: ComposerCanvasGestures.Kind = ComposerCanvasGestures.Kind.NONE
 	var from: ComposerPins.Pin = ComposerPins.Pin.new()
 	var to: ComposerPins.Pin = ComposerPins.Pin.new()
+
+	## How far a nudge moves what is picked, in graph units.
+	var by: Vector2 = Vector2.ZERO
 
 	## Whether the canvas should stop the widget seeing this event.
 	func is_consumed() -> bool:
@@ -93,3 +96,37 @@ func _finishing(
 	made.from = from
 	made.to = pin
 	return made
+
+
+#region Keys
+## How far an arrow moves what is picked, and how far it moves it with Shift.
+const NUDGE: float = 1.0
+const NUDGE_FAR: float = 10.0
+
+const NUDGES: Dictionary[int, Vector2] = {
+	KEY_LEFT: Vector2.LEFT,
+	KEY_RIGHT: Vector2.RIGHT,
+	KEY_UP: Vector2.UP,
+	KEY_DOWN: Vector2.DOWN,
+}
+
+
+## What this key means, if it means anything here.
+##
+## A release and an auto-repeat are both ignored. Held down, an arrow would push
+## a graph off the screen and leave somebody with as many things to undo as the
+## keyboard managed to send.
+static func read_key(event: InputEvent) -> ComposerCanvasGestures.Reading:
+	var made: ComposerCanvasGestures.Reading = ComposerCanvasGestures.Reading.new()
+	var key: InputEventKey = event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return made
+	if key.keycode == KEY_HOME:
+		made.kind = ComposerCanvasGestures.Kind.FRAME
+		return made
+	if not NUDGES.has(key.keycode):
+		return made
+	made.kind = ComposerCanvasGestures.Kind.NUDGE
+	made.by = NUDGES[key.keycode] * (NUDGE_FAR if key.shift_pressed else NUDGE)
+	return made
+#endregion

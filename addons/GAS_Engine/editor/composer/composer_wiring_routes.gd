@@ -108,12 +108,10 @@ func rewrite_field(node_id: StringName, position: int, written: String) -> bool:
 ##
 ## An argument takes one cable, so there is one to find. Named by position
 ## because that is what a panel showing a list of arguments knows.
-func unplug_argument(
-	document: ComposerDocument, node_id: StringName, position: int
-) -> bool:
-	if not document.is_open():
+func unplug_argument(node_id: StringName, position: int) -> bool:
+	if _document == null or not _document.is_open():
 		return false
-	var wires: Array[ComposerGraph.Connection] = document.graph().connections_to(
+	var wires: Array[ComposerGraph.Connection] = _document.graph().connections_to(
 		node_id, StringName(ComposerReader.ARGUMENT % position)
 	)
 	if wires.is_empty():

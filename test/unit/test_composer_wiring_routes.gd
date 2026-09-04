@@ -97,7 +97,7 @@ func test_unplugging_an_argument_takes_off_its_cable() -> void:
 	])
 	assert_eq(_document.graph().data_connections().size(), 1, "one to take off")
 
-	var done: bool = _routes.unplug_argument(_document, _node(CONSUMER).id, 1)
+	var done: bool = _routes.unplug_argument(_node(CONSUMER).id, 1)
 
 	_assert_one_step(done, "the cable came off")
 	assert_eq(_document.graph().data_connections().size(), 0, "and is gone")
@@ -108,7 +108,7 @@ func test_unplugging_an_argument_with_no_cable_does_nothing() -> void:
 	_open(["apply_gameplay_effect(burning, null, 1.0)"])
 	var before: String = _document.printed()
 
-	var done: bool = _routes.unplug_argument(_document, _node(CONSUMER).id, 1)
+	var done: bool = _routes.unplug_argument(_node(CONSUMER).id, 1)
 
 	assert_false(done, "there was nothing on it")
 	assert_eq(_document.printed(), before, "so the file is untouched")
@@ -117,7 +117,7 @@ func test_unplugging_an_argument_with_no_cable_does_nothing() -> void:
 
 ## Asked before anything is open, it answers rather than failing.
 func test_unplugging_with_nothing_open_answers_no() -> void:
-	assert_false(_routes.unplug_argument(_document, &"whoever", 0))
+	assert_false(_routes.unplug_argument(&"whoever", 0))
 #endregion
 
 

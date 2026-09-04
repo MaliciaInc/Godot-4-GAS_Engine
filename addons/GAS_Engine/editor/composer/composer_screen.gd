@@ -97,13 +97,20 @@ func _ready() -> void:
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_canvas.nodes_positioned.connect(_on_nodes_positioned)
 	_canvas.value_edited.connect(_on_value_edited)
+	# The widget's shortcuts, on the same operations the menu uses. Why they are
+	# not in the chord table is written where that table is built.
+	_canvas.delete_requested.connect(remove_picked)
+	_canvas.copy_requested.connect(copy_picked)
+	_canvas.cut_requested.connect(cut_picked)
+	_canvas.paste_requested.connect(paste)
+	_canvas.duplicate_requested.connect(repeat_picked)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
 	_canvas.node_requested.connect(_on_node_picked)
 	# The routes hear the canvas themselves. A gesture added there is connected
 	# beside the others rather than in a list here that has to be remembered.
 	_routes.bind(_doc)
 	_routes.listen_to(_canvas)
-	_routes.changed.connect(_on_wiring_changed)
+	_routes.changed.connect(_redraw)
 	_routes.refused.connect(_on_refused)
 	add_child(_menus)
 	_menus.bind(_doc)
@@ -115,7 +122,7 @@ func _ready() -> void:
 	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
 	_top.create_requested.connect(func _asked() -> void: create_requested.emit())
 	_inspector.value_edited.connect(_on_value_edited)
-	_inspector.disconnect_requested.connect(_on_inspector_disconnect)
+	_inspector.disconnect_requested.connect(_routes.unplug_argument)
 	_palette.node_picked.connect(_on_node_picked)
 
 	_build_chords()
@@ -241,6 +248,17 @@ func copy_picked() -> String:
 	return taken
 
 
+## Copy what is picked and take it out, as one change.
+##
+## The copy reads and the removal writes, so this is one commit and one thing to
+## undo - which is what somebody who pressed Ctrl-X did.
+func cut_picked() -> String:
+	var taken: String = copy_picked()
+	if not taken.is_empty():
+		await remove_picked()
+	return taken
+
+
 func paste() -> bool:
 	return await paste_text(DisplayServer.clipboard_get())
 
@@ -271,20 +289,10 @@ func _on_nodes_positioned(positions: Dictionary[StringName, Vector2]) -> void:
 		await _did(_doc.place_many(positions))
 
 
-## A gesture changed the file, so everything drawn from it is asked again.
-func _on_wiring_changed() -> void:
-	await _redraw()
-
-
 ## Why a gesture did nothing. A refusal a person cannot read is a tool that
 ## ignored them.
 func _on_refused(message: String) -> void:
 	push_warning(message)
-
-
-## The Inspector asked for the cable on one argument to come off.
-func _on_inspector_disconnect(node_id: StringName, position: int) -> void:
-	_routes.unplug_argument(_doc, node_id, position)
 
 
 ## A call picked from the catalog becomes a statement and, where the drag came
@@ -352,15 +360,15 @@ func save() -> ComposerWriter.Result:
 
 ## The chords, spelled the way every other editor spells them.
 func _build_chords() -> void:
+	# Only the keys GraphEdit does not ask about itself. Delete, Ctrl-C, Ctrl-X,
+	# Ctrl-V and Ctrl-D arrive as the widget's own requests and are connected
+	# where the canvas is built; listing them here as well would give each of
+	# them two handlers, and a shortcut that fires twice removes two statements.
 	_chords.bind({
 		KEY_S | KEY_MASK_CTRL: _save_now,
 		KEY_Z | KEY_MASK_CTRL: undo,
 		KEY_Z | KEY_MASK_CTRL | KEY_MASK_SHIFT: redo,
 		KEY_Y | KEY_MASK_CTRL: redo,
-		KEY_C | KEY_MASK_CTRL: copy_picked,
-		KEY_V | KEY_MASK_CTRL: paste,
-		KEY_D | KEY_MASK_CTRL: repeat_picked,
-		KEY_DELETE: remove_picked,
 		KEY_SPACE: _find_a_node,
 	})
 
@@ -400,6 +408,12 @@ func canvas() -> ComposerCanvas:
 
 func inspector() -> ComposerInspector:
 	return _inspector
+
+
+## Which keys this screen answers for itself, so the rule that no key has two
+## handlers can be checked rather than trusted.
+func chords() -> ComposerChords:
+	return _chords
 #endregion
 
 

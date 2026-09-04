@@ -78,10 +78,19 @@ signal connection_from_empty_requested(
 ## Right-click on the canvas itself, where there is neither pin nor card.
 signal graph_menu_requested(graph_position: Vector2, screen_position: Vector2)
 
+## The widget's own keyboard requests, passed on as intentions. What each one
+## does to the file is the screen's, so that a menu item and a shortcut cannot
+## end up meaning two different things.
+signal delete_requested()
+signal copy_requested()
+signal cut_requested()
+signal paste_requested()
+signal duplicate_requested()
 
-var _graph: ComposerGraph = null
-var _cards: Dictionary[StringName, ComposerCard] = {}
-var _port_types: ComposerPortTypes = ComposerPortTypes.new()
+
+## What is drawn, and how. The canvas owns the surface and the gestures; the
+## painter owns the cards on it.
+var _painter: ComposerPainter = ComposerPainter.new()
 
 ## Where the selected cards were when a move began. Held only between
 ## `begin_node_move` and `end_node_move`, so there is nothing to keep in step.
@@ -117,75 +126,124 @@ func _ready() -> void:
 	end_node_move.connect(_on_move_ended)
 	popup_request.connect(_on_popup_request)
 	gui_input.connect(_on_gui_input)
+	_painter.value_edited.connect(
+		func _typed(node_id: StringName, position: int, written: String) -> void:
+			value_edited.emit(node_id, position, written)
+	)
 	connection_to_empty.connect(_on_connection_to_empty)
 	connection_from_empty.connect(_on_connection_from_empty)
+	# The widget's own shortcuts, taken as the requests they are. Bound here
+	# rather than in a chord table of this project's own, because two handlers
+	# for one key is a key that does one thing sometimes.
+	delete_nodes_request.connect(_on_delete_request)
+	copy_nodes_request.connect(func _asked() -> void: copy_requested.emit())
+	cut_nodes_request.connect(func _asked() -> void: cut_requested.emit())
+	paste_nodes_request.connect(func _asked() -> void: paste_requested.emit())
+	duplicate_nodes_request.connect(func _asked() -> void: duplicate_requested.emit())
 
 
 #region Showing a graph
-## Draw `graph`, cards and cables alike.
-##
-## The pins are typed before any card is built, because a card asks the type
-## table what number and colour each of its pins is. Cables are connected last,
-## once every card exists to connect to.
+## Draw `graph`. What that means is the painter's; this owns the surface.
 func show_graph(graph: ComposerGraph) -> void:
-	_graph = graph
-	_clear()
-	if graph == null:
-		return
-
-	_port_types.register_into(self, graph)
-	var placements: Dictionary[StringName, Vector2i] = ComposerLayout.arrange(graph)
-	var placed: Dictionary[StringName, Vector2] = ComposerLayout.origins(placements)
-	for node: ComposerNode in graph.visible_nodes():
-		_add_card(node, node.layout_position if node.has_layout_position else placed[node.id])
-
-	# A card has no measured size until a frame has passed, and the layout's
-	# second pass needs those sizes: a column is only as wide as what it holds.
-	await get_tree().process_frame
-	# A redraw that arrived while this one was waiting owns the canvas now. Its
-	# `_clear()` already freed the cards this continuation was about to place and
-	# connect, and `_graph` is whatever it set - possibly null.
-	if _graph != graph:
-		return
-	ComposerLayout.settle(_cards, placements, _graph)
-	_connect_all()
-	_apply_detail()
-
-
-func _add_card(node: ComposerNode, at: Vector2) -> void:
-	var card: ComposerCard = ComposerCard.new()
-	add_child(card)
-	card.build(node, _port_types)
-	card.position_offset = at
-	card.value_edited.connect(_on_value_edited)
-	_cards[node.id] = card
-
-
-## Draw every cable the graph holds, translated into the widget's numbering.
-##
-## A connection the cards cannot express is skipped rather than approximated:
-## the alternative is a cable drawn to whichever pin happened to be at that
-## index, which looks exactly like a real one.
-func _connect_all() -> void:
-	clear_connections()
-	for wire: ComposerGraph.Connection in _graph.connections:
-		if not _cards.has(wire.from_node) or not _cards.has(wire.to_node):
-			continue
-		var out: int = _cards[wire.from_node].right_index_for_port(wire.from_port)
-		var into: int = _cards[wire.to_node].left_index_for_port(wire.to_port)
-		if out < 0 or into < 0:
-			continue
-		connect_node(StringName(wire.from_node), out, StringName(wire.to_node), into)
-
-
-func _clear() -> void:
-	clear_connections()
-	for id: StringName in _cards:
-		var card: ComposerCard = _cards[id]
-		remove_child(card)
-		card.queue_free()
-	_cards.clear()
 	_moving_from.clear()
+	await _painter.paint(self, graph)
+	_apply_detail()
+#endregion
+
+
+#region Gestures on a pin
+## Alt-click clears a pin; Ctrl-drag moves what is on it somewhere else.
+##
+## Watched through the `gui_input` signal rather than by overriding
+## `_gui_input`. GraphEdit handles input in C++, so a GDScript override replaces
+## that handling and cannot call it - dragging a card, drawing a wire,
+## box-selecting and panning would all stop the moment this file existed. The
+## signal is emitted first and the widget's own handler runs after it unless the
+## event was accepted, which is exactly the "take these two, leave the rest"
+## this needs.
+func _on_gui_input(event: InputEvent) -> void:
+	var key: InputEventKey = event as InputEventKey
+	if key != null:
+		_on_key(key)
+		return
+
+	var meant: ComposerCanvasGestures.Reading = _gestures.read(event, _painter.cards(), zoom)
+	if not meant.is_consumed():
+		return
+	accept_event()
+	if meant.kind == ComposerCanvasGestures.Kind.BREAK:
+		break_all_requested.emit(meant.from.node_id, meant.from.port_id)
+		return
+	if meant.kind == ComposerCanvasGestures.Kind.MOVE:
+		move_connections_requested.emit(
+			meant.from.node_id, meant.from.port_id, meant.to.node_id, meant.to.port_id
+		)
+
+
+## Arrows nudge what is picked; Home brings the graph back into view.
+##
+## Only reached when the canvas itself has focus, which is what keeps these off
+## a person typing into a card: a value editor with the caret in it is the
+## focused control, and the keys go there instead.
+func _on_key(key: InputEventKey) -> void:
+	var meant: ComposerCanvasGestures.Reading = ComposerCanvasGestures.read_key(key)
+	if meant.kind == ComposerCanvasGestures.Kind.FRAME:
+		frame_picked()
+		accept_event()
+		return
+	if meant.kind != ComposerCanvasGestures.Kind.NUDGE:
+		return
+
+	# One press, one placement, one thing to undo - however many cards moved.
+	var moved: Dictionary[StringName, Vector2] = {}
+	for id: StringName in picked():
+		moved[id] = _painter.cards()[id].position_offset + meant.by
+	if not moved.is_empty():
+		nodes_positioned.emit(moved)
+	accept_event()
+
+
+## Put everything picked on screen, or everything when nothing is.
+func frame_picked() -> void:
+	var shown: Array[StringName] = picked()
+	if shown.is_empty():
+		shown = _painter.cards().keys()
+	if shown.is_empty():
+		return
+
+	var bounds: Rect2 = Rect2(_painter.cards()[shown[0]].position_offset, Vector2.ZERO)
+	for id: StringName in shown:
+		bounds = bounds.expand(_painter.cards()[id].position_offset)
+		bounds = bounds.expand(_painter.cards()[id].position_offset + _painter.cards()[id].size)
+	scroll_offset = bounds.get_center() * zoom - size * 0.5
+#endregion
+
+
+#region Turning a released wire into a question
+## A wire let go over nothing. Which pin it left tells the screen what may be
+## offered, and where it was let go is where the new card goes.
+##
+## The widget reports the release in its own coordinates, so it is turned into a
+## point on the graph here - the one place that knows what the scroll and the
+## zoom are.
+func _on_connection_to_empty(
+	from_node: StringName, from_port: int, release_position: Vector2
+) -> void:
+	var port: StringName = ComposerPins.port_of(_painter.cards(), from_node, from_port, true)
+	if not port.is_empty():
+		connection_to_empty_requested.emit(
+			from_node, port, release_position + global_position
+		)
+
+
+func _on_connection_from_empty(
+	to_node: StringName, to_port: int, release_position: Vector2
+) -> void:
+	var port: StringName = ComposerPins.port_of(_painter.cards(), to_node, to_port, false)
+	if not port.is_empty():
+		connection_from_empty_requested.emit(
+			to_node, port, release_position + global_position
+		)
 #endregion
 
 
@@ -215,10 +273,17 @@ func _report(
 	to_port: int
 ) -> void:
 	var edge: ComposerGraph.Connection = ComposerPins.edge_of(
-		_cards, from_node, from_port, to_node, to_port
+		_painter.cards(), from_node, from_port, to_node, to_port
 	)
 	if edge != null:
 		asking.emit(edge)
+
+
+## Delete arrives with the nodes it means, but the screen already works on what
+## is picked - and the widget only ever sends what is selected. Passed on as the
+## same intention the menu's Remove is, so both go one way to one place.
+func _on_delete_request(_nodes: Array) -> void:
+	delete_requested.emit()
 
 
 func _on_node_selected(_node: Object) -> void:
@@ -230,9 +295,9 @@ func _on_node_selected(_node: Object) -> void:
 ## Remember where everything selected started out.
 func _on_move_begun() -> void:
 	_moving_from.clear()
-	for id: StringName in _cards:
-		if _cards[id].selected:
-			_moving_from[id] = _cards[id].position_offset
+	for id: StringName in _painter.cards():
+		if _painter.cards()[id].selected:
+			_moving_from[id] = _painter.cards()[id].position_offset
 
 
 ## Say what actually moved, once.
@@ -243,9 +308,9 @@ func _on_move_begun() -> void:
 func _on_move_ended() -> void:
 	var moved: Dictionary[StringName, Vector2] = {}
 	for id: StringName in _moving_from:
-		if not _cards.has(id):
+		if not _painter.cards().has(id):
 			continue
-		var now: Vector2 = _cards[id].position_offset
+		var now: Vector2 = _painter.cards()[id].position_offset
 		if now != _moving_from[id]:
 			moved[id] = now
 	_moving_from.clear()
@@ -258,16 +323,14 @@ func _on_move_ended() -> void:
 ## The pointer is asked for directly in both spaces rather than derived from
 ## `at_position`, whose space is not something to be guessed at: the card is
 ## found in this control's own coordinates and the menu is placed in the
-## viewport's. The version this replaced passed one point to both and had the
-## screen add the canvas offset again, so the menu opened as far from the
-## pointer as the palette is wide.
+## viewport's.
 func _on_popup_request(_at_position: Vector2) -> void:
 	var here: Vector2 = get_local_mouse_position()
 	var there: Vector2 = get_global_mouse_position()
 	# A pin first, because a pin sits on a card and asking about the card would
 	# answer for both. What can be done to a wire and what can be done to a
 	# statement are different lists.
-	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, here)
+	var pin: ComposerPins.Pin = ComposerPins.at(_painter.cards(), zoom, here)
 	if pin.is_found():
 		pin_context_requested.emit(pin.node_id, pin.port_id, there)
 		return
@@ -281,65 +344,6 @@ func _on_popup_request(_at_position: Vector2) -> void:
 		menu_requested.emit(card, there)
 		return
 	graph_menu_requested.emit(graph_point_of(here), there)
-
-
-func _on_value_edited(
-	node_id: StringName, position: int, source_text: String
-) -> void:
-	value_edited.emit(node_id, position, source_text)
-#endregion
-
-
-#region Gestures on a pin
-## Alt-click clears a pin; Ctrl-drag moves what is on it somewhere else.
-##
-## Watched through the `gui_input` signal rather than by overriding
-## `_gui_input`. GraphEdit handles input in C++, so a GDScript override replaces
-## that handling and cannot call it - dragging a card, drawing a wire,
-## box-selecting and panning would all stop the moment this file existed. The
-## signal is emitted first and the widget's own handler runs after it unless the
-## event was accepted, which is exactly the "take these two, leave the rest"
-## this needs.
-func _on_gui_input(event: InputEvent) -> void:
-	var meant: ComposerCanvasGestures.Reading = _gestures.read(event, _cards, zoom)
-	if not meant.is_consumed():
-		return
-	accept_event()
-	if meant.kind == ComposerCanvasGestures.Kind.BREAK:
-		break_all_requested.emit(meant.from.node_id, meant.from.port_id)
-		return
-	if meant.kind == ComposerCanvasGestures.Kind.MOVE:
-		move_connections_requested.emit(
-			meant.from.node_id, meant.from.port_id, meant.to.node_id, meant.to.port_id
-		)
-#endregion
-
-
-#region Turning a released wire into a question
-## A wire let go over nothing. Which pin it left tells the screen what may be
-## offered, and where it was let go is where the new card goes.
-##
-## The widget reports the release in its own coordinates, so it is turned into a
-## point on the graph here - the one place that knows what the scroll and the
-## zoom are.
-func _on_connection_to_empty(
-	from_node: StringName, from_port: int, release_position: Vector2
-) -> void:
-	var port: StringName = ComposerPins.port_of(_cards, from_node, from_port, true)
-	if not port.is_empty():
-		connection_to_empty_requested.emit(
-			from_node, port, release_position + global_position
-		)
-
-
-func _on_connection_from_empty(
-	to_node: StringName, to_port: int, release_position: Vector2
-) -> void:
-	var port: StringName = ComposerPins.port_of(_cards, to_node, to_port, false)
-	if not port.is_empty():
-		connection_from_empty_requested.emit(
-			to_node, port, release_position + global_position
-		)
 #endregion
 
 
@@ -348,31 +352,31 @@ func picked() -> Array[StringName]:
 	var found: Array[StringName] = []
 	# Read in the order the graph holds, not the order they were clicked: a
 	# selection that reads back shuffled makes every operation over it arbitrary.
-	for id: StringName in _cards:
-		if _cards[id].selected:
+	for id: StringName in _painter.cards():
+		if _painter.cards()[id].selected:
 			found.append(id)
 	return found
 
 
 ## Bring one node into view and make it the selection.
 func reveal(node_id: StringName) -> void:
-	if not _cards.has(node_id):
+	if not _painter.cards().has(node_id):
 		return
 	# Selecting each card in turn makes the widget announce each one, including
 	# the moment in the middle when nothing is selected at all. A listener that
 	# redraws on every announcement would clear the Inspector and fill it again
 	# for one reveal.
 	_revealing = true
-	for id: StringName in _cards:
-		_cards[id].selected = id == node_id
+	for id: StringName in _painter.cards():
+		_painter.cards()[id].selected = id == node_id
 	_revealing = false
-	var card: ComposerCard = _cards[node_id]
+	var card: ComposerCard = _painter.cards()[node_id]
 	scroll_offset = card.position_offset * zoom - size * 0.5 + card.size * 0.5 * zoom
 	selection_changed.emit(picked())
 
 
 func card_for(node_id: StringName) -> ComposerCard:
-	return _cards.get(node_id)
+	return _painter.cards().get(node_id)
 
 
 ## Where a point in this canvas's own coordinates falls on the graph.
@@ -386,8 +390,8 @@ func graph_point_of(at: Vector2) -> Vector2:
 ## Which card is under a point in this canvas's own coordinates, or nothing.
 func _card_at(at: Vector2) -> StringName:
 	var point: Vector2 = graph_point_of(at)
-	for id: StringName in _cards:
-		var card: ComposerCard = _cards[id]
+	for id: StringName in _painter.cards():
+		var card: ComposerCard = _painter.cards()[id]
 		if Rect2(card.position_offset, card.size).has_point(point):
 			return id
 	return &""
@@ -417,14 +421,14 @@ func _process(_delta: float) -> void:
 
 func _apply_detail() -> void:
 	_detail = detail_at(zoom)
-	for id: StringName in _cards:
-		_cards[id].show_detail(_detail)
+	_painter.show_detail(_detail)
 #endregion
 
 
 #region Taking a call from the palette
 func _can_drop_data(_at: Vector2, data: Variant) -> bool:
-	if _graph == null or not _graph.is_editable() or typeof(data) != TYPE_DICTIONARY:
+	var graph: ComposerGraph = _painter.graph()
+	if graph == null or not graph.is_editable() or typeof(data) != TYPE_DICTIONARY:
 		return false
 	var carried: Dictionary = data
 	return carried.has(ComposerCatalog.DRAGGED_CALL)
