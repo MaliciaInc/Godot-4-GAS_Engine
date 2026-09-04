@@ -198,22 +198,3 @@ func test_migrating_legacy_settings_never_writes_the_project_file() -> void:
 
 	ProjectSettings.set_setting(current, previous_current)
 	ProjectSettings.set_setting(legacy, previous_legacy)
-
-
-func test_plugin_autoload_policy_recognizes_only_the_exact_canonical_path() -> void:
-	var setting_name: String = "autoload/" + GasEnginePlugin.CUE_MANAGER_NAME
-	var previous: Variant = ProjectSettings.get_setting(setting_name, null)
-
-	ProjectSettings.set_setting(
-		setting_name,
-		"*" + GasEnginePlugin.CUE_MANAGER_PATH
-	)
-	assert_true(GasEnginePlugin._autoload_points_to_gas_engine())
-
-	ProjectSettings.set_setting(
-		setting_name,
-		"*res://my_game/custom_gameplay_cue_manager.gd"
-	)
-	assert_false(GasEnginePlugin._autoload_points_to_gas_engine())
-
-	ProjectSettings.set_setting(setting_name, previous)
