@@ -33,14 +33,9 @@
         "reason": "Task 22 added GameplayEffectRefusalLog for the runtime debugger: a refusal_log field, a shared _refuse() helper every apply() refusal point now routes through so the debugger's history can never drift from what apply() itself returns, and report_refusal() recording an evaluator failure the same way. Real new observability surface, not restructuring - trimmed everywhere the new code itself had any fat (the stack-overflow logging moved into GameplayEffectStackingRuntime, where that refusal actually originates, rather than special-cased back here); what remains is the minimum each call site needs. Set with the same small headroom T9's and T21's raises used, not re-litigated per task. Raised from 480 to 500 when the removal announcement was fixed: clearing an effect's receipts was split out of _detach() into discard_receipts() so it runs AFTER active_effect_removed/gameplay_effect_removal_finished rather than before, which is what lets a subscriber - AbilityTaskFactory.wait_gameplay_effect_removed_matching() among them - filter the removed effect on granted_tags at all. Seventeen lines: a four-line function, its 'why', and the three call sites that now discard explicitly. The doc block was already cut to the half that a reader reordering these calls back would need."
       },
       {
-        "glob": "addons/GAS_Engine/editor/composer/composer_canvas.gd",
-        "max_lines": 500,
-        "reason": "Composer 3.1 gave the canvas free placement, which is three things at once: a drag that moves the card rather than only remembering where it started, a release that has to tell reordering apart from placement, and two helpers - _sync_bloom() and _redraw_wires() - that exist because a card moving between frames drags its bloom and its wires with it. Splitting the file would put the press, the motion and the release of one gesture in different places, which is the shape that makes input code hard to follow."
-      },
-      {
         "glob": "addons/GAS_Engine/editor/composer/composer_screen.gd",
         "max_lines": 470,
-        "reason": "Composer 3.1 added one handler, _on_node_positioned(), which routes a canvas placement into ComposerDocument.place(). The screen was four lines under the limit before it. This file is the wiring between the panels and the document and is long because there are many panels, not because any part of it is doing two jobs."
+        "reason": "The Composer's GraphEdit migration replaced one placement handler with the gestures the widget reports separately: _on_nodes_positioned() for a whole drag committed once, _on_connection_requested() and _on_disconnection_requested() for a cable dropped or pulled, _on_call_dropped() for one dragged in from the palette, and _on_refused() so every refusal ComposerConnectionController can produce is said out loud in one place. Each is three to eight lines turning one canvas gesture into one document call and a redraw. This file is the wiring between six panels and one document, and it is long because there are many panels rather than because any part of it does two jobs. The two parts that were doing a second job have both left: the private copy of the controller's field-write door became ComposerConnectionController.rewrite_field(), and the chord table became ComposerChords."
       },
       {
         "glob": "addons/GAS_Engine/editor/composer/composer_catalog.gd",
@@ -325,7 +320,7 @@
       },
       {
         "literal": "await",
-        "reason": "A GDScript keyword the gates' own grammar tables list, and the word the Ability Composer prints on a card that suspends the ability. Every card is glass, so the treatment cannot carry that meaning and the word has to - a label is read, a texture is only felt. Naming it anything else would make the card say something GDScript does not."
+        "reason": "A GDScript keyword the gates' own grammar tables list, and the word the Ability Composer prints in the title of a card that suspends the ability (composer_card.gd: `title = node.title + (\" \" + AWAIT_LABEL if node.awaits else \"\")`). A card is a GraphNode drawn by the widget, so nothing about its treatment can carry that meaning and the word has to. Naming it anything else would make the card say something GDScript does not."
       },
       {
         "literal": "Tags",

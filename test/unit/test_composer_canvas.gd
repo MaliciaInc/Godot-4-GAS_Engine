@@ -1,9 +1,12 @@
-## The canvas: model to layout to pixels, end to end.
+## The canvas: a graph in, cards and cables out, gestures back as requests.
 ##
-## Everything below runs headless. The point is not that it looks right - that
-## was settled against a rendered mock - but that the chain holds: a graph goes
-## in, cards come out sized to their content, and nothing is left drawn at the
-## wrong depth or at a size nobody set.
+## Everything below runs headless. What is being tested is the translation, not
+## the widget: GraphEdit already knows how to drag a node and draw a curve, and
+## a test that checked those would be testing Godot. What only this project can
+## get wrong is which pin a drawn index means, which nodes are worth drawing at
+## all, and whether a gesture reaches the file more than once.
+##
+## Nothing here writes to a document. The canvas asks; the screen answers.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
@@ -23,194 +26,13 @@ func after_each() -> void:
 	canvas = null
 
 
+#region Getting there
 func _cards() -> Array[ComposerCard]:
 	var found: Array[ComposerCard] = []
-	for layer: Node in canvas.get_children():
-		for child: Node in layer.get_children():
-			for card: Node in child.get_children():
-				if card is ComposerCard:
-					found.append(card)
+	for child: Node in canvas.get_children():
+		if child is ComposerCard:
+			found.append(child)
 	return found
-
-
-#region Drawing a graph
-func test_every_node_becomes_exactly_one_card() -> void:
-	var graph: ComposerGraph = Sample.build()
-	await canvas.show_graph(graph)
-
-	assert_eq(_cards().size(), graph.visible_nodes().size(), "one card per node, no more")
-
-
-## The two-step measure, seen from outside.
-##
-## A card cannot know its height until it is in the tree with a theme resolved,
-## so `show_graph` places it and trims it a frame later. If that frame were
-## skipped every card would stay at its placeholder height and the field boxes
-## would hang outside the panel.
-func test_cards_are_cut_to_their_content_rather_than_left_at_a_placeholder() -> void:
-	await canvas.show_graph(Sample.build())
-
-	for card: ComposerCard in _cards():
-		assert_gt(card.size.y, ComposerTheme.PAD_Y * 2.0, "%s has real height" % card.node_id)
-		assert_gte(
-			card.size.x, ComposerTheme.NODE_MIN_WIDTH, "and at least the narrowest width"
-		)
-
-
-## A card with two fields is taller than one with none. Without this, a height
-## that happened to be constant would satisfy the test above and still be wrong.
-func test_a_card_with_more_fields_is_taller() -> void:
-	await canvas.show_graph(Sample.build())
-
-	var heights: Dictionary[StringName, float] = {}
-	for card: ComposerCard in _cards():
-		heights[card.node_id] = card.size.y
-
-	assert_gt(
-		heights[Sample.APPLY], heights[Sample.COMMIT],
-		"two fields take more room than none"
-	)
-
-
-func test_a_graph_with_wires_draws_them_and_their_beads() -> void:
-	var graph: ComposerGraph = Sample.build()
-	await canvas.show_graph(graph)
-
-	var wires: int = 0
-	var beads: int = 0
-	for layer: Node in canvas.get_children():
-		for child: Node in layer.get_children():
-			if child.get_child_count() == 0:
-				continue
-			for drawn: Node in child.get_children():
-				if drawn is Line2D:
-					wires += 1
-				elif drawn is Panel or drawn is TextureRect:
-					beads += 1
-
-	assert_eq(wires, graph.connections.size() * 2, "a glow and a line for each wire")
-	assert_gt(beads, 0, "and a bead where each one lands")
-#endregion
-
-
-#region Layers
-## Draw order is a fact of the tree, not of the order things were created.
-##
-## Wires must sit behind the cards and beads in front, but neither can be
-## positioned until the cards have measured themselves. Anything relying on
-## creation order ends up drawing a cable across a card or burying a bead under
-## one - which is exactly what the first version of this did.
-func test_the_layers_stand_in_the_order_that_makes_the_drawing_correct() -> void:
-	await canvas.show_graph(Sample.build())
-
-	var world: Control = canvas.get_child(1) as Control
-	assert_eq(world.get_child_count(), 4, "glow, wires, cards, beads")
-
-	var cards_at: int = -1
-	var wires_at: int = -1
-	var beads_at: int = -1
-	for index: int in world.get_child_count():
-		for child: Node in world.get_child(index).get_children():
-			if child is ComposerCard:
-				cards_at = index
-			elif child is Line2D:
-				wires_at = index
-			elif child is TextureRect and index != 0:
-				beads_at = index
-
-	assert_lt(wires_at, cards_at, "a cable passes under a card")
-	assert_lt(cards_at, beads_at, "and a bead sits on the edge it attaches to")
-#endregion
-
-
-#region Zoom
-func test_zoom_starts_at_one_and_is_held_between_its_bounds() -> void:
-	assert_almost_eq(canvas.zoom(), 1.0, 0.0001, "a file opens at its own size")
-
-	for _step: int in 40:
-		canvas._apply_zoom(canvas.zoom() * 2.0, Vector2.ZERO)
-	assert_almost_eq(canvas.zoom(), ComposerCanvas.ZOOM_MAX, 0.0001, "and cannot pass the ceiling")
-
-	for _step: int in 40:
-		canvas._apply_zoom(canvas.zoom() * 0.5, Vector2.ZERO)
-	assert_almost_eq(canvas.zoom(), ComposerCanvas.ZOOM_MIN, 0.0001, "nor the floor")
-
-
-## Anchored at the pointer, not at the centre.
-##
-## Zooming from the centre drags whatever you were looking at out of view, which
-## is the difference between a zoom that feels right and one that fights. The
-## check is that the world point under the anchor is the same before and after.
-func test_zooming_keeps_the_point_under_the_pointer_where_it_was() -> void:
-	var anchor: Vector2 = Vector2(400.0, 300.0)
-	var world: Control = canvas.get_child(1) as Control
-	var before: Vector2 = (anchor - world.position) / canvas.zoom()
-
-	canvas._apply_zoom(1.5, anchor)
-
-	var after: Vector2 = (anchor - world.position) / canvas.zoom()
-	assert_almost_eq(after.x, before.x, 0.01, "the same spot is still under the cursor")
-	assert_almost_eq(after.y, before.y, 0.01, "on both axes")
-#endregion
-
-
-func test_showing_nothing_clears_the_canvas() -> void:
-	await canvas.show_graph(Sample.build())
-	assert_gt(_cards().size(), 0, "something was drawn")
-
-	canvas.show_graph(null)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	assert_eq(_cards().size(), 0, "and then it was not")
-
-
-#region Picking cards
-func _click(at: Vector2, pressed: bool, adding: bool = false) -> void:
-	var button: InputEventMouseButton = InputEventMouseButton.new()
-	button.button_index = MOUSE_BUTTON_LEFT
-	button.pressed = pressed
-	button.position = at
-	button.shift_pressed = adding
-	canvas._gui_input(button)
-
-
-func _tap(at: Vector2, adding: bool = false) -> void:
-	_click(at, true, adding)
-	_click(at, false, adding)
-
-
-func _middle(pressed: bool) -> void:
-	var button: InputEventMouseButton = InputEventMouseButton.new()
-	button.button_index = MOUSE_BUTTON_MIDDLE
-	button.pressed = pressed
-	canvas._gui_input(button)
-
-
-func _drag_to(at: Vector2) -> void:
-	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
-	motion.position = at
-	motion.relative = Vector2(20.0, 12.0)
-	canvas._gui_input(motion)
-
-
-## Where a card is on screen, which is not where it is in the graph.
-func _on_screen(card: ComposerCard) -> Vector2:
-	return card.position * canvas.zoom() + canvas._world.position + card.size * 0.5
-
-
-## A point with no card under it.
-##
-## Worked out rather than guessed: the first card sits at the origin of the
-## world, so the obvious corner to click for "nothing here" is the one place
-## there is always something.
-func _empty_spot() -> Vector2:
-	var lowest: Vector2 = Vector2.ZERO
-	for card: ComposerCard in _cards():
-		var corner: Vector2 = (
-			(card.position + card.size) * canvas.zoom() + canvas._world.position
-		)
-		lowest = lowest.max(corner)
-	return lowest + Vector2(40.0, 40.0)
 
 
 func _shown() -> ComposerGraph:
@@ -219,209 +41,399 @@ func _shown() -> ComposerGraph:
 	return graph
 
 
-func test_clicking_a_card_picks_it_and_clicking_away_lets_it_go() -> void:
-	await _shown()
-	var card: ComposerCard = _cards()[0]
-
-	_tap(_on_screen(card))
-	assert_eq(canvas.picked(), [card.node_id] as Array[StringName], "the one clicked")
-
-	_tap(_empty_spot())
-	assert_true(canvas.picked().is_empty(), "and nothing when the canvas is clicked")
-
-
-## Holding shift adds, and adds the other way on a card already picked. Without
-## the second half a person can grow a selection and never trim one.
-func test_holding_shift_adds_a_card_and_takes_it_back_out() -> void:
-	await _shown()
-	var first: ComposerCard = _cards()[0]
-	var second: ComposerCard = _cards()[1]
-
-	_tap(_on_screen(first))
-	_tap(_on_screen(second), true)
-	assert_eq(canvas.picked().size(), 2, "both")
-
-	_tap(_on_screen(second), true)
-	assert_eq(canvas.picked(), [first.node_id] as Array[StringName], "and back to one")
-
-
-## A card already in the selection is left alone on a plain click, so reaching
-## for several of them does not throw the rest away first.
-func test_clicking_one_of_several_picked_cards_keeps_the_others() -> void:
-	await _shown()
-	var first: ComposerCard = _cards()[0]
-	var second: ComposerCard = _cards()[1]
-	_tap(_on_screen(first))
-	_tap(_on_screen(second), true)
-
-	_tap(_on_screen(first))
-
-	assert_eq(canvas.picked().size(), 2, "still both")
-
-
-func test_a_box_dragged_over_the_graph_sweeps_what_it_covers() -> void:
-	await _shown()
-
-	var from: Vector2 = _empty_spot()
-	_click(from, true)
-	_drag_to(from - Vector2(4000.0, 4000.0))
-	_click(from - Vector2(4000.0, 4000.0), false)
-
-	assert_eq(canvas.picked().size(), _cards().size(), "a box over everything takes it all")
-
-
-## Dragged back past where it started, a box sweeps the other way rather than
-## collapsing to nothing.
-func test_a_box_dragged_backwards_still_covers_ground() -> void:
-	await _shown()
-	var card: ComposerCard = _cards()[0]
-	var at: Vector2 = _on_screen(card)
-
-	_click(at + Vector2(60.0, 60.0), true)
-	_drag_to(at - Vector2(60.0, 60.0))
-	_click(at - Vector2(60.0, 60.0), false)
-
-	assert_true(canvas.picked().has(card.node_id), "the card it was dragged across")
-
-
-func test_the_selection_is_announced_once_it_changes() -> void:
-	await _shown()
-	var heard: Array[int] = []
-	canvas.selection_changed.connect(
-		func _on(ids: Array[StringName]) -> void: heard.append(ids.size())
-	)
-
-	_tap(_on_screen(_cards()[0]))
-
-	assert_eq(heard.size(), 1, "said once")
-	assert_eq(heard[0], 1, "and said what is picked")
+## The sample with a support line in it, which must be read and never drawn.
+func _shown_with_support() -> ComposerGraph:
+	var graph: ComposerGraph = Sample.build()
+	graph.nodes.append(Sample.support())
+	await canvas.show_graph(graph)
+	return graph
 #endregion
 
 
-#region Getting about
-func test_the_middle_button_drags_the_graph_about() -> void:
-	await _shown()
-	var before: Vector2 = canvas._world.position
-
-	_middle(true)
-	_drag_to(Vector2(300.0, 300.0))
-	_middle(false)
-	var after: Vector2 = canvas._world.position
-
-	assert_ne(after, before, "the world moved")
-	_drag_to(Vector2(600.0, 600.0))
-	assert_eq(canvas._world.position, after, "and stopped when the button came up")
+#region Drawing a graph
+## The canvas is the widget, not something wrapping one.
+##
+## Said plainly because everything else here depends on it: the pins, the
+## cables, the dragging and the refusal of an impossible drop are all the
+## widget's, and a canvas that merely contained one would have to forward every
+## part of that by hand.
+func test_the_canvas_is_a_graph_edit() -> void:
+	assert_true(canvas is GraphEdit, "the surface is the widget itself")
 
 
-## The whole graph on screen, and never past the zoom a person can reach by
-## hand - a frame that lands outside the range leaves them somewhere the wheel
-## cannot get back to.
-func test_framing_everything_puts_the_whole_graph_on_screen() -> void:
+## Every node a person is meant to see becomes exactly one card.
+func test_every_visible_node_becomes_one_graph_node() -> void:
 	var graph: ComposerGraph = await _shown()
-	canvas._apply_zoom(2.0, Vector2.ZERO)
 
-	canvas.frame_all()
-
-	assert_between(
-		canvas.zoom(), ComposerCanvas.ZOOM_MIN, ComposerCanvas.ZOOM_MAX, "within reach"
-	)
+	assert_eq(_cards().size(), graph.visible_nodes().size(), "one card each")
 	for card: ComposerCard in _cards():
-		var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
-		assert_between(at.x, 0.0, canvas.size.x, "%s is on screen" % card.node_id)
-		assert_between(at.y, 0.0, canvas.size.y, "%s is on screen" % card.node_id)
-	assert_gt(graph.visible_nodes().size(), 1, "and there was more than one to fit")
+		assert_true(card is GraphNode, "%s is a real graph node" % card.node_id)
+		assert_not_null(graph.find_node(card.node_id), "and it stands for a statement")
 
 
-func test_revealing_a_node_picks_it_and_brings_it_into_view() -> void:
+## Machinery is read and never drawn.
+##
+## An `if false:` wrapper is a line the reader must account for, and a card
+## called "If False" would be Composer explaining its own bookkeeping to
+## somebody who asked about their ability.
+func test_a_support_line_becomes_no_card_at_all() -> void:
+	var graph: ComposerGraph = await _shown_with_support()
+
+	assert_eq(graph.nodes.size(), _cards().size() + 1, "one node is not drawn")
+	for card: ComposerCard in _cards():
+		assert_ne(card.node_id, &"wrapper", "and it is that one")
+
+
+## Every cable the graph holds becomes one the widget knows about.
+func test_graph_connections_become_native_connections() -> void:
 	var graph: ComposerGraph = await _shown()
-	var drawn: Array[ComposerNode] = graph.visible_nodes()
-	var wanted: StringName = drawn[drawn.size() - 1].id
-	canvas._apply_zoom(2.0, Vector2.ZERO)
 
-	canvas.reveal(wanted)
+	assert_eq(
+		canvas.get_connection_list().size(),
+		graph.connections.size(),
+		"one native connection per wire"
+	)
 
-	assert_eq(canvas.picked(), [wanted] as Array[StringName], "picked")
-	var card: ComposerCard = _cards()[graph.visible_nodes().size() - 1]
-	var at: Vector2 = card.position * canvas.zoom() + canvas._world.position
-	assert_between(at.x, 0.0, canvas.size.x, "and on screen")
-	assert_between(at.y, 0.0, canvas.size.y, "and on screen")
+
+## A cable lands on the pins it names, not on whichever index happened to match.
+##
+## The whole reason a card keeps two lists of port ids. GraphNode numbers the
+## pins it draws rather than the rows, so a card whose second row has no left
+## pin has an input at index 1 belonging to its third row - and a wire that
+## trusted the row number would be drawn one row off, looking entirely correct.
+func test_a_cable_lands_on_the_pins_its_wire_names() -> void:
+	await _shown()
+
+	assert_gt(canvas.get_connection_list().size(), 0, "there were cables to check")
+	for native: Dictionary in canvas.get_connection_list():
+		var leaves: StringName = native["from_node"]
+		var lands: StringName = native["to_node"]
+		var leaving: int = native["from_port"]
+		var landing: int = native["to_port"]
+		var out: StringName = canvas.card_for(leaves).right_port_of_drawn(leaving)
+		var into: StringName = canvas.card_for(lands).left_port_of_drawn(landing)
+		assert_eq(out, ComposerReader.EXEC_OUT, "leaves by the run of control")
+		assert_eq(into, ComposerReader.EXEC_IN, "and arrives by one")
+
+
+func test_showing_nothing_clears_the_canvas() -> void:
+	await _shown()
+	assert_gt(_cards().size(), 0, "there was something to clear")
+
+	await canvas.show_graph(null)
+
+	assert_eq(_cards().size(), 0, "no cards")
+	assert_eq(canvas.get_connection_list().size(), 0, "and no cables")
+#endregion
+
+
+#region Turning a gesture into a request
+## Drive one wire gesture the way the widget would, and hand back what the canvas
+## asked for.
+##
+## Both gestures go through one translator in the canvas, so they are driven
+## through one helper here: two copies of this would be two chances to prove the
+## same translation twice and the other one never.
+func _asked(
+	gesture: Signal, answer: StringName, from_id: StringName, to_id: StringName
+) -> ComposerGraph.Connection:
+	var from: ComposerCard = canvas.card_for(from_id)
+	var to: ComposerCard = canvas.card_for(to_id)
+	gesture.emit(
+		from.name,
+		from.right_index_for_port(ComposerReader.EXEC_OUT),
+		to.name,
+		to.left_index_for_port(ComposerReader.EXEC_IN)
+	)
+	var reported: Array = get_signal_parameters(canvas, answer)
+	assert_not_null(reported, "the canvas asked for something")
+	var edge: ComposerGraph.Connection = reported[0]
+	return edge
+
+
+## Both wire gestures, and the ports each has to be reported with.
+##
+## One test rather than two: the canvas translates both through a single
+## function, so proving it twice in two shapes proves one of them and reads like
+## it proved both.
+const GESTURES: Array = [
+	[&"connection_requested", Sample.COMMIT, Sample.APPLY, "a wire dropped"],
+	[&"disconnection_requested", Sample.APPLY, Sample.WAIT, "a wire pulled off"],
+]
+
+
+func test_a_wire_gesture_is_reported_with_semantic_port_ids() -> void:
+	for row: Array in GESTURES:
+		var answer: StringName = row[0]
+		var from_id: StringName = row[1]
+		var to_id: StringName = row[2]
+		var described: String = row[3]
+
+		await _shown()
+		watch_signals(canvas)
+		var gesture: Signal = (
+			canvas.connection_request
+			if answer == &"connection_requested"
+			else canvas.disconnection_request
+		)
+
+		var edge: ComposerGraph.Connection = _asked(gesture, answer, from_id, to_id)
+
+		assert_eq(edge.from_node, from_id, "%s: leaves the right card" % described)
+		assert_eq(edge.to_node, to_id, "%s: lands on the right card" % described)
+		assert_eq(
+			edge.from_port, ComposerReader.EXEC_OUT, "%s: named, not numbered" % described
+		)
+		assert_eq(edge.to_port, ComposerReader.EXEC_IN, "%s: and so is the far end" % described)
+
+
+## A pin number that means nothing is asked about at all.
+##
+## The alternative is a request carrying a port id nobody recognises, answered
+## by the controller with a refusal about a pin the person never touched.
+func test_a_pin_number_that_names_nothing_asks_for_nothing() -> void:
+	await _shown()
+	watch_signals(canvas)
+
+	canvas.connection_request.emit(
+		StringName(Sample.COMMIT), 97, StringName(Sample.APPLY), 0
+	)
+
+	assert_signal_not_emitted(canvas, "connection_requested", "nothing to ask about")
+#endregion
+
+
+#region Moving cards
+## Dragging says where things ended up, once, when the drag ends.
+func test_moving_cards_reports_once_at_the_end_of_the_drag() -> void:
+	await _shown()
+	watch_signals(canvas)
+	var card: ComposerCard = canvas.card_for(Sample.APPLY)
+	card.selected = true
+
+	canvas.begin_node_move.emit()
+	card.position_offset += Vector2(40.0, 20.0)
+	assert_signal_not_emitted(canvas, "nodes_positioned", "nothing while it moves")
+	canvas.end_node_move.emit()
+
+	assert_signal_emit_count(canvas, "nodes_positioned", 1, "and once when it stops")
+	var reported: Array = get_signal_parameters(canvas, "nodes_positioned")
+	var moved: Dictionary = reported[0]
+	assert_eq(moved.size(), 1, "only what moved")
+	assert_true(moved.has(Sample.APPLY), "and it is the card that was dragged")
+
+
+## A drag that moved nothing is not a change.
+##
+## A click is a one-pixel drag as far as the widget is concerned, and recording
+## one would put an undo in front of the edit somebody meant to reach.
+func test_a_drag_that_moved_nothing_reports_nothing() -> void:
+	await _shown()
+	watch_signals(canvas)
+	canvas.card_for(Sample.APPLY).selected = true
+
+	canvas.begin_node_move.emit()
+	canvas.end_node_move.emit()
+
+	assert_signal_not_emitted(canvas, "nodes_positioned")
+
+
+## Dragging a card over another says nothing about running order.
+##
+## The surface this replaced took a card dropped onto another as an instruction
+## to move that statement in the file, so somebody tidying their graph
+## reordered their ability by accident. There is no such gesture now.
+func test_dragging_a_card_over_another_never_asks_to_reorder() -> void:
+	await _shown()
+	watch_signals(canvas)
+	var moved: ComposerCard = canvas.card_for(Sample.CUE)
+	var onto: ComposerCard = canvas.card_for(Sample.COMMIT)
+	moved.selected = true
+
+	canvas.begin_node_move.emit()
+	moved.position_offset = onto.position_offset
+	canvas.end_node_move.emit()
+
+	var said: Array = get_signal_parameters(canvas, "nodes_positioned")
+	var reported: Dictionary = said[0]
+	assert_eq(reported.size(), 1, "one card was placed")
+	var landed: Vector2 = reported[Sample.CUE]
+	assert_eq(landed, onto.position_offset, "where it was let go")
+	# The point of the test: a placement is all that was reported. The surface
+	# this replaced had a separate gesture that asked to move the STATEMENT, and
+	# nothing on this canvas may ask for that any more.
+	for named: String in ["node_dropped", "reorder_requested", "move_requested"]:
+		assert_false(
+			canvas.has_signal(named), "%s is not something this canvas can ask for" % named
+		)
+#endregion
+
+
+#region Selection
+## What is picked is what the widget says is selected.
+func test_the_selection_is_whatever_the_widget_has_selected() -> void:
+	await _shown()
+
+	canvas.card_for(Sample.WAIT).selected = true
+
+	assert_eq(canvas.picked(), [Sample.WAIT] as Array[StringName])
+
+
+## Revealing a node picks it and nothing else.
+func test_revealing_a_node_picks_it_alone() -> void:
+	await _shown()
+	canvas.card_for(Sample.COMMIT).selected = true
+	watch_signals(canvas)
+
+	canvas.reveal(Sample.CUE)
+
+	assert_eq(canvas.picked(), [Sample.CUE] as Array[StringName], "just that one")
+	assert_signal_emitted(canvas, "selection_changed", "and it is announced")
 
 
 func test_revealing_a_node_that_is_not_drawn_does_nothing() -> void:
 	await _shown()
-	canvas.reveal(&"no_such_node")
+	canvas.card_for(Sample.COMMIT).selected = true
 
-	assert_true(canvas.picked().is_empty(), "nothing was picked")
+	canvas.reveal(&"nobody")
+
+	assert_eq(canvas.picked(), [Sample.COMMIT] as Array[StringName], "left as it was")
+#endregion
+
+
+#region Taking a call from the palette
+## A dropped call says which call and where, and nothing about what it landed on.
+##
+## The surface this replaced looked for a card under the pointer and inserted
+## after it, which made one drop two different operations depending on a pixel.
+func test_a_dropped_call_reports_the_call_and_the_place() -> void:
+	await _shown()
+	watch_signals(canvas)
+
+	canvas._drop_data(
+		Vector2(200.0, 120.0), {ComposerCatalog.DRAGGED_CALL: &"gas.commit"}
+	)
+
+	var asked: Array = get_signal_parameters(canvas, "node_requested")
+	var call_id: StringName = asked[0]
+	var where: Vector2 = asked[1]
+	assert_eq(call_id, &"gas.commit", "the call that was dragged")
+	assert_eq(
+		where,
+		(Vector2(200.0, 120.0) + canvas.scroll_offset) / canvas.zoom,
+		"and the place on the graph it landed on"
+	)
+
+
+func test_nothing_but_a_call_may_be_dropped() -> void:
+	await _shown()
+
+	assert_false(canvas._can_drop_data(Vector2.ZERO, "some text"), "not a call")
+	assert_true(
+		canvas._can_drop_data(
+			Vector2.ZERO, {ComposerCatalog.DRAGGED_CALL: &"gas.commit"}
+		),
+		"but a call is"
+	)
 #endregion
 
 
 #region How much of a card is worth drawing
-## The three bands, read off the thresholds rather than off numbers repeated
-## here - a table that drifts from the canvas is a test of the table.
+## The detail follows the zoom, at the thresholds this project chose.
 func test_the_detail_a_card_draws_follows_the_zoom() -> void:
 	assert_eq(
-		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_FULL), ComposerCard.Detail.FULL,
-		"at the full threshold, the whole card"
+		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_FULL),
+		ComposerCard.Detail.FULL,
+		"close enough to read"
 	)
 	assert_eq(
-		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_TITLE), ComposerCard.Detail.TITLE,
-		"lower down, the title alone"
+		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_TITLE),
+		ComposerCard.Detail.TITLE,
+		"far enough that only the name is worth it"
 	)
 	assert_eq(
 		ComposerCanvas.detail_at(ComposerCanvas.DETAIL_TITLE - 0.01),
 		ComposerCard.Detail.BLOCK,
-		"and below that, a block"
+		"and far enough that only the shape is"
 	)
 
 
-## The card keeps its size as its contents go away. Shrinking it would move
-## every port on it and the wires with them, and the graph would appear to
-## rearrange itself while somebody was only pulling back to look at it.
+## Pulling back empties a card without moving anything on it.
+##
+## A card that shrank as its rows went away would take every pin with it, and
+## the graph would appear to rearrange itself while somebody was only looking at
+## it from further off.
 func test_pulling_back_empties_a_card_without_resizing_it() -> void:
 	await _shown()
-	var card: ComposerCard = _cards()[0]
-	var span: Vector2 = card.size
+	var card: ComposerCard = canvas.card_for(Sample.APPLY)
+	card.show_detail(ComposerCard.Detail.FULL)
+	await get_tree().process_frame
+	var full: Vector2 = card.size
 
-	canvas._apply_zoom(ComposerCanvas.DETAIL_TITLE - 0.05, Vector2.ZERO)
+	card.show_detail(ComposerCard.Detail.BLOCK)
+	await get_tree().process_frame
 
-	assert_eq(card.size, span, "the card is the size it was")
-	for row: Control in card._rows:
-		assert_false(row.visible, "and its fields are not being drawn")
+	assert_almost_eq(card.size.x, full.x, 1.0, "the card is the same width")
+	assert_almost_eq(card.size.y, full.y, 1.0, "and the same height")
 #endregion
 
 
-## Opening an ability never opens it unreadable.
+#region Redrawing under itself
+## A redraw that arrives mid-redraw does not place or connect the old cards.
 ##
-## Framing used to clamp at ZOOM_MIN, so any graph wider than the canvas landed
-## below DETAIL_FULL and every card opened as a bare title - the Composer
-## showing less than the file it had just read, which is the first thing anyone
-## saw. Part of a readable graph beats all of an unreadable one.
-func test_framing_never_opens_a_graph_below_the_level_that_shows_values() -> void:
-	canvas.size = Vector2(420.0, 260.0)
-	await canvas.show_graph(Sample.build())
+## `show_graph` waits a frame for the cards to measure themselves. The version
+## this replaced then carried on with the placements it had computed - against
+## cards its own successor had already freed, and a `_graph` that could by then
+## be null. Opening a second ability while the first was still settling crashed
+## on exactly that.
+func test_a_redraw_that_arrives_mid_redraw_leaves_the_newer_one_alone() -> void:
+	var first: ComposerGraph = Sample.build()
+	var second: ComposerGraph = Sample.build()
+	second.nodes.resize(2)
 
-	canvas.frame_all()
-
-	assert_gte(
-		canvas.zoom(), ComposerCanvas.DETAIL_FULL, "framed, and still showing its values"
-	)
-	assert_eq(
-		ComposerCanvas.detail_at(canvas.zoom()), ComposerCard.Detail.FULL,
-		"which is what that threshold means"
-	)
-
-
-## A selection is shaped like the thing it selects.
-##
-## It was a ReferenceRect, which can only draw a rectangle: a hard square around
-## a rounded card. Reported as "a rectangle that should never appear", and that
-## is a fair reading - a square outline on a rounded card looks like something
-## the editor left behind rather than something anybody drew.
-func test_the_edge_on_a_picked_card_has_the_card_s_corners() -> void:
-	var edge: StyleBoxFlat = ComposerTheme.picked_box()
+	# Started without waiting, which is the whole situation: GDScript will not let
+	# a coroutine's completion be held as a value, so it is launched the way the
+	# editor launches it - and then superseded before it can finish.
+	var start: Callable = Callable(canvas, "show_graph")
+	start.call(first)
+	await canvas.show_graph(second)
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 	assert_eq(
-		edge.corner_radius_top_left, ComposerTheme.RADIUS_PANEL, "the card's own radius"
+		_cards().size(), second.visible_nodes().size(), "the newer graph is what is drawn"
 	)
-	assert_eq(edge.bg_color.a, 0.0, "an edge, not a fill over the card")
-	assert_eq(edge.border_color, ComposerTheme.ACCENT, "and it reads as a selection")
+
+
+## Showing nothing while a redraw is settling leaves nothing behind.
+func test_clearing_the_canvas_mid_redraw_leaves_it_clear() -> void:
+	var start: Callable = Callable(canvas, "show_graph")
+	start.call(Sample.build())
+	await canvas.show_graph(null)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	assert_eq(_cards().size(), 0, "no cards")
+	assert_eq(canvas.get_connection_list().size(), 0, "and no cables")
+#endregion
+
+
+#region Finding a card under a point
+## A card is found where it actually is.
+##
+## The hit rectangle is in graph space, so it takes the card's position offset
+## and the card's own size. Dividing the size by the zoom - as this did - shrinks
+## every card's hit area as somebody zooms in, which is the opposite of what
+## they see.
+func test_the_card_under_a_point_is_the_one_drawn_there() -> void:
+	await _shown()
+	var card: ComposerCard = canvas.card_for(Sample.APPLY)
+	var middle: Vector2 = card.position_offset + card.size * 0.5
+
+	var at: Vector2 = middle * canvas.zoom - canvas.scroll_offset
+
+	assert_eq(canvas._card_at(at), Sample.APPLY, "the card the point is inside")
+	assert_eq(
+		canvas._card_at(Vector2(-4000.0, -4000.0)), &"", "and nothing where there is none"
+	)
+#endregion

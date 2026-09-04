@@ -177,7 +177,9 @@ func test_a_call_dragged_from_the_palette_is_taken_by_the_canvas() -> void:
 	)
 
 	var asked: Array[StringName] = []
-	canvas.node_requested.connect(func _heard(id: StringName) -> void: asked.append(id))
+	canvas.node_requested.connect(
+		func _heard(id: StringName, _at: Vector2) -> void: asked.append(id)
+	)
 	canvas._drop_data(Vector2.ZERO, carried)
 
 	assert_eq(asked, [wanted] as Array[StringName], "and reports the call that landed")

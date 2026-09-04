@@ -367,3 +367,81 @@ func test_a_move_the_destination_cannot_take_moves_nothing() -> void:
 	assert_eq(session.printed(), before, "so neither cable moved")
 	assert_eq(session.depth(), 0, "and there is nothing to undo")
 #endregion
+
+
+#region Typing a value into an argument
+## What typing into an argument has to leave behind.
+##
+## The second row is the one worth having: typing the value that is already there
+## is not a change, and recording it would give somebody an undo that appears to
+## do nothing and puts the edit they meant one step further away.
+const TYPED: Array = [
+	["2.5", "apply_gameplay_effect(burning, null, 2.5)", 1, "a new value is written"],
+	["1.0", "apply_gameplay_effect(burning, null, 1.0)", 0, "the same value is not"],
+]
+
+
+func test_typing_a_value_writes_it_once_and_only_when_it_changed() -> void:
+	for row: Array in TYPED:
+		var written: String = row[0]
+		var expected: String = row[1]
+		var steps: int = row[2]
+		var described: String = row[3]
+
+		var session: ComposerEditingSession = _open([
+			"apply_gameplay_effect(burning, null, 1.0)",
+		])
+
+		var done: bool = session.controller.rewrite_field(
+			session.node(CONSUMER).id, 2, written
+		)
+
+		assert_true(done, described)
+		assert_eq(session.line(CONSUMER), expected, "%s: the file says so" % described)
+		assert_eq(session.depth(), steps, "%s: %d step" % [described, steps])
+
+
+## A refused value leaves the file AND the graph the canvas is drawing alone.
+##
+## The screen used to do this itself, writing straight into the document's live
+## graph before finding out whether the result could be committed. A refusal then
+## left the card and the Inspector showing text the file did not contain, until
+## something else happened to redraw them.
+func test_a_refused_value_leaves_the_drawn_graph_untouched() -> void:
+	var session: ComposerEditingSession = _open([
+		"apply_gameplay_effect(burning, null, 1.0)",
+	])
+	var before: String = session.printed()
+	var shown: String = session.node(CONSUMER).fields[2].display
+
+	var done: bool = session.controller.rewrite_field(session.node(CONSUMER).id, 97, "2.5")
+
+	assert_false(done, "there is no ninety-eighth argument")
+	assert_signal_emitted(session.controller, "refused")
+	assert_eq(session.printed(), before, "the file is untouched")
+	assert_eq(
+		session.node(CONSUMER).fields[2].display,
+		shown,
+		"and so is the graph the canvas draws"
+	)
+	assert_eq(session.depth(), 0, "with nothing to undo")
+
+
+## A statement this tool cannot print back is not written into.
+func test_a_statement_with_no_call_in_it_is_not_written_into() -> void:
+	var session: ComposerEditingSession = _open([
+		"var caster: AbilitySystemComponent = owner_asc",
+		"apply_gameplay_effect(burning, caster, 1.0)",
+	])
+	var before: String = session.printed()
+	var local: ComposerNode = session.node("var caster")
+	assert_eq(local.fields.size(), 0, "a plain local has no arguments to write")
+
+	var done: bool = session.controller.rewrite_field(local.id, 0, "owner_asc")
+
+	assert_false(done, "there is no argument there")
+	assert_signal_emitted(session.controller, "refused")
+	assert_eq(session.printed(), before, "and nothing was written")
+
+
+#endregion

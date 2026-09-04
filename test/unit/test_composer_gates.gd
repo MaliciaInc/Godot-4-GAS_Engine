@@ -167,6 +167,8 @@ func test_an_empty_body_is_drawn_as_empty_rather_than_refused() -> void:
 ## is on the palette; one renamed takes its node with it; one removed cannot
 ## linger, because there is nowhere for it to linger.
 func test_every_public_method_of_every_source_is_offered() -> void:
+	assert_gt(ComposerCatalog.SOURCES.size(), 0, "there are sources to check")
+	var offered: int = 0
 	for declared: StringName in ComposerCatalog.SOURCES:
 		var path: String = ComposerCatalog.script_for(declared)
 		var script: GDScript = load(path) as GDScript
@@ -178,6 +180,10 @@ func test_every_public_method_of_every_source_is_offered() -> void:
 				ComposerCatalog.find_on(path, StringName(name)),
 				"%s.%s is offered" % [path.get_file(), name]
 			)
+			offered += 1
+	# A loop over an empty list asserts nothing and reports success. The count is
+	# what tells "every method is offered" apart from "no method was looked at".
+	assert_gt(offered, 0, "public methods were actually compared")
 
 
 ## And nothing is offered that the engine does not declare.
@@ -199,6 +205,7 @@ func test_nothing_is_offered_that_the_engine_does_not_declare() -> void:
 ## call that suspends. This was a written list for a while, and the list was
 ## wrong about one entry - the card said `await` over a call that does not wait.
 func test_what_suspends_is_read_off_the_return_type() -> void:
+	var read: int = 0
 	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
 		var script: GDScript = load(entry.source) as GDScript
 		for described: Dictionary in script.get_script_method_list():
@@ -212,7 +219,15 @@ func test_what_suspends_is_read_off_the_return_type() -> void:
 				ComposerTypes.inherits(StringName(declared), &"GameplayAbilityTask"),
 				"%s returns %s" % [entry.type_id, declared]
 			)
+			read += 1
 			break
+
+	# Every entry, not merely every entry whose method the loop happened to find.
+	# The inner loop skips until the names match, so a catalog whose entries no
+	# longer name a live method would assert nothing at all and still be green.
+	assert_eq(
+		read, ComposerCatalog.all().size(), "every entry's return type was read"
+	)
 
 
 ## Every node prints a statement that reads back as the same node.

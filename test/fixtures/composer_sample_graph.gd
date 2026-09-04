@@ -75,6 +75,31 @@ static func _node(
 		ComposerReader.port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
 		ComposerReader.port(DATA_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT),
 	] as Array[ComposerNode.Port]
+	# One input per argument, as the reader builds them. A node with fields and
+	# no argument pins is a node nothing can be wired into, which would make
+	# every test about value wiring pass over a graph that has none.
+	for position: int in node.fields.size():
+		var slot: ComposerNode.Port = ComposerReader.port(
+			StringName(ComposerReader.ARGUMENT % position),
+			ComposerNode.PortKind.DATA,
+			ComposerNode.PortDirection.INPUT
+		)
+		slot.label = node.fields[position].label
+		slot.type_name = node.fields[position].type_name
+		node.ports.append(slot)
+	return node
+
+
+## A line the reader has to account for and a person must never be shown a card
+## for: the `if false:` a detached run of statements is wrapped in.
+static func support() -> ComposerNode:
+	var node: ComposerNode = ComposerNode.new()
+	node.id = &"wrapper"
+	node.title = "If False"
+	node.text = "if false: # @composer-detached detached_1"
+	node.span = ComposerSpan.new(28, 28)
+	node.projection_kind = ComposerNode.ProjectionKind.SUPPORT
+	node.visible_in_graph = false
 	return node
 
 

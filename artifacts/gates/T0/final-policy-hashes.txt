@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Composer 3.2 TASK 3: execution links are source transformations
+# Composer 3.2 GraphEdit migration: dropped the composer_canvas.gd size allowance (a GraphEdit canvas is 322 lines and needs none), and rewrote the composer_screen.gd and 'await' reasons, both of which argued from things the migration deleted - a placement handler that no longer exists and glass cards that are now GraphNodes.
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T19:32:22Z
-# commit-previo: 7e3703ec8fc73be87e527af16efe4c793a1e70ec
+# date-utc: 2026-09-04T21:49:28Z
+# commit-previo: 11bf4fa0a07640a7c4ac62f7cca88192fff599c0
 # files: 24
-4114b08991166a88cbb72120447c4cbb8bb8cb43a4e31913f2c1b9b08dee0654  tooling/.quality-gates.json
+2f23daace3410da08fe4de4bfbedfbe5b7afadbe2b484e9755f1466a46b9edff  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

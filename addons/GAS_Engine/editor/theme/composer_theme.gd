@@ -15,26 +15,25 @@
 class_name ComposerTheme extends RefCounted
 
 #region Palette
-## The canvas, and the chrome that frames it. The chrome is a shade lighter so
-## the graph reads as the thing in front.
-const CANVAS: Color = Color(0.043, 0.043, 0.059)
+## The chrome that frames the graph. The canvas itself is GraphEdit's own
+## surface now, so this is the only ground the Composer still paints.
 const CHROME: Color = Color(0.055, 0.055, 0.075)
 
 const ROW: Color = Color(0.118, 0.118, 0.149)
-const BORDER: Color = Color(0.165, 0.165, 0.204)
 const RULE: Color = Color(0.125, 0.125, 0.165)
 
 const TEXT: Color = Color(0.929, 0.929, 0.949)
 const TEXT_DIM: Color = Color(0.541, 0.541, 0.600)
 const TEXT_FAINT: Color = Color(0.353, 0.353, 0.408)
 
-## The one accent, spent sparingly: the active view, the primary control, the
-## light under a card, the bead on a wire. Anything else stays grey.
+## The one accent, spent sparingly: the active view and the primary control.
+## Anything else stays grey. It also lit a glow under each card and a bead on
+## each wire, and both of those went with the hand-drawn surface that painted
+## them.
 const ACCENT: Color = Color(0.482, 0.361, 1.0)
 
 const WARNING: Color = Color(0.851, 0.643, 0.255)
 const ERROR: Color = Color(0.878, 0.322, 0.322)
-const OK: Color = Color(0.239, 0.839, 0.549)
 
 ## What a pin carries, by colour.
 ##
@@ -55,21 +54,9 @@ const PORT_COLOUR: Color = Color(0.847, 0.859, 0.878)
 const PORT_OBJECT: Color = Color(0.361, 0.573, 0.965)
 const PORT_UNTYPED: Color = Color(0.541, 0.541, 0.600)
 
-const WIRE: Color = Color(0.820, 0.820, 0.902, 0.72)
-const WIRE_GLOW: Color = Color(0.482, 0.361, 1.0, 0.14)
-const BEAD_DISC: Color = Color(0.80, 0.78, 1.0, 0.92)
-const BEAD_CORE: Color = Color(1.0, 1.0, 1.0, 1.0)
-const ACCENT_SOFT: Color = Color(0.482, 0.361, 1.0, 0.9)
-const GRID_DOT: Color = Color(1.0, 1.0, 1.0, 0.06)
-const GLASS_TINT: Color = Color(0.086, 0.086, 0.110, 0.66)
 const SHADOW: Color = Color(0.0, 0.0, 0.0, 0.5)
 const HAIRLINE: Color = Color(1.0, 1.0, 1.0, 0.035)
 const TRANSPARENT: Color = Color(0.0, 0.0, 0.0, 0.0)
-const RING_EDGE: Color = Color(0.353, 0.353, 0.408, 0.75)
-const WIRE_GLOW_ALPHA: float = 0.14
-const GLASS_TINT_ALPHA: float = 0.66
-const BLOOM_STRENGTH: float = 0.42
-const DOT_ALPHA: float = 0.06
 #endregion
 
 
@@ -95,19 +82,16 @@ const FONT_LABEL: int = 10
 ## carrying a long resource path should not push the whole column across the
 ## canvas.
 const NODE_MIN_WIDTH: float = 232.0
-const NODE_MAX_WIDTH: float = 420.0
 
 ## What an unmeasured card counts as while it has no height yet.
 const NODE_MIN_HEIGHT: float = 106.0
 const PAD_X: float = 14.0
 const PAD_Y: float = 12.0
 
-const RADIUS_PANEL: int = 13
 const RADIUS_ROW: int = 8
 
 ## Grid spacing at 1.0 zoom. The dots keep their size at every level and the
 ## mesh changes pitch instead, so pulling out never turns them into smudges.
-const GRID_SPACING: float = 26.0
 
 ## The space between one column of cards and the next. A step no longer works:
 ## columns are as wide as their widest card, so what is fixed is the gap.
@@ -122,16 +106,10 @@ const LANE_GAP: float = 88.0
 ## A circle around a short wide card spills far above and below it.
 ## The wash left over the graph while a selection box is being dragged. Faint
 ## on purpose: it says which cards it covers without hiding them.
-const SELECTION_FILL: Color = Color(0.482, 0.361, 1.0, 0.14)
 
 ## How thick the outline around a picked card is.
 
-const BLOOM_SCALE: float = 1.9
 
-const PORT_CORE: float = 2.6
-const PORT_DISC: float = 5.6
-const PORT_HALO: float = 30.0
-const PORT_RING: float = 9.0
 #endregion
 
 
@@ -172,67 +150,6 @@ static func disc(fill: Color, radius: float) -> StyleBoxFlat:
 	style.bg_color = fill
 	style.set_corner_radius_all(ceili(radius))
 	return style
-
-
-## The edge a picked card wears.
-##
-## The card's own corner radius, because a square outline around a rounded card
-## reads as something the editor drew there by accident - which is exactly how
-## it was described the first time somebody saw it.
-static func picked_box() -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = TRANSPARENT
-	style.border_color = ACCENT
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(RADIUS_PANEL)
-	return style
-
-
-## An unconnected port: an outline, not a fill. Drawing only the wired ones
-## makes a card look like it takes nothing.
-static func ring() -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = TRANSPARENT
-	style.border_color = RING_EDGE
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(int(PORT_RING * 0.5) + 1)
-	return style
-
-
-## The radial gradient behind a card, and the halo under a port bead.
-##
-## Drawn rather than post-processed: an editor Control has no WorldEnvironment,
-## so there is no camera glow to lean on.
-static func glow(tint: Color, strength: float) -> GradientTexture2D:
-	var ramp: Gradient = Gradient.new()
-	ramp.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
-	ramp.colors = PackedColorArray([
-		Color(tint.r, tint.g, tint.b, strength),
-		Color(tint.r, tint.g, tint.b, strength * 0.28),
-		Color(tint.r, tint.g, tint.b, 0.0),
-	])
-
-	var texture: GradientTexture2D = GradientTexture2D.new()
-	texture.gradient = ramp
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	return texture
-
-
-## A TextureRect that honours the size it is given.
-##
-## `EXPAND_KEEP_SIZE` is the default and its minimum size IS the texture, so the
-## control quietly takes the texture's dimensions instead of the ones asked for
-## and draws from its corner. The result reads as a glow that came loose from
-## the thing it belongs to, and it is not obvious from the code that set a size.
-static func glow_rect(texture: GradientTexture2D) -> TextureRect:
-	var rect: TextureRect = TextureRect.new()
-	rect.texture = texture
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return rect
 #endregion
 
 

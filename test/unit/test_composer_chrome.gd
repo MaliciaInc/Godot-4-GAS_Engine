@@ -186,7 +186,6 @@ func test_every_severity_has_a_colour_and_a_mark() -> void:
 	for value: int in count:
 		var severity: ComposerGraph.Severity = value as ComposerGraph.Severity
 		assert_ne(ComposerTheme.severity_mark(severity), "", "%d has a glyph" % value)
-#endregion
 
 
 #region The screen

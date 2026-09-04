@@ -29,6 +29,7 @@ const NO_SUCH_PORT: String = "that pin is no longer on the card"
 const WRONG_FAMILY: String = "execution and values do not connect to each other"
 const WRONG_WAY: String = "a wire runs from an output to an input"
 const NOT_A_LOCAL: String = "only a named value can be sent along a wire"
+const NOT_EDITABLE: String = "%s is not something this tool may write"
 const NOT_YET_DECLARED: String = (
 	"%s is declared after this statement, so it does not exist here yet"
 )
@@ -181,6 +182,28 @@ func move_connections(
 	for wire: ComposerGraph.Connection in wires:
 		var to: ComposerNode = staged.find_node(wire.to_node)
 		_write_field(to, _argument_index(wire.to_port), named)
+	return _committed(staged)
+
+
+## Put text somebody typed into one argument.
+##
+## The same door a dropped cable comes through, on purpose. A typed value and a
+## wired one are the same edit to the same field, and the screen used to do this
+## itself: it wrote straight into the document's live graph, so a refused edit
+## left the canvas and the Inspector showing text the file did not contain until
+## something else redrew them. Staged here, a refusal changes nothing at all.
+func rewrite_field(node_id: StringName, position: int, written: String) -> bool:
+	var staged: ComposerGraph = _staged()
+	if staged == null:
+		return false
+
+	var node: ComposerNode = staged.find_node(node_id)
+	if node == null or position < 0 or position >= node.fields.size():
+		return _no(NO_SUCH_PORT)
+	if not node.may_edit(node.fields[position]):
+		return _no(NOT_EDITABLE % node.fields[position].label)
+
+	_write_field(node, position, written)
 	return _committed(staged)
 #endregion
 

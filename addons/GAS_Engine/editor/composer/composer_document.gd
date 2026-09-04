@@ -121,16 +121,6 @@ func repeat(spans: Array[ComposerSpan]) -> ComposerGraph.Diagnostic:
 	return commit(ComposerEdits.repeat(_source, spans))
 
 
-## Put `moved` where `before` is.
-##
-## The only kind of dragging this canvas can honestly offer. Cards do not have
-## positions of their own - the layout works out where each goes from the order
-## the statements run in - so dragging one somewhere means putting its statement
-## somewhere, and the card follows because the layout is asked again.
-func move(moved: ComposerSpan, before: ComposerSpan) -> ComposerGraph.Diagnostic:
-	return commit(ComposerEdits.move(_source, moved, before))
-
-
 ## Give one statement a visual position without changing where it executes.
 ##
 ## The position is written into the same GDScript as a reserved comment. Reading
