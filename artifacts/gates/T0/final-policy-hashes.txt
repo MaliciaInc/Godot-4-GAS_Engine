@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# the cue reader asks for the whole name; no receipt carries a machine path
+# the freeze procedure lives with the tooling, not inside the evidence
 #
 # python: 3.14.6
-# date-utc: 2026-09-03T23:50:43Z
-# commit-previo: 94ed9700becb5e439ec4c8098427043075f1d63b
+# date-utc: 2026-09-04T00:04:58Z
+# commit-previo: aba06d7c171459d987051b24df614a19b712c940
 # files: 24
-82a3ecb02ae2b6f458affbb6ca3aae6c449ad192f7ebc1362fae68e80aa0257c  tooling/.quality-gates.json
+1200cd49fad650a55ee650bea398d11993499f67226033059c9499ca27813be0  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
@@ -29,7 +29,7 @@ a3c7d0dc88aa826e4df3a164f535ed9b1f08890bb8cfb6183fa9347863ad18a8  tooling/gates/
 e81c73d8b53208301944119dc38e02ba8153e6abd392fde00976f586d9c90a06  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 1c3e982abdc41c322376e2dd33415fe3a254fa28b7abdd41f41f9fd3a6373cb7  tooling/gates/test-location-gate.py
-019f345fb922a584d02c5d2b521274d630f7a9d14fc3e3fd0076995827bb4014  tooling/product_identity.py
+5b93fa17992cfd6f9db84ce5ebde2bb044aec0416e5af8def3211ba290662540  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py

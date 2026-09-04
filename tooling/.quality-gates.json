@@ -398,6 +398,10 @@
       {
         "literal": "Remove",
         "reason": "A verb on the Ability Composer's context menu, and the name of an icon Godot ships. A menu label and a theme key are not the same kind of thing, and borrowing one for the other would make a change to the icon set rewrite the menu."
+      },
+      {
+        "literal": ".log",
+        "reason": "A file suffix in two languages with no shared home: verify.ps1 builds '<stage>.log' and product_identity.py lists the suffixes it will open. A constant in either one cannot be read by the other, so naming it would put the same three characters in three places instead of two."
       }
     ],
     "allow_globs": [],

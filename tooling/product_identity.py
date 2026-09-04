@@ -34,9 +34,14 @@ FORBIDDEN = (
     "godot" + "_gas",
 )
 
+#: `.log` is here because the release receipt set is half log files, and the
+#: freeze points this gate at that set. Without it the check reads nine of them
+#: as clean by never opening them. Inert until then: every tracked `.log` lives
+#: under `artifacts/gates/`, which is skipped in full while that set is
+#: deliberately old.
 TEXT_SUFFIXES = {
     ".gd", ".tscn", ".tres", ".cfg", ".godot", ".py", ".ps1",
-    ".json", ".md", ".txt", ".svg", ".import",
+    ".json", ".md", ".txt", ".svg", ".import", ".log",
 }
 
 SKIP_PREFIXES = (

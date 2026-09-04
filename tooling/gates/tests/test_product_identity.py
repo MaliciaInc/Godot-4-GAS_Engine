@@ -44,6 +44,12 @@ class ProductIdentityTests(unittest.TestCase):
             with self.subTest(line=line):
                 self.assertTrue(self._flagged("probe.gd", line), line)
 
+    def test_a_log_is_a_file_this_gate_reads(self) -> None:
+        # Half the release receipt set is log files, and the freeze points this
+        # gate at that set. A suffix missing from the list is not a lenient
+        # check, it is no check: the file is never opened, and reads as clean.
+        self.assertTrue(self._flagged("probe.log", "Arhalies" + "GAS"))
+
     def test_every_token_is_lowercase_because_the_line_is_lowered_first(self) -> None:
         # The contract between the list and the matcher. A token carrying a
         # capital could never match anything, because the line is lowered before
