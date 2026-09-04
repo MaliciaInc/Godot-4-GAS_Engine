@@ -27,6 +27,20 @@ Enabling the plugin adds one autoload, `GameplayCueManager`. If your project alr
 
 That is the whole installation. There is no build step, and nothing needs configuring before the next section works.
 
+### Exporting
+
+On Godot's default export mode, **Export all resources in the project**, there is nothing to do: everything below ships.
+
+If you switch to **Selected scenes and dependencies**, add these to the preset's include filter:
+
+```
+addons/GAS_Engine/*, gas_engine/*
+```
+
+and select every scene a gameplay cue plays, the same way you would select any other scene the game reaches at runtime.
+
+The reason is Godot's, not this addon's, and it is worth knowing because it is invisible: the exporter decides what to keep by walking `ResourceLoader.get_dependencies()`, and that returns nothing for a `.gd` file. A `preload()` in GDScript is a compile-time link, never an export dependency — measured on 4.7.2, where a scene reports its whole dependency list and every script reports zero. So under the selective mode nothing reached only through GDScript survives, including the scripts this addon's own autoload preloads. A build made that way starts with `No cue registry found at ...` in the log, which is the symptom to recognise.
+
 ## Quick start: a fireball in five minutes
 
 Two scripts and a scene. Everything below is plain GDScript that runs the moment you save it.

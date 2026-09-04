@@ -5,10 +5,11 @@
 ## the only way to change one was a screen that no longer exists. They are a
 ## file now, written and read by the same module.
 ##
-## Each binding is a `preload`, not a path in a string, and that is the part
-## worth being careful about: a path in a string is not a dependency, so the
-## exporter would not know the scene was wanted and a cue that played in the
-## editor would be missing from the built game.
+## Each binding is a `preload` rather than a path in a string, for the checking
+## it buys at parse time. Not for the exporter: a GDScript preload is not an
+## export dependency on 4.7.2, measured, so what ships is decided by the export
+## preset and not by this file. The header of `gameplay_cue_generator.gd` has
+## the numbers.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest

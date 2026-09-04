@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      duplication
 command:    python tooling\gates\run_gate.py duplication artifacts\gates\source-fold-tests
-started:    2026-09-04T00:05:13.1639677Z
-ended:      2026-09-04T00:05:18.7323356Z
-duration_s: 5.568
+started:    2026-09-04T00:22:29.5255821Z
+ended:      2026-09-04T00:22:35.2819085Z
+duration_s: 5.756
 exit_code:  0
 
 --- stdout ---
@@ -17,7 +17,7 @@ exit_code:  0
 - Units scanned: 1312
 - Units by language: gdscript 1278, powershell 4, python 30
 - Findings: 334
-- Elapsed: 5.388s
+- Elapsed: 5.564s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 34 (identifier overlap < 0.55 or fewer than 3 identifiers)
 - Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 13327 (raise with --max-pairs)

@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      test-location
 command:    python tooling\gates\run_gate.py test-location artifacts\gates\source-fold-tests
-started:    2026-09-04T00:05:03.7147354Z
-ended:      2026-09-04T00:05:04.3545904Z
-duration_s: 0.640
+started:    2026-09-04T00:22:19.2279071Z
+ended:      2026-09-04T00:22:19.8985075Z
+duration_s: 0.671
 exit_code:  0
 
 --- stdout ---

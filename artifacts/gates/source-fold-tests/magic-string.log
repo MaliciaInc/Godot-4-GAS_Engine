@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      magic-string
 command:    python tooling\gates\run_gate.py magic-string artifacts\gates\source-fold-tests
-started:    2026-09-04T00:05:04.3566638Z
-ended:      2026-09-04T00:05:13.1621920Z
-duration_s: 8.806
+started:    2026-09-04T00:22:19.9016095Z
+ended:      2026-09-04T00:22:29.5236452Z
+duration_s: 9.622
 exit_code:  0
 
 --- stdout ---

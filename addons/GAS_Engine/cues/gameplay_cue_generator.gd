@@ -6,9 +6,20 @@
 ## check them was to open a resource in an Inspector. They are a file now -
 ## written here, read here, and readable by a person.
 ##
-## Each binding preloads its scene rather than naming a path in a string. A path
-## in a string is not a dependency: the exporter would not know the scene was
-## wanted, and a cue that played in the editor would be missing from the game.
+## Each binding preloads its scene rather than naming a path in a string. That
+## buys a compile-time check, a rename the editor can follow, and a mistake the
+## parser catches instead of the player.
+##
+## It does NOT make the exporter aware of the scene, whatever an earlier version
+## of this comment claimed. Measured on 4.7.2:
+## `ResourceLoader.get_dependencies()` returns 0 for every `.gd` file, preloads
+## and all, while a `.tscn` returns its whole list - and that call is what the
+## exporter walks. Under "Export all resources", Godot's own default, every cue
+## scene ships regardless. Under "Selected scenes and dependencies" nothing
+## reached only through GDScript ships: not this file, not the scenes it
+## preloads, and not the eight scripts the cue manager autoload preloads either.
+## Consumers on that mode have to name what they want in the export preset; see
+## the export note in README.md.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -90,10 +101,9 @@ static func render_source(bindings: Dictionary[StringName, String]) -> String:
 ## Reading it as text is why the two rules below exist. The header calls this
 ## file safe to edit by hand, so it has to be read the way GDScript reads it,
 ## and it was not: any line anywhere holding `&"..."` and `preload("...")`
-## counted. A commented-out binding therefore stayed live - gone for Godot, gone
-## for the exporter that no longer sees the dependency, and present for the cue
-## manager, which builds its table from here. An example in a doc comment and a
-## second dictionary further down counted too.
+## counted. A commented-out binding therefore stayed live - gone for Godot and
+## present for the cue manager, which builds its table from here. An example in
+## a doc comment and a second dictionary further down counted too.
 ##
 ## So a binding is a line inside the BINDINGS body that starts where a binding
 ## starts. Everything else in the file is somebody else's business.

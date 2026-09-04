@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# the freeze procedure lives with the tooling, not inside the evidence
+# the export smoke, and the claim it disproved
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T00:04:58Z
-# commit-previo: aba06d7c171459d987051b24df614a19b712c940
+# date-utc: 2026-09-04T00:22:13Z
+# commit-previo: 33c185c260fa1e0da710e9434487dc86514336c6
 # files: 24
 1200cd49fad650a55ee650bea398d11993499f67226033059c9499ca27813be0  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py

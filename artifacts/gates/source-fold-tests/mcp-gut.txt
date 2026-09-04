@@ -1,5 +1,4 @@
 RESULT: PASS
-SOURCE: a59ea91bafcca91f27799d08ec94e986a3d6cd28bf6897b6b0b02c2de20e0d72
+SOURCE: 769db22afec02cec746a0880ae1dffdfc236273e457c82b4c45a0f5488184917
 GAS_ENGINE_GUT_RESULT: PASS passed=37475 failed=0 pending=0 orphans=0
 scripts: 84 loaded, 84 on disk; tests: 1093 passing, 0 risky
-the cue reader now asks for the whole BINDINGS name, not a prefix of it
