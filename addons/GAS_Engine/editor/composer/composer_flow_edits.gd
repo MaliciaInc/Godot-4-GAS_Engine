@@ -15,8 +15,6 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerFlowEdits extends RefCounted
 
-const NEWLINE: String = "\n"
-const TAB: String = "\t"
 
 ## What every refusal says when the shape asked for is outside the subset.
 const NOT_REPRESENTABLE: String = (
@@ -24,6 +22,9 @@ const NOT_REPRESENTABLE: String = (
 )
 const NOT_CONNECTED: String = "those two are not connected"
 const WOULD_LOOP: String = "that would make the ability run in a circle"
+const WOULD_STRAND: String = (
+	"that would leave statements written but never run, and not shown as such"
+)
 const NO_SUCH_NODE: String = "one end of that connection is no longer in the ability"
 
 
@@ -71,7 +72,9 @@ static func connect_flow(
 	if island.is_empty():
 		return _refuse(NOT_REPRESENTABLE)
 
-	var changed: String = _released(source, graph, island, from)
+	var changed: String = ComposerFlowText.spent_stops_removed(
+		ComposerFlowText.released(source, graph, island, from), graph.source_path
+	)
 	var read: ComposerGraph = _read_back(source, changed, graph)
 	if read == null:
 		return _refuse(NOT_REPRESENTABLE)
@@ -79,6 +82,8 @@ static func connect_flow(
 		return _refuse(NOT_REPRESENTABLE)
 	if _live_count(read) <= _live_count(graph):
 		return _refuse(NOT_REPRESENTABLE)
+	if _strands_anything(read):
+		return _refuse(WOULD_STRAND)
 	return _accept(changed)
 
 
@@ -118,18 +123,22 @@ static func disconnect_flow(
 	if stranded.is_empty():
 		return _refuse(NOT_REPRESENTABLE)
 
-	var lines: PackedStringArray = source.split(NEWLINE)
-	var region: ComposerSpan = _region_of(stranded)
-	if not _is_contiguous(stranded, region):
+	var lines: PackedStringArray = source.split(ComposerFlowText.NEWLINE)
+	var region: ComposerSpan = ComposerFlowText.region_of(stranded)
+	if not ComposerFlowText.is_contiguous(stranded, region):
 		return _refuse(NOT_REPRESENTABLE)
 
-	var wrapped: PackedStringArray = _detached(lines, region)
-	var changed: String = _ended(NEWLINE.join(wrapped), region.first_line)
+	var wrapped: PackedStringArray = ComposerFlowText.detached(lines, region)
+	var changed: String = ComposerFlowText.ended(
+		ComposerFlowText.NEWLINE.join(wrapped), region.first_line
+	)
 	var read: ComposerGraph = _read_back(source, changed, graph)
 	if read == null:
 		return _refuse(NOT_REPRESENTABLE)
 	if _live_count(read) >= _live_count(graph):
 		return _refuse(NOT_REPRESENTABLE)
+	if _strands_anything(read):
+		return _refuse(WOULD_STRAND)
 	return _accept(changed)
 
 
@@ -167,104 +176,6 @@ static func _reachable(
 				continue
 			pending.append(wire.to_node)
 	return seen
-#endregion
-
-
-#region Source shapes
-## The lines those nodes cover, from the first to the last.
-static func _region_of(nodes: Array[ComposerNode]) -> ComposerSpan:
-	var first: int = 0
-	var last: int = 0
-	for node: ComposerNode in nodes:
-		if not node.span.is_valid():
-			continue
-		if first == 0 or node.span.first_line < first:
-			first = node.span.first_line
-		if node.span.last_line > last:
-			last = node.span.last_line
-	return ComposerSpan.new(first, last)
-
-
-## Whether those nodes are the whole of that run of lines and nothing else.
-##
-## A gap means the wrapper would swallow a statement that is still supposed to
-## run, so the transformation is refused rather than approximated.
-static func _is_contiguous(nodes: Array[ComposerNode], region: ComposerSpan) -> bool:
-	if not region.is_valid():
-		return false
-	var covered: int = 0
-	for node: ComposerNode in nodes:
-		if node.span.is_valid():
-			covered += node.span.last_line - node.span.first_line + 1
-	return covered == region.last_line - region.first_line + 1
-
-
-## Put `if false:` around a run of lines, one indent deeper, marked as ours.
-static func _detached(
-	lines: PackedStringArray, region: ComposerSpan
-) -> PackedStringArray:
-	var indent: String = _indent_of(lines[region.first_line - 1])
-	var opener: String = "%s%s%s%s" % [
-		indent,
-		ComposerSubset.DETACHED_OPENER,
-		ComposerSubset.DETACHED_MARK,
-		ComposerFlow.free_island_name(lines),
-	]
-
-	var made: PackedStringArray = PackedStringArray()
-	for number: int in lines.size():
-		var line: String = lines[number]
-		var at: int = number + 1
-		if at == region.first_line:
-			made.append(opener)
-		if at >= region.first_line and at <= region.last_line:
-			made.append(TAB + line if not line.strip_edges().is_empty() else line)
-			continue
-		made.append(line)
-	return made
-
-
-## Take the wrapper off an island and put its lines back where they run.
-static func _released(
-	source: String, graph: ComposerGraph, island: String, after: ComposerNode
-) -> String:
-	var lines: PackedStringArray = source.split(NEWLINE)
-	var opened: int = -1
-	for number: int in lines.size():
-		if ComposerFlow.island_name(lines[number]) == island:
-			opened = number
-			break
-	if opened < 0:
-		return source
-
-	var depth: int = ComposerSubset.indent_of(lines[opened])
-	var body: PackedStringArray = PackedStringArray()
-	var last: int = opened
-	for number: int in range(opened + 1, lines.size()):
-		var line: String = lines[number]
-		if not line.strip_edges().is_empty() and ComposerSubset.indent_of(line) <= depth:
-			break
-		body.append(_undented(line))
-		last = number
-
-	var kept: PackedStringArray = PackedStringArray()
-	for number: int in lines.size():
-		if number >= opened and number <= last:
-			continue
-		kept.append(lines[number])
-		if number + 1 == after.span.last_line:
-			kept.append_array(body)
-	return NEWLINE.join(kept)
-
-
-static func _indent_of(line: String) -> String:
-	return line.substr(0, line.length() - line.lstrip(" \t").length())
-
-
-static func _undented(line: String) -> String:
-	if line.begins_with(TAB):
-		return line.substr(1)
-	return line
 #endregion
 
 
@@ -308,64 +219,38 @@ static func _live_count(graph: ComposerGraph) -> int:
 	return live
 
 
+## Whether the result leaves a statement nothing reaches and nothing marks.
+##
+## The invariant the island machinery exists for. A statement that stops running
+## must be *shown* to have stopped - wrapped, drawn apart, still editable. One
+## that merely ends up written after a `return` is worse than a deleted one: it
+## is still on the canvas, still in the file, and no longer does anything.
+##
+## Found by putting an island back in front of a live statement, which pushed
+## that statement past the island's own `return`. The counts either side agreed,
+## the reader read it back happily, and the person's cue silently stopped
+## firing.
+static func _strands_anything(graph: ComposerGraph) -> bool:
+	for node: ComposerNode in graph.nodes:
+		if not node.source_backed or not node.visible_in_graph:
+			continue
+		if node.id == ComposerFlow.ENTRY_ID:
+			continue
+		if graph.is_reachable_from_entry(node.id):
+			continue
+		if _island_of(graph, node).is_empty():
+			return true
+	return false
+
+
 ## The islands a text holds.
 static func _islands_in(source: String) -> Dictionary[String, bool]:
 	var found: Dictionary[String, bool] = {}
-	for line: String in source.split(NEWLINE):
+	for line: String in source.split(ComposerFlowText.NEWLINE):
 		var island: String = ComposerFlow.island_name(line)
 		if not island.is_empty():
 			found[island] = true
 	return found
-
-
-## Give the live path somewhere to end, when unplugging took its return away.
-##
-## A method typed `-> bool` that falls off the end is a file the person cannot
-## run, so the transformation that stranded the return puts one back - marked,
-## so a later reconnect knows it was machinery rather than something they wrote.
-static func _ended(source: String, wrapped_at: int) -> String:
-	var lines: PackedStringArray = source.split(NEWLINE)
-	for number: int in range(wrapped_at - 1, lines.size()):
-		var line: String = lines[number]
-		if line.strip_edges().is_empty():
-			continue
-		if ComposerSubset.indent_of(line) == 0:
-			break
-		var verdict: ComposerSubset.Verdict = ComposerSubset.classify(line)
-		if verdict.kind == ComposerSubset.Kind.RETURN and verdict.indent == 1:
-			return source
-
-	var written: String = ComposerTypes.default_expression(
-		StringName(_returns(lines))
-	)
-	var stop: String = "%sreturn %s %s" % [TAB, written, ComposerSubset.FLOW_STOP_MARK]
-	lines.insert(_after_body(lines, wrapped_at), stop)
-	return NEWLINE.join(lines)
-
-
-## The type the method says it hands back, or "" when it says nothing.
-static func _returns(lines: PackedStringArray) -> String:
-	for line: String in lines:
-		if not line.begins_with("func "):
-			continue
-		var arrow: int = line.find("->")
-		if arrow < 0:
-			return ""
-		return line.substr(arrow + 2).rstrip(":").strip_edges()
-	return ""
-
-
-## The line after the last one belonging to the body.
-static func _after_body(lines: PackedStringArray, from: int) -> int:
-	var last: int = from
-	for number: int in range(from - 1, lines.size()):
-		var line: String = lines[number]
-		if line.strip_edges().is_empty():
-			continue
-		if ComposerSubset.indent_of(line) == 0:
-			break
-		last = number + 1
-	return last
 
 
 static func _has_edge(graph: ComposerGraph, edge: ComposerGraph.Connection) -> bool:

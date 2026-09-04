@@ -170,3 +170,44 @@ func test_nothing_can_be_run_after_the_end() -> void:
 
 	assert_false(done.ok, "refused")
 #endregion
+
+
+#region The file has to compile, not just parse
+## The bodies a cut has to leave loadable.
+##
+## GDScript is compiled here rather than read back, because reading is not
+## compiling: the reader answers whether Composer can draw the result, and a
+## file it draws happily can still be one Godot refuses to load. Nothing else
+## in the chain asks that question.
+const SHORTENED: Array = [
+	[
+		["await wait_delay(1.0)", "end_ability()"],
+		"a linear body loses its tail",
+	],
+	[
+		["var pick: AbilityTaskWaitTargetData = wait_target_data()", "end_ability()"],
+		"the tail that goes is the one using a local",
+	],
+	[
+		["await wait_delay(1.0)", "end_ability()", "return true"],
+		"a body that already ends in a return keeps that one",
+	],
+]
+
+
+func test_a_shortened_method_still_compiles() -> void:
+	for row: Array in SHORTENED:
+		var statements: Array = row[0]
+		var described: String = row[1]
+		var source: String = _script(statements)
+		var graph: ComposerGraph = _read(source)
+
+		var done: ComposerFlowEdits.Result = ComposerFlowEdits.disconnect_flow(
+			source, graph, _first_flow(graph)
+		)
+
+		assert_true(done.ok, "%s: %s" % [described, done.message])
+		var built: GDScript = GDScript.new()
+		built.source_code = done.source
+		assert_eq(built.reload(), OK, "%s: the result compiles" % described)
+#endregion
