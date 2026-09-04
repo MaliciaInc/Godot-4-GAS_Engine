@@ -40,13 +40,14 @@ var _graph: ComposerGraph = null
 
 var _doc: ComposerDocument = ComposerDocument.new()
 
-## The one thing allowed to turn a dropped wire into GDScript. The canvas
-## asks; this answers, or says why not.
-var _wires: ComposerConnectionController = ComposerConnectionController.new()
+## Every gesture that changes a wire goes through these, and they hear the
+## canvas themselves.
+var _routes: ComposerWiringRoutes = ComposerWiringRoutes.new()
 
 ## What the selected statements can be made to do.
 var _statements: ComposerStatementOps = ComposerStatementOps.new()
-var _menu: ComposerCardMenu = null
+## The menus this screen opens. It says when; they say what was picked.
+var _menus: ComposerMenus = ComposerMenus.new()
 var _finder: ComposerFinder = null
 var _chords: ComposerChords = ComposerChords.new()
 var _palette: ComposerPalette = null
@@ -94,17 +95,20 @@ func _ready() -> void:
 	# panel to one that has not been made yet reads as done and is not.
 	_canvas.selection_changed.connect(_on_selection_changed)
 	_canvas.nodes_positioned.connect(_on_nodes_positioned)
-	_canvas.connection_requested.connect(_on_connection_requested)
-	_canvas.disconnection_requested.connect(_on_disconnection_requested)
 	_canvas.value_edited.connect(_on_value_edited)
+	_canvas.pin_context_requested.connect(_on_pin_context_requested)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
 	_canvas.node_requested.connect(_on_node_picked)
 	_canvas.menu_requested.connect(_on_menu_requested)
-	# Every refusal the wiring can produce is said out loud in one place, so a
-	# gesture that does nothing always says why it did nothing.
-	_wires.bind(_doc)
+	# The routes hear the canvas themselves. A gesture added there is connected
+	# beside the others rather than in a list here that has to be remembered.
+	_routes.bind(_doc)
+	_routes.listen_to(_canvas)
+	_routes.changed.connect(_on_wiring_changed)
+	_routes.refused.connect(_on_refused)
+	add_child(_menus)
+	_menus.chose.connect(_on_menu_chosen)
 	_statements.bind(_doc)
-	_wires.refused.connect(_on_refused)
 	_output.row_picked.connect(_on_row_picked)
 	_top.open_requested.connect(func _asked() -> void: open_requested.emit())
 	_top.create_requested.connect(func _asked() -> void: create_requested.emit())
@@ -271,83 +275,60 @@ func _on_nodes_positioned(positions: Dictionary[StringName, Vector2]) -> void:
 	await _redraw()
 
 
-## A wire change took, so everything that draws the file is asked again.
-##
-## Written once for all three ways in. A second copy is a second place to forget
-## the redraw, and a canvas that was not asked again keeps drawing the cable the
-## file no longer has.
-func _rewired(done: bool) -> void:
-	if done:
-		await _redraw()
+## A gesture changed the file, so everything drawn from it is asked again.
+func _on_wiring_changed() -> void:
+	await _redraw()
 
 
-func _on_connection_requested(edge: ComposerGraph.Connection) -> void:
-	await _rewired(_wires.connect_edge(edge))
-
-
-func _on_disconnection_requested(edge: ComposerGraph.Connection) -> void:
-	await _rewired(_wires.disconnect_edge(edge))
-
-
+## Why a gesture did nothing. A refusal a person cannot read is a tool that
+## ignored them.
 func _on_refused(message: String) -> void:
 	push_warning(message)
 
 
 ## The Inspector asked for the cable on one argument to come off.
-##
-## The same controller a pulled wire goes to, so unplugging from the panel and
-## unplugging on the canvas are one operation with one answer about what the
-## argument is left holding. An argument takes one cable, so there is one to find.
 func _on_inspector_disconnect(node_id: StringName, position: int) -> void:
-	if not _doc.is_open():
-		return
-	var wires: Array[ComposerGraph.Connection] = _doc.graph().connections_to(
-		node_id, StringName(ComposerReader.ARGUMENT % position)
-	)
-	if not wires.is_empty():
-		await _rewired(_wires.disconnect_edge(wires[0]))
+	_routes.unplug_argument(_doc, node_id, position)
 
 
-## What can be done to a card, offered where the pointer is.
+## Right-click, on a pin or on a card.
 ##
-## The same three operations the chords do, said out loud. A tool whose only way
-## in is a chord is a tool you have to be told about, and nobody is there to
-## tell somebody opening it for the first time.
-const REMOVE: String = "Remove"
-const REPEAT: String = "Repeat"
-const COPY: String = "Copy"
-const MENU_ITEMS: Array[String] = [REMOVE, REPEAT, COPY]
+## The canvas asks about a pin first, because a pin sits on a card and asking
+## about the card would answer for both.
+func _on_pin_context_requested(
+	node_id: StringName, port_id: StringName, at: Vector2
+) -> void:
+	if _doc.may_write():
+		_menus.open_for_pin(node_id, port_id, at)
 
 
 func _on_menu_requested(node_id: StringName, at: Vector2) -> void:
 	if not _doc.may_write():
 		return
-	# The menu acts on what is selected, so right-clicking a card has to select
-	# it first. Without this the three items operate on whatever was picked
+	# The card menu acts on what is selected, so right-clicking a card has to
+	# select it first. Without this the items operate on whatever was picked
 	# before - a person right-clicks one node and removes another.
 	if not node_id.is_empty() and not _canvas.picked().has(node_id):
 		_canvas.reveal(node_id)
-	if _menu == null:
-		_menu = ComposerCardMenu.new()
-		_menu.offer(MENU_ITEMS)
-		_menu.chose.connect(_on_menu_chosen)
-		add_child(_menu)
-	# `at` is already where the pointer is in the viewport. Adding this screen's
-	# own position again would open the menu that far down and to the right of
-	# the card it belongs to.
-	_menu.open_at(at)
+	_menus.open_for_card(node_id, at)
 
 
+## One place where a menu item becomes an operation, whichever menu offered it.
+##
 ## Matched on the name it was offered under, not on an index two lists have to
 ## keep agreeing about.
-func _on_menu_chosen(chosen: String) -> void:
+func _on_menu_chosen(
+	chosen: String, node_id: StringName, port_id: StringName
+) -> void:
 	match chosen:
-		REMOVE:
+		ComposerMenus.REMOVE:
 			await remove_picked()
-		REPEAT:
+		ComposerMenus.REPEAT:
 			await repeat_picked()
-		COPY:
+		ComposerMenus.COPY:
 			copy_picked()
+		ComposerMenus.BREAK_ALL:
+			_routes.break_pin(node_id, port_id)
 #endregion
 
 
@@ -362,7 +343,7 @@ func _on_menu_chosen(chosen: String) -> void:
 ## change one of them is how the three start disagreeing about the same node.
 func _on_value_edited(node_id: StringName, position: int, written: String) -> void:
 	var held: Array[StringName] = _canvas.picked()
-	if not _wires.rewrite_field(node_id, position, written):
+	if not _routes.rewrite_field(node_id, position, written):
 		return
 	await _redraw()
 	if not held.is_empty():

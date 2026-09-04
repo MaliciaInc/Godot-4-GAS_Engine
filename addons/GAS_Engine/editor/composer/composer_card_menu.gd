@@ -14,12 +14,21 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerCardMenu extends PopupMenu
 
-## Which entry was picked, by the name it was offered under rather than by its
-## index. An index is a number two lists have to agree about, and they stop
-## agreeing the first time somebody inserts an item.
-signal chose(item: String)
+## Which entry was picked, and what it was opened on.
+##
+## By the name it was offered under rather than by its index: an index is a
+## number two lists have to agree about, and they stop agreeing the first time
+## somebody inserts an item.
+##
+## What it was opened on travels with it, because the answer arrives long after
+## the question - a menu is open while somebody reads it, and a caller holding
+## "which pin was that" in a field of its own is a caller whose field is stale
+## the moment a second menu opens.
+signal chose(item: String, node_id: StringName, port_id: StringName)
 
 var _items: Array[String] = []
+var _node_id: StringName = &""
+var _port_id: StringName = &""
 
 
 ## Offer these, in this order.
@@ -36,7 +45,9 @@ func offer(items: Array[String]) -> void:
 ##
 ## `reset_size()` first: a popup reused from a previous open keeps the size it
 ## had, so a menu that once held more items opens with empty space below them.
-func open_at(at: Vector2) -> void:
+func open_at(at: Vector2, node_id: StringName = &"", port_id: StringName = &"") -> void:
+	_node_id = node_id
+	_port_id = port_id
 	reset_size()
 	position = Vector2i(at)
 	popup()
@@ -45,4 +56,4 @@ func open_at(at: Vector2) -> void:
 func _on_id_pressed(chosen: int) -> void:
 	if chosen < 0 or chosen >= _items.size():
 		return
-	chose.emit(_items[chosen])
+	chose.emit(_items[chosen], _node_id, _port_id)

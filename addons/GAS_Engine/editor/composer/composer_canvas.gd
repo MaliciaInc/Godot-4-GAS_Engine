@@ -50,6 +50,23 @@ signal node_requested(call_id: StringName, graph_position: Vector2)
 ## screen can say whether the file may be written.
 signal value_edited(node_id: StringName, position: int, source_text: String)
 
+## Alt-click on a pin: take everything off it, whatever is on it.
+signal break_all_requested(node_id: StringName, port_id: StringName)
+
+## Ctrl-drag from one pin to another: move what is on the first onto the second.
+signal move_connections_requested(
+	from_node_id: StringName,
+	from_port_id: StringName,
+	to_node_id: StringName,
+	to_port_id: StringName
+)
+
+## Right-click on a pin, rather than on the card it belongs to.
+signal pin_context_requested(
+	node_id: StringName, port_id: StringName, screen_position: Vector2
+)
+
+
 var _graph: ComposerGraph = null
 var _cards: Dictionary[StringName, ComposerCard] = {}
 var _port_types: ComposerPortTypes = ComposerPortTypes.new()
@@ -65,9 +82,18 @@ var _detail: ComposerCard.Detail = ComposerCard.Detail.FULL
 ## announcements that takes are reported as the one change it is.
 var _revealing: bool = false
 
+## The pin a Ctrl-drag started on, while one is in progress. Held nowhere
+## else and written to nothing: a cancelled drag must leave no trace.
+var _moving: ComposerPins.Pin = ComposerPins.Pin.new()
+
 
 func _ready() -> void:
-	right_disconnects = true
+	# Off, deliberately. GraphEdit's right-disconnect is a second policy about
+	# what a right-click on a wire means, and this editor already has one - right
+	# click opens what can be done here, and disconnecting is one of the things
+	# it offers. Two policies for one button is a button that does different
+	# things depending on where in it you clicked.
+	right_disconnects = false
 	minimap_enabled = false
 	show_grid = true
 	zoom_min = ZOOM_MIN
@@ -79,6 +105,7 @@ func _ready() -> void:
 	begin_node_move.connect(_on_move_begun)
 	end_node_move.connect(_on_move_ended)
 	popup_request.connect(_on_popup_request)
+	gui_input.connect(_on_gui_input)
 
 
 #region Showing a graph
@@ -246,13 +273,83 @@ func _on_move_ended() -> void:
 ## screen add the canvas offset again, so the menu opened as far from the
 ## pointer as the palette is wide.
 func _on_popup_request(_at_position: Vector2) -> void:
-	menu_requested.emit(_card_at(get_local_mouse_position()), get_global_mouse_position())
+	var here: Vector2 = get_local_mouse_position()
+	var there: Vector2 = get_global_mouse_position()
+	# A pin first, because a pin sits on a card and asking about the card would
+	# answer for both. What can be done to a wire and what can be done to a
+	# statement are different lists.
+	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, here)
+	if pin.is_found():
+		pin_context_requested.emit(pin.node_id, pin.port_id, there)
+		return
+	menu_requested.emit(_card_at(here), there)
 
 
 func _on_value_edited(
 	node_id: StringName, position: int, source_text: String
 ) -> void:
 	value_edited.emit(node_id, position, source_text)
+#endregion
+
+
+#region Gestures on a pin
+## Alt-click clears a pin; Ctrl-drag moves what is on it somewhere else.
+##
+## Watched through the `gui_input` signal rather than by overriding
+## `_gui_input`. GraphEdit handles input in C++, so a GDScript override replaces
+## that handling and cannot call it - dragging a card, drawing a wire,
+## box-selecting and panning would all stop the moment this file existed. The
+## signal is emitted first and the widget's own handler runs after it unless the
+## event was accepted, which is exactly the "take these two, leave the rest"
+## this needs.
+func _on_gui_input(event: InputEvent) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if button.pressed and button.alt_pressed:
+		_break_pin_under(button.position)
+		return
+	if button.pressed and button.ctrl_pressed:
+		_start_moving_from(button.position)
+		return
+	if not button.pressed and _moving.is_found():
+		_finish_moving_at(button.position)
+
+
+func _break_pin_under(at: Vector2) -> void:
+	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
+	if not pin.is_found():
+		return
+	break_all_requested.emit(pin.node_id, pin.port_id)
+	accept_event()
+
+
+## Remember which pin a Ctrl-drag started on. Nothing is written yet, and the
+## document is not told: a drag that is never finished has to leave no trace.
+func _start_moving_from(at: Vector2) -> void:
+	var pin: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
+	if not pin.is_found():
+		return
+	_moving = pin
+	accept_event()
+
+
+## Ask for the move, if it landed somewhere it could mean one.
+##
+## The two pins have to face the same way. Moving what is on an output onto an
+## input is not a move at all - it is a different wire, and the drag that means
+## that one is the ordinary one the widget already handles.
+func _finish_moving_at(at: Vector2) -> void:
+	var from: ComposerPins.Pin = _moving
+	_moving = ComposerPins.Pin.new()
+	accept_event()
+
+	var to: ComposerPins.Pin = ComposerPins.at(_cards, zoom, at)
+	if not to.is_found() or to.is_output != from.is_output:
+		return
+	if to.is_same_as(from):
+		return
+	move_connections_requested.emit(from.node_id, from.port_id, to.node_id, to.port_id)
 #endregion
 
 

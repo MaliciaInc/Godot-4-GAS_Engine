@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Composer 3.2 GraphEdit migration: dropped the composer_canvas.gd size allowance (a GraphEdit canvas is 322 lines and needs none), and rewrote the composer_screen.gd and 'await' reasons, both of which argued from things the migration deleted - a placement handler that no longer exists and glass cards that are now GraphNodes.
+# TASK 11: composer_screen.gd no longer needs a size allowance. Four responsibilities left it - the field-write door, the chord table, the menus and the wiring routes - and it now sits at the general limit like every other file.
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T21:49:28Z
-# commit-previo: 11bf4fa0a07640a7c4ac62f7cca88192fff599c0
+# date-utc: 2026-09-04T22:41:08Z
+# commit-previo: eb0cba4d5a28c90ebae5564596615d5117b60fb2
 # files: 24
-2f23daace3410da08fe4de4bfbedfbe5b7afadbe2b484e9755f1466a46b9edff  tooling/.quality-gates.json
+2844fbea2b40f72f801e560e56dab8bd3a21860e1b315451d578fb93679d4c89  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
