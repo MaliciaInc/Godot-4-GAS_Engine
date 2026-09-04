@@ -49,16 +49,7 @@ class Result extends RefCounted:
 ## the call could be made on. Guessing a receiver would produce a line that does
 ## not compile, put there by the tool rather than by the person.
 static func call_for(entry: ComposerCatalog.Entry, path: String) -> String:
-	if entry == null:
-		return ""
-	var receiver: String = ComposerTypes.name_reaching(entry.source, path)
-	var written: String = String(entry.type_id)
-	if not receiver.is_empty():
-		written = "%s.%s" % [receiver, written]
-	var call: String = "%s()" % written
-	if entry.awaits:
-		call = AWAIT_MARK + call
-	return TAB + call
+	return ComposerStatementFactory.call_statement(entry, path)
 
 
 ## One statement, rebuilt from the model.

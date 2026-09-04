@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      test-location
 command:    python tooling\gates\run_gate.py test-location artifacts\gates\source-fold-tests
-started:    2026-09-04T18:47:43.3964850Z
-ended:      2026-09-04T18:47:44.0100211Z
-duration_s: 0.614
+started:    2026-09-04T19:17:59.0265507Z
+ended:      2026-09-04T19:17:59.6467811Z
+duration_s: 0.620
 exit_code:  0
 
 --- stdout ---
@@ -11,10 +11,10 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 348
+- Source files scanned: 351
 - Blocking findings: 0
 - Scan issues: 0
-- Test files recognized: 125
+- Test files recognized: 126
 
 ## Violations
 

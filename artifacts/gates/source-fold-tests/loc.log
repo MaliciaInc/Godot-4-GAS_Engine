@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      loc
 command:    python tooling\gates\run_gate.py loc artifacts\gates\source-fold-tests
-started:    2026-09-04T18:47:42.6699112Z
-ended:      2026-09-04T18:47:43.3947452Z
-duration_s: 0.725
+started:    2026-09-04T19:17:58.2811591Z
+ended:      2026-09-04T19:17:59.0242533Z
+duration_s: 0.743
 exit_code:  0
 
 --- stdout ---
@@ -11,7 +11,7 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 348
+- Source files scanned: 351
 - Blocking findings: 0
 - Scan issues: 0
 

@@ -20,8 +20,20 @@ class_name ComposerTypes extends RefCounted
 ## calling a legal file an error.
 const UNTYPED: Array[StringName] = [&"", &"Variant", &"Nil"]
 
+## The type names this project writes and reads, spelled once.
+const BOOL: StringName = &"bool"
 const INT: StringName = &"int"
 const FLOAT: StringName = &"float"
+const STRING: StringName = &"String"
+const STRING_NAME: StringName = &"StringName"
+const NODE_PATH: StringName = &"NodePath"
+const VECTOR2: StringName = &"Vector2"
+const VECTOR2I: StringName = &"Vector2i"
+const VECTOR3: StringName = &"Vector3"
+const VECTOR3I: StringName = &"Vector3i"
+const VECTOR4: StringName = &"Vector4"
+const VECTOR4I: StringName = &"Vector4i"
+const COLOR: StringName = &"Color"
 
 ## Script class name -> the class it extends. Built once from the project.
 static var _bases: Dictionary[StringName, StringName] = {}
@@ -32,6 +44,88 @@ static var _paths: Dictionary[StringName, String] = {}
 
 #region Deciding
 ## Whether a value of `source` may be handed to a slot of `target`.
+## What Composer writes for a parameter nobody has filled in yet.
+##
+## Every declared argument gets one, because a call created with a required
+## argument missing is a call that does not compile - and the person who asked
+## for the node did not ask for a broken line. The values are the language's own
+## zeroes, so the statement runs and does nothing surprising until it is edited.
+##
+## An object of any kind is `null`: there is no literal for "some Resource", and
+## guessing one would write a line that loads something nobody chose.
+const DEFAULTS: Dictionary[StringName, String] = {
+	BOOL: "false",
+	INT: "0",
+	FLOAT: "0.0",
+	STRING: "\"\"",
+	STRING_NAME: "&\"\"",
+	NODE_PATH: "^\"\"",
+	VECTOR2: "Vector2.ZERO",
+	VECTOR2I: "Vector2i.ZERO",
+	VECTOR3: "Vector3.ZERO",
+	VECTOR3I: "Vector3i.ZERO",
+	VECTOR4: "Vector4.ZERO",
+	VECTOR4I: "Vector4i.ZERO",
+	&"Rect2": "Rect2()",
+	&"Rect2i": "Rect2i()",
+	&"Transform2D": "Transform2D.IDENTITY",
+	&"Plane": "Plane()",
+	&"Quaternion": "Quaternion.IDENTITY",
+	&"AABB": "AABB()",
+	&"Basis": "Basis.IDENTITY",
+	&"Transform3D": "Transform3D.IDENTITY",
+	&"Projection": "Projection()",
+	&"RID": "RID()",
+	&"Callable": "Callable()",
+	&"Dictionary": "{}",
+	&"Array": "[]",
+	&"PackedByteArray": "PackedByteArray()",
+	&"PackedInt32Array": "PackedInt32Array()",
+	&"PackedInt64Array": "PackedInt64Array()",
+	&"PackedFloat32Array": "PackedFloat32Array()",
+	&"PackedFloat64Array": "PackedFloat64Array()",
+	&"PackedStringArray": "PackedStringArray()",
+	&"PackedVector2Array": "PackedVector2Array()",
+	&"PackedVector3Array": "PackedVector3Array()",
+	&"PackedColorArray": "PackedColorArray()",
+	&"PackedVector4Array": "PackedVector4Array()",
+}
+
+const NOTHING: String = "null"
+
+
+## The default for a type, by name first and by Variant code as a fallback.
+##
+## The code is asked second because a reflected argument reports both and they
+## can disagree: a parameter typed as a custom class reports its class name and
+## `TYPE_OBJECT`, and the name is the more specific of the two.
+static func default_expression(
+	type_name: StringName, variant_type: int = TYPE_NIL
+) -> String:
+	if type_name == COLOR:
+		# Written through the codec rather than spelled here, so the text a Color
+		# argument is created holding and the text any colour is written as come
+		# out of one place and cannot drift apart.
+		return ComposerValueCodec.encode_variant(Color.BLACK, COLOR)
+	if DEFAULTS.has(type_name):
+		return DEFAULTS[type_name]
+	if variant_type != TYPE_NIL:
+		var spelled: StringName = StringName(type_string(variant_type))
+		if DEFAULTS.has(spelled):
+			return DEFAULTS[spelled]
+	return NOTHING
+
+
+## The written type of a reflected argument: the class where it names one, and
+## the built-in name otherwise.
+static func spelled_type(argument: Dictionary) -> String:
+	var declared: String = argument["class_name"]
+	if not declared.is_empty():
+		return declared
+	var code: int = argument["type"]
+	return type_string(code)
+
+
 static func accepts(target: StringName, source: StringName) -> bool:
 	if UNTYPED.has(target) or UNTYPED.has(source):
 		return true

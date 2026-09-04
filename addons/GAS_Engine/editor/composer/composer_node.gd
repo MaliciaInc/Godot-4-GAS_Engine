@@ -62,6 +62,22 @@ class Field extends RefCounted:
 	var display: String = ""
 	var source: ComposerNode.ValueSource = ComposerNode.ValueSource.LITERAL
 
+	## What reflection said about this argument, kept whole.
+	##
+	## A control cannot be chosen from the type name alone: an `int` with an enum
+	## hint wants a dropdown of the names the engine declared, and the same `int`
+	## without one wants a number. Throwing the hint away at read time and
+	## guessing later is how a person ends up typing raw numbers into an enum.
+	var variant_type: int = TYPE_NIL
+	var class_id: StringName = &""
+	var hint: int = PROPERTY_HINT_NONE
+	var hint_string: String = ""
+	var usage: int = PROPERTY_USAGE_DEFAULT
+
+	## What Composer writes here when it creates this call, so a new statement
+	## compiles instead of being born with an argument missing.
+	var default_expression: String = ""
+
 	func is_satisfied() -> bool:
 		return source != ComposerNode.ValueSource.MISSING
 

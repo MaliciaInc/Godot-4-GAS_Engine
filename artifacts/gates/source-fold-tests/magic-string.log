@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      magic-string
 command:    python tooling\gates\run_gate.py magic-string artifacts\gates\source-fold-tests
-started:    2026-09-04T18:47:44.0119288Z
-ended:      2026-09-04T18:47:52.4074934Z
-duration_s: 8.396
+started:    2026-09-04T19:17:59.6486871Z
+ended:      2026-09-04T19:18:08.1417133Z
+duration_s: 8.493
 exit_code:  0
 
 --- stdout ---
@@ -11,7 +11,7 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 223
+- Source files scanned: 225
 - Blocking findings: 0
 - Scan issues: 0
 - Blocking kinds: colors, repeated, templates

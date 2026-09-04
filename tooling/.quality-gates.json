@@ -41,6 +41,11 @@
         "glob": "addons/GAS_Engine/editor/composer/composer_screen.gd",
         "max_lines": 470,
         "reason": "Composer 3.1 added one handler, _on_node_positioned(), which routes a canvas placement into ComposerDocument.place(). The screen was four lines under the limit before it. This file is the wiring between the panels and the document and is long because there are many panels, not because any part of it is doing two jobs."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_catalog.gd",
+        "max_lines": 500,
+        "reason": "Composer 3.2 needs what reflection knows about a parameter, not just its name and type: the hint decides whether an int is a number or a dropdown, the declared default decides what a created call writes, and the return type decides whether a node dragged from a data pin can be given a local. All of it is copied off the method description here because this is the one place that reads a method description. The file grew by what it now carries, not by doing a second job."
       }
     ],
     "function_parameter_allowlist": [
@@ -412,6 +417,14 @@
       {
         "literal": ".log",
         "reason": "A file suffix in two languages with no shared home: verify.ps1 builds '<stage>.log' and product_identity.py lists the suffixes it will open. A constant in either one cannot be read by the other, so naming it would put the same three characters in three places instead of two."
+      },
+      {
+        "literal": "hint",
+        "reason": "A key of Godot's own property dictionary. The catalog reads it off a method description and project_settings writes it into a setting declaration; both are spelling the engine's word, not a value this project chose, and a constant would only move the spelling somewhere else."
+      },
+      {
+        "literal": "hint_string",
+        "reason": "A key of Godot's own property dictionary. The catalog reads it off a method description and project_settings writes it into a setting declaration; both are spelling the engine's word, not a value this project chose, and a constant would only move the spelling somewhere else."
       }
     ],
     "allow_globs": [],

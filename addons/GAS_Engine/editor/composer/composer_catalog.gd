@@ -128,6 +128,10 @@ class Entry extends RefCounted:
 	var title: String = ""
 	var awaits: bool = false
 
+	## What the call hands back, so a node dragged from a data pin can be given
+	## a local to hold it. Empty where the method returns nothing.
+	var result_type: StringName = &""
+
 	## The script the signature was read from. Kept so a name claimed twice can
 	## say who holds it: "already offered" without a source sends someone hunting
 	## through their own project for a conflict they cannot see.
@@ -414,6 +418,8 @@ static func _entry(
 		entry.group = group
 		entry.title = method.capitalize()
 		entry.awaits = suspends
+		var returned: Dictionary = described["return"]
+		entry.result_type = StringName(ComposerTypes.spelled_type(returned))
 		entry.parameters.assign(_parameters(described))
 		# Defaults fill the last parameters, so the required ones are whatever is
 		# left at the front. Read off the method rather than decided here.
@@ -426,20 +432,26 @@ static func _entry(
 static func _parameters(described: Dictionary) -> Array[ComposerNode.Field]:
 	var found: Array[ComposerNode.Field] = []
 	var declared: Array = described["args"]
-	for argument: Dictionary in declared:
+	var defaults: Array = described["default_args"]
+	# Godot fills defaults from the right, so the first argument that has one is
+	# as many places from the end as there are defaults.
+	var first_optional: int = declared.size() - defaults.size()
+
+	for position: int in declared.size():
+		var argument: Dictionary = declared[position]
 		var field: ComposerNode.Field = ComposerNode.Field.new()
 		var called: String = argument["name"]
 		field.label = called.capitalize()
-		field.type_name = StringName(_type_of(argument))
+		field.type_name = StringName(ComposerTypes.spelled_type(argument))
+		field.variant_type = argument["type"]
+		var declared_class: String = argument["class_name"]
+		field.class_id = StringName(declared_class)
+		field.hint = argument["hint"]
+		field.hint_string = argument["hint_string"]
+		field.usage = argument["usage"]
+		field.default_expression = ComposerValueCodec.default_for(
+			field, defaults, position - first_optional
+		)
 		found.append(field)
 	return found
-
-
-## The written type where there is one, the built-in name otherwise.
-static func _type_of(argument: Dictionary) -> String:
-	var declared: String = argument["class_name"]
-	if not declared.is_empty():
-		return declared
-	var code: int = argument["type"]
-	return type_string(code)
 #endregion

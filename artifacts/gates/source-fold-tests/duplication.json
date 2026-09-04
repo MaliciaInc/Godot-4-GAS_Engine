@@ -1,13 +1,13 @@
 {
-  "units": 1345,
-  "units_by_language": "gdscript 1311, powershell 4, python 30",
-  "elapsed_seconds": 5.242904899998393,
+  "units": 1363,
+  "units_by_language": "gdscript 1329, powershell 4, python 30",
+  "elapsed_seconds": 5.329516499999954,
   "scan_issues": [],
   "shape_only_pairs": 34,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 14211
+    "behavioral": 14310
   },
   "blocking": 0,
   "findings": [
@@ -1105,9 +1105,9 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:472-482:_set_scale",
-      "right": "addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters",
-      "score": 0.8125,
+      "left": "addons/GAS_Engine/abilities/ability_instancing_runtime.gd:85-95:mark_pending_removal",
+      "right": "addons/GAS_Engine/editor/composer/composer_statement_factory.gd:56-67:arguments",
+      "score": 0.8095238095238095,
       "category": "executable"
     },
     {
@@ -1623,8 +1623,8 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/editor/composer/composer_canvas.gd:423-431:_bounds",
-      "right": "addons/GAS_Engine/editor/composer/composer_catalog.gd:426-435:_parameters",
+      "left": "addons/GAS_Engine/components/ability_system_component.gd:329-341:set_attribute_base",
+      "right": "addons/GAS_Engine/editor/composer/composer_value_codec.gd:191-202:parse_color",
       "score": 0.7894736842105263,
       "category": "executable"
     },

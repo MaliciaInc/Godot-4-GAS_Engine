@@ -113,14 +113,20 @@ func _all_ids() -> Array[StringName]:
 ## a property for one on the ability system, and the class for a static call.
 ## Written on the wrong thing - or bare when it needs one - the line does not
 ## compile, and the tool put it there rather than the person.
+## Every argument written, with the method's own default where it declares one.
+##
+## A call created with a required argument missing does not compile, and the
+## person who asked for the node did not ask for a broken line - so `add_tag`
+## arrives holding an empty StringName and `abort_ability` holding the default
+## the engine itself declares. Filling them in is editing, not repair.
 const PLACED: Array[Array] = [
 	[
-		ComposerCatalog.ASC_CLASS, &"add_tag", "	owner_asc.add_tag()",
+		ComposerCatalog.ASC_CLASS, &"add_tag", "	owner_asc.add_tag(&\"\")",
 		"on the ability system, through the property that holds one",
 	],
 	[
-		ComposerCatalog.ABILITY_CLASS, &"abort_ability", "	abort_ability()",
-		"bare, because the file already is an ability",
+		ComposerCatalog.ABILITY_CLASS, &"abort_ability", "	abort_ability(2)",
+		"bare, because the file already is an ability, and with the engine's own default",
 	],
 	[
 		ComposerCatalog.ABILITY_CLASS, &"wait_target_data",

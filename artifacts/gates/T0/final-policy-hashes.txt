@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Composer 3.2 TASK 1: truthful entry, end and data flow
+# Composer 3.2 TASK 2: typed defaults and statement factory
 #
 # python: 3.14.6
-# date-utc: 2026-09-04T18:47:37Z
-# commit-previo: 2b55c1d00bc375c99f655e76dfddabfb2a360fbd
+# date-utc: 2026-09-04T19:17:53Z
+# commit-previo: 9d081b6e6c7323118f7ed62d16b0085279148d3c
 # files: 24
-599acf686b2c3659f5ba9ca1b887454dcba27fad3d3bbfcc01b4775fc424abe9  tooling/.quality-gates.json
+4b23ca3e1e0c266bf450549a1c7b27003b7737b8bfd0b0f68dfddb992d09da03  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
