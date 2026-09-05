@@ -59,7 +59,7 @@ static func of(lines: PackedStringArray, span: ComposerSpan) -> Array[Statement]
 static func _statement_end(lines: PackedStringArray, first: int, limit: int) -> int:
 	var last: int = first
 	var text: String = lines[first - 1]
-	while last < limit and ComposerSubset.scan(text).depth > 0:
+	while last < limit and ComposerLine.scan(text).depth > 0:
 		last += 1
 		text += lines[last - 1]
 	return last

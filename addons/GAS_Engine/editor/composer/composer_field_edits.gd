@@ -204,7 +204,7 @@ static func _render(edit: Planned) -> String:
 ## thing to keep in step. The colon, the indentation and the note somebody left
 ## at the end of the line all survive, because none of them is what changed.
 static func _structural(node: ComposerNode, written: String) -> String:
-	var code: String = ComposerSubset.code_of(node.text)
+	var code: String = ComposerLine.code_of(node.text)
 	var note: String = node.text.substr(code.length()).strip_edges()
 	var head: String = code.strip_edges()
 	var rebuilt: String = ""

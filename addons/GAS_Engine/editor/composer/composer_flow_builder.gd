@@ -317,7 +317,7 @@ static func is_case(node: ComposerNode) -> bool:
 ## Not capitalised and not tidied. `State.CASTING` is what the person typed and
 ## what they will look for on the card.
 static func case_label(node: ComposerNode) -> String:
-	return ComposerSubset.code_of(node.text).strip_edges().trim_suffix(":").strip_edges()
+	return ComposerLine.code_of(node.text).strip_edges().trim_suffix(":").strip_edges()
 #endregion
 
 

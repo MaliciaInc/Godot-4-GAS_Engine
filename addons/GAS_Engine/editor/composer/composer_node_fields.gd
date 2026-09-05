@@ -60,7 +60,7 @@ static func of_call(text: String, entry: ComposerCatalog.Entry) -> Array[Compose
 	var position: int = 0
 	# Split on the call's own commas. Every comma would cut `build(x, y)` in
 	# half and hand the card two arguments the file never passed.
-	for argument: String in ComposerSubset.arguments_of(inside):
+	for argument: String in ComposerLine.arguments_of(inside):
 		var declared: ComposerNode.Field = (
 			entry.parameter(position) if entry != null else null
 		)
@@ -147,7 +147,7 @@ static func structural(
 ## `state` in `match state:`. The keyword and the colon are the line's; the
 ## expression is the person's.
 static func header_expression(text: String) -> String:
-	var head: String = ComposerSubset.code_of(text).strip_edges().trim_suffix(":")
+	var head: String = ComposerLine.code_of(text).strip_edges().trim_suffix(":")
 	var space: int = head.find(" ")
 	if space < 0:
 		return ""
@@ -156,7 +156,7 @@ static func header_expression(text: String) -> String:
 
 ## What a `return` hands back, or nothing for a bare one.
 static func return_expression(text: String) -> String:
-	var line: String = ComposerSubset.code_of(text).strip_edges()
+	var line: String = ComposerLine.code_of(text).strip_edges()
 	if not line.begins_with(ComposerSubset.RETURN_OPENER):
 		return ""
 	return line.substr(ComposerSubset.RETURN_OPENER.length()).strip_edges()

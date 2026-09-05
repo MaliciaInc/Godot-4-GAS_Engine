@@ -315,7 +315,7 @@ static func _stop(lines: PackedStringArray) -> String:
 
 ## Whether this line opens a block that has to have something under it.
 static func _opens_a_block(line: String) -> bool:
-	var code: String = ComposerSubset.code_of(line).strip_edges()
+	var code: String = ComposerLine.code_of(line).strip_edges()
 	return not code.is_empty() and code.ends_with(":")
 
 

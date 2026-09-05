@@ -70,24 +70,32 @@ const REFUSED: Array[Array] = [
 	["break", "a loop keyword, and loops are outside the subset"],
 ]
 
-const OPENING: String = "([{"
-const CLOSING: String = ")]}"
-const DOUBLE_QUOTE: String = "\""
-const SINGLE_QUOTE: String = "'"
-const ESCAPE: String = "\\"
-const COMMENT_MARK: String = "#"
-const COMMA: String = ","
-const EQUALS: String = "="
 
 ## An ability that does nothing yet still has to say so. `pass` is the first
 ## line of every body somebody has started and not finished, and a tool that
 ## cannot open one cannot be opened while the work is being done.
 const NOTHING_MARK: String = "pass"
 
-## Characters that turn a following `=` into something that is not an
-## assignment. `:` is here for `:=`, which the subset refuses for its own
-## reasons and must not be mistaken for a plain assignment on the way.
-const COMPARISONS: String = "=!<>:"
+## The two words for yes and no, which are values a match arm can be written
+## as and are not identifiers.
+const TRUE_MARK: String = "true"
+const FALSE_MARK: String = "false"
+
+## The characters a written-out string can start and end with, and the two
+## letters that can stand in front of one.
+const QUOTES: String = "\"'"
+const STRING_PREFIXES: String = "&^"
+
+
+## What ends a match arm, and the arm that takes whatever is left.
+const CASE_END: String = ":"
+const WILDCARD_MARK: String = "_"
+
+## Why an arm this tool cannot draw is turned away, in the words a person
+## needs to fix it.
+const COMPLEX_PATTERN: String = (
+	"a match arm here is one name, one written-out value, or _"
+)
 
 ## The exact comments that make a line Composer's rather than a person's.
 ##
@@ -175,7 +183,7 @@ static func classify(line: String) -> Verdict:
 		verdict.kind = Kind.FLOW_STOP
 		return verdict
 
-	if code_of(text).strip_edges() == ELSE_OPENER:
+	if ComposerLine.code_of(text).strip_edges() == ELSE_OPENER:
 		verdict.kind = Kind.BRANCH_ELSE
 		return verdict
 
@@ -185,8 +193,17 @@ static func classify(line: String) -> Verdict:
 			verdict.kind = opener[1]
 			return _checked(verdict, text)
 
-	if _is_match_case(code_of(text).strip_edges()):
+	var head: String = ComposerLine.code_of(text).strip_edges()
+	if _is_match_case(head):
 		verdict.kind = Kind.MATCH_CASE
+		return verdict
+	# Anything else ending in a colon down here is a match arm written as
+	# something cleverer than one value: an array of patterns, a dictionary,
+	# several patterns on one line, a binding. Named rather than left to the
+	# catch-all below, because "not a call, a local, an assignment, a branch or
+	# a return" is true of every arm and tells the person nothing.
+	if head.ends_with(CASE_END):
+		verdict.reason = COMPLEX_PATTERN
 		return verdict
 	if text == NOTHING_MARK:
 		verdict.kind = Kind.NOTHING
@@ -194,7 +211,7 @@ static func classify(line: String) -> Verdict:
 	if _is_call(text):
 		verdict.kind = Kind.CALL
 		return verdict
-	if scan(text).assign > 0:
+	if ComposerLine.scan(text).assign > 0:
 		verdict.kind = Kind.ASSIGN
 		return verdict
 
@@ -226,13 +243,37 @@ static func _is_inferred(text: String) -> bool:
 
 
 ## `Enum.VALUE:` or `_:` - the arms of a match, and nothing else with a colon.
+## Whether a line is one arm of a `match`: a name, a written-out value, or
+## the catch-all.
+##
+## A value is admitted because `1:` and `"idle":` are ordinary GDScript and
+## the card draws the arm by the text of the pattern either way. What stays
+## out is every pattern that is more than one value - an array, a dictionary,
+## several on a line, a binding - because the projection gives a match one
+## output per arm and those arms bind names the graph has nowhere to show.
 static func _is_match_case(text: String) -> bool:
 	if not text.ends_with(":"):
 		return false
 	var head: String = text.left(text.length() - 1).strip_edges()
-	if head == "_":
+	if head == WILDCARD_MARK:
 		return true
-	return head.is_valid_identifier() or _is_dotted_name(head)
+	return (
+		head.is_valid_identifier() or _is_dotted_name(head) or _is_written_value(head)
+	)
+
+
+## Whether `text` is a value written out in full rather than named.
+static func _is_written_value(text: String) -> bool:
+	if text.is_valid_int() or text.is_valid_float():
+		return true
+	if text == TRUE_MARK or text == FALSE_MARK:
+		return true
+	var quoted: String = text.lstrip(STRING_PREFIXES)
+	return (
+		quoted.length() >= 2
+		and QUOTES.contains(quoted.left(1))
+		and quoted.right(1) == quoted.left(1)
+	)
 
 
 static func _is_dotted_name(text: String) -> bool:
@@ -245,117 +286,6 @@ static func _is_dotted_name(text: String) -> bool:
 	return true
 
 
-## What the brackets in a line do.
-##
-## One scan answers three questions that were being answered three ways: whether
-## a statement is finished, whether a call is one call, and where its arguments
-## end. Separate answers to the same question drift, and the drift shows up as a
-## file the tool refuses for being formatted.
-class Brackets extends RefCounted:
-	## Where the top-level commas are - the ones between arguments, not the ones
-	## inside them.
-	var breaks: PackedInt32Array = PackedInt32Array()
-
-	## Where the statement's own `=` is, or -1. Not a comparison, not one buried
-	## inside an argument list.
-	var assign: int = -1
-
-	## Bracket depth at the end. Anything but zero means the statement runs on
-	## into the next line.
-	var depth: int = 0
-
-	## The lowest depth reached on the way. Below zero means a bracket closed
-	## something that was never opened here.
-	var lowest: int = 0
-
-	## Where a trailing comment begins, or -1 for a line that is all code.
-	var comment: int = -1
-
-
-## The part of `line` that is code, without the comment trailing it.
-##
-## One question with one answer. What a header carries is read across this
-## boundary and written back across it, and a `_:` this tool marked as its own
-## has to be classified as the case it still is - so a second opinion about
-## where the code ends is a marked line nobody can read back.
-static func code_of(line: String) -> String:
-	var mark: int = scan(line).comment
-	return line if mark < 0 else line.substr(0, mark)
-
-
-## Read the brackets of `text`.
-##
-## Quotes and trailing comments are skipped: a bracket inside a string is a
-## character, and a reader that counted it would join a line to the one after it
-## for the rest of the file.
-static func scan(text: String) -> Brackets:
-	var found: Brackets = Brackets.new()
-	var quote: String = ""
-	var index: int = 0
-	while index < text.length():
-		var character: String = text[index]
-		if not quote.is_empty():
-			if character == ESCAPE:
-				index += 2
-				continue
-			if character == quote:
-				quote = ""
-		elif character == DOUBLE_QUOTE or character == SINGLE_QUOTE:
-			quote = character
-		elif character == COMMENT_MARK:
-			found.comment = index
-			break
-		elif OPENING.contains(character):
-			found.depth += 1
-		elif CLOSING.contains(character):
-			found.depth -= 1
-			found.lowest = mini(found.lowest, found.depth)
-		elif character == COMMA and found.depth == 0:
-			found.breaks.append(index)
-		elif character == EQUALS and found.depth == 0 and found.assign < 0:
-			if not _is_comparison(text, index):
-				found.assign = index
-		index += 1
-	return found
-
-
-## Whether the `=` at `index` belongs to `==`, `!=`, `<=`, `>=` or `:=`.
-##
-## `+=` is not one of them: a line that adds to something is still a line that
-## assigns to it, and refusing it would leave a person's own counter unreadable.
-static func _is_comparison(text: String, index: int) -> bool:
-	if index + 1 < text.length() and text[index + 1] == EQUALS:
-		return true
-	if index == 0:
-		return false
-	return COMPARISONS.contains(text[index - 1])
-
-
-## The pieces of an argument list, split on its own commas.
-static func arguments_of(inside: String) -> PackedStringArray:
-	var found: PackedStringArray = PackedStringArray()
-	var start: int = 0
-	for stop: int in scan(inside).breaks:
-		found.append(inside.substr(start, stop - start))
-		start = stop + 1
-	found.append(inside.substr(start))
-	return found
-
-
-## One call: a name, and one pair of brackets closing at the end of the line.
-##
-## A call inside the argument list is allowed and kept as the text it is. It was
-## refused once, on the grounds that a node draws one operation - but the subset
-## already allowed `level + 1.0` in an argument, which is also an operation, so
-## the rule was never really about that. It was a comma: splitting arguments on
-## every comma mis-reads `apply(a, build(x, y))`, and refusing the whole line was
-## the cheap way out. Counting brackets instead costs one scan and lets the
-## Composer open the abilities people actually write - a call whose level comes
-## from `get_ability_level()` is not exotic, it is most of them.
-##
-## What is still refused is two calls standing side by side. `foo() + bar()`
-## ends with a bracket and starts with a name, and only the depth never
-## returning to zero in between tells it apart from one call.
 static func _is_call(text: String) -> bool:
 	var open: int = text.find("(")
 	if open <= 0 or not text.ends_with(")"):
@@ -364,7 +294,7 @@ static func _is_call(text: String) -> bool:
 	if not (name.is_valid_identifier() or _is_dotted_name(name)):
 		return false
 
-	var inside: Brackets = scan(text.substr(open + 1, text.length() - open - 2))
+	var inside: ComposerLine.Brackets = ComposerLine.scan(text.substr(open + 1, text.length() - open - 2))
 	return inside.depth == 0 and inside.lowest >= 0
 
 

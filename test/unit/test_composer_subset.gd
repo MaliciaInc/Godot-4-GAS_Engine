@@ -54,6 +54,68 @@ func test_the_shapes_the_subset_admits() -> void:
 	assert_eq(_kind("match policy:"), ComposerSubset.Kind.MATCH, "a match")
 	assert_eq(_kind("Policy.INSTANT:"), ComposerSubset.Kind.MATCH_CASE, "one of its arms")
 	assert_eq(_kind("_:"), ComposerSubset.Kind.MATCH_CASE, "including the last")
+
+
+## An arm may be a plain value, and anything cleverer is refused by name.
+##
+## `1:` and `"idle":` are ordinary GDScript and were turned away with the
+## catch-all reason, which named neither the line nor what was wrong with it.
+## What stays out stays out on purpose: the projection gives a match one output
+## per arm, and a pattern that binds a name has nowhere to show it. A binding is
+## not in the table because it never reaches this question - `var caught:` is
+## read as a local by the opener above, which is a different answer to a
+## different question and is left where it is.
+const ARMS: Array = [
+	["Policy.INSTANT:", true, "a name"],
+	["_:", true, "the catch-all"],
+	["1:", true, "a number"],
+	["-2:", true, "a negative number"],
+	["1.5:", true, "a number with a point in it"],
+	["\"idle\":", true, "a written-out string"],
+	["&\"idle\":", true, "one written as a StringName"],
+	["true:", true, "one of the two words for yes and no"],
+	["[1, 2]:", false, "an array of patterns"],
+	["{\"a\": 1}:", false, "a dictionary pattern"],
+	["1, 2:", false, "two patterns on one line"],
+]
+
+
+func test_what_a_match_arm_may_be() -> void:
+	var checked: int = 0
+	for row: Array in ARMS:
+		var line: String = row[0]
+		var admitted: bool = row[1]
+		var described: String = row[2]
+
+		var verdict: ComposerSubset.Verdict = ComposerSubset.classify(line)
+
+		assert_eq(
+			verdict.kind == ComposerSubset.Kind.MATCH_CASE,
+			admitted,
+			"%s: `%s`" % [described, line]
+		)
+		if not admitted:
+			assert_eq(
+				verdict.reason,
+				ComposerSubset.COMPLEX_PATTERN,
+				"%s: refused by name rather than by the catch-all" % described
+			)
+		checked += 1
+	assert_eq(checked, ARMS.size(), "every shape of arm was tried")
+
+
+## A marked arm this tool wrote is still the arm it is.
+func test_a_marked_catch_all_is_still_a_match_arm() -> void:
+	var verdict: ComposerSubset.Verdict = ComposerSubset.classify(
+		"\t_: %s" % ComposerSubset.FLOW_DEFAULT_MARK
+	)
+
+	assert_eq(verdict.kind, ComposerSubset.Kind.MATCH_CASE, "read past the mark")
+	assert_eq(
+		ComposerSubset.classify("\telse: %s" % ComposerSubset.FLOW_ELSE_MARK).kind,
+		ComposerSubset.Kind.BRANCH_ELSE,
+		"and so is a marked else"
+	)
 #endregion
 
 
@@ -126,7 +188,7 @@ func test_a_call_inside_an_argument_is_part_of_the_argument() -> void:
 		ComposerSubset.classify(written).is_representable(), "the statement is one call"
 	)
 	assert_eq(
-		ComposerSubset.arguments_of("damage, owner_asc, get_ability_level()").size(), 3,
+		ComposerLine.arguments_of("damage, owner_asc, get_ability_level()").size(), 3,
 		"and its arguments are its own, not the inner call's"
 	)
 
@@ -134,7 +196,7 @@ func test_a_call_inside_an_argument_is_part_of_the_argument() -> void:
 ## A comma inside a string is a character, not a boundary.
 func test_a_comma_inside_a_string_does_not_split_an_argument() -> void:
 	assert_eq(
-		ComposerSubset.arguments_of("\"a, b\", second").size(), 2, "two arguments, not three"
+		ComposerLine.arguments_of("\"a, b\", second").size(), 2, "two arguments, not three"
 	)
 
 
