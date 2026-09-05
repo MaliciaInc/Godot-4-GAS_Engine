@@ -55,6 +55,11 @@ func _on_disconnection_requested(edge: ComposerGraph.Connection) -> void:
 	_announce(_wires.disconnect_edge(edge))
 
 
+## One exact cable comes off, named rather than found by pointing at a curve.
+func disconnect_edge(edge: ComposerGraph.Connection) -> bool:
+	return _announce(_wires.disconnect_edge(edge))
+
+
 ## Alt-click on a pin, or Break all from its menu: everything on it comes off as
 ## one step, so one undo puts all of it back.
 func break_pin(node_id: StringName, port_id: StringName) -> bool:

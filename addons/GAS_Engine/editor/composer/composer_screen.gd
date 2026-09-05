@@ -116,6 +116,8 @@ func _ready() -> void:
 	_menus.bind(_doc)
 	_menus.listen_to(_canvas)
 	_menus.chose.connect(_on_menu_chosen)
+	_menus.break_link_requested.connect(_routes.disconnect_edge)
+	_menus.break_all_requested.connect(_routes.break_pin)
 	_menus.entry_chosen.connect(_on_entry_chosen)
 	_statements.bind(_doc)
 	_output.row_picked.connect(_on_row_picked)
@@ -308,7 +310,7 @@ func _on_entry_chosen(
 ## Matched on the name it was offered under, not on an index two lists have to
 ## keep agreeing about.
 func _on_menu_chosen(
-	chosen: String, node_id: StringName, port_id: StringName
+	chosen: String, _node_id: StringName, _port_id: StringName
 ) -> void:
 	match chosen:
 		ComposerMenus.REMOVE:
@@ -317,8 +319,6 @@ func _on_menu_chosen(
 			await repeat_picked()
 		ComposerMenus.COPY:
 			copy_picked()
-		ComposerMenus.BREAK_ALL:
-			_routes.break_pin(node_id, port_id)
 #endregion
 
 

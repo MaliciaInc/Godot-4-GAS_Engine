@@ -19,20 +19,24 @@ const REPEAT: String = "Repeat"
 const COPY: String = "Copy"
 
 ## What can be done to a pin.
-const BREAK_ALL: String = "Break all wires"
-
 const FOR_CARD: Array[String] = [REMOVE, REPEAT, COPY]
-const FOR_PIN: Array[String] = [BREAK_ALL]
 
 ## Which item was picked, and what it was opened on. The two travel together
 ## because the answer arrives long after the question.
 signal chose(item: String, node_id: StringName, port_id: StringName)
 
+## One exact cable is to come off, or every cable on one pin is.
+##
+## Passed straight up, the way every other menu answer is: what happens to the
+## file is the screen's business and none of this file's.
+signal break_link_requested(edge: ComposerGraph.Connection)
+signal break_all_requested(node_id: StringName, port_id: StringName)
+
 ## Which call was picked out of the catalog, and what it is to be joined to.
 signal entry_chosen(entry_key: StringName, context: ComposerActionMenu.Context)
 
 var _card: ComposerCardMenu = null
-var _pin: ComposerCardMenu = null
+var _pin: ComposerPinMenu = null
 var _actions: ComposerActionMenu = null
 var _document: ComposerDocument = null
 
@@ -136,10 +140,23 @@ func open_for_card(node_id: StringName, at: Vector2) -> void:
 	_card.open_at(at, node_id)
 
 
-## Offer what can be done to a pin.
+## Offer what can be done to the cables on a pin.
+##
+## Its own menu rather than the card's, because its entries are not a fixed list
+## of names: one per cable actually on that pin, named for what it reaches.
 func open_for_pin(node_id: StringName, port_id: StringName, at: Vector2) -> void:
-	_pin = _ready_menu(_pin, FOR_PIN)
-	_pin.open_at(at, node_id, port_id)
+	if _pin == null:
+		_pin = ComposerPinMenu.new()
+		_pin.break_link_requested.connect(
+			func _one(edge: ComposerGraph.Connection) -> void:
+				break_link_requested.emit(edge)
+		)
+		_pin.break_all_requested.connect(
+			func _all(on_node: StringName, on_port: StringName) -> void:
+				break_all_requested.emit(on_node, on_port)
+		)
+		add_child(_pin)
+	_pin.open_for(_document.graph(), node_id, port_id, at)
 
 
 ## The menu, made the first time it is wanted.
