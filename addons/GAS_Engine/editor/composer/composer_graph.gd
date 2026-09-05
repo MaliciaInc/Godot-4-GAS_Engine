@@ -31,8 +31,12 @@ class Diagnostic extends RefCounted:
 	var span: ComposerSpan = ComposerSpan.new()
 
 
-## One wire. Execution order comes from the order of statements, never from
-## here: a data wire says what depends on what, and nothing about when.
+## One wire, of either family.
+##
+## Execution order is written in the file and read back out of it, so this is
+## a projection of that order rather than the place it is decided - which is
+## why an execution wire can be drawn and cannot be stored. A data wire says
+## what depends on what, and nothing about when.
 class Connection extends RefCounted:
 	var from_node: StringName = &""
 	var from_port: StringName = &""
@@ -41,6 +45,20 @@ class Connection extends RefCounted:
 
 	func touches(node_id: StringName) -> bool:
 		return from_node == node_id or to_node == node_id
+
+	## Whether this is the same wire as `other`: both ends, both pins.
+	##
+	## Asked here so nothing has to compare three of the four and call it a
+	## match. A branch has two outputs, so two edges between the same pair of
+	## cards are two different claims about which path runs.
+	func is_same_as(other: ComposerGraph.Connection) -> bool:
+		return (
+			other != null
+			and from_node == other.from_node
+			and from_port == other.from_port
+			and to_node == other.to_node
+			and to_port == other.to_port
+		)
 
 
 var source_path: String = ""
@@ -68,6 +86,14 @@ func blocked_reason() -> String:
 		if found.severity == Severity.NOT_REPRESENTABLE:
 			return found.message
 	return ""
+
+
+## Whether this graph already holds that exact wire.
+func has_connection(edge: Connection) -> bool:
+	for wire: Connection in connections:
+		if wire.is_same_as(edge):
+			return true
+	return false
 
 
 func find_node(node_id: StringName) -> ComposerNode:

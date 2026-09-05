@@ -146,18 +146,43 @@ func test_statements_run_in_the_order_they_are_written() -> void:
 	assert_eq(flow[2].to_node, ComposerProjection.statements(graph)[2].id, "and on to the third")
 
 
-## A statement inside a branch belongs to that branch. Joining across
-## indentation would draw a path the code does not take.
-func test_a_branch_does_not_run_into_the_statement_beside_it() -> void:
+## A statement inside a branch runs on to the line after it, by its own way out.
+##
+## This asserted the opposite, on the reasoning that joining across indentation
+## draws a path the code does not take. The code does take it: GDScript leaves
+## the body of an `if` and carries on. What that reasoning was really guarding
+## against is joining the *wrong* pins, and that is what is checked here - the
+## tail leaves by its own execution output, and the branch reaches the same
+## statement by its False side rather than through the body.
+func test_a_branch_body_runs_on_to_the_statement_beside_it() -> void:
 	var graph: ComposerGraph = _read([
 		"if is_ready:", "\tcommit_ability()", "end_ability()"
 	])
 
+	var branch: ComposerNode = ComposerProjection.statements(graph)[0]
 	var inside: ComposerNode = ComposerProjection.statements(graph)[1]
 	var after: ComposerNode = ComposerProjection.statements(graph)[2]
-	for wire: ComposerGraph.Connection in graph.connections:
-		var crosses: bool = wire.from_node == inside.id and wire.to_node == after.id
-		assert_false(crosses, "the branch's body does not lead to the line after it")
+
+	assert_true(
+		graph.has_connection(
+			ComposerReader.wire(
+				inside.id, ComposerReader.EXEC_OUT, after.id, ComposerReader.EXEC_IN
+			)
+		),
+		"the body leaves by its own output"
+	)
+	assert_true(
+		graph.has_connection(
+			ComposerReader.wire(
+				branch.id, ComposerReader.FALSE_OUT, after.id, ComposerReader.EXEC_IN
+			)
+		),
+		"and the branch reaches it by its False side"
+	)
+	assert_null(
+		branch.find_port(ComposerReader.EXEC_OUT),
+		"never by a generic way out, which a branch does not have"
+	)
 
 
 ## A branch leads into its own body.

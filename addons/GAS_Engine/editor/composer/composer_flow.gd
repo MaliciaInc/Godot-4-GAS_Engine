@@ -10,6 +10,10 @@
 ## and never grows an execution output: the file cannot run anything after it,
 ## and a port offering to is an offer the language will not honour.
 ##
+## Where the walk itself lives is `ComposerFlowBuilder`. This is the facade: it
+## puts Entry in front of the body, hands the walk the graph, and answers the
+## questions the canvas and the editing operations ask afterwards.
+##
 ## Nothing here edits source. It reads a graph and adds the projection of flow
 ## to it; changing the flow is `ComposerFlowEdits`, which writes GDScript.
 ##
@@ -30,7 +34,7 @@ static func build(graph: ComposerGraph, lines: PackedStringArray) -> void:
 	if graph.nodes.is_empty() and graph.source_path.is_empty():
 		return
 	graph.nodes.insert(0, _entry_placed(lines))
-	_wire_execution(graph, lines)
+	ComposerFlowBuilder.build(graph, lines)
 
 
 ## The virtual node the method starts at.
@@ -84,12 +88,35 @@ static func main_end(graph: ComposerGraph) -> ComposerNode:
 	return found
 
 
-## The node execution arrives from, or null when nothing leads here.
-static func predecessor_of(graph: ComposerGraph, node_id: StringName) -> ComposerNode:
+## Every node execution can arrive from.
+##
+## More than one is ordinary now rather than a sign of something wrong: the
+## statement after an `if` is reached from the true body and from the false
+## side, which is what the file does.
+static func predecessors_of(
+	graph: ComposerGraph, node_id: StringName
+) -> Array[ComposerNode]:
+	var found: Array[ComposerNode] = []
 	for wire: ComposerGraph.Connection in graph.execution_connections():
-		if wire.to_node == node_id:
-			return graph.find_node(wire.from_node)
-	return null
+		if wire.to_node != node_id:
+			continue
+		var from: ComposerNode = graph.find_node(wire.from_node)
+		if from != null and not found.has(from):
+			found.append(from)
+	return found
+
+
+## The node execution arrives from when there is exactly one, and null when
+## there are none or several.
+##
+## Null for a merge on purpose. This used to hand back whichever edge came
+## first, which is an answer that depends on the order the wires happen to be
+## in - and a caller inserting a statement 'before its predecessor' would put it
+## on one arbitrary path of two. Ask `predecessors_of()` when several is a
+## sensible answer.
+static func predecessor_of(graph: ComposerGraph, node_id: StringName) -> ComposerNode:
+	var found: Array[ComposerNode] = predecessors_of(graph, node_id)
+	return found[0] if found.size() == 1 else null
 
 
 ## The nodes execution goes to, from one port or from all of them.
@@ -128,73 +155,6 @@ static func insertion_before_main_end(graph: ComposerGraph) -> int:
 	return end.span.last_line - 1
 
 
-## Execution, in the order the statements are written, and never out of a
-## terminal.
-static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> void:
-	var previous: Dictionary[int, StringName] = {}
-	var started: bool = false
-	var island_depth: int = -1
-
-	for node: ComposerNode in graph.nodes:
-		if not node.source_backed or not node.span.is_valid():
-			continue
-		var depth: int = ComposerSubset.indent_of(lines[node.span.last_line - 1])
-
-		# An island is a dead end on purpose, and so is everything inside it.
-		# `if false:` is how Composer holds statements somebody unplugged: no
-		# execution goes in and none comes out, which is what the canvas has to
-		# draw and what tells a reachability check those cards stopped running.
-		if island_depth >= 0 and depth > island_depth:
-			continue
-		island_depth = -1
-		if _is_island(node):
-			island_depth = depth
-			continue
-
-		if not started:
-			graph.connections.append(
-				ComposerReader.wire(ENTRY_ID, ComposerReader.EXEC_OUT, node.id, ComposerReader.EXEC_IN)
-			)
-			started = true
-		elif previous.has(depth):
-			_join(graph, previous[depth], node.id)
-		else:
-			var opener: StringName = _opener(previous, depth)
-			if not opener.is_empty():
-				_join(graph, opener, node.id)
-
-		previous[depth] = node.id
-		for open_depth: int in previous.keys():
-			if open_depth > depth:
-				previous.erase(open_depth)
-
-	if not started:
-		var end: ComposerNode = main_end(graph)
-		if end != null:
-			graph.connections.append(
-				ComposerReader.wire(ENTRY_ID, ComposerReader.EXEC_OUT, end.id, ComposerReader.EXEC_IN)
-			)
-
-
-## Join two statements, unless the first one ends the method.
-static func _join(graph: ComposerGraph, from_id: StringName, to_id: StringName) -> void:
-	var from: ComposerNode = graph.find_node(from_id)
-	if from == null or from.terminal or _is_island(from):
-		return
-	graph.connections.append(
-		ComposerReader.wire(from_id, ComposerReader.EXEC_OUT, to_id, ComposerReader.EXEC_IN)
-	)
-
-
-## The statement that opened the block `depth` is inside.
-static func _opener(previous: Dictionary[int, StringName], depth: int) -> StringName:
-	var nearest: int = -1
-	for open_depth: int in previous.keys():
-		if open_depth < depth and open_depth > nearest:
-			nearest = open_depth
-	return previous[nearest] if nearest >= 0 else &""
-
-
 ## The island name a detached marker carries, or "" when the line carries none.
 static func island_name(line: String) -> String:
 	var at: int = line.find(ComposerSubset.DETACHED_MARK)
@@ -217,8 +177,3 @@ static func free_island_name(lines: PackedStringArray) -> String:
 	while taken.has("detached_%d" % number):
 		number += 1
 	return "detached_%d" % number
-
-
-## Whether this node is the `if false:` Composer wraps an unplugged island in.
-static func _is_island(node: ComposerNode) -> bool:
-	return not island_name(node.text).is_empty()

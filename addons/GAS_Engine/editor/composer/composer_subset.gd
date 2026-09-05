@@ -102,6 +102,7 @@ const DETACHED_OPENER: String = "if false: "
 ## The two openers other modules name as well: `elif` draws as a branch, and a
 ## `return` carries its value on the line rather than in brackets.
 const ELIF_OPENER: String = "elif "
+const ELSE_OPENER: String = "else:"
 const RETURN_OPENER: String = "return"
 
 ## What separates a method's parameters from what it hands back.
@@ -167,7 +168,7 @@ static func classify(line: String) -> Verdict:
 		verdict.kind = Kind.FLOW_STOP
 		return verdict
 
-	if text == "else:":
+	if text == ELSE_OPENER:
 		verdict.kind = Kind.BRANCH_ELSE
 		return verdict
 

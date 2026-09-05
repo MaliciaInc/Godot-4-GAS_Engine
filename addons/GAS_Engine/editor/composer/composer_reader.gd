@@ -60,7 +60,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 
 	_build_nodes(graph, lines, span, path, ComposerSubset.entry_return_type(lines))
 	ComposerFlow.build(graph, lines)
-	_wire_data(graph, lines)
+	ComposerDataWires.apply(graph)
 
 	# The findings come back with the graph rather than being asked for later.
 	# A caller that forgot to validate would draw a file with every card clean
@@ -95,7 +95,7 @@ static func _build_nodes(
 		var first: int = carried if carried != ComposerSpan.NO_LINE else made.first
 		carried = ComposerSpan.NO_LINE
 		var node: ComposerNode = _node(made, first, path, locals, returns)
-		var declared: String = _local_name(made.text)
+		var declared: String = local_name(made.text)
 		if not declared.is_empty():
 			locals[declared] = StringName(_local_type(made.text))
 		# The node keeps the text it came from, so a save can reprint it rather
@@ -216,6 +216,15 @@ static func _projection_of(
 	return ComposerNode.ProjectionKind.STATEMENT
 
 
+## Whether this statement leaves by more than one path.
+static func _fans_out(verdict: ComposerSubset.Verdict, text: String) -> bool:
+	var drawn: ComposerNode.ProjectionKind = _projection_of(verdict.kind, text)
+	return (
+		drawn == ComposerNode.ProjectionKind.BRANCH
+		or drawn == ComposerNode.ProjectionKind.SWITCH
+	)
+
+
 static func _is_elif(kind: ComposerSubset.Kind, text: String) -> bool:
 	return (
 		kind == ComposerSubset.Kind.BRANCH_ELSE
@@ -267,7 +276,13 @@ static func _ports(
 	# A `return` ends the method, so it is not offered a way out. The port used
 	# to be here for every statement alike, and a person could drag a wire from
 	# `return` to the next card - a promise GDScript will not keep.
-	if verdict.kind != ComposerSubset.Kind.RETURN:
+	#
+	# A branch and a switch get none either, and for the opposite reason: they
+	# have more than one way out. `ComposerFlowBuilder` gives them the pins the
+	# block actually has - True and False, one per case - because it is what
+	# reads the block. A generic output beside those would be a third path,
+	# drawn on the card and taken by nothing.
+	if verdict.kind != ComposerSubset.Kind.RETURN and not _fans_out(verdict, text):
 		ports.append(
 			port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT)
 		)
@@ -280,7 +295,7 @@ static func _ports(
 		# would claim to carry nothing, and every wire out of it would be checked
 		# against a promise the file never made.
 		value.type_name = StringName(_local_type(text))
-		value.label = _local_name(text)
+		value.label = local_name(text)
 		# The one pin in this projection that carries more than one wire: a local
 		# can be passed to every argument that wants it, while an argument holds
 		# one value and a statement runs after exactly one other.
@@ -324,9 +339,24 @@ static func _data_port_id(
 	return StringName(ARGUMENT % position)
 
 
+## The local a statement declares, or nothing.
+##
+## Public because the data wiring asks it too, and two parsers for one
+## question is two chances to disagree about whether a cable belongs.
+static func local_name(line: String) -> String:
+	var text: String = line.strip_edges()
+	if not text.begins_with("var "):
+		return ""
+	var rest: String = text.substr(4)
+	var stop: int = rest.find(":")
+	if stop < 0:
+		return ""
+	return rest.substr(0, stop).strip_edges()
+
+
 ## The type in `var name: Type = ...`, or empty when there is none.
 static func _local_type(line: String) -> String:
-	# Stripped here, the way `_local_name` strips: one of the two taking a raw
+	# Stripped here, the way `local_name` strips: one of the two taking a raw
 	# line and the other a trimmed one is an asymmetry nobody sees until a
 	# caller hands both the same string and only one of them answers.
 	var text: String = line.strip_edges()
@@ -351,75 +381,6 @@ static func port(
 	port.direction = direction
 	return port
 #endregion
-
-
-#region Wires
-## A local's value reaches every later statement that names it.
-##
-## Read by name rather than by scope analysis, which the subset makes safe: a
-## body with no loops and no lambdas has one flat set of names, so a later line
-## mentioning `target` means that `target`.
-static func _wire_data(graph: ComposerGraph, lines: PackedStringArray) -> void:
-	for node: ComposerNode in graph.nodes:
-		var declared: String = _local_name(node.text)
-		if declared.is_empty():
-			continue
-		for other: ComposerNode in graph.nodes:
-			if other.span.first_line <= node.span.last_line:
-				continue
-			_wire_into(graph, node, other, declared)
-
-
-## Join `node`'s value to whichever argument of `other` depends on it.
-##
-## Two different things used to be one. A cable says "this statement needs what
-## that one produced", and that is true of `apply(damage, pick.target_data)` -
-## the statement plainly depends on `pick`. It is separately true, and only
-## sometimes, that the argument *is* the local and can be re-pointed at another
-## one; that is the exact spelling, and only that spelling.
-##
-## Tying both to the exact spelling drew almost nothing on real code, because
-## real code reaches into a local far more often than it passes one whole:
-## nine locals across the reference abilities and two cables between them. The
-## canvas was hiding dependencies the file states plainly, which is the one
-## thing a view of a file may not do.
-static func _wire_into(
-	graph: ComposerGraph, node: ComposerNode, other: ComposerNode, declared: String
-) -> void:
-	var slot: int = _argument_naming(other.text, declared)
-	if slot < 0:
-		return
-
-	graph.connections.append(
-		wire(node.id, VALUE_OUT, other.id, StringName(ARGUMENT % slot))
-	)
-	if slot < other.fields.size():
-		other.fields[slot].source = ComposerNode.ValueSource.WIRED
-
-
-static func _local_name(line: String) -> String:
-	var text: String = line.strip_edges()
-	if not text.begins_with("var "):
-		return ""
-	var rest: String = text.substr(4)
-	var stop: int = rest.find(":")
-	if stop < 0:
-		return ""
-	return rest.substr(0, stop).strip_edges()
-## Which argument of `line` is exactly `word`, or -1 when none is.
-##
-## Position matters: the wire has to land on the slot that uses the value, not
-## just on the statement that mentions it somewhere.
-static func _argument_naming(line: String, word: String) -> int:
-	var open: int = line.find("(")
-	if open < 0:
-		return -1
-	var position: int = 0
-	for argument: String in ComposerSubset.arguments_of(line.substr(open + 1)):
-		if argument.strip_edges().trim_suffix(")").strip_edges() == word:
-			return position
-		position += 1
-	return -1
 
 
 ## Public for the same reason `port()` is.
