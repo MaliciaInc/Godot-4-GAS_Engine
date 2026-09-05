@@ -83,6 +83,32 @@ static func origins(
 ## as tall as its tallest, which is the same question asked twice. Written once
 ## because the horizontal half was written first and the vertical half was not,
 ## and a graph whose lanes overlapped is what that cost.
+## Put every card where the layout wants it, now that they have been measured.
+##
+## The second pass, and the one that needs real sizes: the first could only guess
+## from a minimum, and a column is only as wide as what it turned out to hold.
+##
+## A card somebody moved themselves keeps where they put it. Overruling that on
+## every redraw would move their graph back under them each time they edited a
+## field - which is the whole reason a placement is written into the file.
+static func settle(
+	cards: Dictionary[StringName, ComposerCard],
+	placements: Dictionary[StringName, Vector2i],
+	graph: ComposerGraph
+) -> void:
+	var widths: Dictionary[StringName, float] = {}
+	var heights: Dictionary[StringName, float] = {}
+	for id: StringName in cards:
+		widths[id] = cards[id].size.x
+		heights[id] = cards[id].size.y
+
+	var placed: Dictionary[StringName, Vector2] = origins(placements, widths, heights)
+	for id: StringName in cards:
+		var model: ComposerNode = graph.find_node(id)
+		if model != null and not model.has_layout_position and placed.has(id):
+			cards[id].position_offset = placed[id]
+
+
 static func _extents(
 	placements: Dictionary[StringName, Vector2i],
 	sizes: Dictionary[StringName, float],

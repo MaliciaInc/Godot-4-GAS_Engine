@@ -103,12 +103,100 @@ func node_at_line(line: int) -> ComposerNode:
 	return null
 
 
-func connections_for(node_id: StringName) -> Array[Connection]:
+## Every wire on this node, or on one port of it when a port is named.
+##
+## The port is optional so that the older question - "what touches this node at
+## all" - stays askable. Both are needed: a card is redrawn from the first and a
+## pin is judged by the second.
+func connections_for(node_id: StringName, port_id: StringName = &"") -> Array[Connection]:
 	var found: Array[Connection] = []
 	for wire: Connection in connections:
-		if wire.touches(node_id):
+		if not wire.touches(node_id):
+			continue
+		if port_id.is_empty():
+			found.append(wire)
+			continue
+		if wire.from_node == node_id and wire.from_port == port_id:
+			found.append(wire)
+		elif wire.to_node == node_id and wire.to_port == port_id:
 			found.append(wire)
 	return found
+
+
+## The wires leaving one port.
+func connections_from(node_id: StringName, port_id: StringName) -> Array[Connection]:
+	var found: Array[Connection] = []
+	for wire: Connection in connections:
+		if wire.from_node == node_id and wire.from_port == port_id:
+			found.append(wire)
+	return found
+
+
+## The wires arriving at one port.
+func connections_to(node_id: StringName, port_id: StringName) -> Array[Connection]:
+	var found: Array[Connection] = []
+	for wire: Connection in connections:
+		if wire.to_node == node_id and wire.to_port == port_id:
+			found.append(wire)
+	return found
+
+
+## The nodes a person is meant to see.
+##
+## Entry is here and support headers are not: an `else:` is a real line that the
+## reader has to account for, and a card for it would be a card for punctuation.
+func visible_nodes() -> Array[ComposerNode]:
+	var drawn: Array[ComposerNode] = []
+	for node: ComposerNode in nodes:
+		if node.visible_in_graph:
+			drawn.append(node)
+	return drawn
+
+
+## The wires that carry execution, and the ones that carry values.
+##
+## Split by asking the port rather than by a flag on the wire: the port already
+## knows which family it belongs to, and a second answer stored on the wire is a
+## second answer that can disagree.
+func execution_connections() -> Array[Connection]:
+	return _connections_of_kind(ComposerNode.PortKind.EXECUTION)
+
+
+func data_connections() -> Array[Connection]:
+	return _connections_of_kind(ComposerNode.PortKind.DATA)
+
+
+func _connections_of_kind(kind: ComposerNode.PortKind) -> Array[Connection]:
+	var found: Array[Connection] = []
+	for wire: Connection in connections:
+		var from: ComposerNode = find_node(wire.from_node)
+		if from == null:
+			continue
+		var port: ComposerNode.Port = from.find_port(wire.from_port)
+		if port != null and port.kind == kind:
+			found.append(wire)
+	return found
+
+
+## Whether execution can arrive here at all, starting where the method starts.
+##
+## Execution only, and with a visited set, because a projection read from a file
+## somebody is still editing can hold a shape that leads back on itself - and a
+## walk that trusts the graph not to is a walk that hangs the editor.
+func is_reachable_from_entry(node_id: StringName) -> bool:
+	var seen: Dictionary[StringName, bool] = {}
+	var pending: Array[StringName] = [ComposerFlow.ENTRY_ID]
+	while not pending.is_empty():
+		var at: StringName = pending.pop_back()
+		if at == node_id:
+			return true
+		if seen.has(at):
+			continue
+		seen[at] = true
+		for wire: Connection in execution_connections():
+			if wire.from_node == at:
+				pending.append(wire.to_node)
+	return false
 
 
 ## Whether a port already has a wire on it, which is what tells the view to draw

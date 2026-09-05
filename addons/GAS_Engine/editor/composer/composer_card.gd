@@ -1,25 +1,33 @@
-## One node, drawn.
+## One node, drawn as a real graph node.
 ##
-## Glass rather than a solid fill, so the card takes the colour of the glow it
-## stands on. Every card shares that treatment, so it cannot also mean anything:
-## a node that suspends the ability says `await` in its title instead. A label is
-## read; a texture is only felt.
+## A GraphNode rather than a Control the canvas positions by hand. That is not a
+## cosmetic choice: the pins, the wires between them, the dragging, the
+## selection and the refusal of an impossible connection all come from the
+## widget, so none of them can drift from what the canvas thinks is happening.
+## The version this replaced drew its own cables and hit-tested its own cards,
+## and every one of those was a second opinion about where a port was.
 ##
-## Cut to its content in two steps. A card cannot be measured before it exists -
-## a Control outside the tree has no theme resolved, so its children do not yet
-## know how tall they are and the measurement comes back far too small. So the
-## glass goes in at a placeholder size, the content on top, and `fit()` trims
-## both once a frame has passed. A height written by hand instead is a height
-## that stops matching the moment a field is added, and the field boxes spill out
-## of the panel.
+## A slot is a row. GraphNode numbers slots by child index and knows nothing
+## about what a port means, so the two lists here are the whole translation
+## between "the second pin on the left" and "the argument called Source Asc".
+## Everything that leaves this card speaks the second language.
+##
+## Editing happens in the row, through the same control the Inspector uses. A
+## card that showed values and a panel that edited them would be two pictures of
+## one argument, and they would disagree the moment either was wrong.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
-class_name ComposerCard extends Control
+class_name ComposerCard extends GraphNode
 
 const AWAIT_LABEL: String = "await"
 const MISSING_LABEL: String = "not connected"
-const CHEVRON: String = "⌄"
+## The theme type a Label resolves its own font against.
+const LABEL_TYPE: StringName = &"Label"
+
+const WIRED_MARK: String = "⌄"
+const DOT_SIZE: float = 7.0
+const DOT_RADIUS: float = 3.5
 
 ## How much of a card is worth drawing.
 ##
@@ -30,216 +38,309 @@ const CHEVRON: String = "⌄"
 ## and a block says that better than a full card does.
 enum Detail { FULL, TITLE, BLOCK }
 
+## What somebody typed into one of this card's rows, as GDScript.
+##
+## The card does not act on it. Whether it becomes an edit is the screen's
+## business, because only the document can say whether the file may be written.
+signal value_edited(node_id: StringName, position: int, source_text: String)
+
 var node_id: StringName = &""
 
-var _glass: ColorRect = null
-var _column: VBoxContainer = null
-var _ring: Panel = null
-var _title: Control = null
+## What the pins on each side are, in slot order. A blank means that side of
+## that row carries no pin.
+var _left_port_ids: Array[StringName] = []
+var _right_port_ids: Array[StringName] = []
+
+var _ports: Dictionary[StringName, ComposerNode.Port] = {}
 var _rows: Array[Control] = []
 var _state: ComposerNode.State = ComposerNode.State.CLEAN
 
 
-## Build the card for `node`. Its size is provisional until `fit()` runs.
-func build(node: ComposerNode) -> void:
+#region Building
+## Draw `node`, with its pins typed by `port_types`.
+func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 	node_id = node.id
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	custom_minimum_size = Vector2(ComposerTheme.NODE_MIN_WIDTH, 0.0)
-
-	_glass = ColorRect.new()
-	_glass.size = Vector2(ComposerTheme.NODE_MIN_WIDTH, 1.0)
-	_glass.material = ComposerShaders.glass_material(_glass.size)
-	_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_glass)
-
-	_column = VBoxContainer.new()
-	_column.position = Vector2(ComposerTheme.PAD_X, ComposerTheme.PAD_Y)
-	_column.custom_minimum_size = Vector2(
-		ComposerTheme.NODE_MIN_WIDTH - ComposerTheme.PAD_X * 2.0, 0.0
-	)
-	_column.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S3 - 1.0))
-	_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_column)
-
+	name = String(node.id)
+	title = node.title + (" " + AWAIT_LABEL if node.awaits else "")
 	_state = node.state
-	_title = _title_row(node)
-	_column.add_child(_title)
-	for field: ComposerNode.Field in node.fields:
-		var row: Control = _field_row(field)
-		_rows.append(row)
-		_column.add_child(row)
+	_own_the_title()
+	_clear()
+	for pin: ComposerNode.Port in node.ports:
+		_ports[pin.id] = pin
 
-	if node.awaits:
-		add_child(_await_mark())
+	# The title row is slot 0 and carries the run of control, so a card always
+	# has somewhere for execution to arrive and leave even when it takes no
+	# arguments at all.
+	_add_row(_title_row(node), ComposerReader.EXEC_IN, ComposerReader.EXEC_OUT)
+	for position: int in node.fields.size():
+		_add_row(
+			_field_row(node, position),
+			StringName(ComposerReader.ARGUMENT % position),
+			&""
+		)
+	if _ports.has(ComposerReader.VALUE_OUT):
+		_add_row(_result_row(_ports[ComposerReader.VALUE_OUT]), &"", ComposerReader.VALUE_OUT)
 
-	# A ReferenceRect drew this, and a ReferenceRect can only draw a rectangle:
-	# a hard square around a rounded card, which reads as a debug artifact
-	# rather than as a selection. Styled instead, so it has the card's corners.
-	_ring = Panel.new()
-	_ring.add_theme_stylebox_override(
-		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.picked_box()
+	_apply_slots(port_types)
+
+
+## Say how the title is drawn, rather than letting the host say it.
+##
+## The rows are this card's own controls and carry their own font. The title is
+## GraphNode's, and the label it draws it in reads `font_size` off the ambient
+## theme as any Label would - `title_font_size` sizes the bar, not the text
+## inside it. In the Godot editor the ambient theme is the editor's and it
+## happens to look right; in a game whose theme says Labels are 96, the same
+## card came out with a title several times the height of the card. So the card
+## carries a theme of its own, which is where that label finds its size. The
+## default size in it is a floor and nothing more - a theme lower in the chain
+## that names a type outright still wins, which is why the boxes somebody types
+## into say their own size where they are built rather than relying on this.
+## The rows are unaffected either way; every label this card builds already
+## carries its own size.
+func _own_the_title() -> void:
+	add_theme_font_size_override(
+		GASEditorTheme.TITLE_FONT_SIZE, ComposerTheme.FONT_TITLE
 	)
-	_ring.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ring.visible = false
-	add_child(_ring)
+	add_theme_color_override(GASEditorTheme.TITLE_COLOR, ComposerTheme.TEXT)
 
-
-## Trim the card to what its content turned out to be.
-##
-## Call one frame after the card is in the tree, never before: the column has no
-## measured height until then.
-## The width this card needs, bounded.
-##
-## Taken from the column inside it, so it counts the title, every argument's
-## name and every value - not the title alone. A node called `End` can carry an
-## argument called `Blocked By Tag Query`, and a card sized to its title would
-## cut the argument off.
-func wanted_width() -> float:
-	if _column == null:
-		return ComposerTheme.NODE_MIN_WIDTH
-	return clampf(
-		_column.get_combined_minimum_size().x + ComposerTheme.PAD_X * 2.0,
-		ComposerTheme.NODE_MIN_WIDTH, ComposerTheme.NODE_MAX_WIDTH
+	var own: Theme = Theme.new()
+	own.default_font_size = ComposerTheme.FONT_VALUE
+	own.set_font_size(
+		GASEditorTheme.FONT_SIZE, LABEL_TYPE, ComposerTheme.FONT_TITLE
 	)
+	own.set_color(GASEditorTheme.FONT_COLOR, LABEL_TYPE, ComposerTheme.TEXT)
+	theme = own
 
 
-func fit() -> void:
-	if _column == null or _glass == null:
-		return
-	var width: float = wanted_width()
-	_column.custom_minimum_size.x = width - ComposerTheme.PAD_X * 2.0
-	# Only now, with the width settled, does a value that still does not fit get
-	# trimmed - and only that one.
-	for row: Control in _rows:
-		_clip_long_values(row)
-	var height: float = _column.size.y + ComposerTheme.PAD_Y * 2.0
-	var span: Vector2 = Vector2(width, height)
-	_glass.size = span
-	ComposerShaders.resize_glass(_glass.material as ShaderMaterial, span)
-	size = span
-	if _ring != null:
-		_ring.size = span
-
-
-static func _clip_long_values(row: Node) -> void:
-	for child: Node in row.get_children():
-		var label: Label = child as Label
-		if label != null:
-			label.clip_text = true
-		_clip_long_values(child)
-
-
-## Whether this card is one of the ones being worked on.
-func pick(on: bool) -> void:
-	if _ring != null:
-		_ring.visible = on
-
-
-## Draw as much of this card as is worth reading at the current zoom.
+## Put a row in, and remember which pins it carries.
 ##
-## The card keeps its size at every level. Shrinking it as its contents go away
-## would move every port on it, and the wires with them - the graph would appear
-## to rearrange itself while somebody was only pulling back to look at it.
-func show_detail(level: ComposerCard.Detail) -> void:
-	if _title != null:
-		_title.visible = level != ComposerCard.Detail.BLOCK
-	for row: Control in _rows:
-		row.visible = level == ComposerCard.Detail.FULL
-	if _glass != null:
-		# With the dot hidden, the block itself has to carry the state, or
-		# pulling back would hide exactly what pulling back is for.
-		_glass.modulate = (
-			ComposerTheme.severity_color(ComposerNode.severity_of(_state))
-			if level == ComposerCard.Detail.BLOCK
-			else Color.WHITE
+## A named port the node does not actually have becomes a blank rather than a
+## drawn pin: a `return` has no way out, and a card that offered one would be
+## promising something GDScript will not keep.
+func _add_row(row: Control, left: StringName, right: StringName) -> void:
+	add_child(row)
+	_rows.append(row)
+	_left_port_ids.append(left if _ports.has(left) else &"")
+	_right_port_ids.append(right if _ports.has(right) else &"")
+
+
+## Tell GraphNode which pins to draw, in which colours.
+##
+## Done in one pass at the end rather than per row, because a slot is addressed
+## by its index and the indices are only settled once every row is in.
+func _apply_slots(port_types: ComposerPortTypes) -> void:
+	for slot: int in _rows.size():
+		var left: ComposerNode.Port = _found(_left_port_ids[slot])
+		var right: ComposerNode.Port = _found(_right_port_ids[slot])
+		set_slot(
+			slot,
+			left != null,
+			port_types.ui_type(left.type_name, left.kind) if left != null else 0,
+			(
+				port_types.color_for(left.type_name, left.kind) if left != null
+				else ComposerTheme.TRANSPARENT
+			),
+			right != null,
+			port_types.ui_type(right.type_name, right.kind) if right != null else 0,
+			(
+				port_types.color_for(right.type_name, right.kind) if right != null
+				else ComposerTheme.TRANSPARENT
+			)
 		)
 
 
+func _found(port_id: StringName) -> ComposerNode.Port:
+	if port_id.is_empty() or not _ports.has(port_id):
+		return null
+	return _ports[port_id]
+
+
+func _clear() -> void:
+	for row: Control in _rows:
+		remove_child(row)
+		row.queue_free()
+	# The slots go too. GraphNode keeps its own table of which rows draw pins, and
+	# a rebuild that left it behind would draw the old card's pins on the new
+	# card's rows - so a card rebuilt into a shorter statement keeps offering the
+	# arguments the longer one had.
+	clear_all_slots()
+	_rows.clear()
+	_left_port_ids.clear()
+	_right_port_ids.clear()
+	_ports.clear()
+#endregion
+
+
+#region Which pin is which
+## The semantic port on the left of slot `index`, or nothing.
+func port_id_for_left_index(index: int) -> StringName:
+	if index < 0 or index >= _left_port_ids.size():
+		return &""
+	return _left_port_ids[index]
+
+
+func port_id_for_right_index(index: int) -> StringName:
+	if index < 0 or index >= _right_port_ids.size():
+		return &""
+	return _right_port_ids[index]
+
+
+## Which of the drawn input pins this port is.
+##
+## Counted rather than taken from the slot: GraphNode numbers the pins it draws,
+## not the rows, so a card whose second row has no left pin has an input at
+## index 1 belonging to its third row. Getting this wrong points every wire at
+## the row above or below the one it belongs to.
+func left_index_for_port(port_id: StringName) -> int:
+	return _drawn_index(_left_port_ids, port_id)
+
+
+func right_index_for_port(port_id: StringName) -> int:
+	return _drawn_index(_right_port_ids, port_id)
+
+
+## The semantic port that drawn input `index` stands for.
+func left_port_of_drawn(index: int) -> StringName:
+	return _drawn_port(_left_port_ids, index)
+
+
+func right_port_of_drawn(index: int) -> StringName:
+	return _drawn_port(_right_port_ids, index)
+
+
+static func _drawn_index(ids: Array[StringName], port_id: StringName) -> int:
+	if port_id.is_empty():
+		return -1
+	var drawn: int = 0
+	for slot: int in ids.size():
+		if ids[slot].is_empty():
+			continue
+		if ids[slot] == port_id:
+			return drawn
+		drawn += 1
+	return -1
+
+
+static func _drawn_port(ids: Array[StringName], index: int) -> StringName:
+	var drawn: int = 0
+	for slot: int in ids.size():
+		if ids[slot].is_empty():
+			continue
+		if drawn == index:
+			return ids[slot]
+		drawn += 1
+	return &""
+
+
+## Where a pin sits, in this card's own coordinates.
+func graph_port_position(port_id: StringName) -> Vector2:
+	var incoming: int = left_index_for_port(port_id)
+	if incoming >= 0:
+		return get_input_port_position(incoming)
+	var outgoing: int = right_index_for_port(port_id)
+	if outgoing >= 0:
+		return get_output_port_position(outgoing)
+	return Vector2.ZERO
+#endregion
+
+
 #region Rows
-## The title, and the dot that carries this node's diagnostic state.
+## The state dot. The title itself is GraphNode's, so it is not drawn twice.
 func _title_row(node: ComposerNode) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
-	row.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S2 + 1.0))
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override(
+		GASEditorTheme.SEPARATION, int(ComposerTheme.S2 + 1.0)
+	)
 
 	var holder: CenterContainer = CenterContainer.new()
 	var dot: Panel = Panel.new()
-	dot.custom_minimum_size = Vector2(7.0, 7.0)
-	var tint: Color = ComposerTheme.severity_color(
-		ComposerNode.severity_of(node.state)
-	)
+	dot.custom_minimum_size = Vector2(DOT_SIZE, DOT_SIZE)
 	dot.add_theme_stylebox_override(
-		GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.disc(tint, 3.5)
+		GASEditorTheme.PANEL_STYLEBOX,
+		ComposerTheme.disc(
+			ComposerTheme.severity_color(ComposerNode.severity_of(node.state)),
+			DOT_RADIUS
+		)
 	)
 	holder.add_child(dot)
 	row.add_child(holder)
-
-	row.add_child(
-		_label(node.title, ComposerTheme.TEXT, ComposerTheme.FONT_TITLE)
-	)
 	return row
 
 
-## A field: a small dim caption above, the value in a slot below.
-##
-## Never on one line. Stacking them is what keeps a dense card legible without
-## making it wider.
-func _field_row(field: ComposerNode.Field) -> Control:
+## An argument: its name, and either a control to set it or what is absent.
+func _field_row(node: ComposerNode, position: int) -> Control:
+	var field: ComposerNode.Field = node.fields[position]
 	var column: VBoxContainer = VBoxContainer.new()
 	column.add_theme_constant_override(GASEditorTheme.SEPARATION, int(ComposerTheme.S1))
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(
 		_label(field.label, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_LABEL)
 	)
 
-	var slot: PanelContainer = PanelContainer.new()
-	slot.add_theme_stylebox_override(GASEditorTheme.PANEL_STYLEBOX, ComposerTheme.field_box())
-	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(slot)
+	if not field.is_satisfied():
+		# A required value that is absent is an error and is drawn as one. There
+		# is no control, because there is nothing there to show in one.
+		column.add_child(_label(
+			MISSING_LABEL,
+			ComposerTheme.severity_color(ComposerGraph.Severity.ERROR),
+			ComposerTheme.FONT_VALUE
+		))
+		return column
 
-	var line: HBoxContainer = HBoxContainer.new()
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(line)
-
-	# A required value that is absent is an error, and is drawn as one. The words
-	# differ from the Output panel's on purpose - the row names the node, and on
-	# a card the title has already said it - but the severity may not, and it did
-	# for a while: amber here and red there, over one missing argument.
-	var absent: bool = not field.is_satisfied()
-	var value: Label = _label(
-		MISSING_LABEL if absent else field.display,
-		(
-			ComposerTheme.severity_color(ComposerGraph.Severity.ERROR) if absent
-			else ComposerTheme.TEXT
-		),
-		ComposerTheme.FONT_VALUE
+	var editor: ComposerValueEditor = ComposerValueEditor.new()
+	column.add_child(editor)
+	editor.configure(field, node.may_edit(field))
+	editor.committed.connect(
+		func _typed(source_text: String) -> void:
+			value_edited.emit(node_id, position, source_text)
 	)
-	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	line.add_child(value)
-
-	if field.source == ComposerNode.ValueSource.WIRED:
-		line.add_child(
-			_label(CHEVRON, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_VALUE)
-		)
 	return column
 
 
-func _await_mark() -> Control:
-	var mark: Label = _label(
-		AWAIT_LABEL, ComposerTheme.ACCENT_SOFT, ComposerTheme.FONT_LABEL
-	)
-	mark.position = Vector2(
-		ComposerTheme.NODE_MIN_WIDTH - 58.0, ComposerTheme.PAD_Y + 1.0
-	)
-	return mark
+## The local this statement declares, named so a wire out of it can be read.
+func _result_row(produced: ComposerNode.Port) -> Control:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_child(_label(produced.label, ComposerTheme.TEXT, ComposerTheme.FONT_VALUE))
+	row.add_child(_label(WIRED_MARK, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_VALUE))
+	return row
 
 
-func _label(text: String, tint: Color, font_size: int) -> Label:
+static func _label(text: String, tint: Color, font_size: int) -> Label:
 	var label: Label = Label.new()
 	label.text = text
 	label.add_theme_color_override(GASEditorTheme.FONT_COLOR, tint)
 	label.add_theme_font_size_override(GASEditorTheme.FONT_SIZE, font_size)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+#endregion
+
+
+#region How much to draw
+## Draw as much of this card as is worth reading at the current zoom.
+##
+## The card keeps the size it measured at, whatever is hidden. Shrinking it as
+## its contents go away would move every pin on it and every wire with them, so
+## the graph would appear to rearrange itself while somebody was only pulling
+## back to look at it.
+func show_detail(level: ComposerCard.Detail) -> void:
+	var full: bool = level == ComposerCard.Detail.FULL
+	for slot: int in _rows.size():
+		# Faded, never hidden. A hidden child leaves GraphNode's slot list, so
+		# every pin below it renumbers - and the canvas fixed its wire indices
+		# once, when the graph was drawn. Pulling back to look at an ability
+		# would silently re-point every cable on it.
+		#
+		# Slot 0 is the name, and it is what tells the three levels apart: read at
+		# FULL, named at TITLE, and at BLOCK nothing but the coloured shape -
+		# which is the whole point of pulling back that far.
+		var lit: bool = full or (slot == 0 and level == ComposerCard.Detail.TITLE)
+		_rows[slot].modulate.a = 1.0 if lit else 0.0
+		_rows[slot].mouse_filter = (
+			Control.MOUSE_FILTER_STOP if full else Control.MOUSE_FILTER_IGNORE
+		)
+	modulate = (
+		ComposerTheme.severity_color(ComposerNode.severity_of(_state))
+		if level == ComposerCard.Detail.BLOCK
+		else Color.WHITE
+	)
 #endregion

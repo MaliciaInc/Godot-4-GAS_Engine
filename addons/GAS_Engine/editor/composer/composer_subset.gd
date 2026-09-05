@@ -39,6 +39,16 @@ enum Kind {
 	MATCH_CASE,
 	RETURN,
 	SUPER,
+
+	## Lines Composer wrote to hold a shape the language has no other word for.
+	##
+	## DETACHED is `if false:` around statements a person unplugged: they are
+	## still in the file, still readable, and no longer run. FLOW_STOP is the
+	## `return` put in so a live path still ends somewhere after that happened.
+	## Both only count as support when they carry the exact marker below, so a
+	## person's own `if false:` stays an ordinary branch.
+	DETACHED,
+	FLOW_STOP,
 	ASSIGN,
 	NOTHING,
 	UNSUPPORTED,
@@ -78,6 +88,16 @@ const NOTHING_MARK: String = "pass"
 ## assignment. `:` is here for `:=`, which the subset refuses for its own
 ## reasons and must not be mistaken for a plain assignment on the way.
 const COMPARISONS: String = "=!<>:"
+
+## The exact comments that make a line Composer's rather than a person's.
+##
+## Reserved on purpose and matched whole: `if false:` written by hand is a
+## branch somebody meant, and reading it as machinery would take their code off
+## the canvas. The detached marker carries a number so a file can hold several
+## unplugged islands and each one can be found again.
+const DETACHED_MARK: String = "# @composer-detached "
+const FLOW_STOP_MARK: String = "# @composer-flow-stop"
+const DETACHED_OPENER: String = "if false: "
 
 ## Openers whose shape is enough to name them.
 const OPENERS: Array[Array] = [
@@ -129,6 +149,15 @@ static func classify(line: String) -> Verdict:
 		if text.begins_with(forbidden) or text.contains(" " + forbidden):
 			verdict.reason = rule[1]
 			return verdict
+
+	# Asked before the ordinary openers, because both support lines are also
+	# valid ordinary lines and would be read as a branch and a return.
+	if text.contains(DETACHED_MARK):
+		verdict.kind = Kind.DETACHED
+		return verdict
+	if text.ends_with(FLOW_STOP_MARK):
+		verdict.kind = Kind.FLOW_STOP
+		return verdict
 
 	if text == "else:":
 		verdict.kind = Kind.BRANCH_ELSE

@@ -121,12 +121,12 @@ func repeat(spans: Array[ComposerSpan]) -> ComposerGraph.Diagnostic:
 	return commit(ComposerEdits.repeat(_source, spans))
 
 
-## Put `moved` where `before` is.
+## Put the statement at `moved` where `before` starts, changing the order the
+## ability runs in.
 ##
-## The only kind of dragging this canvas can honestly offer. Cards do not have
-## positions of their own - the layout works out where each goes from the order
-## the statements run in - so dragging one somewhere means putting its statement
-## somewhere, and the card follows because the layout is asked again.
+## Dragging a card no longer does this - a card's position is where it is drawn,
+## not when it happens - so this is reached deliberately, by somebody who means
+## to reorder the ability rather than to tidy the picture.
 func move(moved: ComposerSpan, before: ComposerSpan) -> ComposerGraph.Diagnostic:
 	return commit(ComposerEdits.move(_source, moved, before))
 
@@ -137,12 +137,27 @@ func move(moved: ComposerSpan, before: ComposerSpan) -> ComposerGraph.Diagnostic
 ## the resulting text back is still the authority, so Undo/Redo and reopening
 ## the file need no parallel state.
 func place(node_id: StringName, position: Vector2) -> ComposerGraph.Diagnostic:
+	var one: Dictionary[StringName, Vector2] = {node_id: position}
+	return place_many(one)
+
+
+## Put several cards where they were left, as one change.
+##
+## One commit for the whole gesture. Somebody who dragged four selected cards did
+## one thing, and four steps to take it back would be three more than they made -
+## which is what a placement per node produced.
+##
+## A card that is no longer in the ability is skipped rather than refused: the
+## positions arrive from a canvas that was drawn a moment ago, and a redraw in
+## between is not somebody's mistake.
+func place_many(
+	positions: Dictionary[StringName, Vector2]
+) -> ComposerGraph.Diagnostic:
 	if not may_write():
 		return ComposerWriter.refuse(NOTHING_OPEN)
-	var node: ComposerNode = _graph.find_node(node_id)
-	if node == null:
-		return ComposerWriter.refuse("the node to place is no longer in the ability")
-	return commit(ComposerLayoutMetadata.positioned(_source, node, position))
+	return commit(
+		ComposerLayoutMetadata.positioned_many(_source, _graph, positions)
+	)
 
 
 func insert(written: String, after: int) -> ComposerGraph.Diagnostic:

@@ -4,16 +4,21 @@
 ## Composer is only worth anything if it opens abilities somebody wrote for a
 ## real game, so the first file it opens here is this game's own.
 ##
-## **What this proves and what it does not.** Every gesture is handed to the
-## handler the way the viewport hands it over - a real event, at a point worked
-## out from where the card actually is on screen. That exercises hit-testing,
-## the layout, the fonts, the card sizing and the drawing, none of which
-## headless can show. It does not exercise the step before that, where the
-## operating system gives a click to Godot and Godot decides which control gets
-## it: synthesised events do not reach the GUI layer at all, with either
-## `Viewport.push_input` or `Input.parse_input_event`, focused window or not.
-## That step is the ordinary `mouse_filter` mechanism every Godot control uses,
-## and proving it needs a hand on a mouse.
+## **What this proves and what it does not.** Composer 3.2 put the graph on
+## Godot's own `GraphEdit`, and that moved half of what this harness used to do
+## out of reach. Hit-testing a card, dragging one, sweeping a box over several,
+## panning and zooming are the widget's now, and it reads them inside
+## `_gui_input` - a method a script cannot call, at a layer synthesised events
+## never arrive at, with either `Viewport.push_input` or `Input.parse_input_event`,
+## focused window or not. Proving those needs a hand on a mouse, which is what
+## the manual smoke is for.
+##
+## What is still this harness's is everything the Composer itself decides: what
+## a card is built out of, what the widget's reports do to the file, what a
+## chord does, what a typed value does, what clearing a pin does - and the claim
+## the whole phase turns on, that a card put down somewhere else changes where
+## it is drawn and never what the ability does. All of it against a real
+## renderer, at a real size, with every card measured by the font that draws it.
 ##
 ## Nothing writes to the game's source. Editing happens on a copy under
 ## `user://`, and the last check is that the game's file is what it was.
@@ -32,6 +37,10 @@ const SHOTS: String = "user://composer_harness"
 
 const SCREEN: Vector2 = Vector2(1920.0, 1080.0)
 const SETTLE: int = 3
+
+## Somewhere in the graph no card was laid out, so a placement is a placement.
+const AWAY: Vector2 = Vector2(2400.0, 1600.0)
+const ALONGSIDE: Vector2 = Vector2(320.0, 0.0)
 
 var _screen: ComposerScreen = null
 var _passed: int = 0
@@ -85,61 +94,44 @@ func _shot(label: String) -> void:
 #endregion
 
 
-#region Gestures, at the point the card actually occupies
+#region Reaching the graph
 func _canvas() -> ComposerCanvas:
 	return _screen.canvas()
 
 
-## Where a card sits, in the canvas's own coordinates.
-func _on_card(index: int) -> Vector2:
-	var canvas: ComposerCanvas = _canvas()
-	var wanted: StringName = _screen.graph().nodes[index].id
-	for child: Node in canvas._card_layer.get_children():
-		var card: ComposerCard = child as ComposerCard
-		if card != null and card.node_id == wanted:
-			return canvas._world.position + (card.position + card.size * 0.5) * canvas.zoom()
-	return Vector2.ZERO
+## The nodes actually drawn as cards, in the order the graph holds them.
+func _drawn() -> Array[ComposerNode]:
+	return _screen.graph().visible_nodes()
 
 
-func _nowhere() -> Vector2:
-	var lowest: Vector2 = Vector2.ZERO
-	var canvas: ComposerCanvas = _canvas()
-	for child: Node in canvas._card_layer.get_children():
+func _card(index: int) -> ComposerCard:
+	var drawn: Array[ComposerNode] = _drawn()
+	if index < 0 or index >= drawn.size():
+		return null
+	return _canvas().card_for(drawn[index].id)
+
+
+func _cards() -> Array[ComposerCard]:
+	var found: Array[ComposerCard] = []
+	for child: Node in _canvas().get_children():
 		var card: ComposerCard = child as ComposerCard
 		if card != null:
-			lowest = lowest.max(
-				canvas._world.position + (card.position + card.size) * canvas.zoom()
-			)
-	return lowest + Vector2(40.0, 40.0)
+			found.append(card)
+	return found
 
 
-func _button(at: Vector2, index: int, pressed: bool, shift: bool = false) -> void:
-	var made: InputEventMouseButton = InputEventMouseButton.new()
-	made.button_index = index
-	made.pressed = pressed
-	made.position = at
-	made.shift_pressed = shift
-	_canvas()._gui_input(made)
+## Pick cards the way the widget reports it. Clicking one is GraphEdit's own,
+## and only a hand on a mouse reaches that; what the Composer sees either way is
+## a node marked selected and a canvas passing on what is.
+func _pick(indices: Array[int]) -> void:
+	for card: ComposerCard in _cards():
+		card.selected = false
+	for index: int in indices:
+		var card: ComposerCard = _card(index)
+		if card != null:
+			card.selected = true
+	_canvas().selection_changed.emit(_canvas().picked())
 	await _frames(1)
-
-
-func _tap(at: Vector2, index: int = MOUSE_BUTTON_LEFT, shift: bool = false) -> void:
-	await _button(at, index, true, shift)
-	await _button(at, index, false, shift)
-
-
-func _drag(from: Vector2, to: Vector2, index: int = MOUSE_BUTTON_LEFT) -> void:
-	await _button(from, index, true)
-	var moved: InputEventMouseMotion = InputEventMouseMotion.new()
-	moved.position = to
-	moved.relative = to - from
-	_canvas()._gui_input(moved)
-	await _frames(1)
-	await _button(to, index, false)
-
-
-func _wheel(at: Vector2, up: bool) -> void:
-	await _button(at, MOUSE_BUTTON_WHEEL_UP if up else MOUSE_BUTTON_WHEEL_DOWN, true)
 
 
 func _chord(code: Key, ctrl: bool = false, shift: bool = false) -> void:
@@ -154,9 +146,31 @@ func _chord(code: Key, ctrl: bool = false, shift: bool = false) -> void:
 
 func _titles() -> PackedStringArray:
 	var found: PackedStringArray = PackedStringArray()
-	for node: ComposerNode in _screen.graph().nodes:
+	for node: ComposerNode in _drawn():
 		found.append(node.title)
 	return found
+
+
+## The statements, without the two the flow draws for Entry and End.
+##
+## Those two stand for no line of the file - which is what `source_backed` says
+## - so they carry their position under a marker of their own, and a card that
+## came from no line is not what "moving a card never reorders the body" is
+## about.
+func _statements() -> Array[ComposerNode]:
+	var found: Array[ComposerNode] = []
+	for node: ComposerNode in _drawn():
+		if node.source_backed:
+			found.append(node)
+	return found
+
+
+func _placed_lines() -> int:
+	return _screen.printed().count(ComposerLayoutMetadata.PREFIX)
+
+
+func _virtual_lines() -> int:
+	return _screen.printed().count(ComposerLayoutMetadata.VIRTUAL_PREFIX)
 #endregion
 
 
@@ -165,14 +179,18 @@ func _run() -> void:
 	var original: String = FileAccess.get_file_as_string(ABILITY)
 
 	await _this_games_ability(original)
-	await _getting_about()
+	await _the_cards()
+	await _zooming()
 	await _picking()
-	await _menu_and_drag()
+	await _placement()
+	await _placing_several()
+	await _placing_what_stands_for_nothing()
+	await _the_menu()
 	await _editing()
 	await _commands()
 	await _finding()
 	await _rewiring()
-	await _free_placement()
+	await _breaking()
 	await _leaving()
 
 	_check(
@@ -189,105 +207,200 @@ func _this_games_ability(original: String) -> void:
 	var graph: ComposerGraph = _screen.graph()
 	_check("opens an ability written for this game", graph.is_editable(),
 		graph.blocked_reason())
-	_check("draws every statement", graph.nodes.size() == 7, "%d nodes" % graph.nodes.size())
-	_check("and the cables between them", graph.connections.size() >= 6,
-		"%d wires" % graph.connections.size())
+	_check("draws its statements", _drawn().size() > 1, "%d drawn" % _drawn().size())
+	_check("and the cables between them",
+		graph.connections.size() >= _drawn().size() - 1,
+		"%d wires for %d nodes" % [graph.connections.size(), _drawn().size()])
 	_check("with nothing to complain about", graph.diagnostics.is_empty(),
 		"%d notes" % graph.diagnostics.size())
 	_check("prints it back byte for byte",
 		ComposerWriter.apply(graph, original).text == original)
 
-	var cards: int = 0
+
+## What a card is made of, measured by the renderer that draws it.
+func _the_cards() -> void:
+	var cards: Array[ComposerCard] = _cards()
+	_check("one card per drawn node", cards.size() == _drawn().size(),
+		"%d cards, %d nodes" % [cards.size(), _drawn().size()])
+
 	var measured: int = 0
-	for child: Node in _canvas()._card_layer.get_children():
-		var card: ComposerCard = child as ComposerCard
-		if card == null:
-			continue
-		cards += 1
+	var on_the_widget: int = 0
+	var ported: int = 0
+	for card: ComposerCard in cards:
 		measured += 1 if card.size.y > ComposerTheme.PAD_Y * 2.0 else 0
-	_check("one card per statement", cards == graph.nodes.size(), "%d cards" % cards)
-	_check("every card measured itself against real type", measured == cards,
-		"%d of %d have height" % [measured, cards])
+		on_the_widget += 1 if card is GraphNode else 0
+		ported += 1 if card.get_input_port_count() + card.get_output_port_count() > 0 else 0
+	_check("every card measured itself against real type", measured == cards.size(),
+		"%d of %d have height" % [measured, cards.size()])
+	_check("every card is a node on the widget", on_the_widget == cards.size(),
+		"%d of %d" % [on_the_widget, cards.size()])
+	_check("and carries pins the widget can connect", ported == cards.size(),
+		"%d of %d have ports" % [ported, cards.size()])
+
+	# This game's theme says GraphNode titles are 96. The editor's says something
+	# quiet, so a card that took the host's word for it looked right there and
+	# nowhere else - which is the whole reason to draw one here.
+	var titled: int = 0
+	for card: ComposerCard in cards:
+		titled += 1 if card.get_theme_font_size(
+			GASEditorTheme.TITLE_FONT_SIZE
+		) == ComposerTheme.FONT_TITLE else 0
+	_check("and draws its title at the Composer's size, not this game's",
+		titled == cards.size(), "%d of %d" % [titled, cards.size()])
 
 
-func _getting_about() -> void:
+## Zoom is the widget's. What the Composer decides is how much of a card is
+## worth drawing at each end of it.
+func _zooming() -> void:
 	var canvas: ComposerCanvas = _canvas()
-	var middle: Vector2 = canvas.size * 0.5
 
-	var before: float = canvas.zoom()
-	await _wheel(middle, true)
-	_check("the wheel zooms in", canvas.zoom() > before, "%.2f" % canvas.zoom())
-
-	# Enough to reach the floor from anywhere in range, so the check is about
-	# the clamp rather than about how many turns of a wheel I felt like.
-	for _step: int in 40:
-		await _wheel(middle, false)
-	_check("and out, stopping at the floor",
-		is_equal_approx(canvas.zoom(), ComposerCanvas.ZOOM_MIN), "%.2f" % canvas.zoom())
-	_check("a card is drawn as a block when pulled back",
-		ComposerCanvas.detail_at(canvas.zoom()) == ComposerCard.Detail.BLOCK)
+	canvas.zoom = ComposerCanvas.ZOOM_MIN * 0.1
+	await _frames(SETTLE)
+	_check("pulled past the floor, the widget stops at it",
+		is_equal_approx(canvas.zoom, ComposerCanvas.ZOOM_MIN), "%.2f" % canvas.zoom)
+	_check("and a card that far back is drawn as a block",
+		ComposerCanvas.detail_at(canvas.zoom) == ComposerCard.Detail.BLOCK)
 	await _shot("02-pulled-right-back")
 
-	var world: Vector2 = canvas._world.position
-	await _drag(middle, middle + Vector2(120.0, 60.0), MOUSE_BUTTON_MIDDLE)
-	_check("the middle button drags the graph about", canvas._world.position != world)
-
-	canvas.frame_all()
+	canvas.zoom = ComposerCanvas.ZOOM_MAX * 10.0
 	await _frames(SETTLE)
-	_check("framing everything stays within reach of the wheel",
-		canvas.zoom() >= ComposerCanvas.ZOOM_MIN and canvas.zoom() <= ComposerCanvas.ZOOM_MAX,
-		"%.2f" % canvas.zoom())
-	await _shot("03-framed")
+	_check("pushed past the ceiling, it stops there",
+		is_equal_approx(canvas.zoom, ComposerCanvas.ZOOM_MAX), "%.2f" % canvas.zoom)
+
+	canvas.zoom = 1.0
+	await _frames(SETTLE)
+	_check("and back where it started a card shows its values",
+		ComposerCanvas.detail_at(canvas.zoom) == ComposerCard.Detail.FULL)
+	await _shot("03-back-to-one")
 
 
+## Selection is the widget's too, and the canvas passes on what it says.
 func _picking() -> void:
-	var canvas: ComposerCanvas = _canvas()
-
-	await _tap(_on_card(0))
-	_check("clicking a card picks it", canvas.picked().size() == 1,
-		"%d picked" % canvas.picked().size())
+	await _pick([0])
+	_check("one card selected is one card picked", _canvas().picked().size() == 1,
+		"%d picked" % _canvas().picked().size())
 	await _shot("04-one-picked")
 
-	await _tap(_on_card(2), MOUSE_BUTTON_LEFT, true)
-	_check("shift picks another as well", canvas.picked().size() == 2,
-		"%d picked" % canvas.picked().size())
+	await _pick([0, 1])
+	_check("two selected are two picked", _canvas().picked().size() == 2,
+		"%d picked" % _canvas().picked().size())
 	await _shot("05-two-picked")
 
-	await _tap(_on_card(2), MOUSE_BUTTON_LEFT, true)
-	_check("and shift takes one back out", canvas.picked().size() == 1,
-		"%d picked" % canvas.picked().size())
-
-	await _tap(_nowhere())
-	_check("clicking the canvas lets go of everything", canvas.picked().is_empty())
-
-	await _drag(_nowhere(), Vector2(-4000.0, -4000.0))
-	_check("a box sweeps everything it covers",
-		canvas.picked().size() == _screen.graph().nodes.size(),
-		"%d of %d" % [canvas.picked().size(), _screen.graph().nodes.size()])
-	await _shot("06-box-selected")
-	await _tap(_nowhere())
+	await _pick([])
+	_check("and letting go picks nothing", _canvas().picked().is_empty())
 
 
-func _menu_and_drag() -> void:
-	await _tap(_on_card(1), MOUSE_BUTTON_RIGHT)
-	_check("right-click offers what can be done to a card",
-		_screen._menu != null and _screen._menu.visible)
-	await _shot("07-context-menu")
-	if _screen._menu != null:
-		_screen._menu.hide()
+## The claim the whole phase turns on: a card put down somewhere else is drawn
+## somewhere else, and the ability does exactly what it did.
+func _placement() -> void:
+	var order: PackedStringArray = _titles()
+	_check(
+		"nothing is positioned by hand until somebody does it", _placed_lines() == 0
+	)
+
+	var moved: Dictionary[StringName, Vector2] = {}
+	moved[_statements()[0].id] = AWAY
+	_canvas().nodes_positioned.emit(moved)
 	await _frames(SETTLE)
 
-	var before: PackedStringArray = _titles()
-	var last: int = _screen.graph().nodes.size() - 1
-	await _drag(_on_card(last), _on_card(0))
-	await _frames(SETTLE)
-	_check("dragging one card onto another reorders the body", _titles() != before,
-		"%s -> %s" % [before[0], _titles()[0]])
-	await _shot("08-reordered")
+	_check("a card put down writes its position into the source", _placed_lines() == 1,
+		"%d lines" % _placed_lines())
+	_check("and moves nothing in the body", _titles() == order,
+		"%s -> %s" % [order[0], _titles()[0]])
+	await _shot("06-placed")
+
+	var reopened: ComposerGraph = ComposerReader.read(_screen.printed(), ABILITY)
+	var carried: int = 0
+	for node: ComposerNode in reopened.nodes:
+		if node.has_layout_position:
+			carried += 1
+	_check("and reading the file back finds it again", carried == 1, "%d carried" % carried)
 
 	await _screen.undo()
 	await _frames(SETTLE)
-	_check("and undo puts the order back", _titles() == before)
+	_check("undo takes the position with it", _placed_lines() == 0)
+
+	await _screen.redo()
+	await _frames(SETTLE)
+	_check("and redo brings it back", _placed_lines() == 1)
+
+	await _screen.undo()
+	await _frames(SETTLE)
+
+
+## Several cards moved together is one thing somebody did, and one thing to
+## take back. A step per card would be three more presses than the gesture.
+func _placing_several() -> void:
+	var order: PackedStringArray = _titles()
+	var steps: int = _screen.history().depth()
+	var both: Dictionary[StringName, Vector2] = {}
+	both[_statements()[0].id] = AWAY
+	both[_statements()[1].id] = AWAY + ALONGSIDE
+
+	_canvas().nodes_positioned.emit(both)
+	await _frames(SETTLE)
+
+	_check("two cards put down write both positions", _placed_lines() == 2,
+		"%d lines" % _placed_lines())
+	_check("as one step to take back", _screen.history().depth() == steps + 1,
+		"%d -> %d" % [steps, _screen.history().depth()])
+	_check("and still nothing moved in the body", _titles() == order)
+
+	await _screen.undo()
+	await _frames(SETTLE)
+	_check("one undo puts both back", _placed_lines() == 0)
+
+
+## Entry and End stand for no line of the file, so where they sit is written
+## with a marker of its own. Placing one must still be a placement.
+func _placing_what_stands_for_nothing() -> void:
+	var order: PackedStringArray = _titles()
+	_check("nothing virtual is positioned by hand either", _virtual_lines() == 0)
+
+	var moved: Dictionary[StringName, Vector2] = {}
+	moved[_drawn()[0].id] = AWAY
+	_canvas().nodes_positioned.emit(moved)
+	await _frames(SETTLE)
+
+	_check("Entry put down is written under its own marker", _virtual_lines() == 1,
+		"%d virtual lines" % _virtual_lines())
+	_check("and not mistaken for a statement's position", _placed_lines() == 0)
+	_check("with the body still in the order it was", _titles() == order)
+
+	var reopened: ComposerGraph = ComposerReader.read(_screen.printed(), ABILITY)
+	_check("and it comes back where it was put",
+		reopened.find_node(_drawn()[0].id) != null
+		and reopened.find_node(_drawn()[0].id).has_layout_position)
+
+	await _screen.undo()
+	await _frames(SETTLE)
+	_check("undo takes that one with it too", _virtual_lines() == 0)
+
+
+func _the_menu() -> void:
+	_screen._menus.open_for_card(_statements()[0].id, Vector2(400.0, 400.0))
+	await _frames(SETTLE)
+	_check("a card offers what can be done to it", _menu_is_open())
+	await _shot("07-card-menu")
+
+	_hide_menus()
+	await _frames(SETTLE)
+	_check("and the menu gets out of the way", not _menu_is_open())
+
+
+func _menu_is_open() -> bool:
+	for child: Node in _screen._menus.get_children():
+		var menu: PopupMenu = child as PopupMenu
+		if menu != null and menu.visible:
+			return true
+	return false
+
+
+func _hide_menus() -> void:
+	for child: Node in _screen._menus.get_children():
+		var menu: PopupMenu = child as PopupMenu
+		if menu != null:
+			menu.hide()
 
 
 ## A copy, so nothing here can reach the game's own file.
@@ -301,7 +414,7 @@ func _editing() -> void:
 	await _frames(SETTLE)
 
 	var node: ComposerNode = null
-	for drawn: ComposerNode in _screen.graph().nodes:
+	for drawn: ComposerNode in _drawn():
 		if not drawn.fields.is_empty():
 			node = drawn
 			break
@@ -310,15 +423,14 @@ func _editing() -> void:
 	if node == null:
 		return
 
-	await _tap(_on_card(_screen.graph().nodes.find(node)))
-	await _frames(SETTLE)
-	await _shot("09-inspector")
+	await _pick([_drawn().find(node)])
+	await _shot("08-inspector")
 
 	var typed: String = "harness_value"
 	_screen._on_value_edited(node.id, 0, typed)
 	await _frames(SETTLE)
 	_check("a typed value reaches the file", _screen.printed().contains(typed))
-	await _shot("10-edited")
+	await _shot("09-edited")
 
 	await _chord(KEY_S, true)
 	_check("Ctrl+S writes it to disk",
@@ -335,20 +447,25 @@ func _editing() -> void:
 	await _frames(SETTLE)
 
 
+## The widget's own shortcuts arrive as requests, and what each one does to the
+## file is the screen's. That is why a key and a menu entry cannot come to mean
+## two different things - there is one handler under both.
 func _commands() -> void:
-	var before: int = _screen.graph().nodes.size()
+	var before: int = _drawn().size()
 
-	await _tap(_on_card(0))
-	await _chord(KEY_D, true)
-	_check("Ctrl+D repeats a statement", _screen.graph().nodes.size() == before + 1,
-		"%d -> %d" % [before, _screen.graph().nodes.size()])
+	await _pick([1])
+	_canvas().duplicate_requested.emit()
+	await _frames(SETTLE)
+	_check("duplicate repeats a statement", _drawn().size() == before + 1,
+		"%d -> %d" % [before, _drawn().size()])
 
-	await _tap(_on_card(0))
-	await _chord(KEY_DELETE)
-	_check("Delete takes one out", _screen.graph().nodes.size() == before,
-		"%d nodes" % _screen.graph().nodes.size())
+	await _pick([1])
+	_canvas().delete_requested.emit()
+	await _frames(SETTLE)
+	_check("delete takes one out", _drawn().size() == before,
+		"%d nodes" % _drawn().size())
 
-	await _tap(_on_card(0))
+	await _pick([1])
 	var copied: String = _screen.copy_picked()
 	_check("copying takes the statement as text", not copied.strip_edges().is_empty(),
 		copied.strip_edges())
@@ -356,18 +473,18 @@ func _commands() -> void:
 	var took: bool = await _screen.paste_text(copied)
 	await _frames(SETTLE)
 	_check("and pasting puts it back in",
-		took and _screen.graph().nodes.size() == before + 1,
-		"%d nodes" % _screen.graph().nodes.size())
+		took and _drawn().size() == before + 1,
+		"%d nodes" % _drawn().size())
 	await _screen.undo()
 	await _frames(SETTLE)
-	await _shot("11-after-commands")
+	await _shot("10-after-commands")
 
 
 func _finding() -> void:
 	await _chord(KEY_SPACE)
 	var finder: ComposerFinder = _screen._finder
 	_check("Space opens the finder", finder != null and finder.visible)
-	await _shot("12-finder")
+	await _shot("11-finder")
 	if finder == null or not finder.visible:
 		return
 
@@ -375,16 +492,15 @@ func _finding() -> void:
 	await _frames(SETTLE)
 	_check("typing narrows it down", not finder.here().is_empty(),
 		ComposerCatalog.find(finder.here()).title if not finder.here().is_empty() else "")
-	await _shot("13-finder-typed")
+	await _shot("12-finder-typed")
 
-	var before: int = _screen.graph().nodes.size()
+	var before: int = _drawn().size()
 	finder._take()
 	await _frames(SETTLE)
-	_check("choosing one writes a statement",
-		_screen.graph().nodes.size() == before + 1,
-		"%d -> %d" % [before, _screen.graph().nodes.size()])
+	_check("choosing one writes a statement", _drawn().size() == before + 1,
+		"%d -> %d" % [before, _drawn().size()])
 	_check("and the finder gets out of the way", not finder.visible)
-	await _shot("14-node-placed")
+	await _shot("13-node-placed")
 	await _screen.undo()
 	await _frames(SETTLE)
 
@@ -407,7 +523,7 @@ func _rewiring() -> void:
 
 	var wired: ComposerNode = null
 	var position: int = -1
-	for node: ComposerNode in _screen.graph().nodes:
+	for node: ComposerNode in _drawn():
 		for index: int in node.fields.size():
 			if node.fields[index].source == ComposerNode.ValueSource.WIRED:
 				wired = node
@@ -428,6 +544,41 @@ func _rewiring() -> void:
 	await _frames(SETTLE)
 
 
+## Clearing a pin. The gesture that asks for it - Alt over a pin - is read by
+## the canvas and needs a mouse; what it asks for is this, and what that does to
+## the file is what a detached graph rests on.
+func _breaking() -> void:
+	var original: String = FileAccess.get_file_as_string(ABILITY)
+	await _screen.open(original, ABILITY)
+	await _frames(SETTLE)
+
+	var wires: int = _screen.graph().connections.size()
+	var node: ComposerNode = _statements()[0]
+	var port: StringName = &""
+	for offered: ComposerNode.Port in node.ports:
+		if offered.is_execution() and offered.direction == ComposerNode.PortDirection.OUTPUT:
+			port = offered.id
+			break
+	_check("a statement has an execution pin to clear", port != &"", String(port))
+	if port == &"":
+		return
+
+	_canvas().break_all_requested.emit(node.id, port)
+	await _frames(SETTLE)
+	_check("clearing a pin takes its cables with it",
+		_screen.graph().connections.size() < wires,
+		"%d -> %d wires" % [wires, _screen.graph().connections.size()])
+	_check("and what it left behind is still a file the Composer can read",
+		_screen.graph().is_editable(), _screen.graph().blocked_reason())
+	await _shot("14-broken")
+
+	await _screen.undo()
+	await _frames(SETTLE)
+	_check("undo puts the cables back",
+		_screen.graph().connections.size() == wires,
+		"%d wires" % _screen.graph().connections.size())
+
+
 func _leaving() -> void:
 	var asked: Array[String] = []
 	_screen.code_requested.connect(func _left(where: String) -> void: asked.append(where))
@@ -436,54 +587,4 @@ func _leaving() -> void:
 	_check("the Code chip asks to be taken to the file", asked.size() == 1,
 		asked[0] if not asked.is_empty() else "nothing")
 	await _shot("15-final")
-
-
-## Dragging a card to empty space is a visual position, not a reorder.
-##
-## The unit tests cover reading and writing the comment. What only a real canvas
-## can show is the gesture reaching it: press, move, release over nothing, and a
-## line appearing in the source that survives being read back.
-func _free_placement() -> void:
-	var before: String = _screen.printed()
-	var order: PackedStringArray = _titles()
-	_check(
-		"nothing is positioned by hand until somebody does it",
-		not before.contains(ComposerLayoutMetadata.PREFIX)
-	)
-
-	await _drag(_on_card(0), _nowhere())
-	await _frames(SETTLE)
-	var placed: String = _screen.printed()
-
-	_check(
-		"dragging a card into empty space writes its position into the source",
-		placed.contains(ComposerLayoutMetadata.PREFIX)
-	)
-	_check("and moves nothing in the body", _titles() == order)
-	_check(
-		"one position line, not one per drag",
-		placed.count(ComposerLayoutMetadata.PREFIX) == 1
-	)
-	await _shot("16-free-placement")
-
-	var reopened: ComposerGraph = ComposerReader.read(placed, ABILITY)
-	var carried: int = 0
-	for node: ComposerNode in reopened.nodes:
-		if node.has_layout_position:
-			carried += 1
-	_check("and reading the file back finds it again", carried == 1)
-
-	await _screen.undo()
-	await _frames(SETTLE)
-	_check(
-		"undo takes the position with it",
-		not _screen.printed().contains(ComposerLayoutMetadata.PREFIX)
-	)
-
-	await _screen.redo()
-	await _frames(SETTLE)
-	_check(
-		"and redo brings it back",
-		_screen.printed().contains(ComposerLayoutMetadata.PREFIX)
-	)
 #endregion

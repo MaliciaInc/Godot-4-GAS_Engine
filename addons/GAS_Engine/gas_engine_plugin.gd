@@ -61,14 +61,72 @@ const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
 const AUTOLOAD_SETTING_PREFIX: String = "autoload/"
 
+## The star ProjectSettings puts in front of an autoload that is switched on.
+const AUTOLOAD_ENABLED_PREFIX: String = "*"
 
-static func _autoload_setting_name() -> String:
+## What the project is only allowed to be told once: a name taken by something
+## that is not this addon's cue manager.
+##
+## Said for that case and no other. The warning existed for every project that
+## declared the singleton itself, which is the ordinary way to use this addon -
+## so the one message that means somebody has a real collision was buried under
+## a message that meant nothing.
+const CONFLICTING_AUTOLOAD: String = (
+	"GAS_Engine: '" + CUE_MANAGER_NAME
+	+ "' is already declared with a different path; leaving that declaration alone."
+)
+
+
+## The setting the cue manager autoload is declared in.
+static func autoload_setting_name() -> String:
 	return AUTOLOAD_SETTING_PREFIX + CUE_MANAGER_NAME
 
 
-static func _autoload_points_to_gas_engine() -> bool:
-	var configured: String = ProjectSettings.get_setting(_autoload_setting_name(), "")
-	return configured == "*" + CUE_MANAGER_PATH
+## Whether that setting declares this addon's cue manager as a live singleton.
+##
+## Public because disabling the plugin asks it too: an autoload pointing
+## somewhere else is not ours to take away, however the ownership marker got
+## to say otherwise.
+static func declares_gas_engine_cue_manager() -> bool:
+	var configured: String = ProjectSettings.get_setting(autoload_setting_name(), "")
+	return configured == AUTOLOAD_ENABLED_PREFIX + CUE_MANAGER_PATH
+
+
+## Whether that setting names this addon's cue manager file at all, star or no
+## star. Same file declared without the star is somebody switching the
+## singleton off deliberately, not a collision, so it is left alone in silence.
+static func _autoload_names_gas_engine_file() -> bool:
+	var configured: String = ProjectSettings.get_setting(autoload_setting_name(), "")
+	return configured.trim_prefix(AUTOLOAD_ENABLED_PREFIX) == CUE_MANAGER_PATH
+
+
+## What enabling the plugin does about the cue manager autoload.
+##
+## Three separate consequences, decided in one place from the project as it
+## stands: whether the autoload gets added, whether this plugin then owns it -
+## and so may take it away again - and what, if anything, the person is told.
+class Plan extends RefCounted:
+	var adds: bool = false
+	var owns: bool = false
+	var complaint: String = ""
+
+
+## Read the project and decide. Reads only: asking must not change the answer.
+static func plan_for_cue_manager() -> Plan:
+	var plan: Plan = Plan.new()
+	if not ProjectSettings.has_setting(autoload_setting_name()):
+		plan.adds = true
+		plan.owns = true
+		return plan
+	if not _autoload_names_gas_engine_file():
+		plan.complaint = CONFLICTING_AUTOLOAD
+		return plan
+	plan.owns = (
+		declares_gas_engine_cue_manager()
+		and GASEngineProjectSettings.owns_cue_manager_autoload()
+	)
+	return plan
+
 
 ## The tags a fresh tag registry is seeded with.
 const EXAMPLE_TAGS: Array[String] = [
@@ -100,45 +158,31 @@ var _choices: PackedStringArray = PackedStringArray()
 var _tag_inspector: EditorInspectorPlugin = null
 
 #region Plugin Lifecycle
-## Register the autoload, unless the project already declares it.
-##
-## Upstream registered unconditionally, which produced a second authority over
-## the same singleton for any project that had declared it itself.
 ## Whether enabling this plugin would have to add the autoload.
 ##
 ## False when the project already declares it: the plugin then adds nothing,
-## owns nothing, and removes nothing when it is disabled. Exposed as its own
-## question so that decision can be asked without an editor to enable a plugin
-## in - which is the only place the enable path itself can run.
+## owns nothing, and removes nothing when it is disabled. Upstream registered
+## unconditionally, which left two authorities over one singleton for any
+## project that had declared it itself.
 static func would_add_cue_manager_autoload() -> bool:
-	return not ProjectSettings.has_setting(AUTOLOAD_SETTING_PREFIX + CUE_MANAGER_NAME)
+	return plan_for_cue_manager().adds
 
 
 func _enable_plugin() -> void:
-	if not would_add_cue_manager_autoload():
-		if (
-			GASEngineProjectSettings.owns_cue_manager_autoload()
-			and _autoload_points_to_gas_engine()
-		):
-			_owns_cue_manager_autoload = true
-			return
-		push_warning(
-			"GAS_Engine: '" + CUE_MANAGER_NAME
-			+ "' is already declared in project.godot; leaving that declaration alone."
-		)
-		_owns_cue_manager_autoload = false
-		return
-
-	add_autoload_singleton(CUE_MANAGER_NAME, CUE_MANAGER_PATH)
-	_owns_cue_manager_autoload = true
-	GASEngineProjectSettings.set_cue_manager_autoload_owned(true)
+	var plan: Plan = plan_for_cue_manager()
+	if not plan.complaint.is_empty():
+		push_warning(plan.complaint)
+	if plan.adds:
+		add_autoload_singleton(CUE_MANAGER_NAME, CUE_MANAGER_PATH)
+		GASEngineProjectSettings.set_cue_manager_autoload_owned(true)
+	_owns_cue_manager_autoload = plan.owns
 
 
 func _enter_tree() -> void:
 	GASEngineProjectSettings.init_project_settings()
 	_owns_cue_manager_autoload = (
 		GASEngineProjectSettings.owns_cue_manager_autoload()
-		and _autoload_points_to_gas_engine()
+		and declares_gas_engine_cue_manager()
 	)
 	ensure_project_sources()
 
@@ -167,7 +211,7 @@ func _disable_plugin() -> void:
 	if not _owns_cue_manager_autoload and not persisted_owner:
 		return
 
-	if _autoload_points_to_gas_engine():
+	if declares_gas_engine_cue_manager():
 		remove_autoload_singleton(CUE_MANAGER_NAME)
 
 	_owns_cue_manager_autoload = false

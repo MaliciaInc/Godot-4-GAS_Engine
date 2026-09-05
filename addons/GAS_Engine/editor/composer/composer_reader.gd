@@ -48,7 +48,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 		return graph
 
 	_build_nodes(graph, lines, span, path)
-	_wire_execution(graph, lines)
+	ComposerFlow.build(graph, lines)
 	_wire_data(graph, lines)
 
 	# The findings come back with the graph rather than being asked for later.
@@ -117,6 +117,14 @@ static func _node(
 
 	node.entry = ComposerCatalog.entry_for(node.type_id, node.receiver, path, locals)
 	node.title = _title(node, verdict)
+	node.terminal = (
+		verdict.kind == ComposerSubset.Kind.RETURN
+		or verdict.kind == ComposerSubset.Kind.FLOW_STOP
+	)
+	node.projection_kind = _projection_of(verdict.kind)
+	node.visible_in_graph = (
+		node.projection_kind != ComposerNode.ProjectionKind.SUPPORT
+	)
 	node.ports = _ports(verdict, text)
 	node.fields.assign(_fields(text, node.entry))
 	# After the fields, never before: there is one argument port per field, and
@@ -171,6 +179,22 @@ static func _prefix(text: String, called: String) -> String:
 
 
 ## Which statements can carry a call: the ones whose whole shape is one.
+## What kind of card a verdict draws, or none at all.
+static func _projection_of(kind: ComposerSubset.Kind) -> ComposerNode.ProjectionKind:
+	if kind == ComposerSubset.Kind.BRANCH:
+		return ComposerNode.ProjectionKind.BRANCH
+	if kind == ComposerSubset.Kind.MATCH:
+		return ComposerNode.ProjectionKind.SWITCH
+	if (
+		kind == ComposerSubset.Kind.BRANCH_ELSE
+		or kind == ComposerSubset.Kind.MATCH_CASE
+		or kind == ComposerSubset.Kind.DETACHED
+		or kind == ComposerSubset.Kind.FLOW_STOP
+	):
+		return ComposerNode.ProjectionKind.SUPPORT
+	return ComposerNode.ProjectionKind.STATEMENT
+
+
 static func _may_call(kind: ComposerSubset.Kind) -> bool:
 	return (
 		kind == ComposerSubset.Kind.CALL
@@ -205,8 +229,14 @@ static func _ports(
 ) -> Array[ComposerNode.Port]:
 	var ports: Array[ComposerNode.Port] = [
 		port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
-		port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
 	]
+	# A `return` ends the method, so it is not offered a way out. The port used
+	# to be here for every statement alike, and a person could drag a wire from
+	# `return` to the next card - a promise GDScript will not keep.
+	if verdict.kind != ComposerSubset.Kind.RETURN:
+		ports.append(
+			port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT)
+		)
 	if verdict.kind == ComposerSubset.Kind.LOCAL:
 		var value: ComposerNode.Port = port(
 			VALUE_OUT, ComposerNode.PortKind.DATA, ComposerNode.PortDirection.OUTPUT
@@ -217,6 +247,10 @@ static func _ports(
 		# against a promise the file never made.
 		value.type_name = StringName(_local_type(text))
 		value.label = _local_name(text)
+		# The one pin in this projection that carries more than one wire: a local
+		# can be passed to every argument that wants it, while an argument holds
+		# one value and a statement runs after exactly one other.
+		value.multiplicity = ComposerNode.PortMultiplicity.MULTIPLE
 		ports.append(value)
 	return ports
 
@@ -294,55 +328,34 @@ static func _fields(text: String, entry: ComposerCatalog.Entry) -> Array[Compose
 		var field: ComposerNode.Field = ComposerNode.Field.new()
 		field.label = declared.label if declared != null else "#%d" % (position + 1)
 		field.type_name = declared.type_name if declared != null else &""
+		# Everything else the engine said about this argument, carried onto the
+		# read field rather than left in the catalog. A control is chosen from the
+		# hint and an unplugged wire is replaced by the declared default, and both
+		# of those happen to a node that was read out of a file - so a field that
+		# knows only its type is a field neither of them can serve.
+		if declared != null:
+			_declare(field, declared)
 		field.display = argument.strip_edges()
 		fields.append(field)
 		position += 1
 	return fields
+
+
+## Copy what reflection said about an argument onto the field read for it.
+##
+## The display is not copied: that is what the file passes, and it is the one
+## thing here the person wrote rather than the engine.
+static func _declare(field: ComposerNode.Field, declared: ComposerNode.Field) -> void:
+	field.variant_type = declared.variant_type
+	field.class_id = declared.class_id
+	field.hint = declared.hint
+	field.hint_string = declared.hint_string
+	field.usage = declared.usage
+	field.default_expression = declared.default_expression
 #endregion
 
 
 #region Wires
-## Execution follows the statements, in the order they are written.
-##
-## Only between siblings: a statement inside a branch belongs to that branch, and
-## joining across indentation would draw a path the code does not take.
-static func _wire_execution(graph: ComposerGraph, lines: PackedStringArray) -> void:
-	var previous: Dictionary[int, StringName] = {}
-	for node: ComposerNode in graph.nodes:
-		var depth: int = ComposerSubset.indent_of(lines[node.span.last_line - 1])
-		if previous.has(depth):
-			graph.connections.append(wire(previous[depth], EXEC_OUT, node.id, EXEC_IN))
-		else:
-			# The first statement of a block runs because the line above opened
-			# it. Without this the body of every branch floats free of its own
-			# condition: nothing leads into it, so the layout treats it as
-			# another place the method starts and puts it at the left margin
-			# beside the first line of the ability.
-			var opener: StringName = _opener(previous, depth)
-			if not opener.is_empty():
-				graph.connections.append(wire(opener, EXEC_OUT, node.id, EXEC_IN))
-		previous[depth] = node.id
-
-		# A deeper block starts fresh: whatever ran at that depth belonged to an
-		# earlier branch and must not reach into this one.
-		for open_depth: int in previous.keys():
-			if open_depth > depth:
-				previous.erase(open_depth)
-
-
-## The statement that opened the block `depth` is inside.
-##
-## The nearest shallower depth still open, not `depth - 1`: indentation is
-## counted in characters, so a file written with spaces steps four at a time and
-## subtracting one would find nothing.
-static func _opener(previous: Dictionary[int, StringName], depth: int) -> StringName:
-	var nearest: int = -1
-	for open_depth: int in previous.keys():
-		if open_depth < depth and open_depth > nearest:
-			nearest = open_depth
-	return previous[nearest] if nearest >= 0 else &""
-
-
 ## A local's value reaches every later statement that names it.
 ##
 ## Read by name rather than by scope analysis, which the subset makes safe: a
@@ -376,20 +389,13 @@ static func _wire_into(
 	graph: ComposerGraph, node: ComposerNode, other: ComposerNode, declared: String
 ) -> void:
 	var slot: int = _argument_naming(other.text, declared)
-	var exact: bool = slot >= 0
-	if not exact:
-		slot = _argument_using(other.text, declared)
 	if slot < 0:
 		return
 
 	graph.connections.append(
 		wire(node.id, VALUE_OUT, other.id, StringName(ARGUMENT % slot))
 	)
-	# Marked as fed only when the argument is the local and nothing else. An
-	# argument that merely reaches into it is an expression somebody wrote, and
-	# offering to swap the whole thing for another name would throw away the
-	# `.target_data` they meant.
-	if exact and slot < other.fields.size():
+	if slot < other.fields.size():
 		other.fields[slot].source = ComposerNode.ValueSource.WIRED
 
 
@@ -402,24 +408,6 @@ static func _local_name(line: String) -> String:
 	if stop < 0:
 		return ""
 	return rest.substr(0, stop).strip_edges()
-
-
-## Which argument of `line` depends on `word` without being it, or -1.
-##
-## `pick.target_data` uses `pick`; `picked` does not. Whole names only, which is
-## the difference between a dependency and a coincidence of spelling.
-static func _argument_using(line: String, word: String) -> int:
-	var open: int = line.find(OPEN_BRACKET)
-	if open < 0:
-		return -1
-	var position: int = 0
-	for argument: String in ComposerSubset.arguments_of(line.substr(open + 1)):
-		if ComposerValidator.names(argument, word):
-			return position
-		position += 1
-	return -1
-
-
 ## Which argument of `line` is exactly `word`, or -1 when none is.
 ##
 ## Position matters: the wire has to land on the slot that uses the value, not
