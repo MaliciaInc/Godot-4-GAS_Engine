@@ -37,6 +37,27 @@ func _first_flow(graph: ComposerGraph) -> ComposerGraph.Connection:
 	return graph.execution_connections()[0]
 
 
+## Cut the link leaving that statement by that pin, whatever it arrives at.
+##
+## The statements are named by what they say rather than by id, because an id
+## is derived from a line number and every one of these tests reads a file its
+## own previous step rewrote.
+func _cut(
+	source: String, said: String, port_id: StringName, arrives_at: String
+) -> ComposerFlowEdits.Result:
+	var graph: ComposerGraph = _read(source)
+	return ComposerFlowEdits.disconnect_flow(
+		source,
+		graph,
+		ComposerReader.wire(
+			ComposerFlowProbe.at(graph, said).id,
+			port_id,
+			ComposerFlowProbe.at(graph, arrives_at).id,
+			ComposerReader.EXEC_IN
+		)
+	)
+
+
 #region Unplugging
 ## Everything the link was carrying becomes an island, and the method still ends.
 ##
@@ -210,4 +231,103 @@ func test_a_shortened_method_still_compiles() -> void:
 		var built: GDScript = GDScript.new()
 		built.source_code = done.source
 		assert_eq(built.reload(), OK, "%s: the result compiles" % described)
+#endregion
+
+
+#region A boundary this tool wrote, and one a person did
+## The false path of a branch with no `else` is cut by writing one, marked.
+##
+## The mark is the whole point. It says the `else` is machinery: it exists only
+## to stop a path that used to fall through, and it may come out again. An `else`
+## a person wrote never carries it and is never taken away.
+func test_cutting_a_fallthrough_writes_a_boundary_marked_as_ours() -> void:
+	var source: String = _script([
+		"if ready:", "\tfire()", "after()", "return true",
+	])
+
+	var done: ComposerFlowEdits.Result = _cut(
+		source, "if ready:", ComposerReader.FALSE_OUT, "after()"
+	)
+
+	assert_true(done.ok, "the path was cut: %s" % done.message)
+	assert_true(
+		done.source.contains("\telse: %s" % ComposerSubset.FLOW_ELSE_MARK),
+		"with a boundary marked as ours: %s" % [ComposerFlowProbe.body_of(done.source)]
+	)
+	assert_false(
+		ComposerFlowProbe.runs(
+			_read(done.source), "if ready:", ComposerReader.FALSE_OUT, "after()"
+		),
+		"and the false path no longer reaches the continuation"
+	)
+
+
+## An `else` a person wrote is never marked as ours, however it is cut.
+func test_cutting_a_persons_else_never_marks_it() -> void:
+	var source: String = _script([
+		"if ready:", "\tfire()", "else:", "\theal()", "after()", "return true",
+	])
+
+	var done: ComposerFlowEdits.Result = _cut(
+		source, "if ready:", ComposerReader.FALSE_OUT, "heal()"
+	)
+
+	assert_true(done.ok, "the path was cut: %s" % done.message)
+	assert_false(
+		done.source.contains(ComposerSubset.FLOW_ELSE_MARK),
+		"their else is theirs: %s" % [ComposerFlowProbe.body_of(done.source)]
+	)
+	assert_true(
+		done.source.contains("heal()"), "and what was in it is still in the file"
+	)
+
+
+## Writing into a generated boundary makes it a real one, and takes the mark off.
+##
+## From then on it holds behaviour somebody asked for, so no cleanup may ever
+## remove it. That is the whole difference the mark records.
+func test_filling_a_generated_boundary_takes_the_mark_off_it() -> void:
+	var source: String = _script([
+		"if ready:", "\tfire()", "after()", "end_ability()", "return true",
+	])
+
+	# Something is set aside first, so there is a block to write into the else.
+	var cut: ComposerFlowEdits.Result = _cut(
+		source, "after()", ComposerReader.EXEC_OUT, "end_ability()"
+	)
+	assert_true(cut.ok, "the tail was set aside: %s" % cut.message)
+
+	var boundary: ComposerFlowEdits.Result = _cut(
+		cut.source, "if ready:", ComposerReader.FALSE_OUT, "after()"
+	)
+	assert_true(boundary.ok, "and the false path was cut: %s" % boundary.message)
+	assert_true(
+		boundary.source.contains(ComposerSubset.FLOW_ELSE_MARK), "leaving a marked else"
+	)
+
+	var before: ComposerGraph = _read(boundary.source)
+	var mended: ComposerFlowEdits.Result = ComposerFlowEdits.connect_flow(
+		boundary.source,
+		before,
+		ComposerReader.wire(
+			ComposerFlowProbe.at(before, "if ready:").id,
+			ComposerReader.FALSE_OUT,
+			ComposerFlowProbe.at(before, "end_ability()").id,
+			ComposerReader.EXEC_IN
+		)
+	)
+
+	assert_true(
+		mended.ok, "the set-aside block was written into it: %s" % mended.message
+	)
+	assert_false(
+		mended.source.contains(ComposerSubset.FLOW_ELSE_MARK),
+		"and the mark is off: %s" % [ComposerFlowProbe.body_of(mended.source)]
+	)
+	assert_true(
+		ComposerFlowProbe.runs(
+			_read(mended.source), "if ready:", ComposerReader.FALSE_OUT, "end_ability()"
+		),
+		"the false path runs what was written into it"
+	)
 #endregion

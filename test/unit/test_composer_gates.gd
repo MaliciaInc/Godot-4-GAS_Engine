@@ -108,7 +108,14 @@ func _activate_ability() -> void:
 		var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
 		assert_false(graph.is_editable(), "%s is outside the subset" % keyword.strip_edges())
-		assert_eq(graph.blocked_reason(), reason, "and says so in its own words")
+		assert_true(
+			graph.blocked_reason().begins_with(reason),
+			"and says so in its own words: %s" % graph.blocked_reason()
+		)
+		assert_true(
+			graph.blocked_reason().contains(keyword.strip_edges()),
+			"naming the line it happened on: %s" % graph.blocked_reason()
+		)
 
 
 ## The corpus, checked against the files rather than against a memory of them.

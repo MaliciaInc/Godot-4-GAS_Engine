@@ -33,10 +33,11 @@ class Diagnostic extends RefCounted:
 
 ## One wire, of either family.
 ##
-## Execution order is written in the file and read back out of it, so this is
-## a projection of that order rather than the place it is decided - which is
-## why an execution wire can be drawn and cannot be stored. A data wire says
-## what depends on what, and nothing about when.
+## Both are held here. Execution order is written in the file and read back out
+## of it, so an execution wire in this list is a projection of that order rather
+## than the place it is decided: changing one means rewriting statements, and
+## nothing that changes this list changes what runs. A data wire says what
+## depends on what, and nothing about when.
 class Connection extends RefCounted:
 	var from_node: StringName = &""
 	var from_port: StringName = &""

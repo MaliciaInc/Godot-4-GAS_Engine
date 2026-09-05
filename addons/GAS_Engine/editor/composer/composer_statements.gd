@@ -84,7 +84,15 @@ static func first_refusal(
 	for made: Statement in of(lines, span):
 		if made.verdict.is_representable():
 			continue
-		return _refusal(made.verdict.reason, ComposerSpan.new(made.first, made.last))
+		# The line it happened on and the words that are on it. A reason on its
+		# own leaves somebody reading a whole method looking for which line the
+		# tool meant, which is the moment they close the Composer.
+		return _refusal(
+			"%s: `%s` on line %d" % [
+				made.verdict.reason, made.text.strip_edges(), made.first
+			],
+			ComposerSpan.new(made.first, made.last)
+		)
 	return null
 
 

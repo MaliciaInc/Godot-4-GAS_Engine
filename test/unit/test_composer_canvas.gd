@@ -95,6 +95,50 @@ func test_graph_connections_become_native_connections() -> void:
 	)
 
 
+## Both sides of a branch are drawn arriving at the statement they both reach.
+##
+## The statement after an `if` is reached from the true body and from the false
+## side, and the file says so, so the canvas has to show both. The pin is SINGLE
+## because that is about what a *new* drag may attach - dropping a third cable on
+## it replaces what is there rather than fanning in - and using multiplicity to
+## decide what may be *drawn* would rub out a cable the person's own code put
+## there.
+func test_both_sides_of_a_branch_are_drawn_arriving_at_the_merge() -> void:
+	var graph: ComposerGraph = ComposerReader.read(
+		"extends GameplayAbility
+
+
+func _activate_ability() -> bool:
+"
+		+ "	if ready:
+		fire()
+	after()
+	return true
+",
+		"res://abilities/probe.gd"
+	)
+	await canvas.show_graph(graph)
+
+	var after: ComposerNode = ComposerFlowProbe.at(graph, "after()")
+	var arriving: int = 0
+	for wire: Dictionary in canvas.get_connection_list():
+		var lands_on: StringName = wire["to_node"]
+		if lands_on == after.id:
+			arriving += 1
+
+	assert_eq(
+		ComposerFlow.predecessors_of(graph, after.id).size(),
+		2,
+		"the file says two paths reach it"
+	)
+	assert_eq(arriving, 2, "and the canvas draws both of them")
+	assert_eq(
+		after.find_port(ComposerReader.EXEC_IN).multiplicity,
+		ComposerNode.PortMultiplicity.SINGLE,
+		"while the pin still takes one new cable at a time"
+	)
+
+
 ## A cable lands on the pins it names, not on whichever index happened to match.
 ##
 ## The whole reason a card keeps two lists of port ids. GraphNode numbers the

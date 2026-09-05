@@ -129,11 +129,10 @@ static func disconnect_flow(
 	if read == null:
 		return _refuse(NOT_REPRESENTABLE)
 	if ComposerFlowChecks.has_edge(read, edge):
-		# The same link, still there. Asked by endpoint rather than by counting:
-		# a cut that wrapped the wrong run of lines can leave the counts moving
-		# in the right direction while the link it was asked about survives.
-		return _refuse(NOT_REPRESENTABLE)
-	if ComposerFlowChecks.live_count(read) >= ComposerFlowChecks.live_count(graph):
+		# The same link, still there. Asked by endpoint rather than by counting
+		# live statements: cutting a branch's false path takes a path away and no
+		# statements at all - the continuation is still reached from the true
+		# side - so a count that had to fall would refuse a cut that worked.
 		return _refuse(NOT_REPRESENTABLE)
 	if ComposerFlowChecks.strands_anything(read):
 		return _refuse(WOULD_STRAND)
