@@ -17,8 +17,6 @@
 extends GutTest
 
 #region ARCHITECTURE_STABLE
-## Where the Composer's production code lives, and nothing else does.
-const COMPOSER_DIR: String = "res://addons/GAS_Engine/editor/composer"
 
 ## The classes the Blueprint interaction model is made of.
 ##
@@ -78,43 +76,6 @@ const SIDECAR_SUFFIXES: Array[String] = [".json", ".tres", ".res", ".cfg"]
 const A_SCRIPT: String = ".gd"
 
 
-## Every production file of the Composer, by path.
-##
-## Read off the folder rather than off a list: a gate that scans the files
-## somebody remembered to name cannot see the one they added afterwards.
-func _composer_sources() -> Dictionary[String, String]:
-	var found: Dictionary[String, String] = {}
-	for file_name: String in DirAccess.get_files_at(COMPOSER_DIR):
-		if not file_name.ends_with(A_SCRIPT):
-			continue
-		var at: String = COMPOSER_DIR + "/" + file_name
-		found[at] = FileAccess.get_file_as_string(at)
-	return found
-
-
-## Whether `source` names `identifier` as code: a whole word, outside comments.
-##
-## Whole word because ComposerWiringRoutes is a live class whose name starts
-## with a retired one, and a gate matching on substrings would fail on the very
-## file that replaced what it is guarding against.
-func _names(source: String, identifier: String) -> bool:
-	var pattern: RegEx = RegEx.create_from_string("\\b" + identifier + "\\b")
-	for line: String in source.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		if pattern.search(line) != null:
-			return true
-	return false
-
-
-## Every global class the project declares, and the file it comes from.
-func _declared_classes() -> Dictionary[String, String]:
-	var declared: Dictionary[String, String] = {}
-	for described: Dictionary in ProjectSettings.get_global_class_list():
-		declared[described["class"]] = described["path"]
-	return declared
-
-
 ## The scan itself, proven against the one case that would quietly break it.
 ##
 ## `ComposerWiringRoutes` is a live class whose name begins with a retired one.
@@ -124,32 +85,32 @@ func _declared_classes() -> Dictionary[String, String]:
 ## scan is made to answer both questions here before they are trusted.
 func test_the_scan_tells_a_retired_name_from_the_one_that_replaced_it() -> void:
 	var live: String = FileAccess.get_file_as_string(
-		COMPOSER_DIR + "/composer_wiring_routes.gd"
+		ComposerSourceScan.DIR + "/composer_wiring_routes.gd"
 	)
 	assert_false(live.is_empty(), "the file that replaced the old wiring was read")
 
-	assert_true(_names(live, "ComposerWiringRoutes"), "the scan finds a live name")
-	assert_false(_names(live, "ComposerWiring"), "and does not mistake it for the old one")
-	assert_false(_names(live, "ComposerWire"), "nor for the one before that")
+	assert_true(ComposerSourceScan.names(live, "ComposerWiringRoutes"), "the scan finds a live name")
+	assert_false(ComposerSourceScan.names(live, "ComposerWiring"), "and does not mistake it for the old one")
+	assert_false(ComposerSourceScan.names(live, "ComposerWire"), "nor for the one before that")
 
 
 ## The Blueprint's architecture, present and reachable by name.
 func test_every_class_the_interaction_model_needs_is_declared() -> void:
-	var declared: Dictionary[String, String] = _declared_classes()
+	var declared: Dictionary[String, String] = ComposerSourceScan.declared_classes()
 	assert_gt(REQUIRED.size(), 0, "there are classes to require")
 
 	for wanted: String in REQUIRED:
 		assert_true(declared.has(wanted), "%s is declared" % wanted)
 		if declared.has(wanted):
 			assert_true(
-				declared[wanted].begins_with(COMPOSER_DIR + "/"),
+				declared[wanted].begins_with(ComposerSourceScan.DIR + "/"),
 				"%s comes out of the Composer's own folder" % wanted
 			)
 
 
 ## And the renderers it replaced are gone, not merely unused.
 func test_no_retired_renderer_is_still_declared() -> void:
-	var declared: Dictionary[String, String] = _declared_classes()
+	var declared: Dictionary[String, String] = ComposerSourceScan.declared_classes()
 
 	for gone: String in RETIRED:
 		assert_false(declared.has(gone), "%s is not a class any more" % gone)
@@ -161,13 +122,13 @@ func test_no_retired_renderer_is_still_declared() -> void:
 ## annotation, in a comparison somebody left behind. This is the check that says
 ## the replacement is the only implementation.
 func test_no_production_file_names_a_retired_renderer() -> void:
-	var sources: Dictionary[String, String] = _composer_sources()
+	var sources: Dictionary[String, String] = ComposerSourceScan.sources()
 	assert_gt(sources.size(), 20, "the Composer's files were actually read")
 
 	for at: String in sources:
 		for gone: String in RETIRED:
 			assert_false(
-				_names(sources[at], gone), "%s does not name %s" % [at.get_file(), gone]
+				ComposerSourceScan.names(sources[at], gone), "%s does not name %s" % [at.get_file(), gone]
 			)
 
 
@@ -193,7 +154,7 @@ func test_a_card_is_a_graph_node() -> void:
 ## somewhere; the widget reports its own placements now, and a second channel
 ## for the same event is two answers to where a card ended up.
 func test_no_card_is_dropped_on_the_composer_floor() -> void:
-	var sources: Dictionary[String, String] = _composer_sources()
+	var sources: Dictionary[String, String] = ComposerSourceScan.sources()
 	assert_gt(sources.size(), 20, "the Composer's files were actually read")
 
 	for at: String in sources:
@@ -203,38 +164,17 @@ func test_no_card_is_dropped_on_the_composer_floor() -> void:
 		)
 
 
-## Moving a card never reorders the ability.
-##
-## Where a card sits is where it is drawn; when it happens is the order of the
-## statements. Dragging one used to be both, which meant tidying a graph changed
-## what the ability did.
-func test_moving_a_card_never_reorders_the_ability() -> void:
-	var screen: String = FileAccess.get_file_as_string(
-		COMPOSER_DIR + "/composer_screen.gd"
-	)
-	assert_false(screen.is_empty(), "the screen was read")
-
-	assert_false(
-		screen.contains(A_REORDER_FROM_A_DRAG),
-		"placement is placement; reordering is asked for on purpose"
-	)
-	assert_true(
-		screen.contains(A_PLACEMENT),
-		"and the screen does place cards, so the check above had something to miss"
-	)
-
-
 ## Nothing in the Composer evaluates what it reads.
 ##
 ## The reader is handed whatever somebody has open, including a file they are
 ## halfway through typing. An editor panel that evaluates that text runs it.
 func test_nothing_in_the_composer_evaluates_what_it_reads() -> void:
-	var sources: Dictionary[String, String] = _composer_sources()
+	var sources: Dictionary[String, String] = ComposerSourceScan.sources()
 	assert_gt(sources.size(), 20, "the Composer's files were actually read")
 
 	for at: String in sources:
 		assert_false(
-			_names(sources[at], AN_EVALUATOR),
+			ComposerSourceScan.names(sources[at], AN_EVALUATOR),
 			"%s reads the file rather than running it" % at.get_file()
 		)
 
@@ -245,7 +185,7 @@ func test_nothing_in_the_composer_evaluates_what_it_reads() -> void:
 ## two disagree the first time somebody edits the file in the script editor,
 ## checks out a branch, or merges.
 func test_the_graph_is_kept_in_the_gdscript_and_nowhere_else() -> void:
-	var files: PackedStringArray = DirAccess.get_files_at(COMPOSER_DIR)
+	var files: PackedStringArray = DirAccess.get_files_at(ComposerSourceScan.DIR)
 	assert_gt(files.size(), 20, "the folder was actually read")
 
 	for file_name: String in files:

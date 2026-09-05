@@ -321,3 +321,104 @@ func test_a_wrapped_statement_that_changed_is_rebuilt_and_still_verifies() -> vo
 		"on one line, carrying the edit: %s" % saved.text
 	)
 #endregion
+
+
+#region What a signature is for
+## What a statement is, told apart from where its card sits.
+##
+## The signature is the guard the whole design leans on: a printer that dropped
+## a field or reordered an argument produces a file that still compiles and no
+## longer does what the graph said. It reduced every statement to
+## `type_id(arguments)`, which is nothing at all for a branch, a match or an end
+## - so the three statements this phase taught the tool to write were the three
+## it could not check. Each row changes one value and demands the signature
+## notices; the last moves a card and demands it does not.
+const SIGNATURES: Array = [
+	[
+		"a branch's condition",
+		["if ready:", "	fire()", "return true"],
+		["if armed:", "	fire()", "return true"],
+		true,
+	],
+	[
+		"what a match switches on",
+		["match state:", "	State.A:", "		one()", "return true"],
+		["match other:", "	State.A:", "		one()", "return true"],
+		true,
+	],
+	[
+		"what an end hands back",
+		["fire()", "return true"],
+		["fire()", "return false"],
+		true,
+	],
+	[
+		"an arm of a match",
+		["match state:", "	State.A:", "		one()", "return true"],
+		["match state:", "	State.B:", "		one()", "return true"],
+		true,
+	],
+	[
+		"where a card was left",
+		["fire()", "return true"],
+		["# @composer-position 320.00 96.00", "fire()", "return true"],
+		false,
+	],
+]
+
+
+func _read_body(statements: Array) -> ComposerGraph:
+	var body: String = ""
+	for statement: String in statements:
+		body += "	" + statement + "
+"
+	return ComposerReader.read(
+		"extends GameplayAbility
+
+
+func _activate_ability() -> bool:
+" + body, PATH
+	)
+
+
+func test_what_changes_a_signature_and_what_does_not() -> void:
+	var checked: int = 0
+	for row: Array in SIGNATURES:
+		var described: String = row[0]
+		var before: Array = row[1]
+		var after: Array = row[2]
+		var differs: bool = row[3]
+
+		var was: String = ComposerWriter.signature(_read_body(before))
+		var now: String = ComposerWriter.signature(_read_body(after))
+
+		assert_eq(
+			was != now,
+			differs,
+			"%s: the signature %s" % [described, "changes" if differs else "is the same"]
+		)
+		checked += 1
+	assert_eq(checked, SIGNATURES.size(), "every value was changed")
+
+
+## A support header is in the signature, so a path cannot vanish unnoticed.
+func test_a_header_nobody_is_shown_is_still_in_the_signature() -> void:
+	var with_else: ComposerGraph = _read_body([
+		"if ready:", "	fire()", "else:", "	heal()", "return true"
+	])
+	var without: ComposerGraph = _read_body([
+		"if ready:", "	fire()", "return true"
+	])
+
+	assert_ne(
+		ComposerWriter.signature(with_else),
+		ComposerWriter.signature(without),
+		"losing the else is a different ability"
+	)
+	assert_true(
+		ComposerWriter.node_signature(
+			ComposerFlowProbe.at(with_else, "else:")
+		).contains("else:"),
+		"and the header is named in its own signature"
+	)
+#endregion

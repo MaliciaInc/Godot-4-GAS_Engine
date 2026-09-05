@@ -259,11 +259,7 @@ static func signature(graph: ComposerGraph) -> String:
 		if not node.source_backed:
 			continue
 		position[node.id] = index
-		parts.append(
-			"%s(%s)%s" % [
-				String(node.type_id), _arguments(node), "!" if node.awaits else ""
-			]
-		)
+		parts.append(node_signature(node))
 
 	# By position, never by id. A node's id is derived from the line it was read
 	# from, so wiring the signature to ids would smuggle line numbers back in
@@ -280,6 +276,44 @@ static func signature(graph: ComposerGraph) -> String:
 	wires.sort()
 
 	return "|".join(parts) + "#" + "|".join(wires)
+
+
+## What one statement is, as a comparable string.
+##
+## Everything that decides what the ability does, and nothing that decides how it
+## looks. It reduced a node to `type_id(arguments)` before, which is nothing at
+## all for a branch, a match or an end: those have no `type_id` and their
+## arguments are not arguments, so a rewritten condition, a changed match value
+## and a different return all came out as the same empty signature - and the
+## check that exists to catch a printer dropping something looked straight past
+## the three statements this phase taught it to write.
+##
+## Support headers are in it too, by kind and by the text they carry. An `else`
+## or a `_:` vanishing from a rewrite is a path that stopped existing, and a
+## signature that ignored them would call that a clean round trip.
+##
+## Line numbers, layout positions and anything a control is currently doing are
+## left out on purpose: an edit legitimately moves statements, and a signature
+## that changed when a card did would refuse every real edit while catching none.
+static func node_signature(node: ComposerNode) -> String:
+	var said: PackedStringArray = PackedStringArray()
+	said.append("%d%s" % [node.projection_kind, "!" if node.terminal else ""])
+	if node.projection_kind == ComposerNode.ProjectionKind.SUPPORT:
+		said.append(node.text.strip_edges())
+		return "<%s>" % "|".join(said)
+
+	said.append(String(node.type_id))
+	said.append(node.receiver)
+	said.append("await" if node.awaits else "")
+	for field: ComposerNode.Field in node.fields:
+		said.append("%s:%s=%s@%d" % [
+			field.label, String(field.type_name), field.display, field.source
+		])
+	for pin: ComposerNode.Port in node.ports:
+		said.append("%s:%d.%d#%d" % [
+			String(pin.id), pin.kind, pin.direction, pin.field_index
+		])
+	return "<%s>" % "|".join(said)
 
 
 ## Say no, in the one shape everything that reads a refusal already knows.

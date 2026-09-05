@@ -41,12 +41,20 @@ func before_each() -> void:
 ## The key rather than the method: that is what a palette button carries and
 ## what every path into the ops takes, and a test that passed a method name
 ## would exercise a call nobody could have picked.
+##
+## One call by name rather than whichever sorts first. The catalog is built once
+## and kept, and a battery that registers an ability's own methods changes what
+## first means - so "the first one" is a fixture that depends on which tests ran
+## before it, which is a failure nobody can reproduce on its own.
+const WANTED: StringName = &"end_ability"
+
+
 func _offered() -> StringName:
-	var keys: Array[StringName] = []
 	for key: StringName in ComposerCatalog.all():
-		keys.append(key)
-	keys.sort()
-	return keys[0]
+		if ComposerCatalog.find(key).type_id == WANTED:
+			return key
+	fail_test("the catalog offers %s" % WANTED)
+	return &""
 
 
 ## What that call is written as, so a test can find it in the file.
@@ -100,7 +108,12 @@ func test_a_dropped_call_is_written_where_it_was_let_go() -> void:
 		assert_null(refusal, "%s: it was written" % described)
 		var made: ComposerNode = _made(key)
 		assert_not_null(made, "%s: and the statement is in the file" % described)
-		assert_eq(_placed_at(made), at, "%s: at the point it was dropped" % described)
+		assert_eq(
+			_placed_at(made),
+			at,
+			"%s: at the point it was dropped: %s"
+			% [described, ComposerFlowProbe.body_of(_document.printed())]
+		)
 		checked += 1
 	assert_eq(checked, DROPPED.size(), "every drop was tried")
 
