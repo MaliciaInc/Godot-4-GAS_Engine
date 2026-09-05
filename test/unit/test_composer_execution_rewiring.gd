@@ -318,6 +318,11 @@ func test_move_all_cycle_is_refused_without_mutation() -> void:
 
 	assert_false(done, "the cue would run itself")
 	_assert_refused(session, before, 0, "a move that would loop")
+	# The reason, not just the refusal: "this cannot be written" and "this would
+	# run forever" send a person to two different places.
+	assert_signal_emitted_with_parameters(
+		session.controller, "refused", [ComposerFlowEdits.WOULD_LOOP], 0
+	)
 #endregion
 
 
