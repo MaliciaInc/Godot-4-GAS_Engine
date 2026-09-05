@@ -188,7 +188,10 @@ static func with_nested_else(
 		var at: int = number + 1
 		if at == rest.first_line:
 			made.append(indent + ComposerSubset.ELSE_OPENER)
-			made.append(indent + TAB + written.strip_edges())
+			# Nothing to put in it when the caller only wanted the chain written
+			# out: a cut needs the `else` to exist before it can be stopped.
+			if not written.strip_edges().is_empty():
+				made.append(indent + TAB + written.strip_edges())
 		if at < rest.first_line or at > rest.last_line:
 			made.append(lines[number])
 			continue
@@ -247,79 +250,152 @@ static func _has_a_body(lines: PackedStringArray, number: int) -> bool:
 #endregion
 
 
-#region Writing a move down
-## The text a move would produce, or nothing when it cannot be written.
+#region Cutting one path
+## Wrap the statements on one path and end the path where they were.
 ##
-## One relocation, not one per link. Every link asked for by a move shares
-## either the statement it arrives at or the pin it leaves, so writing that one
-## statement in the one right place is what makes all of them true at once -
-## and asking for anything else is asking for a second, unrelated move.
-static func written(
-	source: String,
-	graph: ComposerGraph,
-	old_edges: Array[ComposerGraph.Connection],
-	new_edges: Array[ComposerGraph.Connection]
+## What section 62 asks for, said once: the body of a true branch, of an else, or
+## of a case comes out of the live path into an island - still visible, still
+## editable, still in the file - and a marked stop takes its place so the path
+## ends there instead of running on into whatever the block was followed by.
+##
+## The stop is written at the body's own depth, which is what keeps it inside the
+## block rather than after it.
+static func stopped_path(
+	source: String, region: ComposerSpan, indent: int
 ) -> String:
-	var wanted: ComposerGraph.Connection = new_edges[0]
-	var producer: ComposerNode = graph.find_node(wanted.from_node)
-	var moving: ComposerNode = graph.find_node(wanted.to_node)
-	if producer == null or moving == null:
+	var lines: PackedStringArray = source.split(NEWLINE)
+	if not region.is_valid() or region.last_line > lines.size():
 		return ""
-	if ComposerFlowPlaces.chains_on(graph, moving):
-		return ""
-
-	var anchor: ComposerFlowPlaces.Anchor = ComposerFlowPlaces.anchor_for(
-		graph, producer, wanted.from_port
+	var wrapped: PackedStringArray = detached(lines, region)
+	var stop: String = TAB.repeat(indent) + _stop(lines)
+	# After the island, not before it: the path reaches the wrapper, finds a
+	# block that never runs, and then ends.
+	return ComposerEdits.insert_after(
+		NEWLINE.join(wrapped), region.last_line + 1, stop
 	)
-	if not anchor.is_ok():
-		return ""
-
-	var block: ComposerSpan = ComposerFlowPlaces.block_of(graph, moving)
-	if block.contains(anchor.line) or block.contains(producer.span.first_line):
-		# Writing a statement inside itself, or writing its own predecessor into
-		# it. Either is a file that means nothing; both are refused here rather
-		# than produced and then discovered by the reread.
-		return ""
-
-	var changed: String = moved(source, block, anchor)
-	changed = _paths_cut(changed, graph, old_edges, new_edges)
-	return bodies_kept(changed)
 
 
-## Close the fallthroughs a move left open.
+## Put `if false:` around a run of lines, one indent deeper, marked as ours.
 ##
-## A branch with no `else` reaches the statement after it, and a match with no
-## catch-all reaches it too. Those are links like any other, so a move that takes
-## one away has to write the boundary that stops it - otherwise the path silently
-## finds whatever the move left sitting there next.
-static func _paths_cut(
-	source: String,
-	graph: ComposerGraph,
-	old_edges: Array[ComposerGraph.Connection],
-	new_edges: Array[ComposerGraph.Connection]
+## The same wrapper the disconnect of an ordinary link uses. Kept here rather
+## than reached for through `ComposerFlowText` so that one module owns writing a
+## path down and another owns reading the file.
+static func detached(
+	lines: PackedStringArray, region: ComposerSpan
+) -> PackedStringArray:
+	return ComposerFlowText.detached(lines, region)
+#endregion
+
+
+#region Putting one path back
+## Take an island's statements out of their wrapper and write them at `anchor`.
+##
+## The other half of cutting a path: the block that was set aside goes back into
+## the live file at the depth the pin it is being joined to requires - inside a
+## true body, inside a case, or straight after a statement.
+##
+## Re-indented whether or not it moves. A block released where it already stands
+## is the commonest case of all - plugging a link straight back in - and one that
+## kept the wrapper's depth would leave every statement in it one tab too deep,
+## which is a different ability.
+static func released_into(
+	source: String, island: String, anchor: ComposerFlowPlaces.Anchor
 ) -> String:
-	var changed: String = source
-	for edge: ComposerGraph.Connection in old_edges:
-		if _is_kept(edge, new_edges):
+	var lines: PackedStringArray = source.split(NEWLINE)
+	var opened: int = -1
+	for number: int in lines.size():
+		if ComposerFlow.island_name(lines[number]) == island:
+			opened = number
+			break
+	if opened < 0 or not anchor.is_ok():
+		return ""
+
+	var depth: int = ComposerSubset.indent_of(lines[opened])
+	var last: int = opened
+	for number: int in range(opened + 1, lines.size()):
+		var line: String = lines[number]
+		if not line.strip_edges().is_empty() and ComposerSubset.indent_of(line) <= depth:
+			break
+		last = number
+	if last == opened:
+		return ""
+
+	var carried: PackedStringArray = PackedStringArray()
+	var body_indent: int = ComposerSubset.indent_of(lines[opened + 1])
+	for number: int in range(opened + 1, last + 1):
+		carried.append(_redented(lines[number], anchor.indent - body_indent))
+
+	# Where it goes, once the wrapper and its body are out of the way. A line
+	# above the wrapper keeps its number; one below moves up by everything taken.
+	var taken: int = last - opened + 1
+	var at: int = anchor.line
+	if anchor.line > opened + 1:
+		at = maxi(anchor.line - taken, opened + 1)
+
+	var kept: PackedStringArray = PackedStringArray()
+	for number: int in lines.size():
+		if number >= opened and number <= last:
 			continue
-		var from: ComposerNode = graph.find_node(edge.from_node)
-		if from == null:
-			continue
-		if (
-			edge.from_port == ComposerReader.FALSE_OUT
-			and ComposerFlowPlaces.else_of(graph, from) == null
-		):
-			changed = with_else_stop(changed, graph, from)
-		elif edge.from_port == ComposerReader.UNMATCHED_OUT:
-			changed = with_default_stop(changed, graph, from)
-	return changed
+		kept.append(lines[number])
+	var written: PackedStringArray = PackedStringArray()
+	for number: int in kept.size():
+		if number == at - 1:
+			written.append_array(carried)
+		written.append(kept[number])
+	if at - 1 >= kept.size():
+		written.append_array(carried)
+	return NEWLINE.join(written)
 
 
-static func _is_kept(
-	edge: ComposerGraph.Connection, new_edges: Array[ComposerGraph.Connection]
-) -> bool:
-	for wanted: ComposerGraph.Connection in new_edges:
-		if wanted.is_same_as(edge):
-			return true
-	return false
+## Take the marker off a boundary this tool wrote, leaving what a person now
+## means by it.
+##
+## A generated `else` or `_:` that has been reconnected is no longer machinery -
+## it holds behaviour somebody asked for - so the mark comes off and the header
+## stays. Section 65 and section 66: what is left is theirs, and nothing removes
+## it later.
+static func unmarked(source: String, mark: String) -> String:
+	var written: PackedStringArray = PackedStringArray()
+	for line: String in source.split(NEWLINE):
+		written.append(line.replace(" " + mark, "") if line.contains(mark) else line)
+	return NEWLINE.join(written)
+
+
+## Take out a boundary this tool wrote that is no longer holding anything.
+##
+## Only a marked one, and only when its body is nothing but the stop that came
+## with it. A person's own `else` or `_:` is never touched, however empty it
+## looks: section 65 and section 66 both say so, and the mark is the only thing
+## that tells them apart.
+static func spent_boundaries_removed(source: String, mark: String) -> String:
+	var lines: PackedStringArray = source.split(NEWLINE)
+	var gone: Dictionary[int, bool] = {}
+	for number: int in lines.size():
+		if not lines[number].contains(mark):
+			continue
+		var depth: int = ComposerSubset.indent_of(lines[number])
+		var last: int = number
+		var only_a_stop: bool = true
+		for below: int in range(number + 1, lines.size()):
+			var line: String = lines[below]
+			if line.strip_edges().is_empty():
+				continue
+			if ComposerSubset.indent_of(line) <= depth:
+				break
+			last = below
+			only_a_stop = (
+				only_a_stop and line.contains(ComposerSubset.FLOW_STOP_MARK)
+			)
+		if not only_a_stop:
+			continue
+		for at: int in range(number, last + 1):
+			gone[at] = true
+
+	if gone.is_empty():
+		return source
+	var kept: PackedStringArray = PackedStringArray()
+	for number: int in lines.size():
+		if not gone.has(number):
+			kept.append(lines[number])
+	return NEWLINE.join(kept)
 #endregion

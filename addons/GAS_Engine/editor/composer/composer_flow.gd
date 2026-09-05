@@ -119,6 +119,49 @@ static func predecessor_of(graph: ComposerGraph, node_id: StringName) -> Compose
 	return found[0] if found.size() == 1 else null
 
 
+## The drawn statements that stop being reached when one link is taken out.
+##
+## Reached before and not after, which is not the same as "not reached after":
+## a statement already sitting in an island was not being reached either way, and
+## a cut that claimed to have stranded it would wrap a wrapper - or refuse,
+## because the two runs of lines are not contiguous. Found by disconnecting a
+## link inside an island during a move.
+static func stranded_by(
+	graph: ComposerGraph, without: ComposerGraph.Connection
+) -> Array[ComposerNode]:
+	var before: Dictionary[StringName, bool] = _reached(graph, null)
+	var after: Dictionary[StringName, bool] = _reached(graph, without)
+	var stranded: Array[ComposerNode] = []
+	for node: ComposerNode in graph.nodes:
+		if not node.source_backed or not node.visible_in_graph:
+			continue
+		if node.id == ComposerFlow.ENTRY_ID:
+			continue
+		if before.has(node.id) and not after.has(node.id):
+			stranded.append(node)
+	return stranded
+
+
+## Everything execution arrives at, with `without` taken out when it is given.
+static func _reached(
+	graph: ComposerGraph, without: ComposerGraph.Connection
+) -> Dictionary[StringName, bool]:
+	var seen: Dictionary[StringName, bool] = {}
+	var pending: Array[StringName] = [ComposerFlow.ENTRY_ID]
+	while not pending.is_empty():
+		var at: StringName = pending.pop_back()
+		if seen.has(at):
+			continue
+		seen[at] = true
+		for wire: ComposerGraph.Connection in graph.execution_connections():
+			if wire.from_node != at:
+				continue
+			if without != null and wire.is_same_as(without):
+				continue
+			pending.append(wire.to_node)
+	return seen
+
+
 ## The nodes execution goes to, from one port or from all of them.
 static func successors_of(
 	graph: ComposerGraph, node_id: StringName, port_id: StringName = &""

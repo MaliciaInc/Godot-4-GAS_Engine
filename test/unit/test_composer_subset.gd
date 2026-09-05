@@ -104,18 +104,33 @@ func test_what_a_match_arm_may_be() -> void:
 	assert_eq(checked, ARMS.size(), "every shape of arm was tried")
 
 
-## A marked arm this tool wrote is still the arm it is.
-func test_a_marked_catch_all_is_still_a_match_arm() -> void:
-	var verdict: ComposerSubset.Verdict = ComposerSubset.classify(
-		"\t_: %s" % ComposerSubset.FLOW_DEFAULT_MARK
+## A boundary this tool wrote is a kind of its own.
+##
+## Not an ordinary `else` and not an ordinary arm, because cleanup has to tell
+## them apart: a generated boundary comes out again when the path it was cutting
+## is reconnected, and a person's own `else` never does. Reading them as the
+## ordinary thing they resemble is how somebody's own code gets deleted.
+func test_a_boundary_this_tool_wrote_is_told_from_a_persons_own() -> void:
+	var default_arm: ComposerSubset.Verdict = ComposerSubset.classify(
+		"	_: %s" % ComposerSubset.FLOW_DEFAULT_MARK
+	)
+	var otherwise: ComposerSubset.Verdict = ComposerSubset.classify(
+		"	else: %s" % ComposerSubset.FLOW_ELSE_MARK
 	)
 
-	assert_eq(verdict.kind, ComposerSubset.Kind.MATCH_CASE, "read past the mark")
-	assert_eq(
-		ComposerSubset.classify("\telse: %s" % ComposerSubset.FLOW_ELSE_MARK).kind,
-		ComposerSubset.Kind.BRANCH_ELSE,
-		"and so is a marked else"
+	assert_eq(default_arm.kind, ComposerSubset.Kind.FLOW_DEFAULT, "a generated catch-all")
+	assert_eq(otherwise.kind, ComposerSubset.Kind.FLOW_ELSE, "and a generated else")
+	assert_true(ComposerSubset.is_a_boundary(default_arm.kind), "both are boundaries")
+	assert_true(ComposerSubset.is_a_boundary(otherwise.kind), "said the one way")
+	assert_false(
+		ComposerSubset.is_a_boundary(ComposerSubset.classify("	else:").kind),
+		"and a person's own else is not one"
 	)
+	assert_false(
+		ComposerSubset.is_a_boundary(ComposerSubset.classify("	_:").kind),
+		"nor is their own catch-all"
+	)
+
 #endregion
 
 

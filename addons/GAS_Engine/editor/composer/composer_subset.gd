@@ -47,8 +47,14 @@ enum Kind {
 	## `return` put in so a live path still ends somewhere after that happened.
 	## Both only count as support when they carry the exact marker below, so a
 	## person's own `if false:` stays an ordinary branch.
+	## FLOW_ELSE and FLOW_DEFAULT are the two boundaries this tool writes to
+	## stop a path that used to fall through. Kinds of their own so that a
+	## person's own `else` and their own `_:` are never mistaken for machinery
+	## and taken away by a cleanup.
 	DETACHED,
 	FLOW_STOP,
+	FLOW_ELSE,
+	FLOW_DEFAULT,
 	ASSIGN,
 	NOTHING,
 	UNSUPPORTED,
@@ -183,6 +189,12 @@ static func classify(line: String) -> Verdict:
 	if text.ends_with(FLOW_STOP_MARK):
 		verdict.kind = Kind.FLOW_STOP
 		return verdict
+	if text.ends_with(FLOW_ELSE_MARK):
+		verdict.kind = Kind.FLOW_ELSE
+		return verdict
+	if text.ends_with(FLOW_DEFAULT_MARK):
+		verdict.kind = Kind.FLOW_DEFAULT
+		return verdict
 
 	if ComposerLine.code_of(text).strip_edges() == ELSE_OPENER:
 		verdict.kind = Kind.BRANCH_ELSE
@@ -243,7 +255,11 @@ static func _is_inferred(text: String) -> bool:
 	return not text.contains(":")
 
 
-## `Enum.VALUE:` or `_:` - the arms of a match, and nothing else with a colon.
+## Whether that kind is one of the two boundaries this tool writes.
+static func is_a_boundary(kind: ComposerSubset.Kind) -> bool:
+	return kind == Kind.FLOW_ELSE or kind == Kind.FLOW_DEFAULT
+
+
 ## Whether a line is one arm of a `match`: a name, a written-out value, or
 ## the catch-all.
 ##

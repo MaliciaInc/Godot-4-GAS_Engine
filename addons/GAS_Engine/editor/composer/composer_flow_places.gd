@@ -64,11 +64,11 @@ static func anchor_for(
 	if port_id == ComposerReader.FALSE_OUT:
 		return _false_path(graph, node)
 	if port_id == ComposerReader.UNMATCHED_OUT:
-		var wildcard: ComposerNode = _wildcard_of(graph, node)
+		var wildcard: ComposerNode = wildcard_of(graph, node)
 		if wildcard == null:
 			return Anchor.refused(NO_WILDCARD_TO_FILL)
 		return _inside(graph, node, wildcard)
-	var arm: ComposerNode = _case_of(graph, node, port_id)
+	var arm: ComposerNode = case_of(graph, node, port_id)
 	if arm == null:
 		return Anchor.refused(NO_SUCH_PIN)
 	return _inside(graph, node, arm)
@@ -151,7 +151,7 @@ static func _next_at_indent(graph: ComposerGraph, node: ComposerNode) -> Compose
 
 
 ## The arm of `switch` that `port_id` stands for, counted the way it was drawn.
-static func _case_of(
+static func case_of(
 	graph: ComposerGraph, switch: ComposerNode, port_id: StringName
 ) -> ComposerNode:
 	var number: int = 0
@@ -164,14 +164,55 @@ static func _case_of(
 
 ## Whether that match already takes whatever is left.
 static func has_wildcard(graph: ComposerGraph, switch: ComposerNode) -> bool:
-	return _wildcard_of(graph, switch) != null
+	return wildcard_of(graph, switch) != null
 
 
-static func _wildcard_of(graph: ComposerGraph, switch: ComposerNode) -> ComposerNode:
+static func wildcard_of(graph: ComposerGraph, switch: ComposerNode) -> ComposerNode:
 	for arm: ComposerNode in _arms_of(graph, switch):
 		if ComposerFlowBuilder.case_label(arm) == ComposerFlowBuilder.WILDCARD:
 			return arm
 	return null
+
+
+## The lines written inside `header`'s block: everything deeper than it.
+##
+## A branch's own block ends where its `else` begins, and an `else` block ends
+## where the statement after the chain begins, so the same walk answers for the
+## true side, for the else and for one arm of a match.
+static func body_of(graph: ComposerGraph, header: ComposerNode) -> ComposerSpan:
+	var block: ComposerSpan = block_of(graph, header)
+	var first: int = ComposerSpan.NO_LINE
+	var last: int = ComposerSpan.NO_LINE
+	for other: ComposerNode in _ordered(graph):
+		if other.span.first_line <= header.span.last_line:
+			continue
+		if other.span.first_line > block.last_line:
+			break
+		if other.indent <= header.indent:
+			break
+		if first == ComposerSpan.NO_LINE:
+			first = other.span.first_line
+		last = maxi(last, other.span.last_line)
+	return ComposerSpan.new(first, last)
+
+
+## The island a statement is standing in, or nothing when it is live.
+##
+## The one whose block actually covers it, not the first one written above it. A
+## file can hold several islands - a move sets one aside per link it takes out -
+## and answering with whichever came first releases somebody else's statements.
+static func island_of(graph: ComposerGraph, node: ComposerNode) -> String:
+	for other: ComposerNode in graph.nodes:
+		if other.projection_kind != ComposerNode.ProjectionKind.SUPPORT:
+			continue
+		var island: String = ComposerFlow.island_name(other.text)
+		if island.is_empty():
+			continue
+		if other.span.first_line >= node.span.first_line or other.indent >= node.indent:
+			continue
+		if block_of(graph, other).contains(node.span.first_line):
+			return island
+	return ""
 
 
 ## Every arm of one match, in the order the file writes them.

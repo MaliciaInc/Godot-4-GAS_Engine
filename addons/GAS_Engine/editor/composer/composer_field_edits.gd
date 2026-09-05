@@ -190,36 +190,73 @@ static func _render(edit: Planned) -> String:
 	# thing the person could have changed.
 	var carried: Array = edit.written.values()
 	var written: String = carried[0]
-	var rebuilt: String = _structural(edit.node, written)
+	var rebuilt: String = _rewritten_structural(edit.node, written)
 	if rebuilt.is_empty():
 		return NOT_IN_SOURCE % edit.node.title
 	edit.lines.append(rebuilt)
 	return ""
 
 
-## An `if`, an `elif`, a `match` or a `return`, with its one value replaced.
+## Which of the three a statement is, and what it becomes.
 ##
-## The keyword is taken off the line rather than guessed from the node's kind:
-## the line already says which of them it is, and reading it back is one fewer
-## thing to keep in step. The colon, the indentation and the note somebody left
-## at the end of the line all survive, because none of them is what changed.
-static func _structural(node: ComposerNode, written: String) -> String:
+## By what the projection made of it rather than by looking at the text again:
+## the reader already decided whether this is a branch, a switch or an end, and
+## deciding it twice is two answers to keep in step.
+static func _rewritten_structural(node: ComposerNode, written: String) -> String:
+	if node.projection_kind == ComposerNode.ProjectionKind.BRANCH:
+		return _branch_with_condition(node, written)
+	if node.projection_kind == ComposerNode.ProjectionKind.SWITCH:
+		return _match_with_value(node, written)
+	return _return_with_value(node, written)
+
+
+## What one structural statement becomes with its value replaced.
+##
+## Three of them because they are three statements, not one shape with a
+## parameter: a branch keeps its keyword and its colon, a match keeps its arms,
+## and a return keeps whatever a person wrote after it on the line. None of them
+## goes anywhere near the call writer - a branch has no `type_id` and no
+## arguments, and giving it a pretend one to reuse that path is how a condition
+## ends up printed as `if(ready)`.
+static func _branch_with_condition(node: ComposerNode, written: String) -> String:
+	return _header_with(node, written)
+
+
+static func _match_with_value(node: ComposerNode, written: String) -> String:
+	return _header_with(node, written)
+
+
+static func _return_with_value(node: ComposerNode, written: String) -> String:
+	var said: Array = _split_of(node)
+	var note: String = said[1]
+	return _line_of(node, "%s %s" % [ComposerSubset.RETURN_OPENER, written], note)
+
+
+## A block header with its one value replaced: `if`, `elif` or `match`.
+##
+## The keyword comes off the line rather than out of the node's kind, because the
+## line already says which of them it is and reading it back is one fewer thing
+## to keep in step. The colon and the indentation are the line's, not the value's.
+static func _header_with(node: ComposerNode, written: String) -> String:
+	var said: Array = _split_of(node)
+	var head: String = said[0]
+	var note: String = said[1]
+	var keyword: int = head.find(" ")
+	if keyword < 0:
+		return ""
+	return _line_of(node, "%s %s%s" % [head.left(keyword), written, HEADER_MARK], note)
+
+
+## The code of the statement, and the note a person left after it.
+static func _split_of(node: ComposerNode) -> Array:
 	var code: String = ComposerLine.code_of(node.text)
-	var note: String = node.text.substr(code.length()).strip_edges()
-	var head: String = code.strip_edges()
-	var rebuilt: String = ""
+	return [code.strip_edges(), node.text.substr(code.length()).strip_edges()]
 
-	if head.begins_with(ComposerSubset.RETURN_OPENER):
-		rebuilt = "%s %s" % [ComposerSubset.RETURN_OPENER, written]
-	else:
-		var keyword: int = head.find(" ")
-		if keyword < 0:
-			return ""
-		rebuilt = "%s %s%s" % [head.left(keyword), written, HEADER_MARK]
 
-	if not note.is_empty():
-		rebuilt += " " + note
-	return ComposerWriter.TAB.repeat(maxi(node.indent, 1)) + rebuilt
+## One rebuilt statement, at its own depth, with its own note put back.
+static func _line_of(node: ComposerNode, rebuilt: String, note: String) -> String:
+	var written: String = rebuilt if note.is_empty() else rebuilt + " " + note
+	return ComposerWriter.TAB.repeat(maxi(node.indent, 1)) + written
 
 
 ## Whether two statements to be replaced share a line.

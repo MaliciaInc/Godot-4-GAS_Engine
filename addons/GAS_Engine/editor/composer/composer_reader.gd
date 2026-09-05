@@ -211,6 +211,7 @@ static func _projection_of(
 		or kind == ComposerSubset.Kind.MATCH_CASE
 		or kind == ComposerSubset.Kind.DETACHED
 		or kind == ComposerSubset.Kind.FLOW_STOP
+		or ComposerSubset.is_a_boundary(kind)
 	):
 		return ComposerNode.ProjectionKind.SUPPORT
 	return ComposerNode.ProjectionKind.STATEMENT

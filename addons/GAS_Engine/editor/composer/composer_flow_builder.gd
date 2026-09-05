@@ -249,7 +249,9 @@ static func is_elif(node: ComposerNode) -> bool:
 static func is_else(node: ComposerNode) -> bool:
 	return (
 		node.projection_kind == ComposerNode.ProjectionKind.SUPPORT
-		and node.text.strip_edges().begins_with(ComposerSubset.ELSE_OPENER)
+		and ComposerLine.code_of(node.text).strip_edges().begins_with(
+			ComposerSubset.ELSE_OPENER
+		)
 	)
 #endregion
 
@@ -305,7 +307,19 @@ static func _switch(
 static func is_case(node: ComposerNode) -> bool:
 	return (
 		node.projection_kind == ComposerNode.ProjectionKind.SUPPORT
-		and ComposerSubset.classify(node.text).kind == ComposerSubset.Kind.MATCH_CASE
+		and _is_an_arm(ComposerSubset.classify(node.text).kind)
+	)
+
+
+## Whether that kind is one a match takes an arm from.
+##
+## The catch-all this tool writes counts: it is there precisely to take the
+## path a match had nowhere else to send, and a switch that did not see it
+## would draw the No Match pin the boundary exists to remove.
+static func _is_an_arm(kind: ComposerSubset.Kind) -> bool:
+	return (
+		kind == ComposerSubset.Kind.MATCH_CASE
+		or kind == ComposerSubset.Kind.FLOW_DEFAULT
 	)
 
 
