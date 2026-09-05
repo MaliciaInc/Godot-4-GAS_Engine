@@ -18,7 +18,11 @@ class_name ComposerTypes extends RefCounted
 ## A parameter with no written type takes anything, because GDScript lets it.
 ## Refusing a wire there would be this tool being stricter than the language and
 ## calling a legal file an error.
-const UNTYPED: Array[StringName] = [&"", &"Variant", &"Nil"]
+## The type GDScript gives a value it was not told the type of. A `match`
+## switches on one, because the language will compare anything.
+const VARIANT: StringName = &"Variant"
+
+const UNTYPED: Array[StringName] = [&"", VARIANT, &"Nil"]
 
 ## The type names this project writes and reads, spelled once.
 const BOOL: StringName = &"bool"

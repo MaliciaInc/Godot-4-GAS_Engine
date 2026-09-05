@@ -25,6 +25,17 @@ const VALUE_OUT: StringName = &"value_out"
 ## rather than on the node's run of control.
 const ARGUMENT: String = "arg_%d"
 
+## The pins a structural statement offers. A branch is asked something and
+## answers one of two ways; a switch is handed a value and takes one case, or
+## none of them; an end is handed what the method returns.
+const CONDITION_IN: StringName = &"condition_in"
+const MATCH_VALUE_IN: StringName = &"match_value_in"
+const RETURN_VALUE_IN: StringName = &"return_value_in"
+const TRUE_OUT: StringName = &"true_out"
+const FALSE_OUT: StringName = &"false_out"
+const UNMATCHED_OUT: StringName = &"unmatched_out"
+const CASE_OUT: String = "case_%d"
+
 const OPEN_BRACKET: String = "("
 
 ## Statements that suspend the ability, which the card says out loud.
@@ -47,7 +58,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 		graph.diagnostics = [refusal] as Array[ComposerGraph.Diagnostic]
 		return graph
 
-	_build_nodes(graph, lines, span, path)
+	_build_nodes(graph, lines, span, path, ComposerSubset.entry_return_type(lines))
 	ComposerFlow.build(graph, lines)
 	_wire_data(graph, lines)
 
@@ -61,7 +72,11 @@ static func read(source: String, path: String) -> ComposerGraph:
 
 #region Nodes
 static func _build_nodes(
-	graph: ComposerGraph, lines: PackedStringArray, span: ComposerSpan, path: String
+	graph: ComposerGraph,
+	lines: PackedStringArray,
+	span: ComposerSpan,
+	path: String,
+	returns: StringName
 ) -> void:
 	var carried: int = ComposerSpan.NO_LINE
 	# What each local was declared to be, gathered on the way down. A receiver
@@ -79,7 +94,7 @@ static func _build_nodes(
 
 		var first: int = carried if carried != ComposerSpan.NO_LINE else made.first
 		carried = ComposerSpan.NO_LINE
-		var node: ComposerNode = _node(made, first, path, locals)
+		var node: ComposerNode = _node(made, first, path, locals, returns)
 		var declared: String = _local_name(made.text)
 		if not declared.is_empty():
 			locals[declared] = StringName(_local_type(made.text))
@@ -95,8 +110,11 @@ static func _build_nodes(
 
 
 static func _node(
-	made: ComposerSubset.Statement, first: int, path: String,
-	locals: Dictionary[String, StringName]
+	made: ComposerSubset.Statement,
+	first: int,
+	path: String,
+	locals: Dictionary[String, StringName],
+	returns: StringName
 ) -> ComposerNode:
 	var text: String = made.text.strip_edges()
 	var verdict: ComposerSubset.Verdict = made.verdict
@@ -121,15 +139,15 @@ static func _node(
 		verdict.kind == ComposerSubset.Kind.RETURN
 		or verdict.kind == ComposerSubset.Kind.FLOW_STOP
 	)
-	node.projection_kind = _projection_of(verdict.kind)
+	node.projection_kind = _projection_of(verdict.kind, text)
 	node.visible_in_graph = (
 		node.projection_kind != ComposerNode.ProjectionKind.SUPPORT
 	)
-	node.ports = _ports(verdict, text)
-	node.fields.assign(_fields(text, node.entry))
-	# After the fields, never before: there is one argument port per field, and
+	# Fields before ports, never after: there is one data input per field, and
 	# reading them while the list is still empty gives a node no value can land on.
-	_add_argument_ports(node)
+	node.fields.assign(ComposerNodeFields.of(node, verdict, returns))
+	node.ports = _ports(verdict, text)
+	_add_data_ports(node, verdict)
 	return node
 
 
@@ -140,20 +158,18 @@ static func _node(
 ## statements name themselves, because `if` is already the clearest word for
 ## what it does.
 static func _title(node: ComposerNode, verdict: ComposerSubset.Verdict) -> String:
-	if verdict.kind == ComposerSubset.Kind.BRANCH:
+	if verdict.kind == ComposerSubset.Kind.BRANCH or _is_elif(verdict.kind, node.text):
 		return "Branch"
-	if verdict.kind == ComposerSubset.Kind.BRANCH_ELSE:
-		return "Otherwise"
 	if verdict.kind == ComposerSubset.Kind.MATCH:
-		return "Match"
-	if verdict.kind == ComposerSubset.Kind.MATCH_CASE:
-		return "Case"
+		return "Switch"
 	if verdict.kind == ComposerSubset.Kind.RETURN:
 		return "End"
 	if verdict.kind == ComposerSubset.Kind.NOTHING:
 		return "Nothing"
 	if node.entry != null:
 		return node.entry.title
+	# A support header - `else:`, a case - has no card, so its title is its own
+	# line: what the signature of a graph names it by, and all it needs.
 	if node.type_id.is_empty():
 		return node.text.strip_edges()
 	# The method, not the receiver: a card headed "Owner Asc.apply Gameplay
@@ -178,10 +194,15 @@ static func _prefix(text: String, called: String) -> String:
 	return text.left(at).trim_suffix(AWAIT_MARK)
 
 
-## Which statements can carry a call: the ones whose whole shape is one.
 ## What kind of card a verdict draws, or none at all.
-static func _projection_of(kind: ComposerSubset.Kind) -> ComposerNode.ProjectionKind:
-	if kind == ComposerSubset.Kind.BRANCH:
+##
+## `elif` and `else:` classify alike - both continue a branch - and only the
+## text tells them apart. An `elif` tests something and is drawn as the Branch it
+## is; an `else:` tests nothing and is the one header nobody is shown.
+static func _projection_of(
+	kind: ComposerSubset.Kind, text: String
+) -> ComposerNode.ProjectionKind:
+	if kind == ComposerSubset.Kind.BRANCH or _is_elif(kind, text):
 		return ComposerNode.ProjectionKind.BRANCH
 	if kind == ComposerSubset.Kind.MATCH:
 		return ComposerNode.ProjectionKind.SWITCH
@@ -195,6 +216,14 @@ static func _projection_of(kind: ComposerSubset.Kind) -> ComposerNode.Projection
 	return ComposerNode.ProjectionKind.STATEMENT
 
 
+static func _is_elif(kind: ComposerSubset.Kind, text: String) -> bool:
+	return (
+		kind == ComposerSubset.Kind.BRANCH_ELSE
+		and text.strip_edges().begins_with(ComposerSubset.ELIF_OPENER)
+	)
+
+
+## Which statements can carry a call: the ones whose whole shape is one.
 static func _may_call(kind: ComposerSubset.Kind) -> bool:
 	return (
 		kind == ComposerSubset.Kind.CALL
@@ -227,6 +256,11 @@ static func _call_name(text: String) -> String:
 static func _ports(
 	verdict: ComposerSubset.Verdict, text: String
 ) -> Array[ComposerNode.Port]:
+	# A support header - an `else:`, a case, the wrapper round an unplugged island
+	# - is a line nobody is shown a card for, so it has nothing to plug a wire
+	# into. A pin on it would be a pin on a card that does not exist.
+	if _projection_of(verdict.kind, text) == ComposerNode.ProjectionKind.SUPPORT:
+		return []
 	var ports: Array[ComposerNode.Port] = [
 		port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
 	]
@@ -255,22 +289,39 @@ static func _ports(
 	return ports
 
 
-## One data input per argument, typed by the catalog.
+## One data input per field, typed by the field and naming it back.
 ##
 ## Without these a value wire had nowhere to land and was joined to the node's
 ## execution input instead - a data cable plugged into a run of control. Nothing
 ## caught it until something compared the two ends, which is the whole reason
 ## the type system exists.
-static func _add_argument_ports(node: ComposerNode) -> void:
+##
+## A call's inputs are numbered by argument. A structural statement has one
+## field and one pin for it, named for what it is - so a controller asks the
+## pin which field it stands for rather than parsing a number off its name.
+static func _add_data_ports(node: ComposerNode, verdict: ComposerSubset.Verdict) -> void:
 	for position: int in node.fields.size():
 		var slot: ComposerNode.Port = port(
-			StringName(ARGUMENT % position),
+			_data_port_id(node, verdict, position),
 			ComposerNode.PortKind.DATA,
 			ComposerNode.PortDirection.INPUT
 		)
 		slot.label = node.fields[position].label
 		slot.type_name = node.fields[position].type_name
+		slot.field_index = position
 		node.ports.append(slot)
+
+
+static func _data_port_id(
+	node: ComposerNode, verdict: ComposerSubset.Verdict, position: int
+) -> StringName:
+	if node.projection_kind == ComposerNode.ProjectionKind.BRANCH:
+		return CONDITION_IN
+	if node.projection_kind == ComposerNode.ProjectionKind.SWITCH:
+		return MATCH_VALUE_IN
+	if verdict.kind == ComposerSubset.Kind.RETURN:
+		return RETURN_VALUE_IN
+	return StringName(ARGUMENT % position)
 
 
 ## The type in `var name: Type = ...`, or empty when there is none.
@@ -299,59 +350,6 @@ static func port(
 	port.kind = kind
 	port.direction = direction
 	return port
-
-
-## One field per argument, named by the catalog where it knows the call.
-##
-## The label is the engine's own parameter name, read from the method rather
-## than invented here. A call the catalog does not offer still draws - a person
-## may write anything the subset admits - but its arguments fall back to their
-## position, which says "this is the second thing you passed" and claims nothing
-## more.
-static func _fields(text: String, entry: ComposerCatalog.Entry) -> Array[ComposerNode.Field]:
-	var fields: Array[ComposerNode.Field] = []
-	var open: int = text.find("(")
-	if open < 0 or not text.ends_with(")"):
-		return fields
-
-	var inside: String = text.substr(open + 1, text.length() - open - 2).strip_edges()
-	if inside.is_empty():
-		return fields
-
-	var position: int = 0
-	# Split on the call's own commas. Every comma would cut `build(x, y)` in
-	# half and hand the card two arguments the file never passed.
-	for argument: String in ComposerSubset.arguments_of(inside):
-		var declared: ComposerNode.Field = (
-			entry.parameter(position) if entry != null else null
-		)
-		var field: ComposerNode.Field = ComposerNode.Field.new()
-		field.label = declared.label if declared != null else "#%d" % (position + 1)
-		field.type_name = declared.type_name if declared != null else &""
-		# Everything else the engine said about this argument, carried onto the
-		# read field rather than left in the catalog. A control is chosen from the
-		# hint and an unplugged wire is replaced by the declared default, and both
-		# of those happen to a node that was read out of a file - so a field that
-		# knows only its type is a field neither of them can serve.
-		if declared != null:
-			_declare(field, declared)
-		field.display = argument.strip_edges()
-		fields.append(field)
-		position += 1
-	return fields
-
-
-## Copy what reflection said about an argument onto the field read for it.
-##
-## The display is not copied: that is what the file passes, and it is the one
-## thing here the person wrote rather than the engine.
-static func _declare(field: ComposerNode.Field, declared: ComposerNode.Field) -> void:
-	field.variant_type = declared.variant_type
-	field.class_id = declared.class_id
-	field.hint = declared.hint
-	field.hint_string = declared.hint_string
-	field.usage = declared.usage
-	field.default_expression = declared.default_expression
 #endregion
 
 

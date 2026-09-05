@@ -78,6 +78,16 @@ class Field extends RefCounted:
 	## compiles instead of being born with an argument missing.
 	var default_expression: String = ""
 
+	## Whether the writer knows how to put a new value here.
+	##
+	## Decided where the field is built, because that is the one place that knows
+	## what kind of statement it came from: an argument of a call the writer can
+	## rebuild, the condition of a branch, the value a match switches on, what a
+	## return hands back - all true. A field read out of a shape the writer has
+	## no way to print again is false, whatever its type, and asking the node's
+	## type instead was how a branch's condition could never be touched.
+	var editable: bool = false
+
 	func is_satisfied() -> bool:
 		return source != ComposerNode.ValueSource.MISSING
 
@@ -93,6 +103,14 @@ class Port extends RefCounted:
 	var multiplicity: ComposerNode.PortMultiplicity = (
 		ComposerNode.PortMultiplicity.SINGLE
 	)
+
+	## Which of the node's fields a data input stands for, or -1 for a pin that
+	## stands for none.
+	##
+	## Carried on the pin rather than parsed out of its id. `arg_2` happens to end
+	## in a number; `condition_in` does not, and a controller that read the index
+	## off the name could reach a call's arguments and nothing else.
+	var field_index: int = -1
 
 	func is_execution() -> bool:
 		return kind == ComposerNode.PortKind.EXECUTION
@@ -147,17 +165,19 @@ var entry: ComposerCatalog.Entry = null
 
 ## Whether a person may change `field` at all.
 ##
-## One condition, and it is about the statement rather than the value: a branch,
-## a return, a wait on a signal cannot be printed back from the model, so the
-## writer would have to rebuild them out of something that never held them.
+## The field says so itself. It used to be decided from the statement - only a
+## call had a type, so only a call's fields could be touched - which made the
+## condition of a branch and the value a return hands back things a person could
+## see and never change. Each field is now built knowing whether the writer can
+## print it, and that is the whole answer.
 ##
-## A value that arrives on a cable is **not** one of the exceptions, though it
-## was for a while. The reasoning was that a cable cannot be typed over - but
-## the text is the truth here and the cable is read out of it, so naming a
-## different local is rewiring and writing a literal is disconnecting. What
-## changes for a wired value is what it is offered as, not whether it may move.
+## A value that arrives on a cable is **not** an exception, though it was for a
+## while. The reasoning was that a cable cannot be typed over - but the text is
+## the truth here and the cable is read out of it, so naming a different local
+## is rewiring and writing a literal is disconnecting. What changes for a wired
+## value is what it is offered as, not whether it may move.
 func may_edit(field: Field) -> bool:
-	return not type_id.is_empty() and field != null
+	return field != null and field.editable
 
 
 ## Whether arbitrary text belongs in it, or a choice of what feeds it.

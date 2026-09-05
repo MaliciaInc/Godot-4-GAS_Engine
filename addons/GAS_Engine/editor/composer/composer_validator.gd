@@ -186,6 +186,8 @@ static func _gap(declared: ComposerNode.Field) -> ComposerNode.Field:
 	absent.label = declared.label
 	absent.type_name = declared.type_name
 	absent.source = ComposerNode.ValueSource.MISSING
+	# A gap is the one field a person most needs to be able to fill in.
+	absent.editable = true
 	return absent
 
 

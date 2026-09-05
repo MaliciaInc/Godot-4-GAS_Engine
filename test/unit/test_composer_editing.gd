@@ -192,21 +192,34 @@ func test_writing_a_value_takes_the_cable_off() -> void:
 	assert_eq(after.fields[LEVEL].source, ComposerNode.ValueSource.LITERAL, "not fed")
 
 
-## A statement this cannot print back is not edited at all.
+## A structural statement offers the one value it carries, and nothing else.
 ##
-## A branch, a return, a wait on a signal: the writer would have to rebuild it
-## from a model that never held it, so nothing about it is offered.
-func test_a_statement_that_cannot_be_printed_back_is_not_edited() -> void:
+## This used to assert the opposite, because the writer could only rebuild a
+## call - which left every condition and every return value on the canvas and
+## out of reach. What is still true is the narrower thing: a statement that
+## hands nothing back has nothing to offer.
+func test_a_structural_statement_offers_exactly_the_value_it_carries() -> void:
 	var graph: ComposerGraph = await _open(SOURCE, 3)
-	var counted: int = 0
+	var structural: int = 0
 
 	for node: ComposerNode in ComposerProjection.statements(graph):
 		if not node.type_id.is_empty():
 			continue
-		counted += 1
-		for field: ComposerNode.Field in node.fields:
-			assert_false(node.may_edit(field), "%s offers nothing" % node.title)
-	assert_gt(counted, 0, "the body has at least one of them")
+		structural += 1
+		assert_eq(node.fields.size(), 1, "%s carries one value" % node.title)
+		assert_true(node.may_edit(node.fields[0]), "%s offers it" % node.title)
+	assert_gt(structural, 0, "the body has at least one of them")
+
+	var bare: ComposerGraph = ComposerReader.read(
+		"extends GameplayAbility
+
+
+func _activate_ability() -> void:
+	return
+", path
+	)
+	var end: ComposerNode = ComposerProjection.statements(bare)[0]
+	assert_eq(end.fields.size(), 0, "a bare return hands nothing back")
 
 
 ## A file outside the subset opens read-only, and nothing in it is offered.

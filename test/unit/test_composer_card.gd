@@ -51,6 +51,8 @@ func _node_holding(type_name: StringName, written: String) -> ComposerNode:
 		field.label = label
 		field.type_name = type_name
 		field.display = written
+		# As the reader says of every argument it reads.
+		field.editable = true
 		node.fields.append(field)
 	return node
 #endregion

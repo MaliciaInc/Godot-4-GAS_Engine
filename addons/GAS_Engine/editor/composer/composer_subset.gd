@@ -99,12 +99,20 @@ const DETACHED_MARK: String = "# @composer-detached "
 const FLOW_STOP_MARK: String = "# @composer-flow-stop"
 const DETACHED_OPENER: String = "if false: "
 
+## The two openers other modules name as well: `elif` draws as a branch, and a
+## `return` carries its value on the line rather than in brackets.
+const ELIF_OPENER: String = "elif "
+const RETURN_OPENER: String = "return"
+
+## What separates a method's parameters from what it hands back.
+const RETURNS_MARK: String = "->"
+
 ## Openers whose shape is enough to name them.
 const OPENERS: Array[Array] = [
 	["match ", Kind.MATCH],
-	["elif ", Kind.BRANCH_ELSE],
+	[ELIF_OPENER, Kind.BRANCH_ELSE],
 	["if ", Kind.BRANCH],
-	["return", Kind.RETURN],
+	[RETURN_OPENER, Kind.RETURN],
 	["super", Kind.SUPER],
 	["await ", Kind.AWAIT],
 	["var ", Kind.LOCAL],
@@ -377,6 +385,25 @@ static func _signature_line(lines: PackedStringArray) -> int:
 		if text.begins_with("func " + ENTRY_POINT) and text.ends_with(":"):
 			return index
 	return -1
+
+
+## The type the entry point declares it returns, or nothing when it declares
+## none.
+##
+## Read off the signature the body was found under, not off the running class:
+## the file already says it, and asking the engine would be asking a second
+## authority about the first.
+static func entry_return_type(lines: PackedStringArray) -> StringName:
+	var signature: int = _signature_line(lines)
+	if signature < 0:
+		return &""
+	var text: String = lines[signature]
+	var arrow: int = text.find(RETURNS_MARK)
+	var colon: int = text.rfind(":")
+	if arrow < 0 or colon < arrow:
+		return &""
+	var start: int = arrow + RETURNS_MARK.length()
+	return StringName(text.substr(start, colon - start).strip_edges())
 #endregion
 
 

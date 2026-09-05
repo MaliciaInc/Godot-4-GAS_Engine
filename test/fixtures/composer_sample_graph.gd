@@ -107,6 +107,8 @@ static func _field(label: String, display: String) -> ComposerNode.Field:
 	var field: ComposerNode.Field = ComposerNode.Field.new()
 	field.label = label
 	field.display = display
+	# What the reader says of every argument it reads: the writer can put it back.
+	field.editable = true
 	return field
 
 
@@ -114,4 +116,6 @@ static func _missing(label: String) -> ComposerNode.Field:
 	var field: ComposerNode.Field = ComposerNode.Field.new()
 	field.label = label
 	field.source = ComposerNode.ValueSource.MISSING
+	# And of every gap the validator adds: it is the field most worth filling in.
+	field.editable = true
 	return field
