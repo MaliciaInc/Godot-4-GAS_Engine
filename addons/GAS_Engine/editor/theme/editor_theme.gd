@@ -22,6 +22,12 @@ const NORMAL_STYLEBOX: String = "normal"
 const SEPARATION: String = "separation"
 const FONT_SIZE: String = "font_size"
 
+## GraphNode draws its own title, out of its own theme items rather than the
+## ones above. Named here so a card can say how its title looks instead of
+## taking whatever the host happens to say.
+const TITLE_FONT_SIZE: String = "title_font_size"
+const TITLE_COLOR: String = "title_color"
+
 ## An icon Godot ships. Used where drawing our own would be a second picture of
 ## something the editor already has one for.
 const ICON_REMOVE: String = "Remove"

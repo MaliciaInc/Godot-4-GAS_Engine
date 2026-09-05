@@ -60,6 +60,7 @@ func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 	name = String(node.id)
 	title = node.title + (" " + AWAIT_LABEL if node.awaits else "")
 	_state = node.state
+	_own_the_title()
 	_clear()
 	for pin: ComposerNode.Port in node.ports:
 		_ports[pin.id] = pin
@@ -78,6 +79,21 @@ func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 		_add_row(_result_row(_ports[ComposerReader.VALUE_OUT]), &"", ComposerReader.VALUE_OUT)
 
 	_apply_slots(port_types)
+
+
+## Say how the title is drawn, rather than letting the host say it.
+##
+## The rows are this card's own controls and carry their own font; the title is
+## GraphNode's, drawn from whatever theme the card is standing in. In the Godot
+## editor that is the editor's theme and it happens to look right - anywhere
+## else the same card is drawn with a title several times the size of the values
+## underneath it. A card that looks different depending on who is hosting it is
+## a card nobody can screenshot and compare.
+func _own_the_title() -> void:
+	add_theme_font_size_override(
+		GASEditorTheme.TITLE_FONT_SIZE, ComposerTheme.FONT_TITLE
+	)
+	add_theme_color_override(GASEditorTheme.TITLE_COLOR, ComposerTheme.TEXT)
 
 
 ## Put a row in, and remember which pins it carries.

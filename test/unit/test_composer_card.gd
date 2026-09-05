@@ -64,6 +64,41 @@ func test_a_card_is_a_graph_node() -> void:
 	assert_eq(card.name, String(Sample.COMMIT), "named so the widget can find it")
 
 
+## A card looks the same wherever it is standing.
+##
+## The rows are the card's own controls and carry their own font. The title is
+## GraphNode's, drawn out of the ambient theme, so a card built inside a project
+## whose theme says something loud about GraphNode titles came out with a title
+## several times the size of the values under it - measured at 96 against the
+## card's own 14. It looked right in the Godot editor by accident, because the
+## editor's theme happened to be quiet.
+func test_a_card_draws_its_title_at_its_own_size_whatever_the_host_says() -> void:
+	var loud: Theme = Theme.new()
+	loud.set_font_size(GASEditorTheme.TITLE_FONT_SIZE, "GraphNode", 96)
+	var host: Control = Control.new()
+	host.theme = loud
+	add_child_autofree(host)
+
+	var built: ComposerCard = ComposerCard.new()
+	host.add_child(built)
+	_types.rebuild(Sample.build())
+	built.build(_node(Sample.COMMIT), _types)
+	await get_tree().process_frame
+
+	assert_eq(
+		built.get_theme_font_size(GASEditorTheme.TITLE_FONT_SIZE),
+		ComposerTheme.FONT_TITLE,
+		"the card says how its title is drawn"
+	)
+	var bare: Control = Control.new()
+	add_child_autofree(bare)
+	bare.theme = loud
+	assert_eq(
+		bare.get_theme_font_size(GASEditorTheme.TITLE_FONT_SIZE, "GraphNode"), 96,
+		"and the host really was saying something else"
+	)
+
+
 ## The card is addressed by its node's id, which is how a wire finds it.
 func test_a_card_carries_the_id_of_the_statement_it_draws() -> void:
 	var card: ComposerCard = await _card(_node(Sample.CUE))
