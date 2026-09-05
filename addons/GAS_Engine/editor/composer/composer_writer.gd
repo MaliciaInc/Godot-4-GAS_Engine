@@ -64,13 +64,7 @@ static func render(node: ComposerNode) -> String:
 		# printing `()` for one would replace a person's line with nothing.
 		return "\n".join(node.source_text)
 
-	var rebuilt: String = TAB.repeat(maxi(node.indent, 1)) + node.prefix
-	if node.awaits:
-		rebuilt += AWAIT_MARK
-	var written: String = String(node.type_id)
-	if not node.receiver.is_empty():
-		written = "%s.%s" % [node.receiver, written]
-	rebuilt += "%s(%s)" % [written, _arguments(node)]
+	var rebuilt: String = render_with_field_overrides(node, {})
 
 	# A statement that came wrapped across lines and still says exactly what it
 	# said keeps the wrapping the person chose. Only one the Composer actually
@@ -98,10 +92,51 @@ static func _flattened(text: String) -> String:
 	return flat.replace("( ", "(").replace(" )", ")")
 
 
-static func _arguments(node: ComposerNode) -> String:
+## One statement, rebuilt with some of its arguments replaced.
+##
+## Pure on purpose: nothing here marks the node dirty and nothing here touches
+## its fields. A field edit has to be able to ask "what would this statement
+## look like" and then refuse, and a renderer that changed the node on the way
+## would leave the refusal drawn on the canvas.
+##
+## Keyed by field index rather than by label: two arguments of one call can be
+## called the same thing, and position is what the language goes by.
+static func render_with_field_overrides(
+	node: ComposerNode, overrides: Dictionary[int, String]
+) -> String:
+	var rebuilt: String = TAB.repeat(maxi(node.indent, 1)) + node.prefix
+	if node.awaits:
+		rebuilt += AWAIT_MARK
+	var called: String = String(node.type_id)
+	if not node.receiver.is_empty():
+		called = "%s.%s" % [node.receiver, called]
+	return rebuilt + "%s(%s)" % [called, _arguments(node, overrides)]
+
+
+## What one field is written as.
+##
+## A field the file passes is written as what it passes. A required one the
+## file left out is written as its declared default, or as the zero of its
+## type - because rebuilding a call around an empty string produces
+## `apply(, 2.0)`, which is not a statement, and the reread that follows would
+## refuse the whole edit rather than the one argument.
+static func field_source(field: ComposerNode.Field) -> String:
+	if field.is_satisfied():
+		return field.display
+	if not field.default_expression.is_empty():
+		return field.default_expression
+	return ComposerTypes.default_expression(field.type_name, field.variant_type)
+
+
+static func _arguments(
+	node: ComposerNode, overrides: Dictionary[int, String] = {}
+) -> String:
 	var written: PackedStringArray = PackedStringArray()
-	for field: ComposerNode.Field in node.fields:
-		written.append(field.display)
+	for position: int in node.fields.size():
+		written.append(
+			overrides[position] if overrides.has(position)
+			else field_source(node.fields[position])
+		)
 	return ", ".join(written)
 
 
@@ -147,23 +182,27 @@ static func apply(graph: ComposerGraph, source: String, verify: bool = true) -> 
 		result.refusal = refuse("no %s() to write into" % ComposerSubset.ENTRY_POINT)
 		return result
 
-	var spliced: String = _splice(lines, span, print_body(graph))
+	var rebuilt: String = spliced(lines, span, print_body(graph))
 	if not verify:
-		result.text = spliced
+		result.text = rebuilt
 		return result
 
-	var verdict: ComposerGraph.Diagnostic = _verify(graph, spliced, graph.source_path)
+	var verdict: ComposerGraph.Diagnostic = _verify(graph, rebuilt, graph.source_path)
 	if verdict != null:
 		result.refusal = verdict
 		return result
 
-	result.text = spliced
+	result.text = rebuilt
 	return result
 
 
 ## Everything before the body, the new body, everything after. The two ends are
 ## copied, never rewritten, which is the whole promise about the rest of the file.
-static func _splice(
+##
+## Public because a field edit replaces the lines of one statement the same way
+## a save replaces the lines of a body, and two functions that cut a file into
+## three pieces are two chances to be off by one at the seam.
+static func spliced(
 	lines: PackedStringArray, span: ComposerSpan, body: PackedStringArray
 ) -> String:
 	var out: PackedStringArray = PackedStringArray()

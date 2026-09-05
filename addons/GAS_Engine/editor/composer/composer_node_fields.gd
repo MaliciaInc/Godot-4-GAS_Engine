@@ -73,7 +73,7 @@ static func of_call(text: String, entry: ComposerCatalog.Entry) -> Array[Compose
 		# of those happen to a node that was read out of a file - so a field that
 		# knows only its type is a field neither of them can serve.
 		if declared != null:
-			_declare(field, declared)
+			declare(field, declared)
 		field.display = argument.strip_edges()
 		# A call is the one statement the writer rebuilds from its fields, so every
 		# argument of one is something a person may change.
@@ -87,7 +87,12 @@ static func of_call(text: String, entry: ComposerCatalog.Entry) -> Array[Compose
 ##
 ## The display is not copied: that is what the file passes, and it is the one
 ## thing here the person wrote rather than the engine.
-static func _declare(field: ComposerNode.Field, declared: ComposerNode.Field) -> void:
+##
+## Public because a gap the validator reports is the same contract with
+## nothing filled in yet, and a second copy of this list is a second place to
+## forget a hint - which is a value editor that offers free text where the
+## engine declared an enum.
+static func declare(field: ComposerNode.Field, declared: ComposerNode.Field) -> void:
 	field.variant_type = declared.variant_type
 	field.class_id = declared.class_id
 	field.hint = declared.hint
@@ -142,7 +147,7 @@ static func structural(
 ## `state` in `match state:`. The keyword and the colon are the line's; the
 ## expression is the person's.
 static func header_expression(text: String) -> String:
-	var head: String = text.strip_edges().trim_suffix(":")
+	var head: String = code_of(text).strip_edges().trim_suffix(":")
 	var space: int = head.find(" ")
 	if space < 0:
 		return ""
@@ -151,10 +156,21 @@ static func header_expression(text: String) -> String:
 
 ## What a `return` hands back, or nothing for a bare one.
 static func return_expression(text: String) -> String:
-	var line: String = text.strip_edges()
+	var line: String = code_of(text).strip_edges()
 	if not line.begins_with(ComposerSubset.RETURN_OPENER):
 		return ""
 	return line.substr(ComposerSubset.RETURN_OPENER.length()).strip_edges()
+
+
+## The part of `line` that is code, without the comment trailing it.
+##
+## What a statement carries stops where the person's note starts. Read here
+## and written back through here, so that editing a commented line puts the
+## comment back instead of eating it - and so that a condition is `ready`
+## rather than `ready: # for now`.
+static func code_of(line: String) -> String:
+	var mark: int = ComposerSubset.scan(line).comment
+	return line if mark < 0 else line.substr(0, mark)
 
 
 static func _field(

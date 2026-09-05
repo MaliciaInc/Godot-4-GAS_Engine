@@ -261,6 +261,9 @@ class Brackets extends RefCounted:
 	## something that was never opened here.
 	var lowest: int = 0
 
+	## Where a trailing comment begins, or -1 for a line that is all code.
+	var comment: int = -1
+
 
 ## Read the brackets of `text`.
 ##
@@ -282,6 +285,7 @@ static func scan(text: String) -> Brackets:
 		elif character == DOUBLE_QUOTE or character == SINGLE_QUOTE:
 			quote = character
 		elif character == COMMENT_MARK:
+			found.comment = index
 			break
 		elif OPENING.contains(character):
 			found.depth += 1

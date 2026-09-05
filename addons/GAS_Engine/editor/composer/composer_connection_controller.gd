@@ -29,7 +29,6 @@ const NO_SUCH_PORT: String = "that pin is no longer on the card"
 const WRONG_FAMILY: String = "execution and values do not connect to each other"
 const WRONG_WAY: String = "a wire runs from an output to an input"
 const NOT_A_LOCAL: String = "only a named value can be sent along a wire"
-const NOT_EDITABLE: String = "%s is not something this tool may write"
 const NOT_YET_DECLARED: String = (
 	"%s is declared after this statement, so it does not exist here yet"
 )
@@ -86,7 +85,7 @@ func disconnect_edge(edge: ComposerGraph.Connection) -> bool:
 	if out.is_execution():
 		return _flow(ComposerFlowEdits.disconnect_flow(_document.printed(), staged, edge))
 
-	var position: int = _argument_index(edge.to_port)
+	var position: int = to.field_for(edge.to_port)
 	if position < 0 or position >= to.fields.size():
 		return _no(NO_SUCH_PORT)
 	return _argument_becomes(staged, to, edge.to_port, _default_for(to, position))
@@ -117,13 +116,16 @@ func break_all(node_id: StringName, port_id: StringName) -> bool:
 			ComposerFlowEdits.disconnect_flow(_document.printed(), staged, wires[0])
 		)
 
+	var changes: Array[ComposerFieldEdits.Change] = []
 	for wire: ComposerGraph.Connection in wires:
 		var to: ComposerNode = staged.find_node(wire.to_node)
-		var position: int = _argument_index(wire.to_port)
+		var position: int = to.field_for(wire.to_port) if to != null else -1
 		if to == null or position < 0 or position >= to.fields.size():
 			return _no(NO_SUCH_PORT)
-		_write_field(to, position, _default_for(to, position))
-	return _committed(staged)
+		changes.append(
+			ComposerFieldEdits.Change.of(to.id, position, _default_for(to, position))
+		)
+	return _rewritten(staged, changes)
 
 
 ## Move every wire on one pin to another pin of the same kind.
@@ -168,9 +170,10 @@ func move_connections(
 	var named: String = to_port.label
 	if named.is_empty():
 		return _no(NOT_A_LOCAL)
+	var changes: Array[ComposerFieldEdits.Change] = []
 	for wire: ComposerGraph.Connection in wires:
 		var to: ComposerNode = staged.find_node(wire.to_node)
-		var position: int = _argument_index(wire.to_port)
+		var position: int = to.field_for(wire.to_port) if to != null else -1
 		if to == null or position < 0 or position >= to.fields.size():
 			return _no(NO_SUCH_PORT)
 		var wanted: StringName = to.fields[position].type_name
@@ -178,11 +181,8 @@ func move_connections(
 			return _no(ComposerTypes.refusal(wanted, to_port.type_name))
 		if not _in_scope(destination, to):
 			return _no(NOT_YET_DECLARED % named)
-
-	for wire: ComposerGraph.Connection in wires:
-		var to: ComposerNode = staged.find_node(wire.to_node)
-		_write_field(to, _argument_index(wire.to_port), named)
-	return _committed(staged)
+		changes.append(ComposerFieldEdits.Change.of(to.id, position, named))
+	return _rewritten(staged, changes)
 
 
 ## Put text somebody typed into one argument.
@@ -197,14 +197,9 @@ func rewrite_field(node_id: StringName, position: int, written: String) -> bool:
 	if staged == null:
 		return false
 
-	var node: ComposerNode = staged.find_node(node_id)
-	if node == null or position < 0 or position >= node.fields.size():
-		return _no(NO_SUCH_PORT)
-	if not node.may_edit(node.fields[position]):
-		return _no(NOT_EDITABLE % node.fields[position].label)
-
-	_write_field(node, position, written)
-	return _committed(staged)
+	var changes: Array[ComposerFieldEdits.Change] = []
+	changes.append(ComposerFieldEdits.Change.of(node_id, position, written))
+	return _rewritten(staged, changes)
 #endregion
 
 
@@ -288,23 +283,34 @@ func _no(message: String) -> bool:
 func _argument_becomes(
 	graph: ComposerGraph, node: ComposerNode, port_id: StringName, written: String
 ) -> bool:
-	var position: int = _argument_index(port_id)
+	var position: int = node.field_for(port_id)
 	if position < 0 or position >= node.fields.size():
 		return _no(NO_SUCH_PORT)
-	_write_field(node, position, written)
-	return _committed(graph)
+	var changes: Array[ComposerFieldEdits.Change] = []
+	changes.append(ComposerFieldEdits.Change.of(node.id, position, written))
+	return _rewritten(graph, changes)
 
 
-## The argument text is the whole truth about a data wire.
+## Ask for those values to be written, and commit whatever comes back.
 ##
-## There is no stored "this was connected" anywhere: the wire exists because the
-## argument is exactly a local's name, so writing that name IS connecting, and
-## writing a value back IS disconnecting. Nothing can fall out of step because
-## there is nothing else to keep in step.
-static func _write_field(node: ComposerNode, position: int, written: String) -> void:
-	node.fields[position].display = written
-	node.fields[position].source = ComposerNode.ValueSource.LITERAL
-	node.dirty = true
+## The argument text is the whole truth about a data wire. There is no stored
+## "this was connected" anywhere: the wire exists because the argument is
+## exactly a local's name, so writing that name IS connecting and writing a
+## value back IS disconnecting. Nothing can fall out of step because there is
+## nothing else to keep in step.
+##
+## Every change of every gesture goes in at once. A pin feeding four arguments
+## is one thing a person did, and four commits would take four undos to put
+## back; a refusal on the fourth would leave the first three written.
+func _rewritten(
+	graph: ComposerGraph, changes: Array[ComposerFieldEdits.Change]
+) -> bool:
+	var done: ComposerFieldEdits.Result = ComposerFieldEdits.rewrite_many(
+		_document.printed(), graph, changes
+	)
+	if not done.ok:
+		return _no(done.message)
+	return _accepted(_document.commit(done.source))
 
 
 ## What an unconnected argument holds: what the method declares, or the zero.
@@ -313,32 +319,6 @@ static func _default_for(node: ComposerNode, position: int) -> String:
 	if not field.default_expression.is_empty():
 		return field.default_expression
 	return ComposerTypes.default_expression(field.type_name, field.variant_type)
-
-
-## Which argument a data pin stands for, or -1 when it stands for none.
-static func _argument_index(port_id: StringName) -> int:
-	var spelled: String = String(port_id)
-	var mark: int = spelled.rfind("_")
-	if mark < 0:
-		return -1
-	var number: String = spelled.substr(mark + 1)
-	return number.to_int() if number.is_valid_int() else -1
-
-
-## Print the staged graph and commit it once.
-##
-## Printed without the writer's own verification on purpose. That check compares
-## the graph it was handed against the text read back, and a staged graph is
-## deliberately out of date about its own wires - the argument was rewritten and
-## the connection it stands for has not been recomputed. The reread that matters
-## is the document's, which refuses anything it cannot read.
-func _committed(graph: ComposerGraph) -> bool:
-	var written: ComposerWriter.Result = ComposerWriter.apply(
-		graph, _document.printed(), false
-	)
-	if not written.is_ok():
-		return _no(written.refusal.message)
-	return _accepted(_document.commit(written.text))
 
 
 ## Hand a flow transformation to the document, or say why there was none.

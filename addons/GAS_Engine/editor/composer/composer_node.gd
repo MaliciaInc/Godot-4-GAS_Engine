@@ -265,6 +265,17 @@ func find_port(port_id: StringName) -> Port:
 	return null
 
 
+## Which field a pin stands for, or -1 when it stands for none.
+##
+## The pin was given this when it was read, so asking it is one lookup and it
+## works for every pin there is. Parsing a number off the end of the id was the
+## older way, and it can only ever answer for an argument - a condition, a match
+## value and a return value are all named rather than numbered.
+func field_for(port_id: StringName) -> int:
+	var pin: Port = find_port(port_id)
+	return pin.field_index if pin != null else -1
+
+
 func find_field(label: String) -> Field:
 	for field: Field in fields:
 		if field.label == label:

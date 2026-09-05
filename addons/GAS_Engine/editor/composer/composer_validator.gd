@@ -185,8 +185,15 @@ static func _gap(declared: ComposerNode.Field) -> ComposerNode.Field:
 	var absent: ComposerNode.Field = ComposerNode.Field.new()
 	absent.label = declared.label
 	absent.type_name = declared.type_name
+	# Everything else the engine said about the argument, too. A gap used to
+	# carry a label and a type and nothing more, so the one field somebody most
+	# needs to fill in was the one field with no default to offer, no hint to
+	# pick a control from, and nothing safe for the writer to print in its
+	# place when some other argument of the same call is edited.
+	ComposerNodeFields.declare(absent, declared)
 	absent.source = ComposerNode.ValueSource.MISSING
-	# A gap is the one field a person most needs to be able to fill in.
+	# The display stays empty on purpose: that is how a gap says it was never
+	# in the source, rather than being there and holding the default.
 	absent.editable = true
 	return absent
 
