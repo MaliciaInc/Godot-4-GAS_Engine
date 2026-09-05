@@ -82,6 +82,10 @@ func paste(picked: Array[StringName], written: String) -> ComposerGraph.Diagnost
 
 
 ## A call chosen from the palette becomes a statement in the body.
+##
+## Where it is drawn is left to the layout. That is right for a click: nobody
+## pointed at anywhere, so anywhere the layout puts it is as good an answer as
+## any.
 func insert_call(picked: Array[StringName], key: StringName) -> ComposerGraph.Diagnostic:
 	if _document == null or not _document.may_write():
 		return null
@@ -91,3 +95,35 @@ func insert_call(picked: Array[StringName], key: StringName) -> ComposerGraph.Di
 	if written.is_empty():
 		return null
 	return _document.insert(written, _document.after(spans_of(picked)))
+
+
+## The same call, put where the person let go of it.
+##
+## One commit for the statement and its position, because somebody who dragged a
+## call onto the canvas did one thing. Two commits would take two undos, and the
+## first undo would leave a card sitting at a position for a statement that no
+## longer exists.
+##
+## The new statement is found by the line it was written on, never by what it
+## calls: the ability may already hold the same call four times, and a search by
+## name would move whichever one happened to come first.
+func insert_call_at(
+	picked: Array[StringName], key: StringName, graph_position: Vector2
+) -> ComposerGraph.Diagnostic:
+	if _document == null or not _document.may_write():
+		return null
+	var written: String = ComposerWriter.call_for(
+		ComposerCatalog.find(key), _document.path()
+	)
+	if written.is_empty():
+		return null
+
+	var at: int = _document.after(spans_of(picked))
+	var made: String = ComposerEdits.insert_after(_document.printed(), at, written)
+	var staged: ComposerGraph = ComposerReader.read(made, _document.path())
+	var node: ComposerNode = staged.node_at_line(at + 1)
+	if node == null:
+		return _document.commit(made)
+	return _document.commit(
+		ComposerLayoutMetadata.positioned(made, node, graph_position)
+	)

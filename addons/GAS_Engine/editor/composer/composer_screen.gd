@@ -105,7 +105,7 @@ func _ready() -> void:
 	_canvas.paste_requested.connect(paste)
 	_canvas.duplicate_requested.connect(repeat_picked)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
-	_canvas.node_requested.connect(_on_node_picked)
+	_canvas.node_requested.connect(_on_call_released)
 	# The routes hear the canvas themselves. A gesture added there is connected
 	# beside the others rather than in a list here that has to be remembered.
 	_routes.bind(_doc)
@@ -271,14 +271,20 @@ func paste_text(written: String) -> bool:
 	return await _did(_statements.paste(_canvas.picked(), written))
 
 
-## A call somebody chose, from the palette, the finder or a drag onto the canvas.
+## A call somebody chose: clicked in the palette or the finder, where the layout
+## places it, or let go of on the canvas, where they let go of it.
 ##
-## One handler for all three. Where it was dropped is carried and not yet
-## honoured - placing the new card there needs the id of a statement that does
-## not exist until after the insert and the reread, which is the placement
-## transaction TASK 13 builds.
-func _on_node_picked(key: StringName, _at: Vector2 = Vector2.ZERO) -> void:
+## Two handlers rather than one with a default position, because `(0, 0)` is a
+## real place on a canvas: a sentinel somebody can drop a card exactly on will
+## one day be read as "they did not say". The second is named for the call and
+## not for a card - a card let go somewhere is the widget's own business, and it
+## reports that as a placement.
+func _on_node_picked(key: StringName) -> void:
 	await _did(_statements.insert_call(_canvas.picked(), key))
+
+
+func _on_call_released(key: StringName, at: Vector2) -> void:
+	await _did(_statements.insert_call_at(_canvas.picked(), key, at))
 
 
 ## Dragging cards changes only where they are drawn.
@@ -305,10 +311,8 @@ func _on_entry_chosen(
 	_routes.create_and_connect(ComposerCatalog.find(entry_key), context)
 
 
-## One place where a menu item becomes an operation, whichever menu offered it.
-##
-## Matched on the name it was offered under, not on an index two lists have to
-## keep agreeing about.
+## One place where a menu item becomes an operation, whichever menu offered it,
+## matched on the name it was offered under rather than on an index.
 func _on_menu_chosen(
 	chosen: String, _node_id: StringName, _port_id: StringName
 ) -> void:
