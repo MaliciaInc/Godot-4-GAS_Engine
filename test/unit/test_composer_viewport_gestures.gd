@@ -332,3 +332,114 @@ func test_alt_clicking_a_data_pin_writes_the_file() -> void:
 	)
 	assert_eq(document.history().depth(), 1, "as one step")
 #endregion
+
+
+#region The structural pins, through the same routing
+## A branch, a match and an end drawn on one canvas.
+const STRUCTURED: Array = [
+	"var ready: bool = can_activate()",
+	"if ready:",
+	"\tfire()",
+	"match state:",
+	"\tState.A:",
+	"\t\tone()",
+	"after()",
+	"return true",
+]
+
+
+## Every pin a structural statement offers, cleared by a real Alt-click.
+##
+## The four the closure phase added: a branch's two paths, one arm of a match,
+## and the value an end hands back. They are drawn from `node.ports` and reached
+## through the same routing as any other pin - which is the point of asking here
+## rather than of the parser.
+const STRUCTURAL_PINS: Array = [
+	["a branch's True", "if ready:", ComposerReader.TRUE_OUT, true],
+	["a branch's False", "if ready:", ComposerReader.FALSE_OUT, true],
+	["one arm of a match", "match state:", StringName(ComposerReader.CASE_OUT % 0), true],
+	["what an end hands back", "return true", ComposerReader.RETURN_VALUE_IN, false],
+]
+
+
+func test_alt_clicking_a_structural_pin_asks_to_clear_it() -> void:
+	var checked: int = 0
+	for row: Array in STRUCTURAL_PINS:
+		var described: String = row[0]
+		var said: String = row[1]
+		var port_id: StringName = row[2]
+		var outgoing: bool = row[3]
+
+		await _draw(STRUCTURED)
+		await _bring_into_view(said)
+		_broken.clear()
+
+		await _push(_pin_point(said, port_id, outgoing), true, KEY_ALT)
+
+		assert_eq(_broken.size(), 1, "%s: one pin was asked about: %s" % [described, _broken])
+		assert_true(
+			_broken[0].ends_with(".%s" % port_id),
+			"%s: and it is the one under the pointer: %s" % [described, _broken]
+		)
+		checked += 1
+	assert_eq(checked, STRUCTURAL_PINS.size(), "every structural pin was clicked")
+#endregion
+
+
+#region Letting go over nothing
+## A wire dragged off a pin and let go on empty canvas asks what to make there.
+##
+## The widget's own gesture, reported through the canvas: the Composer answers it
+## with a menu of the calls that would fit. What matters here is that it arrives
+## at all, and that it says which pin it left and where the pointer was.
+func test_a_wire_let_go_over_nothing_asks_what_to_put_there() -> void:
+	await _draw(WIRED)
+	var asked: Array[String] = []
+	_canvas.connection_to_empty_requested.connect(
+		func _empty(
+			node_id: StringName,
+			port_id: StringName,
+			_graph_position: Vector2,
+			_screen_position: Vector2
+		) -> void:
+			asked.append("%s.%s" % [node_id, port_id])
+	)
+	var from: Vector2 = _pin_point("var caster", ComposerReader.VALUE_OUT, true)
+	var nowhere: Vector2 = from + Vector2(0.0, 600.0)
+
+	await _push(from, true)
+	await _push_motion(from, nowhere - from)
+	await _push(nowhere, false)
+
+	assert_eq(asked.size(), 1, "one question was asked: %s" % [asked])
+	assert_true(
+		asked[0].ends_with(".%s" % ComposerReader.VALUE_OUT),
+		"about the pin the wire left: %s" % [asked]
+	)
+	assert_eq(_broken.size(), 0, "and nothing was cleared on the way")
+
+
+## A call dragged from the palette onto the origin lands on the origin.
+##
+## Through the widget's own drag and drop rather than by calling the handler:
+## `(0, 0)` is a real place, and the whole reason the drop path takes a position
+## of its own instead of a default argument.
+func test_a_call_dropped_at_the_origin_is_asked_for_there() -> void:
+	await _draw(WIRED)
+	var asked: Array[Vector2] = []
+	_canvas.node_requested.connect(
+		func _made(_call_id: StringName, graph_position: Vector2) -> void:
+			asked.append(graph_position)
+	)
+	var carried: Dictionary = {ComposerCatalog.DRAGGED_CALL: &"end_ability"}
+	var origin: Vector2 = _canvas.get_global_transform() * Vector2.ZERO
+
+	_canvas.force_drag(carried, Control.new())
+	await _push_motion(origin, Vector2.ZERO)
+	await _push(origin, false)
+
+	assert_eq(asked.size(), 1, "the canvas took the call: %s" % [asked])
+	assert_eq(
+		asked[0], _canvas.graph_point_of(Vector2.ZERO), "at the point it was let go"
+	)
+#endregion
