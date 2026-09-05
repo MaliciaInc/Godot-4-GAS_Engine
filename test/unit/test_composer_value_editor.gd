@@ -281,3 +281,67 @@ func test_configuring_a_row_twice_leaves_one_control() -> void:
 	assert_true(editor.get_child(0) is CheckBox, "and it is the new one")
 	assert_eq(editor.source_text(), "true", "which is what the row now means")
 #endregion
+
+
+#region What it is drawn at
+## A control says how big its own text is.
+##
+## Every one of these is a Godot control, and a Godot control reads its font off
+## whatever theme it is standing in. Inside the editor that reads right by
+## accident. Standing in a project whose theme says something loud, a number box
+## came out several times the height of the card holding it - measured at 96
+## against the Composer's own 12 - and the card it deformed was the picture
+## somebody was meant to check the layout against.
+const TYPES_AND_VALUES: Array = [
+	[&"float", "1.5", "a number"],
+	[&"String", "\"burn\"", "text"],
+	[&"bool", "true", "a tick"],
+	[&"Color", "Color(1.0, 0.0, 0.0, 1.0)", "a colour"],
+]
+
+
+func test_every_control_says_how_big_its_own_text_is() -> void:
+	var loud: Theme = Theme.new()
+	loud.default_font_size = 96
+	var host: Control = Control.new()
+	host.theme = loud
+	add_child_autofree(host)
+
+	var checked: int = 0
+	for row: Array in TYPES_AND_VALUES:
+		var type_name: StringName = row[0]
+		var written: String = row[1]
+		var described: String = row[2]
+		var editor: ComposerValueEditor = ComposerValueEditor.new()
+		host.add_child(editor)
+		editor.configure(_field(type_name, written), true)
+		await get_tree().process_frame
+
+		for drawn: Control in _drawing_text(editor):
+			assert_eq(
+				drawn.get_theme_font_size(GASEditorTheme.FONT_SIZE),
+				ComposerTheme.FONT_VALUE,
+				"%s: %s draws at the Composer's size" % [described, drawn.get_class()]
+			)
+			checked += 1
+		editor.queue_free()
+
+	assert_gt(checked, 0, "controls were actually measured")
+
+
+## The controls that put text on screen, a SpinBox's own line edit included:
+## that is the one that draws the number, and it is not the SpinBox.
+func _drawing_text(under: Node) -> Array[Control]:
+	var found: Array[Control] = []
+	for child: Node in under.get_children():
+		var spin: SpinBox = child as SpinBox
+		if spin != null:
+			found.append(spin)
+			found.append(spin.get_line_edit())
+			continue
+		var control: Control = child as Control
+		if control is LineEdit or control is Button:
+			found.append(control)
+		found.append_array(_drawing_text(child))
+	return found
+#endregion

@@ -225,13 +225,30 @@ func _shown(written: String) -> Control:
 	return label
 
 
+## Say how big the text in this control is.
+##
+## Every control here is one of Godot's, and Godot's controls read their font
+## off whatever theme they are standing in. Inside the editor that reads right
+## by accident; inside a project whose theme says something else, a number box
+## came out taller than the card holding it. A control that draws text says its
+## own size, here, once.
+func _sized(control: Control) -> Control:
+	control.add_theme_font_size_override(
+		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
+	)
+	var spin: SpinBox = control as SpinBox
+	if spin != null:
+		spin.get_line_edit().add_theme_font_size_override(
+			GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
+		)
+	return control
+
+
 func _line(written: String) -> Control:
 	var typed: LineEdit = LineEdit.new()
 	typed.text = written
 	typed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	typed.add_theme_font_size_override(
-		GASEditorTheme.FONT_SIZE, ComposerTheme.FONT_VALUE
-	)
+	_sized(typed)
 	typed.text_submitted.connect(func _entered(_text: String) -> void: _finished())
 	typed.focus_exited.connect(_finished)
 	_let_escape_undo(typed)
@@ -245,7 +262,7 @@ func _tick(written: String) -> Control:
 	var read: Dictionary = ComposerValueCodec.parse_bool(written)
 	box.button_pressed = read[ComposerValueCodec.VALUE] if read[ComposerValueCodec.OK] else false
 	box.toggled.connect(func _flipped(_on: bool) -> void: _finished())
-	return box
+	return _sized(box)
 
 
 func _number(written: String) -> Control:
@@ -291,7 +308,7 @@ func _swatch(written: String) -> Control:
 	# a colour wheel emits continuously, and every one of those would be a
 	# separate thing to undo.
 	button.popup_closed.connect(_finished)
-	return button
+	return _sized(button)
 
 
 ## A picker exists only inside a running editor. Outside one - a test, a tool
@@ -306,7 +323,7 @@ func _picker(written: String) -> Control:
 	picker.set(&"edited_resource", _loaded(written))
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	picker.connect(&"resource_changed", func _chosen(_resource: Resource) -> void: _finished())
-	return picker
+	return _sized(picker)
 
 
 ## The resource a `preload("...")` names, or nothing.
@@ -354,6 +371,7 @@ func _spin(written: String) -> SpinBox:
 		func _entered(_text: String) -> void: _settled(spin)
 	)
 	spin.get_line_edit().focus_exited.connect(func _left() -> void: _settled(spin))
+	_sized(spin)
 	_let_escape_undo(spin.get_line_edit())
 	return spin
 

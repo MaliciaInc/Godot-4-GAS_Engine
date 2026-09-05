@@ -22,6 +22,9 @@ class_name ComposerCard extends GraphNode
 
 const AWAIT_LABEL: String = "await"
 const MISSING_LABEL: String = "not connected"
+## The theme type a Label resolves its own font against.
+const LABEL_TYPE: StringName = &"Label"
+
 const WIRED_MARK: String = "⌄"
 const DOT_SIZE: float = 7.0
 const DOT_RADIUS: float = 3.5
@@ -83,17 +86,31 @@ func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 
 ## Say how the title is drawn, rather than letting the host say it.
 ##
-## The rows are this card's own controls and carry their own font; the title is
-## GraphNode's, drawn from whatever theme the card is standing in. In the Godot
-## editor that is the editor's theme and it happens to look right - anywhere
-## else the same card is drawn with a title several times the size of the values
-## underneath it. A card that looks different depending on who is hosting it is
-## a card nobody can screenshot and compare.
+## The rows are this card's own controls and carry their own font. The title is
+## GraphNode's, and the label it draws it in reads `font_size` off the ambient
+## theme as any Label would - `title_font_size` sizes the bar, not the text
+## inside it. In the Godot editor the ambient theme is the editor's and it
+## happens to look right; in a game whose theme says Labels are 96, the same
+## card came out with a title several times the height of the card. So the card
+## carries a theme of its own, which is where that label finds its size. The
+## default size in it is a floor and nothing more - a theme lower in the chain
+## that names a type outright still wins, which is why the boxes somebody types
+## into say their own size where they are built rather than relying on this.
+## The rows are unaffected either way; every label this card builds already
+## carries its own size.
 func _own_the_title() -> void:
 	add_theme_font_size_override(
 		GASEditorTheme.TITLE_FONT_SIZE, ComposerTheme.FONT_TITLE
 	)
 	add_theme_color_override(GASEditorTheme.TITLE_COLOR, ComposerTheme.TEXT)
+
+	var own: Theme = Theme.new()
+	own.default_font_size = ComposerTheme.FONT_VALUE
+	own.set_font_size(
+		GASEditorTheme.FONT_SIZE, LABEL_TYPE, ComposerTheme.FONT_TITLE
+	)
+	own.set_color(GASEditorTheme.FONT_COLOR, LABEL_TYPE, ComposerTheme.TEXT)
+	theme = own
 
 
 ## Put a row in, and remember which pins it carries.
