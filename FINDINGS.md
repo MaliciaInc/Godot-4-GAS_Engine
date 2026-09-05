@@ -28,6 +28,222 @@ run again.
 
 # Open — GAS_Engine
 
+## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **OPEN**
+
+**Status:** `OPEN` — reproduced here, no regression test on main yet
+**Severity:** low - one direction of one gesture, and it refuses rather than damages
+**Where:** `addons/GAS_Engine/editor/composer/composer_connection_controller.gd:move_connections()`
+
+### Repro
+
+Two statements taking the same kind of value, one of them fed by a local.
+Ctrl+LMB drag from the fed argument's pin onto the other argument's pin. The
+smoke aims with the engine's own arithmetic and both ends check out, so the
+gesture lands where it says it does.
+
+```text
+refused: Target Data is declared after this statement, so it does not exist here yet
+```
+
+### Expected / Actual
+
+**Expected**, from section 2.4: "Ctrl+LMB y drag desde un pin conectado mueve
+sus conexiones a otro pin de la misma dirección, familia y compatibilidad." An
+argument's pin is a connected pin, and two argument pins are the same direction.
+
+**Actual:** the data half of `move_connections()` is written for the *other*
+direction - output to output, re-sourcing every consumer to a different local.
+It reads the destination's `label` as the name of a local (`named = to_port.label`)
+and checks `_in_scope(destination, consumer)`. Handed two inputs it passes the
+direction check, then reasons about them as if they were producers, and refuses
+with a message about declaration order that has nothing to do with what was
+asked.
+
+### Impact
+
+The supported direction works and the smoke covers it (case 6). This one refuses
+safely, so nothing is damaged - but the reason given is wrong, and a person
+reading it would go looking for a scope problem that is not there.
+
+---
+
+## GAS-006 — a call from the palette was written after the return · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 8fe0919+` — regression tests first, re-deployed here, repro re-run
+**Severity:** high - the first thing anybody does with a new ability
+**Where:** `addons/GAS_Engine/editor/composer/composer_document.gd:after()`
+
+### Repro
+
+Composer → New Ability, then click any call in the palette with nothing
+selected. `test/composer_smoke.gd` case 3 does exactly this.
+
+The body that came out:
+
+```gdscript
+func _activate_ability() -> bool:
+	# @composer-virtual-position __composer_entry 160.00 220.00
+	return true
+	await wait_delay(0.0)
+```
+
+### Expected / Actual
+
+**Expected:** the call is written where it runs - above the return - and the
+graph draws `Entry → Wait Delay → End`.
+
+**Actual:** it was written after the return, where nothing runs. The graph drew
+`Entry → End` with the new card hanging off nothing, and the smoke reported
+`fed by nothing, feeding nothing; wires: Entry->End`.
+
+`ComposerDocument.after()` answered "the line something new goes in after" with
+the last line of the *body* when nothing was picked. The end of the body and the
+end of the ability are different lines, and everything between them is
+unreachable. `ComposerCreation._plain()` - the path a context menu uses - had
+this right all along and said so in its own comment; the palette path did not
+go through it.
+
+### Impact
+
+A call that never ran, in a file that still compiled, with a card on the canvas
+that looked no different from a working one. Picking the End card and adding a
+call had the same result.
+
+### The class, not just this instance
+
+`after()` now never answers past the End, whatever is picked - so the same
+mistake cannot be made by any future caller either.
+
+---
+
+## GAS-007 — a card made from a menu landed wherever the layout put it · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 8fe0919+` — regression tests first, re-deployed here, repro re-run
+**Severity:** medium
+**Where:** `composer_canvas.gd` (the two `connection_*_empty` signals),
+`composer_menus.gd`, `composer_wiring_routes.gd:create_and_connect()`
+
+### Repro
+
+Right-click empty canvas, search a call, create it - or drag a cable into empty
+space and pick one. `test/composer_smoke.gd` cases 9 and 10.
+
+### Expected / Actual
+
+**Expected:** the card appears roughly where the click was, and that position is
+written into the ability so reopening puts it back there.
+
+**Actual:** the card went wherever the automatic layout put it, and nothing was
+written. Underneath were two separate faults:
+
+1. `ComposerCanvas` declared `connection_to_empty_requested` and
+   `connection_from_empty_requested` with three parameters and emitted three,
+   although the phase document declares four. The graph position - the whole
+   point of knowing where the cable was let go - was never emitted.
+2. What *was* emitted was the screen position, and `ComposerMenus` read it into
+   a handler whose third parameter it treated as the point to open the menu at.
+   Godot allows a three-argument handler on a four-argument signal silently, so
+   after (1) was fixed the menu would have opened at a graph coordinate - a
+   point in a scrolled, zoomed space, rarely anywhere near the pointer.
+
+### Impact
+
+Every card made from a menu appeared somewhere the person did not choose, and
+nothing in the file said otherwise, so closing and reopening put it there again.
+
+---
+
+## GAS-008 — the widget's own toolbar covered the graph and ate every click on it · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 8fe0919+` — regression tests first, re-deployed here, repro re-run
+**Severity:** was a blocker in this project - the Composer could not be used at all
+**Where:** `addons/GAS_Engine/editor/composer/composer_canvas.gd:_ready()`
+
+### Repro
+
+Draw the Composer in this game rather than in the Godot editor - which is what
+`test/composer_smoke.gd` does - and click any card near the top-left.
+
+### Expected / Actual
+
+**Expected:** the click picks the card.
+
+**Actual:** nothing happened. The hovered control at that point was
+`GraphEdit/@Control/@PanelContainer/@HBoxContainer/@SpinBox` - GraphEdit's own
+zoom row and grid-snap box, drawn at this project's theme size (96) rather than
+the Composer's, large enough to cover the first several cards. Every click on
+them went into the toolbar.
+
+Two things were wrong and both are fixed:
+
+- the canvas took its chrome's font from the ambient theme, so it looked right
+  in the editor by accident and enormous here;
+- that row floats over the top-left corner, which is exactly where the layout
+  puts the first card. Even at the right size it covered the Entry card's title
+  bar - the strip somebody grabs it by - and its output pin, in the editor as
+  much as here. The Composer has a bar of its own, zoom is on the wheel, and the
+  snap box is a second opinion about where a card lands, so the row is off.
+
+### Impact
+
+In the editor: the first card of every ability was partly unusable. Here: the
+Composer was unusable, and no test could have seen it - the suite runs headless
+and the editor's own theme hides it.
+
+---
+
+## GAS-009 — Alt over a data argument's pin does nothing · **OPEN**
+
+**Status:** `OPEN` — reproduced here, no regression test on main yet
+**Severity:** medium - one of the four documented pin gestures, on one family of pins
+**Where:** `addons/GAS_Engine/editor/composer/composer_card.gd` (a `GraphNode`)
+
+### Repro
+
+`test/composer_smoke.gd` case 7, against
+`addons/GAS_Engine/reference/sweeping_volley.gd`, whose
+`apply_effect_to_targets(damage, found)` takes a cable on its second argument.
+
+Alt+LMB exactly on that argument's pin. The harness checks its aim first and the
+engine agrees with it:
+
+```text
+ok    7 · the argument's pin is the one the engine finds there   aimed at n36.arg_1, engine finds n36.arg_1
+FAIL  7 · and the canvas heard the gesture                        0 events reached it
+FAIL  7 · Alt over the argument's pin takes the cable off         14 -> 14
+```
+
+### Expected / Actual
+
+**Expected**, from section 2.4 of the phase document: "Alt+LMB sobre un pin
+rompe todas las conexiones de ese pin en una sola transacción." A pin, not an
+execution pin.
+
+**Actual:** nothing happens and nothing is said. The canvas never receives the
+event: `ComposerCard` is a `GraphNode`, a press inside its rectangle is the
+node's, and an argument's pin sits against the left edge well inside it. The
+execution output pins that do work sit on the outer edge, which is why case 4
+passes and this does not.
+
+### Impact
+
+A cable a person can see and cannot clear with the gesture the editor documents.
+The Inspector's disconnect still works, so nothing is stuck - it is the gesture
+that is missing.
+
+### Suggested shape of the fix (for `main`, not here)
+
+Not by overriding `_gui_input`: GraphNode's own handler is not callable from
+GDScript (`super._gui_input()` is refused at parse time), so an override would
+replace dragging and selection wholesale. The card's `gui_input` **signal** is
+emitted before the widget's handler and `accept_event()` from it stops that
+handler, which is the same door the canvas already uses. A card that recognised
+a press within reach of one of its own pins, accepted it and passed it on would
+close the whole family - inputs, arguments and outputs alike - rather than the
+one case measured here.
+
+---
+
 ## GAS-001 — a file-local enum loses its name to a host project's autoload · **BLOCKER**
 
 **Status:** `VERIFIED IN SANDBOX` — fixed on main at `ad10a2b`, re-deployed here

@@ -179,6 +179,17 @@ func after(spans: Array[ComposerSpan]) -> int:
 	var last: int = 0
 	for span: ComposerSpan in spans:
 		last = maxi(last, span.last_line)
+
+	# Never past the End. The end of the body and the end of the ability are
+	# different lines: everything after the return is unreachable, so a call
+	# written there is one somebody has to notice never ran - and the graph
+	# says so too, drawing it hanging off nothing while execution goes
+	# straight from Entry to End. That is where a call from the palette landed
+	# with nothing picked, which is the first thing anybody does with a new
+	# ability.
+	var before_end: int = ComposerFlow.insertion_before_main_end(_graph)
+	if before_end > 0:
+		return mini(last, before_end) if last > 0 else before_end
 	if last > 0:
 		return last
 	var body: ComposerSpan = ComposerSubset.body_span(_source.split("\n"))

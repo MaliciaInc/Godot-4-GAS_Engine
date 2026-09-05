@@ -22,9 +22,6 @@ class_name ComposerCard extends GraphNode
 
 const AWAIT_LABEL: String = "await"
 const MISSING_LABEL: String = "not connected"
-## The theme type a Label resolves its own font against.
-const LABEL_TYPE: StringName = &"Label"
-
 const WIRED_MARK: String = "⌄"
 const DOT_SIZE: float = 7.0
 const DOT_RADIUS: float = 3.5
@@ -107,9 +104,11 @@ func _own_the_title() -> void:
 	var own: Theme = Theme.new()
 	own.default_font_size = ComposerTheme.FONT_VALUE
 	own.set_font_size(
-		GASEditorTheme.FONT_SIZE, LABEL_TYPE, ComposerTheme.FONT_TITLE
+		GASEditorTheme.FONT_SIZE, ComposerTheme.LABEL_TYPE, ComposerTheme.FONT_TITLE
 	)
-	own.set_color(GASEditorTheme.FONT_COLOR, LABEL_TYPE, ComposerTheme.TEXT)
+	own.set_color(
+		GASEditorTheme.FONT_COLOR, ComposerTheme.LABEL_TYPE, ComposerTheme.TEXT
+	)
 	theme = own
 
 

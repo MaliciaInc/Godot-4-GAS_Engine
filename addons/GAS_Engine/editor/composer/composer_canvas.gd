@@ -66,13 +66,21 @@ signal pin_context_requested(
 	node_id: StringName, port_id: StringName, screen_position: Vector2
 )
 
-## A wire dragged out of a pin and let go over empty canvas. What is offered
-## next is decided by which pin it came out of, so both ends are carried.
+## A wire dragged out of a pin and let go over empty canvas. Which pin it came
+## out of decides what may be offered; the two positions are where on the graph
+## the new card belongs and where on the window the menu opens, and they are
+## different points.
 signal connection_to_empty_requested(
-	node_id: StringName, port_id: StringName, screen_position: Vector2
+	node_id: StringName,
+	port_id: StringName,
+	graph_position: Vector2,
+	screen_position: Vector2
 )
 signal connection_from_empty_requested(
-	node_id: StringName, port_id: StringName, screen_position: Vector2
+	node_id: StringName,
+	port_id: StringName,
+	graph_position: Vector2,
+	screen_position: Vector2
 )
 
 ## Right-click on the canvas itself, where there is neither pin nor card.
@@ -108,16 +116,9 @@ var _gestures: ComposerCanvasGestures = ComposerCanvasGestures.new()
 
 
 func _ready() -> void:
-	# Off, deliberately. GraphEdit's right-disconnect is a second policy about
-	# what a right-click on a wire means, and this editor already has one - right
-	# click opens what can be done here, and disconnecting is one of the things
-	# it offers. Two policies for one button is a button that does different
-	# things depending on where in it you clicked.
-	right_disconnects = false
-	minimap_enabled = false
-	show_grid = true
-	zoom_min = ZOOM_MIN
-	zoom_max = ZOOM_MAX
+	# What kind of GraphEdit this is, and why, is written down beside the
+	# settings themselves rather than here among the wiring.
+	ComposerCanvasSettings.apply(self, ZOOM_MIN, ZOOM_MAX)
 	connection_request.connect(_on_connection_request)
 	disconnection_request.connect(_on_disconnection_request)
 	node_selected.connect(_on_node_selected)
@@ -226,23 +227,19 @@ func frame_picked() -> void:
 ## The widget reports the release in its own coordinates, so it is turned into a
 ## point on the graph here - the one place that knows what the scroll and the
 ## zoom are.
-func _on_connection_to_empty(
-	from_node: StringName, from_port: int, release_position: Vector2
-) -> void:
+func _on_connection_to_empty(from_node: StringName, from_port: int, at: Vector2) -> void:
 	var port: StringName = ComposerPins.port_of(_painter.cards(), from_node, from_port, true)
 	if not port.is_empty():
 		connection_to_empty_requested.emit(
-			from_node, port, release_position + global_position
+			from_node, port, graph_point_of(at), at + global_position
 		)
 
 
-func _on_connection_from_empty(
-	to_node: StringName, to_port: int, release_position: Vector2
-) -> void:
+func _on_connection_from_empty(to_node: StringName, to_port: int, at: Vector2) -> void:
 	var port: StringName = ComposerPins.port_of(_painter.cards(), to_node, to_port, false)
 	if not port.is_empty():
 		connection_from_empty_requested.emit(
-			to_node, port, release_position + global_position
+			to_node, port, graph_point_of(at), at + global_position
 		)
 #endregion
 

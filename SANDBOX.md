@@ -62,6 +62,36 @@ redistribution here relies on them.
 `addons/GAS_Engine` is MIT, MaliciaInc - see `addons/GAS_Engine/LICENSE`.
 `addons/dialogic` ships with the base game under its own licence.
 
+## What runs here, and what only runs here
+
+Three things, all from the command line, none of them needing the editor:
+
+```bash
+GODOT="/c/Program Files (x86)/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe"
+"$GODOT" --headless --path . res://test/gas_probe.tscn      # two arenas, to combat_finished
+"$GODOT" --headless --path . res://test/composer_probe.tscn # this game's abilities, read and printed back
+"$GODOT" --path . res://test/composer_smoke.tscn            # the Composer, with a hand on the mouse
+```
+
+The last one is the Composer 3.2 smoke, and it is the reason this branch exists.
+The phase document expects a person to do it because `GraphEdit` reads picking,
+dragging, sweeping, panning and zooming inside `_gui_input`, which no script can
+call. It turns out a script does not have to: an event pushed into the viewport
+is routed by Godot exactly as a real one is, once two things are right, and both
+were measured rather than assumed (`test/composer_input.gd` says how).
+
+It needs a window - no `--headless` - and it finishes with a line a runner can
+read:
+
+```text
+SMOKE_RESULT: PASS passed=N failed=0
+```
+
+Every check is a real press, a real travel and a real release. Nothing calls a
+handler, which is the whole point: the four defects in `FINDINGS.md` numbered
+GAS-006 to GAS-009 were all invisible to the engine's own suite, and three of
+them were invisible inside the Godot editor as well.
+
 ## First import after a fresh clone
 
 Dialogic rewrites `project.godot` the first time the project is imported with no

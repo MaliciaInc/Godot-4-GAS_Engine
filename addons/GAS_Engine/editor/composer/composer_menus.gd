@@ -50,8 +50,12 @@ func listen_to(canvas: ComposerCanvas) -> void:
 	canvas.menu_requested.connect(_on_card_requested)
 	canvas.pin_context_requested.connect(_on_pin_requested)
 	canvas.graph_menu_requested.connect(_on_graph_requested)
-	canvas.connection_to_empty_requested.connect(_on_dragged_from_pin)
-	canvas.connection_from_empty_requested.connect(_on_dragged_into_pin)
+	canvas.connection_to_empty_requested.connect(
+		_on_dragged.bind(ComposerActionMenu.Context.Mode.FROM_PIN)
+	)
+	canvas.connection_from_empty_requested.connect(
+		_on_dragged.bind(ComposerActionMenu.Context.Mode.TO_PIN)
+	)
 
 
 #region What the canvas asked for
@@ -72,18 +76,23 @@ func _on_graph_requested(graph_position: Vector2, at: Vector2) -> void:
 	_offer(context, at)
 
 
-func _on_dragged_from_pin(
-	node_id: StringName, port_id: StringName, at: Vector2
+## A cable let go over nothing: what could go there, offered where the hand let
+## go of it.
+##
+## One handler for both directions, told which way it went, because the two
+## differ in nothing else. Both positions travel, and they are not
+## interchangeable: the graph one is where on the canvas the card belongs, the
+## screen one is where on the window the menu opens.
+func _on_dragged(
+	node_id: StringName,
+	port_id: StringName,
+	graph_position: Vector2,
+	at: Vector2,
+	mode: ComposerActionMenu.Context.Mode
 ) -> void:
-	_offer(
-		_context_for(node_id, port_id, ComposerActionMenu.Context.Mode.FROM_PIN), at
-	)
-
-
-func _on_dragged_into_pin(
-	node_id: StringName, port_id: StringName, at: Vector2
-) -> void:
-	_offer(_context_for(node_id, port_id, ComposerActionMenu.Context.Mode.TO_PIN), at)
+	var context: ComposerActionMenu.Context = _context_for(node_id, port_id, mode)
+	context.graph_position = graph_position
+	_offer(context, at)
 
 
 ## What the pin carries, so the catalog can offer only what fits it.

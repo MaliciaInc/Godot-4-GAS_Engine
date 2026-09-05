@@ -30,6 +30,12 @@ class Result extends RefCounted:
 	var source: String = ""
 	var message: String = ""
 
+	## The line the new statement was written on, so a caller can find the node
+	## it stands for without guessing which of the two is new. Node ids are
+	## derived from line numbers, so every id after an insertion is a different
+	## id than it was - "the one that was not there before" cannot be asked.
+	var at_line: int = ComposerSpan.NO_LINE
+
 	func is_ok() -> bool:
 		return message.is_empty()
 
@@ -40,9 +46,10 @@ static func _refuse(message: String) -> ComposerCreation.Result:
 	return made
 
 
-static func _accept(source: String) -> ComposerCreation.Result:
+static func _accept(source: String, at_line: int) -> ComposerCreation.Result:
 	var made: ComposerCreation.Result = ComposerCreation.Result.new()
 	made.source = source
+	made.at_line = at_line
 	return made
 
 
@@ -77,7 +84,7 @@ static func _plain(
 	var at: int = ComposerFlow.insertion_before_main_end(graph)
 	if at < 0:
 		return _refuse(NO_ROOM)
-	return _accept(ComposerEdits.insert_after(source, at, written))
+	return _accept(ComposerEdits.insert_after(source, at, written), at + 1)
 
 
 ## Dragged out of a value: the new call goes after the one producing it, with
@@ -167,7 +174,9 @@ static func _argument_set(
 	var printed: ComposerWriter.Result = ComposerWriter.apply(read, source, false)
 	if not printed.is_ok():
 		return _refuse(printed.refusal.message)
-	return _accept(printed.text)
+	# The new statement is the one the caller asked about, not the one just
+	# edited: writing an argument into an existing call moves no lines.
+	return _accept(printed.text, line)
 
 
 ## The local a statement declares, or nothing.
