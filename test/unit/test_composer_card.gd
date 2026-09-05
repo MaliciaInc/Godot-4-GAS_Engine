@@ -244,8 +244,13 @@ func test_editing_a_row_says_which_argument_it_was() -> void:
 	assert_eq(written, "2.5", "set to this")
 
 
-## A required argument that is absent is said to be, and offers nothing.
-func test_an_absent_argument_says_so_instead_of_offering_a_control() -> void:
+## A required argument that is absent is said to be, and offered anyway.
+##
+## It used to be said and nothing more, which is a row a person can read the
+## problem on and not fix - and the way out of it was the script editor. The
+## control is offered holding what the argument would have been created holding,
+## so filling it in repairs the call.
+func test_an_absent_argument_says_so_and_still_offers_a_control() -> void:
 	var card: ComposerCard = await _card(_node(Sample.CUE))
 
 	var absent: bool = false
@@ -253,6 +258,11 @@ func test_an_absent_argument_says_so_instead_of_offering_a_control() -> void:
 		var shown: Label = label
 		absent = absent or shown.text == ComposerCard.MISSING_LABEL
 	assert_true(absent, "the missing argument is named as missing")
+	assert_gt(
+		card.find_children("", "ComposerValueEditor", true, false).size(),
+		0,
+		"and there is something to fill it in with"
+	)
 #endregion
 
 

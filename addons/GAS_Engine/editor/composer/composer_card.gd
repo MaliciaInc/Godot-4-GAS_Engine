@@ -286,14 +286,15 @@ func _field_row(node: ComposerNode, position: int) -> Control:
 	)
 
 	if not field.is_satisfied():
-		# A required value that is absent is an error and is drawn as one. There
-		# is no control, because there is nothing there to show in one.
+		# A required value that is absent is an error and is drawn as one - and
+		# then offered anyway. Saying "not connected" and stopping there is a row
+		# a person can read the problem on and not fix, which is where every one
+		# of these ended up before: back in the script editor.
 		column.add_child(_label(
 			MISSING_LABEL,
 			ComposerTheme.severity_color(ComposerGraph.Severity.ERROR),
 			ComposerTheme.FONT_VALUE
 		))
-		return column
 
 	var editor: ComposerValueEditor = ComposerValueEditor.new()
 	column.add_child(editor)

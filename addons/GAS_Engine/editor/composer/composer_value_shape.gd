@@ -16,7 +16,7 @@
 class_name ComposerValueShape extends RefCounted
 
 ## What a field is edited with.
-enum Kind { RAW, BOOL, NUMBER, TEXT, VECTOR, COLOUR, RESOURCE, WIRED }
+enum Kind { RAW, BOOL, ENUM, NUMBER, TEXT, VECTOR, COLOUR, RESOURCE, WIRED }
 
 ## How many components each vector type is written with. One table rather than a
 ## chain of comparisons, and the same table the row builds its boxes from, so a
@@ -46,6 +46,12 @@ static func of(field: ComposerNode.Field) -> ComposerValueShape.Kind:
 		return Kind.RAW
 	if field.type_name == ComposerTypes.BOOL:
 		return Kind.BOOL
+	# Before a number, because an enum *is* an int and a spinner over one offers
+	# every value between the ones that mean something. Only when the file holds
+	# a number the hint actually lists: a symbol stays text, or opening the row
+	# would turn somebody's `SomeEnum.RUN` into whichever option came first.
+	if ComposerEnumHint.supports(field):
+		return Kind.ENUM
 	if field.type_name == ComposerTypes.INT or field.type_name == ComposerTypes.FLOAT:
 		return Kind.NUMBER
 	if SIZES.has(field.type_name):

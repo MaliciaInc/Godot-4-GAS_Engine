@@ -20,13 +20,12 @@ const WIRED: ComposerNode.ValueSource = ComposerNode.ValueSource.WIRED
 func _field(
 	type_name: StringName, written: String, hint_string: String = ""
 ) -> ComposerNode.Field:
-	var made: ComposerNode.Field = ComposerNode.Field.new()
-	made.label = "Level"
-	made.type_name = type_name
-	made.display = written
-	made.hint = PROPERTY_HINT_RANGE if not hint_string.is_empty() else PROPERTY_HINT_NONE
-	made.hint_string = hint_string
-	return made
+	return ComposerDeclaredField.of(
+		type_name,
+		written,
+		PROPERTY_HINT_RANGE if not hint_string.is_empty() else PROPERTY_HINT_NONE,
+		hint_string
+	)
 
 
 func _editor(field: ComposerNode.Field, editable: bool = true) -> ComposerValueEditor:
@@ -230,7 +229,7 @@ func test_an_undeclared_number_is_unbounded() -> void:
 	var fractional: SpinBox = _editor(_field(&"float", "3.0")).get_child(0) as SpinBox
 
 	assert_true(whole.rounded, "an int has no fraction to show")
-	assert_eq(whole.step, ComposerValueEditor.INT_STEP, "and counts by one")
+	assert_eq(whole.step, ComposerNumberBox.WHOLE_STEP, "and counts by one")
 	assert_false(fractional.rounded, "a float does")
 	assert_true(whole.allow_greater, "and neither is capped by an undeclared bound")
 #endregion
