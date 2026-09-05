@@ -151,14 +151,14 @@ func test_a_statement_can_span_the_lines_it_was_wrapped_across() -> void:
 	])
 	var body: ComposerSpan = ComposerSubset.body_span(lines)
 
-	var found: Array[ComposerSubset.Statement] = ComposerSubset.statements(lines, body)
+	var found: Array[ComposerStatements.Statement] = ComposerStatements.of(lines, body)
 
 	assert_eq(found.size(), 2, "two statements, not four lines")
 	assert_eq(found[0].first, 2, "the first starts where it was written")
 	assert_eq(found[0].last, 4, "and ends where its brackets close")
 	assert_eq(found[0].verdict.kind, ComposerSubset.Kind.LOCAL, "and it is a local")
 	assert_null(
-		ComposerSubset.first_refusal(lines, body),
+		ComposerStatements.first_refusal(lines, body),
 		"and nothing refuses the file for being formatted"
 	)
 
@@ -237,7 +237,7 @@ func test_a_body_the_subset_admits_is_not_refused() -> void:
 	])
 
 	assert_null(
-		ComposerSubset.first_refusal(lines, ComposerSubset.body_span(lines)),
+		ComposerStatements.first_refusal(lines, ComposerSubset.body_span(lines)),
 		"every line is something this can draw"
 	)
 
@@ -251,7 +251,7 @@ func test_a_refusal_names_the_line_it_happened_on() -> void:
 		"\tapply_gameplay_effect(burning, 1.0)",
 	])
 
-	var found: ComposerGraph.Diagnostic = ComposerSubset.first_refusal(
+	var found: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(
 		lines, ComposerSubset.body_span(lines)
 	)
 
@@ -265,7 +265,7 @@ func test_a_refusal_names_the_line_it_happened_on() -> void:
 
 func test_a_script_with_no_entry_point_is_refused_by_name() -> void:
 	var lines: PackedStringArray = PackedStringArray(["extends GameplayAbility"])
-	var found: ComposerGraph.Diagnostic = ComposerSubset.first_refusal(
+	var found: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(
 		lines, ComposerSubset.body_span(lines)
 	)
 

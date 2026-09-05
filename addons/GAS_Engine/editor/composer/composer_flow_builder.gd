@@ -205,13 +205,13 @@ static func _branch(
 	var otherwise: Array[Endpoint] = _one(_at(branch.id, ComposerReader.FALSE_OUT))
 	if after < ordered.size() and ordered[after].indent == branch.indent:
 		var sibling: ComposerNode = ordered[after]
-		if _is_elif(sibling):
+		if is_elif(sibling):
 			# `elif` is the false side asking a second question. It is a Branch a
 			# person can see, and its own exits join this one's.
 			var chained: SequenceResult = _branch(graph, ordered, after, otherwise)
 			exits.append_array(chained.exits)
 			return _result(chained.next_index, exits)
-		if _is_else(sibling):
+		if is_else(sibling):
 			exits.append_array(_block(graph, ordered, after, otherwise))
 			return _result(_after_subtree(ordered, after), exits)
 
@@ -236,7 +236,7 @@ static func _block(
 	return _sequence(graph, ordered, body, ordered[body].indent, incoming).exits
 
 
-static func _is_elif(node: ComposerNode) -> bool:
+static func is_elif(node: ComposerNode) -> bool:
 	return (
 		node.projection_kind == ComposerNode.ProjectionKind.BRANCH
 		and node.text.strip_edges().begins_with(ComposerSubset.ELIF_OPENER)
@@ -244,7 +244,9 @@ static func _is_elif(node: ComposerNode) -> bool:
 
 
 ## An `else:`, whether a person wrote it or Composer did to hold a cut path.
-static func _is_else(node: ComposerNode) -> bool:
+## Public: moving a path has to find the same `else` the projection drew, and
+## two opinions about what an else is would be two different graphs.
+static func is_else(node: ComposerNode) -> bool:
 	return (
 		node.projection_kind == ComposerNode.ProjectionKind.SUPPORT
 		and node.text.strip_edges().begins_with(ComposerSubset.ELSE_OPENER)
@@ -281,13 +283,13 @@ static func _switch(
 			case_indent = header.indent
 		# Only this match's own arms. A nested `match` inside a case body is the
 		# body's, and its cases belong to it.
-		if header.indent != case_indent or not _is_case(header):
+		if header.indent != case_indent or not is_case(header):
 			at = _after_subtree(ordered, at)
 			continue
 
 		var port_id: StringName = StringName(ComposerReader.CASE_OUT % number)
-		_ensure_output(switch, port_id, _case_label(header))
-		wildcard = wildcard or _case_label(header) == WILDCARD
+		_ensure_output(switch, port_id, case_label(header))
+		wildcard = wildcard or case_label(header) == WILDCARD
 		exits.append_array(
 			_block(graph, ordered, at, _one(_at(switch.id, port_id)))
 		)
@@ -300,7 +302,7 @@ static func _switch(
 	return _result(after, exits)
 
 
-static func _is_case(node: ComposerNode) -> bool:
+static func is_case(node: ComposerNode) -> bool:
 	return (
 		node.projection_kind == ComposerNode.ProjectionKind.SUPPORT
 		and ComposerSubset.classify(node.text).kind == ComposerSubset.Kind.MATCH_CASE
@@ -309,10 +311,13 @@ static func _is_case(node: ComposerNode) -> bool:
 
 ## The pattern as the file writes it, without the colon that ends it.
 ##
+## The code only: a catch-all this tool wrote carries a marker after the colon,
+## and reading that as part of the pattern is a wildcard nothing recognises.
+##
 ## Not capitalised and not tidied. `State.CASTING` is what the person typed and
 ## what they will look for on the card.
-static func _case_label(node: ComposerNode) -> String:
-	return node.text.strip_edges().trim_suffix(":").strip_edges()
+static func case_label(node: ComposerNode) -> String:
+	return ComposerSubset.code_of(node.text).strip_edges().trim_suffix(":").strip_edges()
 #endregion
 
 

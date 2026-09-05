@@ -147,7 +147,7 @@ static func structural(
 ## `state` in `match state:`. The keyword and the colon are the line's; the
 ## expression is the person's.
 static func header_expression(text: String) -> String:
-	var head: String = code_of(text).strip_edges().trim_suffix(":")
+	var head: String = ComposerSubset.code_of(text).strip_edges().trim_suffix(":")
 	var space: int = head.find(" ")
 	if space < 0:
 		return ""
@@ -156,21 +156,10 @@ static func header_expression(text: String) -> String:
 
 ## What a `return` hands back, or nothing for a bare one.
 static func return_expression(text: String) -> String:
-	var line: String = code_of(text).strip_edges()
+	var line: String = ComposerSubset.code_of(text).strip_edges()
 	if not line.begins_with(ComposerSubset.RETURN_OPENER):
 		return ""
 	return line.substr(ComposerSubset.RETURN_OPENER.length()).strip_edges()
-
-
-## The part of `line` that is code, without the comment trailing it.
-##
-## What a statement carries stops where the person's note starts. Read here
-## and written back through here, so that editing a commented line puts the
-## comment back instead of eating it - and so that a condition is `ready`
-## rather than `ready: # for now`.
-static func code_of(line: String) -> String:
-	var mark: int = ComposerSubset.scan(line).comment
-	return line if mark < 0 else line.substr(0, mark)
 
 
 static func _field(

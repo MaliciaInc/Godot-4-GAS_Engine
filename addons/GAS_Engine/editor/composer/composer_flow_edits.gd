@@ -179,6 +179,128 @@ static func _reachable(
 #endregion
 
 
+#region Replacing
+## Move a set of execution links to other pins, or change nothing at all.
+##
+## This is what a Ctrl-drag on an execution pin means, and what the original 3.2
+## left out. The two edge lists are the whole contract: `old_edges` are the links
+## that have to be gone afterwards - the ones being moved, and the ones displaced
+## from a destination that can only hold one - and `new_edges` are the links that
+## have to be there instead.
+##
+## Nothing is stored. There is no list of wires in a file, so the only way to say
+## "this runs after that" is to write it after that, and the only proof that the
+## move worked is to read the file back and look. Everything below the surgery is
+## that proof: if a single one of the asked-for links is not in the reread, the
+## whole thing is refused and the caller commits nothing.
+static func replace(
+	source: String,
+	graph: ComposerGraph,
+	old_edges: Array[ComposerGraph.Connection],
+	new_edges: Array[ComposerGraph.Connection]
+) -> Result:
+	if new_edges.is_empty():
+		return _refuse(NOT_REPRESENTABLE)
+	for edge: ComposerGraph.Connection in old_edges:
+		if not _has_edge(graph, edge):
+			return _refuse(NOT_CONNECTED)
+	for edge: ComposerGraph.Connection in new_edges:
+		if edge.from_node == edge.to_node:
+			# A statement that runs itself. Refused before anything is written,
+			# because what would be written is a file that runs forever.
+			return _refuse(WOULD_LOOP)
+
+	var changed: String = ComposerFlowTransforms.written(
+		source, graph, old_edges, new_edges
+	)
+	if changed.is_empty():
+		return _refuse(NOT_REPRESENTABLE)
+
+	var read: ComposerGraph = _read_back(source, changed, graph)
+	if read == null:
+		return _refuse(NOT_REPRESENTABLE)
+	if not _runs_forward(read):
+		return _refuse(WOULD_LOOP)
+
+	var made: Dictionary[String, bool] = _links_of(read, _named(read))
+	var named: Dictionary[StringName, String] = _named(graph)
+	for edge: ComposerGraph.Connection in old_edges:
+		if made.has(_link_of(named, edge)):
+			return _refuse(NOT_REPRESENTABLE)
+	for edge: ComposerGraph.Connection in new_edges:
+		if not made.has(_link_of(named, edge)):
+			return _refuse(NOT_REPRESENTABLE)
+	if _strands_anything(read):
+		return _refuse(WOULD_STRAND)
+	return _accept(changed)
+#endregion
+
+#region Saying the same thing about two readings
+## What each statement is called, for the purpose of comparing two readings.
+##
+## Never an id. A node is named after the line it was read from, so every id
+## below a moved statement is a different id afterwards - comparing them across
+## a transformation compares two different files' numbering and calls the answer
+## a verification.
+##
+## The name is what the statement says, and the count of identical statements
+## before it. Two statements that say exactly the same thing are told apart by
+## the order they are written in, which is the only order there is; a move that
+## reorders one identical statement past another is the one case this cannot
+## tell apart, and it is also the one case where nobody could.
+static func _named(graph: ComposerGraph) -> Dictionary[StringName, String]:
+	var found: Dictionary[StringName, String] = {}
+	var seen: Dictionary[String, int] = {}
+	for node: ComposerNode in graph.nodes:
+		var said: String = node.text.strip_edges()
+		var number: int = seen.get(said, 0)
+		seen[said] = number + 1
+		found[node.id] = "%d:%s" % [number, said]
+	return found
+
+
+## Every execution link of a reading, said in those names.
+static func _links_of(
+	graph: ComposerGraph, named: Dictionary[StringName, String]
+) -> Dictionary[String, bool]:
+	var found: Dictionary[String, bool] = {}
+	for wire: ComposerGraph.Connection in graph.execution_connections():
+		found[_link_of(named, wire)] = true
+	return found
+
+
+## One link, said in those names.
+static func _link_of(
+	named: Dictionary[StringName, String], edge: ComposerGraph.Connection
+) -> String:
+	return "%s.%s>%s.%s" % [
+		named.get(edge.from_node, edge.from_node),
+		edge.from_port,
+		named.get(edge.to_node, edge.to_node),
+		edge.to_port,
+	]
+
+
+## Whether every link in a reading runs down the file.
+##
+## A file cannot say "runs after" backwards: a statement runs after the one
+## above it. So a link pointing up the file would mean the projection had begun
+## saying something the text does not, and a circle is exactly what that would
+## look like. Cheaper than a walk, and it says more.
+static func _runs_forward(graph: ComposerGraph) -> bool:
+	for wire: ComposerGraph.Connection in graph.execution_connections():
+		var from: ComposerNode = graph.find_node(wire.from_node)
+		var to: ComposerNode = graph.find_node(wire.to_node)
+		if from == null or to == null:
+			return false
+		if not from.span.is_valid():
+			continue
+		if to.span.first_line <= from.span.first_line:
+			return false
+	return true
+#endregion
+
+
 #region Verifying
 ## Read the changed text back, or nothing when it is not readable.
 ##

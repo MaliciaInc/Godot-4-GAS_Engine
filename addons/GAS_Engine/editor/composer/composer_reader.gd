@@ -53,7 +53,7 @@ static func read(source: String, path: String) -> ComposerGraph:
 
 	var lines: PackedStringArray = source.split("\n")
 	var span: ComposerSpan = ComposerSubset.body_span(lines)
-	var refusal: ComposerGraph.Diagnostic = ComposerSubset.first_refusal(lines, span)
+	var refusal: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(lines, span)
 	if refusal != null:
 		graph.diagnostics = [refusal] as Array[ComposerGraph.Diagnostic]
 		return graph
@@ -84,7 +84,7 @@ static func _build_nodes(
 	# then `data.get_target_nodes()` - and without this every call on one is a
 	# call the catalog cannot place.
 	var locals: Dictionary[String, StringName] = {}
-	for made: ComposerSubset.Statement in ComposerSubset.statements(lines, span):
+	for made: ComposerStatements.Statement in ComposerStatements.of(lines, span):
 		if not made.verdict.is_drawn():
 			# A comment or a blank belongs to whatever comes next, so remember
 			# where the run started and let the statement claim it.
@@ -110,7 +110,7 @@ static func _build_nodes(
 
 
 static func _node(
-	made: ComposerSubset.Statement,
+	made: ComposerStatements.Statement,
 	first: int,
 	path: String,
 	locals: Dictionary[String, StringName],

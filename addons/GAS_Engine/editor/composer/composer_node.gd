@@ -283,6 +283,17 @@ func field_for(port_id: StringName) -> int:
 ## needs the position. Both are answered from what the reader wrote on the pin,
 ## so neither has to know that an argument's id carries a number and a
 ## condition's does not.
+## Whether this statement is written above `other`, and so whether the local
+## it declares is in scope where `other` runs.
+##
+## A value wire is a name written into a slot, and a name written above its
+## own `var` is a file that parses and does not compile. The reader will not
+## draw such a wire, so nothing downstream would notice: the canvas would show
+## the drag failing while the file quietly stopped building.
+func runs_before(other: ComposerNode) -> bool:
+	return span.last_line < other.span.first_line
+
+
 func pin_for_field(index: int) -> Port:
 	for pin: Port in ports:
 		if pin.field_index == index and not pin.is_execution():

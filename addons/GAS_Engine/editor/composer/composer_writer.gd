@@ -123,6 +123,16 @@ static func render_with_field_overrides(
 static func field_source(field: ComposerNode.Field) -> String:
 	if field.is_satisfied():
 		return field.display
+	return declared_default(field)
+
+
+## What that slot holds when nothing is plugged into it: what the method
+## declares for it, or the zero of its type.
+##
+## Asked when a cable comes off as well as when a call is rebuilt, because
+## those are the same question - a slot with no cable holds a value, and which
+## value it is cannot depend on which of the two asked.
+static func declared_default(field: ComposerNode.Field) -> String:
 	if not field.default_expression.is_empty():
 		return field.default_expression
 	return ComposerTypes.default_expression(field.type_name, field.variant_type)
