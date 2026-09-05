@@ -121,6 +121,16 @@ func repeat(spans: Array[ComposerSpan]) -> ComposerGraph.Diagnostic:
 	return commit(ComposerEdits.repeat(_source, spans))
 
 
+## Put the statement at `moved` where `before` starts, changing the order the
+## ability runs in.
+##
+## Dragging a card no longer does this - a card's position is where it is drawn,
+## not when it happens - so this is reached deliberately, by somebody who means
+## to reorder the ability rather than to tidy the picture.
+func move(moved: ComposerSpan, before: ComposerSpan) -> ComposerGraph.Diagnostic:
+	return commit(ComposerEdits.move(_source, moved, before))
+
+
 ## Give one statement a visual position without changing where it executes.
 ##
 ## The position is written into the same GDScript as a reserved comment. Reading

@@ -75,6 +75,21 @@ func _activate_ability() -> bool:
 	return true
 """
 
+## Two statements in an order nothing forces, so swapping them is a reorder
+## rather than a file that stopped compiling.
+const ORDERED: String = """extends GameplayAbility
+
+
+func _activate_ability() -> bool:
+	owner_asc.add_tag(&"One")
+	owner_asc.add_tag(&"Two")
+	end_ability()
+	return true
+"""
+
+const FIRST_TAG: String = "&\"One\""
+const SECOND_TAG: String = "&\"Two\""
+
 const AN_ABILITY: String = "res://addons/GAS_Engine/reference/timed_buff.gd"
 const SCRATCH: String = "user://composer_editing_%d.gd"
 
@@ -335,4 +350,87 @@ func test_saving_with_nothing_open_is_refused_by_name() -> void:
 	assert_true(
 		result.refusal.message.contains("no ability"), "%s" % result.refusal.message
 	)
+#endregion
+
+
+#region Reordering
+## A document over a real file, without going through a screen: reordering is a
+## source edit and has nothing to draw.
+func _document(source: String, tag: int) -> ComposerDocument:
+	path = SCRATCH % tag
+	var out: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	out.store_string(source)
+	out.close()
+
+	var doc: ComposerDocument = ComposerDocument.new()
+	doc.open(source, path)
+	return doc
+
+
+## Which of the two tags is written first, as the file stands.
+func _first_written(doc: ComposerDocument) -> String:
+	var printed: String = doc.printed()
+	return FIRST_TAG if printed.find(FIRST_TAG) < printed.find(SECOND_TAG) else SECOND_TAG
+
+
+func _spans(doc: ComposerDocument) -> Array[ComposerSpan]:
+	var found: Array[ComposerSpan] = []
+	for node: ComposerNode in ComposerProjection.statements(doc.graph()):
+		found.append(node.span)
+	return found
+
+
+## Dragging a card no longer reorders anything, but reordering is still a thing
+## somebody can ask for, and it still goes through the door that reads the file
+## back before accepting it.
+func test_moving_a_statement_puts_it_where_the_other_one_was() -> void:
+	var doc: ComposerDocument = _document(ORDERED, 20)
+	var spans: Array[ComposerSpan] = _spans(doc)
+	assert_gt(spans.size(), 1, "there are statements to reorder")
+	assert_eq(_first_written(doc), FIRST_TAG, "One is written first to begin with")
+
+	assert_null(doc.move(spans[1], spans[0]), "the move was taken")
+
+	assert_eq(_first_written(doc), SECOND_TAG, "and Two is written first now")
+	assert_eq(_spans(doc).size(), spans.size(), "with nothing lost on the way")
+
+
+## A statement moved onto itself is not a move, and must not become an undo step
+## somebody has to press past.
+func test_moving_a_statement_onto_itself_changes_nothing() -> void:
+	var doc: ComposerDocument = _document(ORDERED, 21)
+	var spans: Array[ComposerSpan] = _spans(doc)
+	var before: String = doc.printed()
+
+	doc.move(spans[0], spans[0])
+
+	assert_eq(doc.printed(), before, "the file is the file it was")
+
+
+## The text is the whole state, so taking a reorder back is putting it back.
+func test_a_reorder_can_be_taken_back() -> void:
+	var doc: ComposerDocument = _document(ORDERED, 22)
+	var spans: Array[ComposerSpan] = _spans(doc)
+	var before: String = doc.printed()
+
+	assert_null(doc.move(spans[1], spans[0]), "the move was taken")
+	assert_ne(doc.printed(), before, "and it changed the file")
+	doc.undo()
+
+	assert_eq(doc.printed(), before, "back byte for byte")
+
+
+## A span nothing was read from moves nothing. The reorder arrives from a canvas
+## that was drawn a moment ago, and a card that is no longer there must not turn
+## into a statement landing somewhere arbitrary.
+func test_a_span_that_points_at_nothing_moves_nothing() -> void:
+	var doc: ComposerDocument = _document(ORDERED, 23)
+	var spans: Array[ComposerSpan] = _spans(doc)
+	var before: String = doc.printed()
+
+	doc.move(ComposerSpan.new(), spans[0])
+	assert_eq(doc.printed(), before, "an unread statement moves nothing")
+
+	doc.move(spans[0], ComposerSpan.new())
+	assert_eq(doc.printed(), before, "and neither does an unread target")
 #endregion

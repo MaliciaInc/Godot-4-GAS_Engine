@@ -61,6 +61,28 @@ static func insert_after(source: String, at: int, written: String) -> String:
 	return NEWLINE.join(lines)
 
 
+## `source` with the statement at `moved` put where `before` starts.
+##
+## Taken out first and then put back, with the target measured again afterwards:
+## removing lines above it moves it up by exactly as many, and a target line
+## remembered from before the removal lands the statement somewhere else.
+static func move(source: String, moved: ComposerSpan, before: ComposerSpan) -> String:
+	if not moved.is_valid() or not before.is_valid() or moved.first_line == before.first_line:
+		return source
+
+	var lines: PackedStringArray = source.split(NEWLINE)
+	var taken: PackedStringArray = lines.slice(moved.first_line - 1, moved.last_line)
+	for line: int in range(moved.last_line, moved.first_line - 1, -1):
+		lines.remove_at(line - 1)
+
+	var at: int = before.first_line - 1
+	if before.first_line > moved.last_line:
+		at -= moved.line_count()
+	for offset: int in taken.size():
+		lines.insert(at + offset, taken[offset])
+	return NEWLINE.join(lines)
+
+
 ## The text those statements are made of, in the order the file has them.
 static func lines_of(source: String, spans: Array[ComposerSpan]) -> String:
 	var lines: PackedStringArray = source.split(NEWLINE)
