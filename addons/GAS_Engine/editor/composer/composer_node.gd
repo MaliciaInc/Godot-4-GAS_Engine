@@ -276,6 +276,20 @@ func field_for(port_id: StringName) -> int:
 	return pin.field_index if pin != null else -1
 
 
+## The pin that stands for the field at `index`, or nothing.
+##
+## The other direction of `field_for()`. A panel that lists arguments knows a
+## position and needs the pin; a canvas that was dragged knows the pin and
+## needs the position. Both are answered from what the reader wrote on the pin,
+## so neither has to know that an argument's id carries a number and a
+## condition's does not.
+func pin_for_field(index: int) -> Port:
+	for pin: Port in ports:
+		if pin.field_index == index and not pin.is_execution():
+			return pin
+	return null
+
+
 func find_field(label: String) -> Field:
 	for field: Field in fields:
 		if field.label == label:

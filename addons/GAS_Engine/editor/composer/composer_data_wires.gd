@@ -16,9 +16,10 @@
 ## thing this projection may not offer.
 ##
 ## Split out of the reader because the reader is about what each line is and
-## this is about what depends on what. Structural fields - a branch's condition,
-## what a return hands back - are still outside what this draws a cable into;
-## that is the closure phase's own step and has its own tests.
+## this is about what depends on what. Every data field is looked at, not only
+## a call's arguments: `if ready:` after `var ready: bool = can_activate()` is
+## the same dependency written a different way, and drawing one and not the
+## other was a canvas where half the value flow was invisible.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -37,37 +38,25 @@ static func apply(graph: ComposerGraph) -> void:
 			_into(graph, node, other, declared)
 
 
-## Join `node`'s value to whichever argument of `other` depends on it.
+## Join `node`'s value to every field of `other` that is exactly it.
+##
+## Read off the fields rather than off the text. The fields already know what
+## each one holds - an argument, a condition, what a return hands back - and
+## parsing the statement again here would answer for arguments only, which is
+## how a branch fed by a local came out looking like a branch fed by nothing.
+##
+## Every field, not the first: `apply(target, target)` passes one value twice,
+## and a person who unplugs one of those two has to be left with the other.
 static func _into(
 	graph: ComposerGraph, node: ComposerNode, other: ComposerNode, declared: String
 ) -> void:
-	var slot: int = _argument_naming(other.text, declared)
-	if slot < 0:
-		return
-
-	graph.connections.append(
-		ComposerReader.wire(
-			node.id,
-			ComposerReader.VALUE_OUT,
-			other.id,
-			StringName(ComposerReader.ARGUMENT % slot)
+	for position: int in other.fields.size():
+		if other.fields[position].display.strip_edges() != declared:
+			continue
+		var pin: ComposerNode.Port = other.pin_for_field(position)
+		if pin == null:
+			continue
+		graph.connections.append(
+			ComposerReader.wire(node.id, ComposerReader.VALUE_OUT, other.id, pin.id)
 		)
-	)
-	if slot < other.fields.size():
-		other.fields[slot].source = ComposerNode.ValueSource.WIRED
-
-
-## Which argument of `line` is exactly `word`, or -1 when none is.
-##
-## Position matters: the wire has to land on the slot that uses the value, not
-## just on the statement that mentions it somewhere.
-static func _argument_naming(line: String, word: String) -> int:
-	var open: int = line.find("(")
-	if open < 0:
-		return -1
-	var position: int = 0
-	for argument: String in ComposerSubset.arguments_of(line.substr(open + 1)):
-		if argument.strip_edges().trim_suffix(")").strip_edges() == word:
-			return position
-		position += 1
-	return -1
+		other.fields[position].source = ComposerNode.ValueSource.WIRED

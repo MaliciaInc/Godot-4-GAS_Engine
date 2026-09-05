@@ -29,6 +29,7 @@ const NO_SUCH_PORT: String = "that pin is no longer on the card"
 const WRONG_FAMILY: String = "execution and values do not connect to each other"
 const WRONG_WAY: String = "a wire runs from an output to an input"
 const NOT_A_LOCAL: String = "only a named value can be sent along a wire"
+const TOO_MANY_CABLES: String = "that pin has more than one cable on it"
 const NOT_YET_DECLARED: String = (
 	"%s is declared after this statement, so it does not exist here yet"
 )
@@ -167,22 +168,16 @@ func move_connections(
 		# a connect. Doing it as one motion is TASK 5's job, not a guess here.
 		return _no(ComposerFlowEdits.NOT_REPRESENTABLE)
 
-	var named: String = to_port.label
-	if named.is_empty():
-		return _no(NOT_A_LOCAL)
-	var changes: Array[ComposerFieldEdits.Change] = []
-	for wire: ComposerGraph.Connection in wires:
-		var to: ComposerNode = staged.find_node(wire.to_node)
-		var position: int = to.field_for(wire.to_port) if to != null else -1
-		if to == null or position < 0 or position >= to.fields.size():
-			return _no(NO_SUCH_PORT)
-		var wanted: StringName = to.fields[position].type_name
-		if not ComposerTypes.accepts(wanted, to_port.type_name):
-			return _no(ComposerTypes.refusal(wanted, to_port.type_name))
-		if not _in_scope(destination, to):
-			return _no(NOT_YET_DECLARED % named)
-		changes.append(ComposerFieldEdits.Change.of(to.id, position, named))
-	return _rewritten(staged, changes)
+	# Which way the pins face decides what moving means, and the two are not
+	# the same edit. Taking an output's cables to another output re-points
+	# every consumer at a new producer; taking an input's one cable to another
+	# input moves a single value from one slot to another and leaves the slot
+	# it came from holding something valid.
+	if from_port.direction == ComposerNode.PortDirection.OUTPUT:
+		return _move_data_output(staged, wires, destination, to_port)
+	if wires.size() != 1:
+		return _no(TOO_MANY_CABLES)
+	return _move_data_input(staged, wires[0], origin, destination, to_port)
 
 
 ## Put text somebody typed into one argument.
@@ -275,6 +270,83 @@ static func _in_scope(producer: ComposerNode, consumer: ComposerNode) -> bool:
 func _no(message: String) -> bool:
 	refused.emit(message)
 	return false
+#endregion
+
+
+#region Moving
+## Every consumer of one value is fed by another value instead.
+##
+## The destination keeps whatever it already fed: a value output carries as
+## many cables as there are statements that want it. Every consumer is judged
+## before a character is written, which is what makes a refused drag leave the
+## file exactly as it was rather than half transferred.
+func _move_data_output(
+	staged: ComposerGraph,
+	wires: Array[ComposerGraph.Connection],
+	destination: ComposerNode,
+	to_port: ComposerNode.Port
+) -> bool:
+	var named: String = to_port.label
+	if named.is_empty():
+		return _no(NOT_A_LOCAL)
+	var changes: Array[ComposerFieldEdits.Change] = []
+	for wire: ComposerGraph.Connection in wires:
+		var to: ComposerNode = staged.find_node(wire.to_node)
+		var position: int = to.field_for(wire.to_port) if to != null else -1
+		if to == null or position < 0 or position >= to.fields.size():
+			return _no(NO_SUCH_PORT)
+		var wanted: StringName = to.fields[position].type_name
+		if not ComposerTypes.accepts(wanted, to_port.type_name):
+			return _no(ComposerTypes.refusal(wanted, to_port.type_name))
+		if not _in_scope(destination, to):
+			return _no(NOT_YET_DECLARED % named)
+		changes.append(ComposerFieldEdits.Change.of(to.id, position, named))
+	return _rewritten(staged, changes)
+
+
+## One value moves from the slot it was in to another slot.
+##
+## The producer is read off the cable that arrives, never off the destination
+## pin's label: an input pin is named for the argument it is, so taking the
+## name from there would write the argument's own name into it as if it were a
+## local. The slot it leaves goes back to what it would have been created
+## holding - a data input takes one cable and cannot be left empty, because
+## the argument text is the cable.
+func _move_data_input(
+	staged: ComposerGraph,
+	arriving: ComposerGraph.Connection,
+	origin: ComposerNode,
+	destination: ComposerNode,
+	to_port: ComposerNode.Port
+) -> bool:
+	var producer: ComposerNode = staged.find_node(arriving.from_node)
+	var out: ComposerNode.Port = (
+		producer.find_port(arriving.from_port) if producer != null else null
+	)
+	if out == null:
+		return _no(NO_SUCH_PORT)
+	var named: String = out.label
+	if named.is_empty():
+		return _no(NOT_A_LOCAL)
+
+	var leaving: int = origin.field_for(arriving.to_port)
+	var into: int = destination.field_for(to_port.id)
+	if leaving < 0 or leaving >= origin.fields.size():
+		return _no(NO_SUCH_PORT)
+	if into < 0 or into >= destination.fields.size():
+		return _no(NO_SUCH_PORT)
+	var wanted: StringName = destination.fields[into].type_name
+	if not ComposerTypes.accepts(wanted, out.type_name):
+		return _no(ComposerTypes.refusal(wanted, out.type_name))
+	if not _in_scope(producer, destination):
+		return _no(NOT_YET_DECLARED % named)
+
+	var changes: Array[ComposerFieldEdits.Change] = []
+	changes.append(
+		ComposerFieldEdits.Change.of(origin.id, leaving, _default_for(origin, leaving))
+	)
+	changes.append(ComposerFieldEdits.Change.of(destination.id, into, named))
+	return _rewritten(staged, changes)
 #endregion
 
 

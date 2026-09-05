@@ -214,3 +214,93 @@ func test_editing_follows_the_field_contract() -> void:
 	assert_true(call.may_edit(wired), "a wired value may still move")
 	assert_false(call.may_type(wired), "but not by typing over the cable")
 #endregion
+
+
+#region A local reaches a structural field
+## What a card carries and what feeds it are the same question asked twice.
+##
+## `var ready: bool = can_activate()` and then `if ready:` is a value flowing
+## from one statement into another - exactly what a cable draws - and it went
+## undrawn because the wiring read a call's argument list and a branch has none.
+## The rows are the three answers: the condition of a branch, what a return hands
+## back, and an expression that only mentions the local, which is not a wire.
+const REACHING: Array = [
+	[
+		"a branch tests a local",
+		["var ready: bool = can_activate()", "if ready:", "\tcommit_ability()", "return true"],
+		"if ready:",
+		ComposerReader.CONDITION_IN,
+		true,
+	],
+	[
+		"an end hands a local back",
+		["var done: bool = commit_ability()", "return done"],
+		"return done",
+		ComposerReader.RETURN_VALUE_IN,
+		true,
+	],
+	[
+		"a switch turns on a local",
+		["var state: int = pick_state()", "match state:", "\tState.READY:", "\t\tone()", "return true"],
+		"match state:",
+		ComposerReader.MATCH_VALUE_IN,
+		true,
+	],
+	[
+		"an expression is not a cable",
+		["var ready: bool = can_activate()", "if ready and armed:", "\tone()", "return true"],
+		"if ready and armed:",
+		ComposerReader.CONDITION_IN,
+		false,
+	],
+]
+
+
+func test_a_local_reaches_the_structural_value_that_is_exactly_it() -> void:
+	var checked: int = 0
+	for row: Array in REACHING:
+		var described: String = row[0]
+		var body: Array = row[1]
+		var said: String = row[2]
+		var pin: StringName = row[3]
+		var wired: bool = row[4]
+
+		var graph: ComposerGraph = _read(body)
+		var node: ComposerNode = _containing(graph, said)
+
+		assert_eq(
+			graph.is_port_connected(node.id, pin),
+			wired,
+			"%s: the pin %s a cable" % [described, "takes" if wired else "takes no"]
+		)
+		assert_eq(
+			node.fields[0].source == ComposerNode.ValueSource.WIRED,
+			wired,
+			"%s: and the field agrees with the pin" % described
+		)
+		checked += 1
+	assert_eq(checked, REACHING.size(), "every shape was tried")
+
+
+## One value passed twice draws two cables, not one.
+##
+## Landing only on the first slot leaves a pin somebody can see, cannot unplug
+## and cannot re-point, because nothing believes there is a cable on it.
+func test_a_local_passed_twice_lands_on_both_slots() -> void:
+	var graph: ComposerGraph = _read([
+		"var caster: AbilitySystemComponent = owner_asc",
+		"pair_casters(caster, caster)",
+		"return true",
+	])
+	var pair: ComposerNode = _containing(graph, "pair_casters")
+
+	assert_eq(
+		graph.connections_for(pair.id).size(), 4, "two values in, one run in, one run out"
+	)
+	assert_true(
+		graph.is_port_connected(pair.id, pair.pin_for_field(0).id), "the first slot"
+	)
+	assert_true(
+		graph.is_port_connected(pair.id, pair.pin_for_field(1).id), "and the second"
+	)
+#endregion

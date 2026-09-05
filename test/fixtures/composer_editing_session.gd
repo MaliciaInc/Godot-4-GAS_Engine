@@ -58,13 +58,19 @@ func run_after(before: String, after: String) -> ComposerGraph.Connection:
 	)
 
 
-## "the local this statement declares goes into that argument of that one".
+## "the local this statement declares goes into that value of that one".
+##
+## The pin is asked for rather than spelled: `slot` is a field position, and
+## the pin standing for one is called `argument_2` on a call and `condition_in`
+## on a branch.
 func value_into(producer: String, consumer: String, slot: int) -> ComposerGraph.Connection:
+	var into: ComposerNode = node(consumer)
+	var pin: ComposerNode.Port = into.pin_for_field(slot)
 	return ComposerReader.wire(
 		node(producer).id,
 		ComposerReader.VALUE_OUT,
-		node(consumer).id,
-		StringName(ComposerReader.ARGUMENT % slot)
+		into.id,
+		pin.id if pin != null else &""
 	)
 
 
