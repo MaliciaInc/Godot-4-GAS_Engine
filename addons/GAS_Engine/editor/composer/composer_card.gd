@@ -70,13 +70,22 @@ func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 	# arguments at all.
 	_add_row(_title_row(node), ComposerReader.EXEC_IN, ComposerReader.EXEC_OUT)
 	for position: int in node.fields.size():
-		_add_row(
-			_field_row(node, position),
-			StringName(ComposerReader.ARGUMENT % position),
-			&""
-		)
+		# The pin is asked for rather than spelled. A call's argument pin carries
+		# a number and a branch's condition does not, and a card that built the
+		# name itself drew a row whose pin nothing could land on.
+		var into: ComposerNode.Port = node.pin_for_field(position)
+		_add_row(_field_row(node, position), into.id if into != null else &"", &"")
 	if _ports.has(ComposerReader.VALUE_OUT):
-		_add_row(_result_row(_ports[ComposerReader.VALUE_OUT]), &"", ComposerReader.VALUE_OUT)
+		_add_row(_pin_row(_ports[ComposerReader.VALUE_OUT].label, true), &"", ComposerReader.VALUE_OUT)
+
+	# One row per path out, in the order the projection put them on the node: a
+	# branch's True and False, a match's arms and its No Match. Counted from the
+	# node rather than from the kind of statement, so a match with five arms
+	# draws five and nothing here has to know how many there are.
+	for pin: ComposerNode.Port in node.ports:
+		if not _is_a_path_out(pin):
+			continue
+		_add_row(_pin_row(pin.label, false), &"", pin.id)
 
 	_apply_slots(port_types)
 
@@ -296,13 +305,33 @@ func _field_row(node: ComposerNode, position: int) -> Control:
 	return column
 
 
-## The local this statement declares, named so a wire out of it can be read.
-func _result_row(produced: ComposerNode.Port) -> Control:
+## A pin on the right, with the name a person reads it by.
+##
+## The local a statement declares, and every path a branch or a match can take.
+## They are the same row because they are the same thing to somebody looking at
+## the card: a place on the right hand side that a cable leaves from, with a word
+## beside it saying which one it is. Only a value carries the mark.
+func _pin_row(named: String, produced: bool) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_END
-	row.add_child(_label(produced.label, ComposerTheme.TEXT, ComposerTheme.FONT_VALUE))
-	row.add_child(_label(WIRED_MARK, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_VALUE))
+	row.add_child(_label(named, ComposerTheme.TEXT, ComposerTheme.FONT_VALUE))
+	if produced:
+		row.add_child(_label(WIRED_MARK, ComposerTheme.TEXT_DIM, ComposerTheme.FONT_VALUE))
 	return row
+
+
+## Whether that pin is a path this statement can take, rather than the one way
+## out an ordinary statement has.
+##
+## The generic way out lives on the title row, which every card has. A branch
+## does not have one at all - it leaves by True or by False - so what is left
+## here is exactly the pins that need a row of their own.
+static func _is_a_path_out(pin: ComposerNode.Port) -> bool:
+	return (
+		pin.is_execution()
+		and pin.direction == ComposerNode.PortDirection.OUTPUT
+		and pin.id != ComposerReader.EXEC_OUT
+	)
 
 
 static func _label(text: String, tint: Color, font_size: int) -> Label:

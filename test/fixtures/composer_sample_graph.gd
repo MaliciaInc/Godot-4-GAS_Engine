@@ -86,6 +86,10 @@ static func _node(
 		)
 		slot.label = node.fields[position].label
 		slot.type_name = node.fields[position].type_name
+		# Which field it stands for, as the reader writes on every data pin. A
+		# card asks the pin rather than spelling `arg_0` itself, so a pin without
+		# this is a row nothing can be wired into.
+		slot.field_index = position
 		node.ports.append(slot)
 	return node
 
