@@ -65,33 +65,6 @@ func _read(session: ComposerEditingSession) -> ComposerGraph:
 	return ComposerReader.read(session.printed(), ComposerEditingSession.PATH)
 
 
-## Whether the reread says one statement leaves by that pin into another.
-func _runs(graph: ComposerGraph, from: String, pin: StringName, to: String) -> bool:
-	var leaving: ComposerNode = _at(graph, from)
-	var arriving: ComposerNode = _at(graph, to)
-	if leaving == null or arriving == null:
-		return false
-	return graph.has_connection(
-		ComposerReader.wire(leaving.id, pin, arriving.id, ComposerReader.EXEC_IN)
-	)
-
-
-func _at(graph: ComposerGraph, said: String) -> ComposerNode:
-	for node: ComposerNode in graph.nodes:
-		if node.text.contains(said):
-			return node
-	return null
-
-
-## The body as it now stands, one statement per entry, for a failure to print.
-func _body(session: ComposerEditingSession) -> PackedStringArray:
-	var said: PackedStringArray = PackedStringArray()
-	for line: String in session.printed().split("\n"):
-		if line.begins_with("\t"):
-			said.append(line.strip_edges())
-	return said
-
-
 ## The same ability with the cue's link to the ending already taken out.
 func _cut() -> ComposerEditingSession:
 	var session: ComposerEditingSession = _open()
@@ -225,11 +198,11 @@ func test_moving_linear_execution_output_moves_the_wire() -> void:
 	assert_true(done, "the drag was taken")
 	var read: ComposerGraph = _read(session)
 	assert_true(
-		_runs(read, DELAY, ComposerReader.EXEC_OUT, ENDING),
-		"the delay runs into the ending: %s" % _body(session)
+		ComposerFlowProbe.runs(read, DELAY, ComposerReader.EXEC_OUT, ENDING),
+		"the delay runs into the ending: %s" % ComposerFlowProbe.body_of(session.printed())
 	)
 	assert_false(
-		_runs(read, CUE, ComposerReader.EXEC_OUT, ENDING), "and the cue no longer does"
+		ComposerFlowProbe.runs(read, CUE, ComposerReader.EXEC_OUT, ENDING), "and the cue no longer does"
 	)
 
 
@@ -251,11 +224,11 @@ func test_moving_to_occupied_execution_output_displaces_the_old_wire_atomically(
 	assert_true(done, "the drag was taken")
 	var read: ComposerGraph = _read(session)
 	assert_true(
-		_runs(read, "commit_ability", ComposerReader.EXEC_OUT, DELAY),
-		"the delay is what the commit runs into now: %s" % _body(session)
+		ComposerFlowProbe.runs(read, "commit_ability", ComposerReader.EXEC_OUT, DELAY),
+		"the delay is what the commit runs into now: %s" % ComposerFlowProbe.body_of(session.printed())
 	)
 	assert_false(
-		_runs(read, "commit_ability", ComposerReader.EXEC_OUT, CUE),
+		ComposerFlowProbe.runs(read, "commit_ability", ComposerReader.EXEC_OUT, CUE),
 		"the link that was on that pin is gone"
 	)
 	assert_eq(session.depth(), 1, "and both halves are one step")
@@ -269,12 +242,12 @@ func test_moving_execution_input_moves_its_predecessor() -> void:
 
 	assert_true(done, "the drag was taken")
 	var read: ComposerGraph = _read(session)
-	var before: Array[ComposerNode] = ComposerFlow.predecessors_of(read, _at(read, ENDING).id)
+	var before: Array[ComposerNode] = ComposerFlow.predecessors_of(read, ComposerFlowProbe.at(read, ENDING).id)
 
-	assert_eq(before.size(), 1, "the ending is arrived at from one place: %s" % _body(session))
+	assert_eq(before.size(), 1, "the ending is arrived at from one place: %s" % ComposerFlowProbe.body_of(session.printed()))
 	assert_true(before[0].text.contains(DELAY), "and it is the delay, which was the cue's")
 	assert_false(
-		_runs(read, CUE, ComposerReader.EXEC_OUT, ENDING), "the cue no longer runs into it"
+		ComposerFlowProbe.runs(read, CUE, ComposerReader.EXEC_OUT, ENDING), "the cue no longer runs into it"
 	)
 
 
@@ -383,15 +356,15 @@ func test_moving_a_structural_path_moves_only_that_path() -> void:
 		assert_true(done, "%s: the drag was taken" % described)
 		var read: ComposerGraph = _read(session)
 		assert_true(
-			_runs(read, "after()", ComposerReader.EXEC_OUT, carried),
-			"%s: runs where it was dropped: %s" % [described, _body(session)]
+			ComposerFlowProbe.runs(read, "after()", ComposerReader.EXEC_OUT, carried),
+			"%s: runs where it was dropped: %s" % [described, ComposerFlowProbe.body_of(session.printed())]
 		)
 		assert_true(
-			_runs(read, head, other_pin, other_target),
+			ComposerFlowProbe.runs(read, head, other_pin, other_target),
 			"%s: and every other path out is what it was" % described
 		)
 		assert_false(
-			_runs(read, head, pin, carried),
+			ComposerFlowProbe.runs(read, head, pin, carried),
 			"%s: the path it left no longer reaches it" % described
 		)
 		assert_eq(

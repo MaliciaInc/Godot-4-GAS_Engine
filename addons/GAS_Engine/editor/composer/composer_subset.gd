@@ -116,6 +116,7 @@ const FLOW_DEFAULT_MARK: String = "# @composer-flow-default"
 
 ## The two openers other modules name as well: `elif` draws as a branch, and a
 ## `return` carries its value on the line rather than in brackets.
+const IF_OPENER: String = "if "
 const ELIF_OPENER: String = "elif "
 const ELSE_OPENER: String = "else:"
 const RETURN_OPENER: String = "return"
@@ -127,7 +128,7 @@ const RETURNS_MARK: String = "->"
 const OPENERS: Array[Array] = [
 	["match ", Kind.MATCH],
 	[ELIF_OPENER, Kind.BRANCH_ELSE],
-	["if ", Kind.BRANCH],
+	[IF_OPENER, Kind.BRANCH],
 	[RETURN_OPENER, Kind.RETURN],
 	["super", Kind.SUPER],
 	["await ", Kind.AWAIT],
