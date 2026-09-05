@@ -124,3 +124,67 @@ func test_text_the_file_cannot_read_is_refused() -> void:
 	assert_not_null(refusal, "a loop is not in the subset")
 	assert_eq(_document.printed(), before, "so the file is untouched")
 #endregion
+
+
+#region Where a call from the palette lands
+## Nothing picked, so it goes at the end of the ability - which is before the
+## return, not after it.
+##
+## The end of the *body* and the end of the *ability* are different lines, and
+## the difference is the whole thing: everything after the return is unreachable,
+## so a call written there is one somebody has to notice never ran. The graph
+## showed it too, drawn hanging off nothing while execution went straight from
+## Entry to End. It was the first thing anybody would do with a new ability -
+## make one, then click a call in the palette.
+func test_a_call_added_with_nothing_picked_lands_where_it_runs() -> void:
+	_open(["commit_ability()", "return true"])
+	var entry: ComposerCatalog.Entry = _a_call()
+	assert_not_null(entry, "there is a call to add")
+
+	assert_null(_ops.insert_call([] as Array[StringName], entry.key), "it was added")
+
+	assert_lt(
+		_line_of(String(entry.type_id)), _line_of("return true"),
+		"the call is above the return"
+	)
+	assert_eq(
+		ComposerFlow.predecessor_of(
+			_document.graph(), ComposerFlow.main_end(_document.graph()).id
+		).type_id,
+		entry.type_id,
+		"and execution reaches it on the way to the End"
+	)
+
+
+## And picking the End itself does not put one after it either.
+func test_a_call_added_with_the_end_picked_still_lands_where_it_runs() -> void:
+	_open(["commit_ability()", "return true"])
+	var entry: ComposerCatalog.Entry = _a_call()
+	var end: ComposerNode = ComposerFlow.main_end(_document.graph())
+
+	assert_null(
+		_ops.insert_call([end.id] as Array[StringName], entry.key), "it was added"
+	)
+
+	assert_lt(
+		_line_of(String(entry.type_id)), _line_of("return true"),
+		"still above the return"
+	)
+
+
+## A call that takes nothing and hands nothing back, so where it lands is all
+## this is about.
+func _a_call() -> ComposerCatalog.Entry:
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		if entry.parameters.is_empty() and not entry.awaits:
+			return entry
+	return null
+
+
+func _line_of(written: String) -> int:
+	var lines: PackedStringArray = _document.printed().split("\n")
+	for number: int in lines.size():
+		if lines[number].contains(written):
+			return number
+	return -1
+#endregion

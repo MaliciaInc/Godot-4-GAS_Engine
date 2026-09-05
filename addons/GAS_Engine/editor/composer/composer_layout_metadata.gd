@@ -71,10 +71,17 @@ static func read_onto(node: ComposerNode) -> void:
 		node.layout_position = saved
 
 
+## `lines` with every position marker taken out - the ones that name a statement
+## and the ones that name Entry or End alike.
+##
+## Both, because the name says both and a caller cannot tell which kind it is
+## holding. A copy that kept a virtual marker would carry a position for a node
+## that is not in the copy, which is the exact thing this exists to prevent.
 static func without_layout_lines(lines: PackedStringArray) -> PackedStringArray:
 	var clean: PackedStringArray = PackedStringArray()
 	for line: String in lines:
-		if line.strip_edges().begins_with(PREFIX):
+		var written: String = line.strip_edges()
+		if written.begins_with(PREFIX) or written.begins_with(VIRTUAL_PREFIX):
 			continue
 		clean.append(line)
 	return clean

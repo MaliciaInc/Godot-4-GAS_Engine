@@ -60,6 +60,45 @@ const TRANSPARENT: Color = Color(0.0, 0.0, 0.0, 0.0)
 #endregion
 
 
+#region Owning the look
+## The types a Godot widget draws its own chrome out of.
+##
+## GraphEdit brings a zoom row, a grid toggle and a snap box of its own, and
+## every one of them is an ordinary Button, Label or SpinBox that reads its font
+## off whatever theme it is standing in.
+## The theme type a Label resolves its own font against. Named once: a card
+## says it about the label GraphNode draws its title in, and the chrome theme
+## says it about every other label a widget builds for itself.
+const LABEL_TYPE: StringName = &"Label"
+
+const CHROME_TYPES: Array[StringName] = [
+	&"Button",
+	&"CheckBox",
+	&"CheckButton",
+	LABEL_TYPE,
+	&"LineEdit",
+	&"OptionButton",
+	&"SpinBox",
+]
+
+
+## A theme that says how big the text on a widget's own chrome is.
+##
+## Needed because a default size is only a floor: the lookup walks the chain by
+## type, so a project theme naming Button outright still beats a default set
+## nearer the control. Standing in a game whose theme says 96, GraphEdit's zoom
+## row grew to cover the first cards in the graph and swallowed every click on
+## them - the Composer was unusable in the one place it had to work, and looked
+## right in the editor because the editor's theme is quiet.
+static func own_chrome() -> Theme:
+	var own: Theme = Theme.new()
+	own.default_font_size = FONT_VALUE
+	for kind: StringName in CHROME_TYPES:
+		own.set_font_size(GASEditorTheme.FONT_SIZE, kind, FONT_VALUE)
+	return own
+#endregion
+
+
 #region Measures
 ## One scale. Every gap is a multiple of it, so nothing lands on a number
 ## someone picked because it looked right that day.

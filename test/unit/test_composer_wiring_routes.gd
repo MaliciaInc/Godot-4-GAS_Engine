@@ -195,3 +195,83 @@ func test_alt_clicking_a_pin_on_the_canvas_reaches_the_file() -> void:
 	assert_eq(_document.graph().data_connections().size(), 0, "the cable came off")
 	assert_signal_emitted(_routes, "changed")
 #endregion
+
+
+#region Where a made card lands
+## A call made at a point on the canvas lands at that point.
+##
+## Dragging a cable into empty space and picking a call is one thing somebody
+## did, in one place they chose. The call was written and the card was left
+## wherever the automatic layout happened to put it, which is the one place they
+## did not choose - and there was nothing in the file to say otherwise, so
+## closing and reopening put it there again.
+func test_a_call_made_at_a_point_on_the_canvas_lands_there() -> void:
+	_open(["commit_ability()", "return true"])
+	var entry: ComposerCatalog.Entry = _entry_for(A_CALL)
+	assert_not_null(entry, "there is a call to make")
+	var context: ComposerActionMenu.Context = ComposerActionMenu.Context.new()
+	context.graph_position = A_POINT
+	var steps: int = _document.history().depth()
+
+	assert_true(_routes.create_and_connect(entry, context), "the call was made")
+
+	var made: ComposerNode = _node_of(A_CALL)
+	assert_not_null(made, "and it is in the graph: %s" % [_written()])
+	assert_true(made.has_layout_position, "with a position of its own")
+	assert_eq(made.layout_position, A_POINT, "the one that was asked for")
+	assert_eq(
+		_document.history().depth(), steps + 1,
+		"and the whole thing is one step to take back"
+	)
+
+
+## And it is still there when the file is read again.
+##
+## The point is written into the ability, not remembered beside it, so the only
+## thing that proves it is reading the text back the way opening the file does.
+func test_the_point_a_call_was_made_at_survives_being_read_again() -> void:
+	_open(["commit_ability()", "return true"])
+	var context: ComposerActionMenu.Context = ComposerActionMenu.Context.new()
+	context.graph_position = A_POINT
+	assert_true(
+		_routes.create_and_connect(_entry_for(A_CALL), context), "the call was made"
+	)
+
+	var reopened: ComposerGraph = ComposerReader.read(_document.printed(), PATH)
+
+	var found: int = 0
+	for node: ComposerNode in ComposerProjection.statements(reopened):
+		if node.type_id != A_CALL:
+			continue
+		found += 1
+		assert_true(node.has_layout_position, "read back with a position")
+		assert_eq(node.layout_position, A_POINT, "the one it was made at")
+	assert_eq(found, 1, "and there is exactly one of it")
+
+
+## A call this engine offers and this ability does not already hold.
+const A_CALL: StringName = &"wait_delay"
+const A_POINT: Vector2 = Vector2(320.0, 180.0)
+
+
+## The catalog entry for a call, found by the method it prints rather than by
+## the key it is filed under - a key is the catalog's business.
+## What the ability says now, for a message that names the reason.
+func _written() -> String:
+	return _document.printed().replace("
+", " / ")
+
+
+func _entry_for(type_id: StringName) -> ComposerCatalog.Entry:
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		if entry.type_id == type_id:
+			return entry
+	return null
+
+
+func _node_of(type_id: StringName) -> ComposerNode:
+	for node: ComposerNode in ComposerProjection.statements(_document.graph()):
+		if node.type_id == type_id:
+			return node
+	return null
+#endregion

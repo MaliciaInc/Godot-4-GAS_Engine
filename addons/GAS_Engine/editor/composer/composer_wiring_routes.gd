@@ -92,11 +92,32 @@ func create_and_connect(
 	if not made.is_ok():
 		refused.emit(made.message)
 		return false
-	var refusal: ComposerGraph.Diagnostic = _document.commit(made.source)
+	var refusal: ComposerGraph.Diagnostic = _document.commit(
+		_put_where_asked(made, context)
+	)
 	if refusal != null:
 		refused.emit(refusal.message)
 		return false
 	return _announce(true)
+
+
+## The made source, with the new card put where the person let go of it.
+##
+## Written into the same text that is about to be committed rather than placed
+## afterwards: a placement of its own would be a second thing to undo, and
+## somebody who dragged a cable into empty space and picked a call did one
+## thing. A creation that carries no position - which is every path that does
+## not come from a point on the canvas - is left where the layout puts it.
+func _put_where_asked(
+	made: ComposerCreation.Result, context: ComposerActionMenu.Context
+) -> String:
+	if made.at_line == ComposerSpan.NO_LINE:
+		return made.source
+	var staged: ComposerGraph = ComposerReader.read(made.source, _document.path())
+	var node: ComposerNode = staged.node_at_line(made.at_line)
+	if node == null:
+		return made.source
+	return ComposerLayoutMetadata.positioned(made.source, node, context.graph_position)
 
 
 ## Text somebody typed into one argument, through the same door a cable uses.

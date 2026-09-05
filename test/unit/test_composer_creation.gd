@@ -213,3 +213,68 @@ func test_a_call_that_is_not_there_is_refused() -> void:
 	assert_eq(_document.printed(), before, "and nothing was written")
 	assert_eq(_document.history().depth(), 0, "with nothing to undo")
 #endregion
+
+
+#region Into an ability that has nothing in it yet
+## The first call somebody adds to a new ability runs.
+##
+## New Ability writes a body whose only statement is `return true`, and the very
+## next thing anybody does is add a call to it. Written after the return, the
+## call is unreachable: the graph draws Entry straight to End with the new card
+## hanging off nothing, and the ability does exactly what it did before.
+func test_the_first_call_added_to_a_new_ability_runs_before_the_return() -> void:
+	_document.open(ComposerAbilityTemplate.SOURCE, PATH)
+	var entry: ComposerCatalog.Entry = _first_plain_call()
+	assert_not_null(entry, "there is a call to add")
+
+	assert_true(
+		_routes.create_and_connect(entry, ComposerActionMenu.Context.new()),
+		"the call was added"
+	)
+
+	var call_at: int = _line_of(String(entry.type_id))
+	var return_at: int = _line_of("return true")
+	assert_gt(call_at, -1, "the call is in the file")
+	assert_gt(return_at, -1, "and so is the return")
+	assert_lt(call_at, return_at, "with the call above it, where it runs")
+
+
+## And the graph says so: execution reaches it, and goes on to the End.
+func test_the_first_call_added_to_a_new_ability_is_wired_into_the_flow() -> void:
+	_document.open(ComposerAbilityTemplate.SOURCE, PATH)
+	assert_true(
+		_routes.create_and_connect(_first_plain_call(), ComposerActionMenu.Context.new()),
+		"the call was added"
+	)
+
+	var made: ComposerNode = _made_call()
+	assert_not_null(made, "the call is drawn")
+	assert_eq(
+		ComposerFlow.predecessor_of(_document.graph(), made.id).id,
+		ComposerFlow.ENTRY_ID,
+		"Entry runs into it"
+	)
+	assert_eq(
+		ComposerFlow.predecessor_of(
+			_document.graph(), ComposerFlow.main_end(_document.graph()).id
+		).id,
+		made.id,
+		"and it runs into the End"
+	)
+
+
+## A call that takes no arguments and hands nothing back, so adding it to an
+## empty ability is only about where it lands.
+func _first_plain_call() -> ComposerCatalog.Entry:
+	for entry: ComposerCatalog.Entry in ComposerCatalog.all().values():
+		if entry.parameters.is_empty() and not entry.awaits:
+			return entry
+	return null
+
+
+func _made_call() -> ComposerNode:
+	for node: ComposerNode in ComposerProjection.statements(_document.graph()):
+		return node
+	return null
+
+#endregion

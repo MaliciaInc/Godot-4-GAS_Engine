@@ -193,3 +193,35 @@ func test_placing_entry_leaves_the_ability_reading_the_same() -> void:
 	assert_true(_document.graph().is_editable(), _document.graph().blocked_reason())
 	assert_eq(ComposerWriter.signature(_document.graph()), before, "nothing else moved")
 #endregion
+
+
+#region Taking the layout back out
+## "Without layout lines" means without all of them.
+##
+## Entry and End carry their position under a marker of their own, because they
+## stand for no line of the file. A caller stripping the layout out of some text
+## - to copy a statement, or to repeat one - cannot tell which kind it is
+## holding, and a copy that kept a virtual marker would carry a position for a
+## node that is not in the copy. That is the exact thing this function exists to
+## prevent, and it was doing half of it.
+func test_stripping_the_layout_takes_both_kinds_of_marker() -> void:
+	var body: String = (
+		HEAD
+		+ "\t" + ComposerLayoutMetadata.VIRTUAL_PREFIX + "__composer_entry 10.00 20.00\n"
+		+ "\tcommit_ability()\n"
+		+ "\t" + ComposerLayoutMetadata.PREFIX + "30.00 40.00\n"
+		+ "\tend_ability()\n"
+	)
+
+	var stripped: String = ComposerLayoutMetadata.without_layout_text(body)
+
+	assert_false(
+		stripped.contains(ComposerLayoutMetadata.PREFIX), "a statement's marker is gone"
+	)
+	assert_false(
+		stripped.contains(ComposerLayoutMetadata.VIRTUAL_PREFIX),
+		"and so is Entry's"
+	)
+	assert_true(stripped.contains("commit_ability()"), "the statements are still there")
+	assert_true(stripped.contains("end_ability()"), "both of them")
+#endregion

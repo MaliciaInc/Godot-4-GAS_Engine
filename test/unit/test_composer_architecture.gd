@@ -255,3 +255,84 @@ func test_the_graph_is_kept_in_the_gdscript_and_nowhere_else() -> void:
 				"%s is not a graph kept beside the code" % file_name
 			)
 #endregion
+
+
+#region Standing somewhere else
+## The Composer looks the same wherever it is standing.
+##
+## Every part of it is an ordinary Godot control, and an ordinary Godot control
+## reads its font off the ambient theme. Inside the editor that reads right by
+## accident, because the editor's theme is quiet. Standing in a game whose theme
+## says 96, GraphEdit's own zoom row - the widget's chrome, not this project's -
+## grew until it covered the first cards in the graph and swallowed every click
+## on them. The Composer was unusable in the one place it had to work, and there
+## was no way to see that from inside the editor.
+func test_the_canvas_draws_its_own_chrome_at_the_composers_size() -> void:
+	var loud: Theme = Theme.new()
+	loud.default_font_size = A_LOUD_SIZE
+	for kind: StringName in ComposerTheme.CHROME_TYPES:
+		loud.set_font_size(GASEditorTheme.FONT_SIZE, kind, A_LOUD_SIZE)
+	var host: Control = Control.new()
+	host.theme = loud
+	add_child_autofree(host)
+
+	var canvas: ComposerCanvas = ComposerCanvas.new()
+	host.add_child(canvas)
+	await get_tree().process_frame
+
+	var chrome: Array[Control] = _chrome_of(canvas)
+	assert_gt(chrome.size(), 0, "the widget draws chrome of its own")
+	for drawn: Control in chrome:
+		assert_eq(
+			drawn.get_theme_font_size(GASEditorTheme.FONT_SIZE),
+			ComposerTheme.FONT_VALUE,
+			"%s draws at the Composer's size" % drawn.get_class()
+		)
+
+	var bare: Control = Control.new()
+	host.add_child(bare)
+	await get_tree().process_frame
+	assert_eq(
+		bare.get_theme_font_size(GASEditorTheme.FONT_SIZE, &"Button"), A_LOUD_SIZE,
+		"and the host really was saying something else"
+	)
+	canvas.queue_free()
+
+
+## The widget's own toolbar is not drawn over the graph.
+##
+## GraphEdit floats a zoom row, a grid toggle and a snap box over the top-left
+## of the canvas. The layout puts the first card at exactly that corner, so the
+## Entry card's title bar - the strip somebody grabs it by - and its output pin
+## were both underneath it, and no click on either reached the card. That was
+## true in the editor too; it took drawing the Composer in a project whose theme
+## made the row large enough to notice.
+func test_the_widgets_own_toolbar_is_not_drawn_over_the_graph() -> void:
+	var canvas: ComposerCanvas = ComposerCanvas.new()
+	add_child_autofree(canvas)
+	await get_tree().process_frame
+
+	assert_false(canvas.show_menu, "the widget's toolbar is off")
+	assert_false(
+		canvas.get_menu_hbox().is_visible_in_tree(), "and nothing of it is drawn"
+	)
+
+
+## What a host theme says when it is not thinking about this addon.
+const A_LOUD_SIZE: int = 96
+
+
+## The controls the widget builds for itself, a SpinBox's line edit included:
+## that is the one that draws the number, and it is not the SpinBox.
+func _chrome_of(canvas: ComposerCanvas) -> Array[Control]:
+	var found: Array[Control] = []
+	for child: Node in canvas.get_menu_hbox().get_children(true):
+		var control: Control = child as Control
+		if control == null:
+			continue
+		found.append(control)
+		var spin: SpinBox = child as SpinBox
+		if spin != null:
+			found.append(spin.get_line_edit())
+	return found
+#endregion
