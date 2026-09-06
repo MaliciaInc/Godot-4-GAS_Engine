@@ -66,7 +66,7 @@ static func run(
 		return Attempt.refused(refusal)
 
 	var anchored: ComposerFlowAnchors.Anchored = ComposerFlowAnchors.anchor(
-		source, graph, _endpoints_of(old_edges, new_edges)
+		source, graph, ComposerFlowAnchors.endpoints_of(old_edges, new_edges)
 	)
 	if not anchored.is_ok():
 		return Attempt.refused(NOT_REPRESENTABLE)
@@ -106,6 +106,116 @@ static func run(
 	if written == source:
 		return Attempt.refused(NOT_REPRESENTABLE)
 	return Attempt.written(written)
+
+
+## Break every link on one pin, as one transaction over one copy of the text.
+##
+## Not `run` with an empty second list. A move is a run of single-link
+## transformations, each one writable on its own; this is one transformation
+## that has to take a whole set out at once, because no member of the set can
+## be taken out by itself - two statements running into one continuation each
+## keep it reached, so cutting either alone strands nothing and writes
+## nothing.
+##
+## What the two do share, and the reason this lives here rather than beside
+## the facade: the marks. Setting a region aside moves every line below it, so
+## the statement the promise is about cannot be named by an id afterwards.
+static func cut_together(
+	source: String,
+	graph: ComposerGraph,
+	edges: Array[ComposerGraph.Connection]
+) -> Attempt:
+	var refusal: String = _uncuttable(graph, edges)
+	if not refusal.is_empty():
+		return Attempt.refused(refusal)
+
+	var nothing: Array[ComposerGraph.Connection] = []
+	var anchored: ComposerFlowAnchors.Anchored = ComposerFlowAnchors.anchor(
+		source, graph, ComposerFlowAnchors.endpoints_of(edges, nothing)
+	)
+	if not anchored.is_ok():
+		return Attempt.refused(NOT_REPRESENTABLE)
+	var read: ComposerGraph = ComposerReader.read(anchored.source, graph.source_path)
+	if not read.is_editable():
+		return Attempt.refused(NOT_REPRESENTABLE)
+
+	var here: Array[ComposerGraph.Connection] = []
+	for edge: ComposerGraph.Connection in edges:
+		var found: ComposerGraph.Connection = ComposerFlowAnchors.edge_in(read, anchored, edge)
+		if found == null or not read.has_connection(found):
+			return Attempt.refused(NOT_CONNECTED)
+		here.append(found)
+
+	var working: String = ComposerFlowPaths.cut_together(anchored.source, read, here)
+	if working.is_empty() or working == anchored.source:
+		return Attempt.refused(NOT_REPRESENTABLE)
+	var after: ComposerGraph = ComposerReader.read(working, graph.source_path)
+	if not after.is_editable():
+		return Attempt.refused(NOT_REPRESENTABLE)
+
+	refusal = _still_reached(after, anchored, edges[0].to_node)
+	if not refusal.is_empty():
+		return Attempt.refused(refusal)
+
+	var written: String = ComposerFlowAnchors.strip_anchors(working, anchored.prefix)
+	var last: ComposerGraph = ComposerReader.read(written, graph.source_path)
+	if not last.is_editable():
+		return Attempt.refused(NOT_REPRESENTABLE)
+	if ComposerWriter.signature(last) != ComposerWriter.signature(after):
+		return Attempt.refused(NOT_REPRESENTABLE)
+	if written == source:
+		return Attempt.refused(NOT_REPRESENTABLE)
+	return Attempt.written(written)
+
+
+## Every reason to refuse a Break All before a character is written.
+##
+## They have to be one pin's worth. A way out of a statement leads to one
+## place, so several links that do NOT share where they arrive is not a pin at
+## all - it is a caller that got its edges from somewhere else, and guessing
+## what it meant is how a gesture ends up doing something nobody asked for.
+static func _uncuttable(
+	graph: ComposerGraph, edges: Array[ComposerGraph.Connection]
+) -> String:
+	if edges.is_empty():
+		return NOT_CONNECTED
+	var pin: ComposerGraph.Connection = edges[0]
+	if graph.find_node(pin.to_node) == null:
+		return NO_SUCH_NODE
+	for edge: ComposerGraph.Connection in edges:
+		if not graph.has_connection(edge):
+			return NOT_CONNECTED
+		if edge.to_node != pin.to_node or edge.to_port != pin.to_port:
+			return NOT_REPRESENTABLE
+	return ""
+
+
+## Whether anything still runs into that pin, and what else the cut owes.
+##
+## Asked about the PIN, which is what Break All promised, and asked through
+## the mark. Asking instead whether each named link is gone would be asking
+## with ids that the surgery already moved: every one of them would come back
+## `gone` because the numbering changed, which is the right answer for a
+## reason that would go on being true after the transformation stopped
+## working.
+static func _still_reached(
+	after: ComposerGraph,
+	anchored: ComposerFlowAnchors.Anchored,
+	into: StringName
+) -> String:
+	var target: ComposerNode = ComposerFlowAnchors.node_of(after, anchored, into)
+	if target == null:
+		return NOT_REPRESENTABLE
+	for wire: ComposerGraph.Connection in after.execution_connections():
+		if wire.to_node == target.id:
+			return NOT_REPRESENTABLE
+	if ComposerFlowChecks.strands_anything(after):
+		return WOULD_STRAND
+	if ComposerFlowChecks.touches_support(after):
+		return NOT_REPRESENTABLE
+	if not ComposerFlowChecks.runs_forward(after):
+		return WOULD_LOOP
+	return ""
 
 
 ## Every reason to say no before a character is written, in the order of 61.1.
@@ -154,7 +264,7 @@ static func _stepped(
 	edge: ComposerGraph.Connection,
 	cutting: bool
 ) -> Array:
-	var here: ComposerGraph.Connection = _resolved(read, anchored, edge)
+	var here: ComposerGraph.Connection = ComposerFlowAnchors.edge_in(read, anchored, edge)
 	if here == null:
 		return []
 	if cutting and not read.has_connection(here):
@@ -173,36 +283,6 @@ static func _stepped(
 	if not after.is_editable():
 		return []
 	return [written, after]
-
-
-## The same link, said in the numbering of `read`.
-static func _resolved(
-	read: ComposerGraph,
-	anchored: ComposerFlowAnchors.Anchored,
-	edge: ComposerGraph.Connection
-) -> ComposerGraph.Connection:
-	var from: ComposerNode = _by_mark(read, anchored, edge.from_node)
-	var to: ComposerNode = _by_mark(read, anchored, edge.to_node)
-	if from == null or to == null:
-		return null
-	return ComposerReader.wire(from.id, edge.from_port, to.id, edge.to_port)
-
-
-## The statement that mark stands for, in this reading.
-##
-## Entry is the exception and the only one: it is not a line of the file, so it
-## carries no mark and its id does not move.
-static func _by_mark(
-	read: ComposerGraph,
-	anchored: ComposerFlowAnchors.Anchored,
-	node_id: StringName
-) -> ComposerNode:
-	if node_id == ComposerFlow.ENTRY_ID:
-		return read.find_node(ComposerFlow.ENTRY_ID)
-	var token: String = anchored.token_of(node_id)
-	if token.is_empty():
-		return null
-	return ComposerFlowAnchors.find_by_token(read, token)
 
 
 ## The links to take out, in the order they can be taken out in.
@@ -241,20 +321,6 @@ static func _is_displaced(
 	return false
 
 
-## Every statement either list touches, so all of them are marked in one pass.
-static func _endpoints_of(
-	old_edges: Array[ComposerGraph.Connection],
-	new_edges: Array[ComposerGraph.Connection]
-) -> Array[StringName]:
-	var found: Array[StringName] = []
-	for group: Array[ComposerGraph.Connection] in [old_edges, new_edges]:
-		for edge: ComposerGraph.Connection in group:
-			for node_id: StringName in [edge.from_node, edge.to_node]:
-				if not found.has(node_id):
-					found.append(node_id)
-	return found
-
-
 ## What the finished transaction still owes, or nothing when it owes nothing.
 ##
 ## Checked while the marks are still in place, which is the only moment every
@@ -266,11 +332,11 @@ static func _unfinished(
 	new_edges: Array[ComposerGraph.Connection]
 ) -> String:
 	for edge: ComposerGraph.Connection in new_edges:
-		var wanted: ComposerGraph.Connection = _resolved(read, anchored, edge)
+		var wanted: ComposerGraph.Connection = ComposerFlowAnchors.edge_in(read, anchored, edge)
 		if wanted == null or not read.has_connection(wanted):
 			return NOT_REPRESENTABLE
 	for edge: ComposerGraph.Connection in old_edges:
-		var gone: ComposerGraph.Connection = _resolved(read, anchored, edge)
+		var gone: ComposerGraph.Connection = ComposerFlowAnchors.edge_in(read, anchored, edge)
 		if gone != null and read.has_connection(gone):
 			return NOT_REPRESENTABLE
 	if ComposerFlowChecks.strands_anything(read):

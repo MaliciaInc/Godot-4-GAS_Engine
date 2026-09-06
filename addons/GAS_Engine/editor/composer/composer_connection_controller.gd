@@ -10,11 +10,16 @@
 ## canvas is drawing byte-identical: half a rewiring is worse than none, because
 ## the person cannot see which half happened.
 ##
-## Multiplicity is not a gate here, deliberately. In this projection every input
-## takes one wire and only a local's output fans out, so the question a canvas
-## really asks is not "may this pin hold another wire" but "what does joining it
-## again mean" - and that answer differs by family, not by count: an argument is
+## Multiplicity is not a gate here, deliberately. The question a canvas really
+## asks is not "may this pin hold another wire" but "what does joining it again
+## mean" - and that answer differs by family, not by count: an argument is
 ## overwritten, a run of control is re-routed. Those are the two branches below.
+##
+## How many a pin can hold differs by family too, and getting that wrong is not
+## free. A data input takes one wire and a local's output fans out. An execution
+## input takes as many as converge on it: a branch's body and the path around it
+## both arrive at the continuation, and so do the two arms of an `if`/`else`.
+## Break All read that as one and took the first cable off a pin that had two.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -117,8 +122,12 @@ func break_all(node_id: StringName, port_id: StringName) -> bool:
 	if wires.is_empty():
 		return true
 	if port.is_execution():
+		# All of them, not the first. A run of control converges - a branch's body
+		# and the path around it arrive at the same continuation - so an execution
+		# input can hold several, and taking the first off left the pin wired and
+		# the person looking at a cable the tool had just said it removed.
 		return _flow(
-			ComposerFlowEdits.disconnect_flow(_document.printed(), staged, wires[0])
+			ComposerFlowEdits.disconnect_all(_document.printed(), staged, wires)
 		)
 
 	var changes: Array[ComposerFieldEdits.Change] = []

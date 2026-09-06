@@ -140,6 +140,36 @@ static func disconnect_flow(
 #endregion
 
 
+#region Breaking a whole pin
+## Break every execution link on one pin, as one change.
+##
+## One link still goes through the pin's own handler, because what a cut means
+## depends on which pin it left: taking the false path off a branch writes the
+## `else` that stops it, and no amount of setting statements aside says that.
+##
+## Several is a different question and gets a different answer. Several links
+## on one pin only happens where control converges, and each of them keeps the
+## target reached on its own - so there is no first cut to make. Measured:
+## with a branch body and the path around it arriving together, one of the two
+## single cuts is refused; with the two arms of an `if`/`else`, both are. The
+## whole set comes out at once or nothing does.
+static func disconnect_all(
+	source: String, graph: ComposerGraph, edges: Array[ComposerGraph.Connection]
+) -> Result:
+	if edges.is_empty():
+		return _refuse(NOT_CONNECTED)
+	if edges.size() == 1:
+		return disconnect_flow(source, graph, edges[0])
+
+	var tried: ComposerFlowReplace.Attempt = ComposerFlowReplace.cut_together(
+		source, graph, edges
+	)
+	if not tried.message.is_empty():
+		return _refuse(tried.message)
+	return _accept(tried.source)
+#endregion
+
+
 #region Replacing
 ## Move a set of execution links to other pins, or change nothing at all.
 ##

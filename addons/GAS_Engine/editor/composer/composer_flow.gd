@@ -129,7 +129,24 @@ static func predecessor_of(graph: ComposerGraph, node_id: StringName) -> Compose
 static func stranded_by(
 	graph: ComposerGraph, without: ComposerGraph.Connection
 ) -> Array[ComposerNode]:
-	var before: Dictionary[StringName, bool] = _reached(graph, null)
+	var one: Array[ComposerGraph.Connection] = []
+	one.append(without)
+	return stranded_by_all(graph, one)
+
+
+## The same, for a whole pin's worth of links taken out together.
+##
+## Break All on an execution input is this and never a run of single cuts.
+## Two statements running into one continuation - a branch's body and the
+## path around it, or the two arms of an `if`/`else` - each keep it reached
+## on their own, so cutting either alone strands nothing and leaves the
+## transformation with nothing to write. There is no order that works,
+## because the question was never about one link.
+static func stranded_by_all(
+	graph: ComposerGraph, without: Array[ComposerGraph.Connection]
+) -> Array[ComposerNode]:
+	var nothing: Array[ComposerGraph.Connection] = []
+	var before: Dictionary[StringName, bool] = _reached(graph, nothing)
 	var after: Dictionary[StringName, bool] = _reached(graph, without)
 	var stranded: Array[ComposerNode] = []
 	for node: ComposerNode in graph.nodes:
@@ -142,9 +159,9 @@ static func stranded_by(
 	return stranded
 
 
-## Everything execution arrives at, with `without` taken out when it is given.
+## Everything execution arrives at, with those links taken out.
 static func _reached(
-	graph: ComposerGraph, without: ComposerGraph.Connection
+	graph: ComposerGraph, without: Array[ComposerGraph.Connection]
 ) -> Dictionary[StringName, bool]:
 	var seen: Dictionary[StringName, bool] = {}
 	var pending: Array[StringName] = [ComposerFlow.ENTRY_ID]
@@ -156,10 +173,20 @@ static func _reached(
 		for wire: ComposerGraph.Connection in graph.execution_connections():
 			if wire.from_node != at:
 				continue
-			if without != null and wire.is_same_as(without):
+			if _is_one_of(wire, without):
 				continue
 			pending.append(wire.to_node)
 	return seen
+
+
+## Whether that link is one of the ones being taken out.
+static func _is_one_of(
+	wire: ComposerGraph.Connection, without: Array[ComposerGraph.Connection]
+) -> bool:
+	for edge: ComposerGraph.Connection in without:
+		if wire.is_same_as(edge):
+			return true
+	return false
 
 
 ## The nodes execution goes to, from one port or from all of them.

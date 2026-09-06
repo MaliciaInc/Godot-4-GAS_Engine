@@ -97,6 +97,50 @@ static func find_by_token(graph: ComposerGraph, token: String) -> ComposerNode:
 	return null
 
 
+## The same link, said in the numbering of this reading.
+##
+## What a transaction of several steps talks about. The two ends are found by
+## their marks, so a link named before the surgery is still the same link after
+## every line below it moved.
+static func edge_in(
+	read: ComposerGraph, anchored: Anchored, edge: ComposerGraph.Connection
+) -> ComposerGraph.Connection:
+	var from: ComposerNode = node_of(read, anchored, edge.from_node)
+	var to: ComposerNode = node_of(read, anchored, edge.to_node)
+	if from == null or to == null:
+		return null
+	return ComposerReader.wire(from.id, edge.from_port, to.id, edge.to_port)
+
+
+## The statement that mark stands for, in this reading.
+##
+## Entry is the exception and the only one: it is not a line of the file, so it
+## carries no mark and its id does not move.
+static func node_of(
+	read: ComposerGraph, anchored: Anchored, node_id: StringName
+) -> ComposerNode:
+	if node_id == ComposerFlow.ENTRY_ID:
+		return read.find_node(ComposerFlow.ENTRY_ID)
+	var token: String = anchored.token_of(node_id)
+	if token.is_empty():
+		return null
+	return find_by_token(read, token)
+
+
+## Every statement either list touches, so all of them are marked in one pass.
+static func endpoints_of(
+	old_edges: Array[ComposerGraph.Connection],
+	new_edges: Array[ComposerGraph.Connection]
+) -> Array[StringName]:
+	var found: Array[StringName] = []
+	for group: Array[ComposerGraph.Connection] in [old_edges, new_edges]:
+		for edge: ComposerGraph.Connection in group:
+			for node_id: StringName in [edge.from_node, edge.to_node]:
+				if not found.has(node_id):
+					found.append(node_id)
+	return found
+
+
 ## The same file without the marks, whichever spelling was used.
 static func strip_anchors(source: String, prefix: String) -> String:
 	var kept: PackedStringArray = PackedStringArray()

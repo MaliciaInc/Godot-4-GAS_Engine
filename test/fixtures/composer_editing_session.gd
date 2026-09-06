@@ -93,3 +93,16 @@ func depth() -> int:
 
 func cables() -> int:
 	return document.graph().data_connections().size()
+
+
+## How many runs of control arrive at that statement.
+##
+## More than one is ordinary: a branch's body and the path around it both
+## reach the continuation. Asked by what the statement says rather than by id,
+## like everything else here, because an id moves the moment anything above it
+## does.
+func arriving(said: String) -> int:
+	var into: ComposerNode = node(said)
+	if into == null:
+		return 0
+	return document.graph().connections_for(into.id, ComposerReader.EXEC_IN).size()

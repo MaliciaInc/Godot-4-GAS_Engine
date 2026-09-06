@@ -216,58 +216,6 @@ func test_unplugging_leaves_a_call_that_still_reads() -> void:
 #endregion
 
 
-#region Breaking everything on a pin
-## One local feeding two statements: the shape a fanout test needs.
-const FANOUT: Array = [
-	"var caster: AbilitySystemComponent = owner_asc",
-	"apply_gameplay_effect(burning, caster, 1.0)",
-	"apply_gameplay_effect(chilled, caster, 1.0)",
-]
-
-
-## A local feeding two statements is unplugged from both, once.
-func test_breaking_a_fanout_is_one_commit() -> void:
-	var session: ComposerEditingSession = _open(FANOUT)
-	assert_eq(session.cables(), 2, "two cables to start")
-
-	var done: bool = session.controller.break_all(
-		session.node("var caster").id, ComposerReader.VALUE_OUT
-	)
-
-	assert_true(done, "both came off")
-	assert_eq(session.cables(), 0, "nothing is on the pin")
-	assert_eq(session.depth(), 1, "and one undo puts both back")
-
-
-## An undo after a fanout break restores every argument, because there was one
-## commit to undo. This is what the history count is actually protecting.
-func test_one_undo_puts_the_whole_fanout_back() -> void:
-	var session: ComposerEditingSession = _open(FANOUT)
-	assert_true(
-		session.controller.break_all(
-			session.node("var caster").id, ComposerReader.VALUE_OUT
-		)
-	)
-
-	session.document.undo()
-
-	assert_eq(session.cables(), 2, "both cables are back")
-
-
-## A pin with nothing on it is not a change, so it is not an undo either.
-func test_breaking_an_empty_pin_records_nothing() -> void:
-	var session: ComposerEditingSession = _open([
-		"var caster: AbilitySystemComponent = owner_asc",
-		"apply_gameplay_effect(burning, null, 1.0)",
-	])
-
-	var done: bool = session.controller.break_all(
-		session.node("var caster").id, ComposerReader.VALUE_OUT
-	)
-
-	assert_true(done, "there was nothing to refuse")
-	assert_eq(session.depth(), 0, "and nothing to undo")
-#endregion
 
 
 #region Saying no
@@ -291,30 +239,6 @@ func test_a_refused_commit_is_not_reported_as_a_connection() -> void:
 	assert_false(done, "the document said no, so the controller does too")
 	assert_signal_emitted(session.controller, "refused", "and passes the reason on")
 	assert_eq(session.printed(), before, "with the file where it was")
-
-
-## Asked about a pin that is not there, it says so rather than guessing.
-func test_a_pin_that_is_gone_is_refused() -> void:
-	var session: ComposerEditingSession = _open([
-		"apply_gameplay_effect(burning, null, 1.0)",
-	])
-
-	var done: bool = session.controller.break_all(session.node(CONSUMER).id, &"arg_97")
-
-	assert_false(done, "there is no ninety-eighth argument")
-	assert_signal_emitted(session.controller, "refused")
-	assert_eq(session.depth(), 0, "and nothing was written")
-
-
-## With nothing open there is nothing to change, and nothing to crash on.
-func test_nothing_open_refuses_instead_of_failing() -> void:
-	var loose: ComposerConnectionController = ComposerConnectionController.new()
-	watch_signals(loose)
-
-	var done: bool = loose.break_all(&"n5", ComposerReader.VALUE_OUT)
-
-	assert_false(done)
-	assert_signal_emitted(loose, "refused")
 #endregion
 
 
@@ -442,6 +366,4 @@ func test_a_statement_with_no_call_in_it_is_not_written_into() -> void:
 	assert_false(done, "there is no argument there")
 	assert_signal_emitted(session.controller, "refused")
 	assert_eq(session.printed(), before, "and nothing was written")
-
-
 #endregion

@@ -37,18 +37,38 @@ static func region_of(nodes: Array[ComposerNode]) -> ComposerSpan:
 	return ComposerSpan.new(first, last)
 
 
-## Whether those nodes are the whole of that run of lines and nothing else.
+## Whether wrapping that run of lines would take something still running with
+## it.
 ##
-## A gap means the wrapper would swallow a statement that is still supposed to
-## run, so the transformation is refused rather than approximated.
-static func is_contiguous(nodes: Array[ComposerNode], region: ComposerSpan) -> bool:
+## The reason a cut is ever refused rather than approximated. What goes round
+## the region is a wrapper, and a wrapper takes LINES - so the question is what
+## else is inside it, and the answer has to be about statements that still run.
+##
+## This counted lines against drawn statements instead, which reads like the
+## same question and is not. A `match` arm is a header nobody is shown, so a
+## region holding one never added up: every cut that would have set a match
+## aside was refused as outside the subset, and the subset had nothing to do
+## with it. Measured on `if ready: / fire() / match state: / State.A: / one()`,
+## where the arm is the one line of five that no card covers.
+##
+## A statement already inside an island does not count. It was not running
+## before and is not running after, and wrapping it again leaves it exactly as
+## readable as it was.
+static func swallows_something_live(
+	graph: ComposerGraph, stranded: Array[ComposerNode], region: ComposerSpan
+) -> bool:
 	if not region.is_valid():
-		return false
-	var covered: int = 0
-	for node: ComposerNode in nodes:
-		if node.span.is_valid():
-			covered += node.span.last_line - node.span.first_line + 1
-	return covered == region.last_line - region.first_line + 1
+		return true
+	for node: ComposerNode in graph.nodes:
+		if not node.source_backed or not node.visible_in_graph:
+			continue
+		if node.id == ComposerFlow.ENTRY_ID or stranded.has(node):
+			continue
+		if not node.span.is_valid() or not region.contains(node.span.first_line):
+			continue
+		if graph.is_reachable_from_entry(node.id):
+			return true
+	return false
 
 
 ## Put `if false:` around a run of lines, one indent deeper, marked as ours.

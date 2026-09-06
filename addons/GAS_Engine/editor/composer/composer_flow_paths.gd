@@ -42,18 +42,36 @@ static func disconnect_once(
 
 ## The ordinary way out: whatever stops being reached is set aside, marked, and
 ## the shortened path is given somewhere to end.
+static func _cut_ordinary(
+	source: String, graph: ComposerGraph, edge: ComposerGraph.Connection
+) -> String:
+	var one: Array[ComposerGraph.Connection] = []
+	one.append(edge)
+	return cut_together(source, graph, one)
+
+
+## Setting aside what stops being reached once ALL of those links are gone.
+##
+## The transformation behind Break All on an execution input, and the one a
+## single ordinary cut is a case of. It cannot be a loop: two statements
+## running into one continuation each keep it reached on their own, so cutting
+## either alone strands nothing and this would have nothing to write. Both
+## shapes the projection makes were measured saying exactly that - a branch
+## body and the path around it arriving together, and the two arms of an
+## `if`/`else` doing the same - and neither order works, because the question
+## was never about one link.
 ##
 ## Refused rather than approximated when the statements that stop being reached
 ## are not one run of lines: a wrapper drawn round a gap would swallow a
 ## statement that is still supposed to run.
-static func _cut_ordinary(
-	source: String, graph: ComposerGraph, edge: ComposerGraph.Connection
+static func cut_together(
+	source: String, graph: ComposerGraph, edges: Array[ComposerGraph.Connection]
 ) -> String:
-	var stranded: Array[ComposerNode] = ComposerFlow.stranded_by(graph, edge)
+	var stranded: Array[ComposerNode] = ComposerFlow.stranded_by_all(graph, edges)
 	if stranded.is_empty():
 		return ""
 	var region: ComposerSpan = ComposerFlowText.region_of(stranded)
-	if not ComposerFlowText.is_contiguous(stranded, region):
+	if ComposerFlowText.swallows_something_live(graph, stranded, region):
 		return ""
 
 	var wrapped: PackedStringArray = ComposerFlowText.detached(
