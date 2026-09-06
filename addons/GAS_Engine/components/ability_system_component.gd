@@ -117,6 +117,14 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		share_attributes = value
 		if is_node_ready():
 			_adopt_attribute_sets()
+
+@export_category("Compatibility")
+## Which set of contracts this component answers by.
+##
+## The default stays GODOT_NATIVE, and has to: a phase cannot change what an
+## existing project already does by being installed. A component only follows
+## Unreal's contract where they differ once somebody asks for it here.
+@export var compatibility_profile: GameplayCompatibilityProfile = GameplayCompatibilityProfile.new()
 #endregion
 
 
@@ -135,6 +143,15 @@ var events: GameplayEventRuntime = GameplayEventRuntime.new()
 func _ready() -> void:
 	_wire_runtimes()
 	_adopt_attribute_sets()
+
+
+## Whether this component answers by Unreal's contracts where they differ.
+##
+## Asked by the runtimes rather than decided by them: two runtimes reading the
+## same profile agree, and two runtimes each deciding what "compatible" means
+## do not.
+func uses_ue_5_7_contracts() -> bool:
+	return compatibility_profile != null and compatibility_profile.is_ue_5_7()
 
 
 ## The single handover: both exports above route here, so the sets and the
