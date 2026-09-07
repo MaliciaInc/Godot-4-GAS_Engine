@@ -227,6 +227,19 @@ func graph() -> ComposerGraph:
 	return _doc.graph()
 
 
+func has_unsaved_changes() -> bool:
+	return _doc.is_dirty()
+
+
+func open_path() -> String:
+	return _doc.path()
+
+
+func discard_unsaved_changes() -> void:
+	_doc.discard_unsaved_changes()
+	await _redraw()
+
+
 #region Statements, as things you can move about
 ## Each of these hands the selection to the one place that knows what the
 ## operation means, and redraws if the document accepted it.

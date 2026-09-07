@@ -151,6 +151,8 @@ const EXAMPLE_TAGS: Array[String] = [
 var _owns_cue_manager_autoload: bool = false
 
 var _composer_instance: ComposerScreen = null
+var _composer_unsaved_dialog: ComposerUnsavedDialog = null
+var _pending_composer_open_path: String = ""
 
 ## What the open-ability menu is currently offering, in the order it offers
 ## it, so an id coming back means the same file it named.
@@ -189,12 +191,20 @@ func _enter_tree() -> void:
 	_tag_inspector = GameplayTagInspectorPlugin.new()
 	add_inspector_plugin(_tag_inspector)
 
+	var main_screen: Control = EditorInterface.get_editor_main_screen()
+
 	_composer_instance = ComposerScreen.new()
 	_composer_instance.visible = false
 	_composer_instance.code_requested.connect(_on_code_requested)
 	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
 	_composer_instance.create_requested.connect(_ask_for_new_ability)
-	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
+	main_screen.add_child(_composer_instance)
+
+	_composer_unsaved_dialog = ComposerUnsavedDialog.new()
+	main_screen.add_child(_composer_unsaved_dialog)
+	_composer_unsaved_dialog.save_chosen.connect(_accept_pending_after_save)
+	_composer_unsaved_dialog.discard_chosen.connect(_accept_pending_after_discard)
+	_composer_unsaved_dialog.cancel_chosen.connect(_cancel_pending_open)
 
 	# The editor already knows when a file appeared, moved or was deleted, so
 	# the remembered list is dropped on its word rather than on a guess about
@@ -220,12 +230,34 @@ func _disable_plugin() -> void:
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
-	ComposerLibrary.stop_listening_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
+	ComposerLibrary.stop_listening_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
+
+	if _composer_instance != null and _composer_instance.has_unsaved_changes():
+		var recovery_path: String = ComposerRecovery.write(
+			_composer_instance.open_path(), _composer_instance.printed()
+		)
+		if recovery_path.is_empty():
+			push_error(
+				"GAS_Engine: Composer had unsaved changes and could not write a recovery copy."
+			)
+		else:
+			push_warning(
+				"GAS_Engine: Composer preserved unsaved changes at " + recovery_path
+			)
+
+	if _composer_unsaved_dialog != null:
+		_composer_unsaved_dialog.queue_free()
+		_composer_unsaved_dialog = null
+
 	if _composer_instance != null:
 		_composer_instance.queue_free()
 		_composer_instance = null
+
+	_pending_composer_open_path = ""
 #endregion
 
 
@@ -243,7 +275,7 @@ func _open_composer() -> void:
 	)
 	if opened.is_ok():
 		_show_composer()
-		_composer_instance.open(opened.source, opened.graph.source_path)
+		_draw_ability_at(opened.graph.source_path)
 		return
 
 	# Whatever was open is not an ability, which is not a reason to refuse.
@@ -362,12 +394,55 @@ func _create_ability_at(source_path: String) -> void:
 ## Draw the file that was chosen, or say why it cannot be drawn - on the screen
 ## the person is already looking at, which is the Composer.
 func _draw_ability_at(source_path: String) -> void:
+	if (
+		_composer_instance != null
+		and _composer_instance.has_unsaved_changes()
+	):
+		_pending_composer_open_path = source_path
+		_show_unsaved_composer_dialog()
+		return
+
+	_open_composer_path_now(source_path)
+
+
+func _open_composer_path_now(source_path: String) -> void:
 	var opened: ComposerHost.Opened = ComposerHost.open(source_path)
 	if not opened.is_ok():
 		push_warning(COMPOSER_REFUSED % opened.refusal)
 		_composer_instance.show_refusal(opened.refusal)
 		return
 	_composer_instance.open(opened.source, opened.graph.source_path)
+
+
+func _show_unsaved_composer_dialog() -> void:
+	if _composer_unsaved_dialog == null:
+		return
+	_composer_unsaved_dialog.popup_centered()
+
+
+func _accept_pending_after_save() -> void:
+	if _composer_instance == null:
+		return
+	var result: ComposerWriter.Result = await _composer_instance.save()
+	if not result.is_ok():
+		push_warning(COMPOSER_REFUSED % result.refusal.message)
+		return
+	var next_path: String = _pending_composer_open_path
+	_pending_composer_open_path = ""
+	_open_composer_path_now(next_path)
+
+
+func _accept_pending_after_discard() -> void:
+	if _composer_instance == null:
+		return
+	await _composer_instance.discard_unsaved_changes()
+	var next_path: String = _pending_composer_open_path
+	_pending_composer_open_path = ""
+	_open_composer_path_now(next_path)
+
+
+func _cancel_pending_open() -> void:
+	_pending_composer_open_path = ""
 
 
 ## The Code chip: the same ability, in the editor that shows it as text.

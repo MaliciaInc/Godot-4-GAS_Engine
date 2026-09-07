@@ -51,6 +51,16 @@
         "glob": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd",
         "max_lines": 510,
         "reason": "The attribute runtime owns every attribute an entity has: the sets, the contributions, the composition, the clamps and the recomposition that follows a write. F5.1.4 (B15) adds the preflight. An application used to publish its contributions and only then find out whether the aggregate they produced could be composed at all - so a magnitude that overflowed to infinity was already registered by the time anybody noticed, and the attribute then failed to recompose for every other effect on it too. Composing is now asked of a list rather than of the field, so the candidate contributions can be tried against a copy first, and the preflight walks each attribute they touch through the same clamp a real write goes through. Thirty-nine lines, and the split of _compose() into _compose_from() that lets them share one composition rather than grow a second."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_screen.gd",
+        "max_lines": 480,
+        "reason": "The Composer's screen is the one surface the whole editor half hangs off: the canvas, the palette, the inspector, the toolbar and the routes between them, each wired once and each answering for itself. F5.1.5 (B13) adds three questions it has to be able to answer from outside - whether anything is unsaved, which file is open, and throw the unsaved work away - because the plugin cannot decide whether it is safe to open another ability without them, and the document is not something the plugin reaches past the screen to ask."
+      },
+      {
+        "glob": "addons/GAS_Engine/gas_engine_plugin.gd",
+        "max_lines": 520,
+        "reason": "The plugin is the editor-side entry point: the main-screen registration, the tool menu, the inspector plugin, the autoload it installs, and every dialog those need. F5.1.5 (B13) adds the Save/Discard/Cancel navigation. Opening an ability over unsaved work used to replace it without a word, so opening now remembers what was asked for, puts the question, and each of the three answers has its own handler - a wrapper round two of them would have to branch on which answer it was, which is the same code with a flag in it. Plus the teardown: a plugin leaving the tree cannot hold a modal open, so it writes the unsaved text somewhere findable rather than losing it."
       }
     ],
     "function_parameter_allowlist": [

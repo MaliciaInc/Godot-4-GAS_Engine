@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.1.4 (B10/B11/B14/B15/B16): ceilings for the aggregate preflight and the source-tags flag; 'usage' allowlisted as a key of Godot's own property dictionaries.
+# F5.1.5 (B12/B13): ceilings for the screen's three new questions and the plugin's Save/Discard/Cancel navigation.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T00:58:22Z
-# commit-previo: 25c9c6a4ac1f4f2e6b9c6ca246584a91b1096704
+# date-utc: 2026-09-07T01:12:56Z
+# commit-previo: 86be2a310ffcf76b3364a30414afcd9919808fef
 # files: 24
-ee3c35aeabbaad48b382dbb7840cd924946fef2d7cd9c5afaebc75269d09a693  tooling/.quality-gates.json
+eeb7c3de9fcea0fce939e3dcd23d4db0ae576d78887a079172b6f55e9c8aee84  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
