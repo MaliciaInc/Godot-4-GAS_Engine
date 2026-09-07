@@ -34,6 +34,17 @@ signal ability_granted_by_authority(entity: GameplayNetEntityId, definition: Res
 ## An entity's grant was taken away.
 signal ability_revoked_by_authority(entity: GameplayNetEntityId, definition: Resource)
 
+## The authority answered a request this machine made, and which run it is.
+##
+## Emitted rather than acted on directly, because what waits for an answer is
+## not the runtime: it is whatever the ability arranged - a sync point, a
+## cast bar, a game's own code - and each of those knows which guess is its
+## own. The runtime knowing them all would be the runtime knowing about
+## abilities.
+signal activation_answered(
+	key: GameplayPredictionKey, activation: GameplayNetActivationId, accepted: bool
+)
+
 ## A reading of an entity's state was written onto it. Carries the state as
 ## well as the entity, because what a game shows - which buffs, how long left
 ## - is in the reading and deliberately not written into the component.
@@ -334,9 +345,11 @@ func _act_on(message: GameplayNetMessage) -> bool:
 			return _honour_request(message)
 		GameplayNetMessage.Kind.ACTIVATION_CONFIRM:
 			journal.accept(message.prediction_key)
+			activation_answered.emit(message.prediction_key, message.activation, true)
 			return true
 		GameplayNetMessage.Kind.ACTIVATION_REJECT:
 			journal.reject(message.prediction_key, registry.asc_for(message.entity))
+			activation_answered.emit(message.prediction_key, message.activation, false)
 			return true
 		_:
 			return true

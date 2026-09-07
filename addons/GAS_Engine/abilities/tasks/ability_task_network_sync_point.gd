@@ -35,17 +35,75 @@ var timeout: float = 0.0
 var waited: float = 0.0
 var timed_out: bool = false
 
+## Which request this point is waiting on the answer to.
+##
+## The two `arrives` calls below were the whole of it when this task was
+## written: something outside had to notice the answer and tell the task. That
+## is a test's way of saying it and nobody's way of shipping it. Given a key,
+## the task listens for the answer to the request the ability actually sent,
+## and the machine that owns the game arriving is the confirm arriving.
+##
+## Null keeps the old shape exactly: a sync point nobody gave a key to is one
+## the game drives itself, which is what every existing caller does.
+var awaiting: GameplayPredictionKey = null
+
+## Which run the authority confirmed, for a caller that wants to name it.
+var confirmed_activation: GameplayNetActivationId = null
+
+var _network: GameplayNetworkRuntime = null
+
 
 static func create(
 	ability: GameplayAbility,
 	for_whom: AbilityTaskNetworkSyncPoint.Wait = Wait.BOTH,
-	give_up_after: float = 0.0
+	give_up_after: float = 0.0,
+	awaiting_key: GameplayPredictionKey = null
 ) -> AbilityTaskNetworkSyncPoint:
 	var task: AbilityTaskNetworkSyncPoint = AbilityTaskNetworkSyncPoint.new()
 	task.owner_ability = ability
 	task.waiting_for = for_whom
 	task.timeout = give_up_after
+	task.awaiting = awaiting_key
 	return task
+
+
+## Listens only when it was given something to listen for.
+func _on_start() -> void:
+	if awaiting == null or not awaiting.is_valid():
+		return
+	_network = _runtime()
+	if _network != null:
+		_network.activation_answered.connect(_on_answered)
+
+
+func _on_finish() -> void:
+	if _network != null and _network.activation_answered.is_connected(_on_answered):
+		_network.activation_answered.disconnect(_on_answered)
+	_network = null
+
+
+func _runtime() -> GameplayNetworkRuntime:
+	if owner_ability == null or owner_ability.owner_asc == null:
+		return null
+	return owner_ability.owner_asc.network
+
+
+## The answer to the request this point is waiting on.
+##
+## A refusal is not a late arrival. An ability whose request was refused is
+## not going to be confirmed afterwards, and a sync point that kept waiting
+## would hold the ability open for its whole timeout and then let it carry on
+## as though nothing had been refused.
+func _on_answered(
+	key: GameplayPredictionKey, activation: GameplayNetActivationId, accepted: bool
+) -> void:
+	if awaiting == null or not awaiting.same_as(key):
+		return
+	if not accepted:
+		cancel(GameplayAbilityTask.CancelReason.ABILITY_ABORTED)
+		return
+	confirmed_activation = activation
+	server_arrives()
 
 
 ## Say that the machine that owns the game has arrived.

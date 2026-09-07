@@ -288,9 +288,11 @@ static func wait_state(
 static func network_sync_point(
 	ability: GameplayAbility,
 	for_whom: AbilityTaskNetworkSyncPoint.Wait = AbilityTaskNetworkSyncPoint.Wait.BOTH,
-	give_up_after: float = 0.0
+	give_up_after: float = 0.0,
+	awaiting: GameplayPredictionKey = null
 ) -> AbilityTaskNetworkSyncPoint:
 	return _own(
-		ability, AbilityTaskNetworkSyncPoint.create(ability, for_whom, give_up_after)
+		ability,
+		AbilityTaskNetworkSyncPoint.create(ability, for_whom, give_up_after, awaiting)
 	) as AbilityTaskNetworkSyncPoint
 #endregion
