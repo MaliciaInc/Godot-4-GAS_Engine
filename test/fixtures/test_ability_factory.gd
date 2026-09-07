@@ -36,3 +36,22 @@ static func give(
 	ability.free()
 	var handle: GameplayAbilityHandle = asc.give_ability(scene, level, input_id, source)
 	return asc.ability_runtime.get_spec(handle)
+
+
+## An ability scene with a network policy on it, living at a path.
+##
+## A PackedScene built in memory has no `resource_path`, and a definition that
+## lives nowhere cannot be named to another machine - which is correct, and
+## makes every networking test need a scene with a path. Written once here
+## because two copies of it were two places to get the packing wrong.
+static func net_ability(
+	policy: GameplayAbility.NetExecutionPolicy, path: String, tag: StringName = &"Ability.Net"
+) -> PackedScene:
+	var probe: ProbeAbility = ProbeAbility.build(tag)
+	probe.net_execution_policy = policy
+	var scene: PackedScene = PackedScene.new()
+	var pack_error: Error = scene.pack(probe)
+	assert(pack_error == OK, "TestAbilityFactory: packing a networked ability failed")
+	probe.free()
+	scene.take_over_path(path)
+	return scene

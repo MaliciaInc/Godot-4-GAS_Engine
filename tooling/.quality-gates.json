@@ -615,6 +615,11 @@
         "left": "addons/GAS_Engine/networking/gameplay_net_authority.gd:client_start",
         "right": "addons/GAS_Engine/**/*.gd:_translate*",
         "reason": "The fourth member of the enum-to-enum family the three entries above already declare, and declared against all of them at once because the reason is the same for each: a closed mapping from one enum to another is a `match` with one arm per value and a fallback, and that is the one way GDScript writes it. What this one maps is unrelated to what any of them map - NetExecutionPolicy, which is what an ability was authored with, to GameplayNetAuthority.Start, which is what a client may do about it. Merging it into a status translator would mean deciding that an ability's network policy and a magnitude's failure reason are the same vocabulary, which is the coupling those entries exist to refuse. The shape is shared because the language has one; nothing was copied."
+      },
+      {
+        "left": "addons/GAS_Engine/networking/gameplay_prediction_operation.gd:_of",
+        "right": "test/unit/test_refusal_statuses.gd:_cost",
+        "reason": "Two builders on opposite sides of the test boundary that share the shape every builder has: `new()`, a field per argument, `return`. One writes down what a client did ahead of an answer so it can be undone; the other assembles a GameplayAbilityCost so a refusal test can name the shape of cost it is refusing. They have no argument, no field and no type in common, and the only thing they could be merged into is a function that takes four things and knows what none of them mean."
       }
     ]
   }

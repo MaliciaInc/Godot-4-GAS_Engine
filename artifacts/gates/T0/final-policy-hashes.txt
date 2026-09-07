@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.5.4 (G01/G02): GameplayNetAuthority.client_start declared against the enum-to-enum translation family.
+# F5.5.6 (G01/G02): the prediction operation builder declared against the refusal-status cost builder.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T20:50:05Z
-# commit-previo: 9bae80b20e41803a61ee40e1897bc8f744807dea
+# date-utc: 2026-09-07T21:21:12Z
+# commit-previo: 0aae1e81880564fe379438453a215d1e0c436325
 # files: 25
-01ce045b3f1462d82b8441463e6c67e51b338879492a00cbbeebb7683b34092e  tooling/.quality-gates.json
+5ca1278d30ab06dd6f5c97045652909400dbd76a420312cf75bf29fc51baa286  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

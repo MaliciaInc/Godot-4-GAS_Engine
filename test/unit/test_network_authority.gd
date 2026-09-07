@@ -15,7 +15,7 @@
 extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
-const Probe = preload("res://test/fixtures/probe_ability.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 
 const SERVER_PEER: int = 1
 const OWNING_PEER: int = 2
@@ -66,18 +66,12 @@ func _asc(named: String) -> AbilitySystemComponent:
 	return fixture.asc
 
 
-## An ability scene with a policy authored on it, living at a path so it has an
-## id at all: a resource that was never saved cannot be named to another
+## An ability scene with a policy authored on it, living at a path so it has
+## an id at all: a resource that was never saved cannot be named to another
 ## machine, which is the point of the check that says so.
 func _ability(policy: GameplayAbility.NetExecutionPolicy) -> PackedScene:
-	var probe: ProbeAbility = Probe.build(&"Ability.Net")
-	probe.net_execution_policy = policy
-	var scene: PackedScene = PackedScene.new()
-	scene.pack(probe)
-	probe.free()
 	made += 1
-	scene.take_over_path(A_SCENE_PATH % made)
-	return scene
+	return AbilityFactory.net_ability(policy, A_SCENE_PATH % made)
 
 
 func _an_entity(runtime: GameplayNetworkRuntime, value: int, owner_peer: int) -> GameplayNetEntityId:

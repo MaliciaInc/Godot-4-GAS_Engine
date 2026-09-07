@@ -74,6 +74,14 @@ var _counted: Dictionary[int, int] = {}
 ## arriving late is ignored rather than undoing a newer one.
 var _applied_sequence: Dictionary[int, int] = {}
 
+## What this machine did before it was allowed to, and still owes an answer
+## on. Empty on an authority, which never predicts because it never asks.
+var journal: GameplayPredictionJournal = GameplayPredictionJournal.new()
+
+## The authority's count of runs per entity, which is what an activation id
+## is made of.
+var _runs: Dictionary[int, int] = {}
+
 ## What has already been acted on.
 ##
 ## Not a sequence number: a message is identified by what it says, so applying
@@ -122,6 +130,8 @@ func dispose() -> void:
 	_told.clear()
 	_counted.clear()
 	_applied_sequence.clear()
+	_runs.clear()
+	journal.clear()
 #endregion
 
 
@@ -179,6 +189,11 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST, id
 	)
 	asking.definition = named
+	# A request carries a key whichever way it was started. The predicting
+	# client needs it to unwind by; the waiting one needs it because the
+	# answer has to name which ask it is answering, and a client with two in
+	# flight cannot tell them apart otherwise.
+	asking.prediction_key = journal.next_key(peer)
 	message_ready.emit(asking)
 	return decided
 
@@ -317,6 +332,12 @@ func _act_on(message: GameplayNetMessage) -> bool:
 			return _announce_grant(message)
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST:
 			return _honour_request(message)
+		GameplayNetMessage.Kind.ACTIVATION_CONFIRM:
+			journal.accept(message.prediction_key)
+			return true
+		GameplayNetMessage.Kind.ACTIVATION_REJECT:
+			journal.reject(message.prediction_key, registry.asc_for(message.entity))
+			return true
 		_:
 			return true
 
@@ -339,14 +360,49 @@ func _honour_request(message: GameplayNetMessage) -> bool:
 		_refuse(message, REASON_UNKNOWN_DEFINITION)
 		return false
 
-	var asking: int = message.prediction_key.peer if message.is_predicted() else registry.owner_of(message.entity)
-	if not registry.is_owned_by(message.entity, asking):
-		_refuse(message, REASON_NOT_OWNED)
+	var asking: int = (
+		message.prediction_key.peer if message.is_predicted()
+		else registry.owner_of(message.entity)
+	)
+	var refusal: StringName = _why_not(message, asking, definition)
+	if refusal != &"":
+		_refuse(message, refusal)
+		_answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
 		return false
-	if not GameplayNetAuthority.honours_request(true, _policy_of(definition)):
-		_refuse(message, REASON_POLICY)
-		return false
+	_answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
 	return true
+
+
+## Why this request will not be honoured, or nothing when it will.
+##
+## Both refusals are answered rather than dropped in silence. The ordinary
+## reason a well-formed request is refused is that something moved between
+## the asking and the arrival - a character changed hands, a grant was
+## revoked - and the client that asked is holding a guess it needs to unwind.
+## Saying nothing would leave it holding that guess for ever.
+func _why_not(
+	message: GameplayNetMessage, asking: int, definition: Resource
+) -> StringName:
+	if not registry.is_owned_by(message.entity, asking):
+		return REASON_NOT_OWNED
+	if not GameplayNetAuthority.honours_request(true, _policy_of(definition)):
+		return REASON_POLICY
+	return &""
+
+
+## Say yes or no to a request, naming the run and the guess it answers.
+##
+## The key is echoed rather than looked up: the machine that asked is the
+## one holding the journal, and an answer that did not name the guess would
+## leave a client with two casts in flight unwinding the wrong one.
+func _answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> void:
+	var id: GameplayNetEntityId = asked.entity
+	_runs[id.value] = _runs.get(id.value, 0) + 1
+	var answer: GameplayNetMessage = GameplayNetMessage.of(kind, id)
+	answer.activation = GameplayNetActivationId.of(id, _runs[id.value])
+	answer.definition = asked.definition
+	answer.prediction_key = asked.prediction_key
+	message_ready.emit(answer)
 
 
 ## What makes two messages the same message.
