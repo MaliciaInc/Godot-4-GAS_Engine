@@ -282,6 +282,20 @@ func update_set_by_caller(tag: StringName, value: float) -> bool:
 	return set_set_by_caller(tag, value)
 
 
+## The same copy, carrying the aim that belongs to one target.
+##
+## An area effect applies one spec to several victims and each of them is a
+## separate application; this is the door that lets each one arrive knowing
+## what hit it. Null data is the ordinary case - most effects are not aimed at
+## anything - and comes out exactly as `create_application_copy()` does.
+func create_application_copy_for(data: GameplayAbilityTargetData) -> GameplayEffectSpec:
+	var copy: GameplayEffectSpec = create_application_copy()
+	if copy == null or data == null or context == null:
+		return copy
+	copy.context = context.derive_for_target(data)
+	return copy
+
+
 func create_application_copy() -> GameplayEffectSpec:
 	var context_copy: GameplayEffectContext = context.create_application_copy() if context != null else null
 	if context != null and context_copy == null:

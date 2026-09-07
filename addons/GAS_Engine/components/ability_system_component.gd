@@ -544,14 +544,18 @@ func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 ## @composer
 ## @composer_name: Apply Spec To Target, With Result
 func apply_effect_spec_to_target_result(
-	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
+	spec: GameplayEffectSpec,
+	target_asc: AbilitySystemComponent,
+	aimed_at: GameplayAbilityTargetData = null
 ) -> GameplayEffectApplicationResult:
 	if target_asc == null or spec == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
 	if not spec.prepare_captures(self):
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
+	# `aimed_at` is this victim's share of the aim, and null for an effect that
+	# was not aimed at anything - which is most of them.
 	var result: GameplayEffectApplicationResult = target_asc.apply_effect_spec_result(
-		spec.create_application_copy()
+		spec.create_application_copy_for(aimed_at)
 	)
 	if result.is_ok():
 		effect_applied_to_target.emit(target_asc, spec)

@@ -20,6 +20,13 @@ class_name GameplayAbilityTargetData extends RefCounted
 
 const TargetHit = preload("res://addons/GAS_Engine/target_data/gameplay_target_hit.gd")
 
+## This file, by path. Named rather than by its global class name for the reason
+## `gameplay_effect_context.gd` gives: this is in an autoload's parse-time
+## closure, and an autoload is parsed before Godot has scanned the project for
+## class_name declarations - so the global name does not resolve there, not even
+## this file's own.
+const Self = preload("res://addons/GAS_Engine/target_data/gameplay_ability_target_data.gd")
+
 ## Strictly unique target nodes captured by the ability.
 var _target_nodes: Array[Node] = []
 
@@ -119,6 +126,36 @@ func get_hits_for_node(node: Node) -> Array[TargetHit]:
 		if hit.collider == node:
 			specific.append(hit)
 	return specific
+
+
+## An aim of this one's own, keeping only what `only` names.
+##
+## Two things at once because they are one operation. An area effect is aimed
+## once and lands on several, and what each of them was hit by is different:
+## where the sweep touched them, which shape, at what angle. Handing every
+## victim the whole aim tells each of them about everybody else - a "did this
+## hit my head" check answering yes because it hit somebody else's head - and
+## handing them nothing, which is what happened before, tells them nothing
+## about themselves either.
+##
+## Always a new object, never the one it was handed. Target data is mutable, so
+## two victims sharing one is either of them changing what the other sees: a
+## channelled ability dropping a target that walked out of the area would drop
+## it from the other victim's data as well.
+##
+## `only` null keeps everything, which is the copy an application needs when it
+## was aimed at one thing to begin with.
+## @composer
+func copied(only: Node = null) -> Self:
+	var theirs: Self = Self.new()
+	for node: Node in _target_nodes:
+		if only != null and node != only:
+			continue
+		theirs._target_nodes.append(node)
+	for hit: TargetHit in _hits:
+		if only == null or hit.collider == only:
+			theirs._hits.append(hit)
+	return theirs
 
 
 ## @composer

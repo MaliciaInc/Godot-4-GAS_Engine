@@ -84,6 +84,23 @@ func create_application_copy() -> GameplayEffectContext:
 	return copy
 
 
+## This context, aimed at one target.
+##
+## `create_application_copy()` leaves target data empty on purpose: an
+## application is one victim's, and the aim it came from was several victims'.
+## This is how the one that belongs to this victim gets attached - the origin
+## and the payloads carried over, and target data that is theirs alone.
+##
+## Never the object it was handed. Target data is mutable, and two applications
+## holding one is either of them changing what the other sees.
+func derive_for_target(data: TargetData) -> GameplayEffectContext:
+	var copy: GameplayEffectContext = derive_child_context(self)
+	if data == null:
+		return copy
+	copy.target_data = data.copied()
+	return copy
+
+
 ## A context for a system-generated child application - an Additional
 ## Effects reaction, an overflow effect. A full application copy of
 ## `parent` when one exists and copies cleanly; a bare instigator/causer

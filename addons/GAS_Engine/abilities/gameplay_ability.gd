@@ -567,8 +567,13 @@ func apply_effect_to_targets(
 			result.rejected_targets.append(target_asc)
 			continue
 
+		# What THIS target was hit by, and nothing about anybody else. Handing
+		# every victim the whole aim tells each of them about the others - a "did
+		# this hit my head" check answering yes because it hit somebody else's.
 		var applied: GameplayEffectApplicationResult = (
-			owner_asc.apply_effect_spec_to_target_result(spec, target_asc)
+			owner_asc.apply_effect_spec_to_target_result(
+				spec, target_asc, target_data.copied(target)
+			)
 		)
 		result.applications.append(applied)
 		if not applied.is_ok():

@@ -462,6 +462,10 @@
       {
         "literal": ".tres",
         "reason": "Godot's text-resource extension. Named once in the addon, as the suffix a GameplayEffect asset carries, and once in tooling/product_identity.py, inside the set of every extension that gate reads as text - a list of file types rather than a statement about effect assets. Same reason as `.tscn` above, and the same direction of dependency a gate must not have."
+      },
+      {
+        "literal": "res://addons/GAS_Engine/target_data/gameplay_ability_target_data.gd",
+        "reason": "preload() of a class two files in the GameplayCueManager autoload's parse-time closure both have to name. An autoload is parsed before Godot has scanned the project for class_name declarations, so neither file may use the global name - project_invariants.py fails the build when they do. Both appearances are that rule's consequence rather than a choice: one is the file preloading itself so a method can name its own return type, the other is gameplay_effect_context.gd naming what its target_data field holds. A shared constant is not available either, since holding it would be a third file in the same closure."
       }
     ],
     "allow_globs": [],
