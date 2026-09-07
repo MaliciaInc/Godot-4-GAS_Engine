@@ -31,6 +31,9 @@ enum Policy {
 }
 
 @export var actor: GameplayAttributeCaptureDefinition.Actor = Actor.SOURCE
+## Which attribute is captured, said so it cannot mean two of them.
+@export var attribute: GameplayAttributeRef = null
+
 @export var attribute_name: StringName = &""
 @export var value: GameplayAttributeCaptureDefinition.Value = Value.CURRENT
 @export var policy: GameplayAttributeCaptureDefinition.Policy = Policy.SNAPSHOT

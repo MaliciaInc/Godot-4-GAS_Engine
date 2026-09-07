@@ -21,6 +21,12 @@ enum Operation {
 }
 
 ## The exact attribute name in the AttributeSet (e.g. &"health" or &"mana").
+## Which attribute this changes, said so it cannot mean two of them.
+##
+## Authoritative where it is set. `attribute_name` below stays for everything
+## authored before this and is what a reference falls back to.
+@export var attribute: GameplayAttributeRef = null
+
 @export var attribute_name: StringName = &""
 
 ## How the math should be applied.

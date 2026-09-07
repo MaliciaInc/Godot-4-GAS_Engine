@@ -76,6 +76,25 @@ func find_set(attribute_name: StringName) -> AttributeSet:
 	return null
 
 
+## Whether more than one set on this entity declares that attribute.
+##
+## The question a bare name cannot survive: two sets that both declare `health`
+## make `health` mean two different values, and picking whichever was walked
+## into first is an answer that changes with the order somebody listed them in.
+func is_ambiguous(attribute_name: StringName) -> bool:
+	return GameplayAttributeLookup.is_ambiguous(_sets, attribute_name)
+
+
+## The set a reference names, or null when nothing answers to it.
+func find_set_by_ref(reference: GameplayAttributeRef) -> AttributeSet:
+	return GameplayAttributeLookup.set_for(_sets, reference)
+
+
+## The attribute a reference names, or null.
+func find_by_ref(reference: GameplayAttributeRef) -> AttributeData:
+	return GameplayAttributeLookup.attribute_for(_sets, reference)
+
+
 ## The attribute itself, or null when no set declares it.
 func find(attribute_name: StringName) -> AttributeData:
 	var attribute_set: AttributeSet = find_set(attribute_name)
