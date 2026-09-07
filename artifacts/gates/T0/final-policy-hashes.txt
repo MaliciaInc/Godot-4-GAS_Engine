@@ -4,14 +4,15 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.6.2 (G31): attribute runtime ceiling 510 -> 560 for the contribution index; the corpus's uniform case shape declared.
+# F5.6.4 (G32): tooling/distribution_check.py added to the sealed policy set.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T22:24:17Z
-# commit-previo: 19c6b99a53503e8c461f6223c5890438f13056c4
-# files: 25
+# date-utc: 2026-09-07T23:18:50Z
+# commit-previo: 0a714b0c7f57c34ea95be288d0011487c91ebbf9
+# files: 26
 771437790f241ae47eac36644b18327e48ecf978c054f329b27c632a1bc7bd33  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
+14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
 2a204a5305353cde18d59ae75afebd5b872f02999464bd3ba6727a46b7ce49e2  tooling/gates/generated-files.json
