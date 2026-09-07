@@ -11,11 +11,6 @@
 class_name ComposerStatements extends RefCounted
 
 
-## The first line of the body this tool cannot draw, or null when it can draw
-## them all.
-##
-## One refusal is enough: the file opens read-only either way, and naming the
-## first one is what a person needs to decide whether to change it.
 ## One statement: where it starts, where it ends, and what it says as one line.
 class Statement extends RefCounted:
 	var first: int = ComposerSpan.NO_LINE
@@ -72,33 +67,3 @@ static func _joined(lines: PackedStringArray, first: int, last: int) -> String:
 		text += " " + lines[line - 1].strip_edges()
 	return text
 
-
-static func first_refusal(
-	lines: PackedStringArray, span: ComposerSpan
-) -> ComposerGraph.Diagnostic:
-	if not span.is_valid():
-		return _refusal(
-			"no %s() to draw" % ComposerSubset.ENTRY_POINT, ComposerSpan.new()
-		)
-
-	for made: Statement in of(lines, span):
-		if made.verdict.is_representable():
-			continue
-		# The line it happened on and the words that are on it. A reason on its
-		# own leaves somebody reading a whole method looking for which line the
-		# tool meant, which is the moment they close the Composer.
-		return _refusal(
-			"%s: `%s` on line %d" % [
-				made.verdict.reason, made.text.strip_edges(), made.first
-			],
-			ComposerSpan.new(made.first, made.last)
-		)
-	return null
-
-
-static func _refusal(message: String, where: ComposerSpan) -> ComposerGraph.Diagnostic:
-	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
-	found.severity = ComposerGraph.Severity.NOT_REPRESENTABLE
-	found.message = message
-	found.span = where
-	return found

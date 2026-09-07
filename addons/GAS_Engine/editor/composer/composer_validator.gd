@@ -54,6 +54,14 @@ static func inspect(graph: ComposerGraph) -> Array[ComposerGraph.Diagnostic]:
 	var found: Array[ComposerGraph.Diagnostic] = []
 	if graph == null:
 		return found
+	# A region the reader kept is one nobody looked inside, and nothing here
+	# judges it - not by a guard, but because there is nothing on it to judge. It
+	# carries no fields, no catalog entry and no data ports, so the argument check
+	# and the unread-value check have nothing to look at. A guard would have been
+	# a line that reads as load-bearing and is not, which is worse than the fact
+	# it was standing in for. What IS still checked is where it sits in the flow:
+	# a region nothing reaches is worth saying out loud whether or not the tool
+	# can read what is inside it.
 	for node: ComposerNode in graph.nodes:
 		_check_arguments(node, found)
 		_check_wires(graph, node, found)

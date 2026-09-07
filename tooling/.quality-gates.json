@@ -61,6 +61,11 @@
         "glob": "addons/GAS_Engine/gas_engine_plugin.gd",
         "max_lines": 580,
         "reason": "The plugin is the editor-side entry point: the main-screen registration, the tool menu, the inspector plugin, the autoload it installs, and every dialog those need. F5.1.5 (B13) adds the Save/Discard/Cancel navigation. Opening an ability over unsaved work used to replace it without a word, so opening now remembers what was asked for, puts the question, and each of the three answers has its own handler - a wrapper round two of them would have to branch on which answer it was, which is the same code with a flag in it. Plus the teardown: a plugin leaving the tree cannot hold a modal open, so it writes the unsaved text somewhere findable rather than losing it. F5.3.2 (G25) adds the Tools item that creates a GameplayEffect asset: the words it needs, the picker that asks where the file goes, and a handler that creates through GameplayEffectAsset and hands the person that very Resource to edit. Nothing here describes an effect - that is the whole point of the package, that there is one description and the inspector edits it - so the lines are the menu plumbing an EditorPlugin has to write out and nothing else."
+      },
+      {
+        "glob": "addons/GAS_Engine/editor/composer/composer_reader.gd",
+        "max_lines": 490,
+        "reason": "F5.3.3 (G26) gives the reader a second kind of card to build. It used to have one move for a line it did not understand - refuse the file - which is three lines of code and cost a person the whole Composer for one `for` loop the tool only needed to leave alone. It now builds a card for that region instead: a node with its lines and nothing else on it, and a warning naming which part of the body is being kept. The deciding moved out to ComposerIR, which is what answers where such a region starts and stops; what stayed here is the two shapes of card and the sentence said about the second, because building a card is this file's whole job."
       }
     ],
     "function_parameter_allowlist": [

@@ -1,13 +1,18 @@
 ## GDScript in, a graph out. Nothing is stored and nothing is executed.
 ##
-## Reads the body of one method through `ComposerSubset` and builds the
-## projection the canvas draws. The subset decides what a line is; this decides
-## what that line becomes.
+## Reads the file into a `ComposerIR` and turns the entry point's events into
+## the projection the canvas draws. The IR decides what the file is made of;
+## this decides what each of those becomes.
 ##
-## Fails early and loudly. One line outside the subset ends the read, and the
-## file opens with the reason and the line rather than with a partial graph - a
-## graph missing a statement looks complete, and the writer would then emit what
-## it drew and delete the statement from the file.
+## What it never does is drop a statement. A graph missing a line looks
+## complete, and the writer would then emit what it drew and delete that line
+## from the file - so a region the tool cannot read is drawn as itself: a card
+## that says what it is, holds its lines, and is put back byte for byte.
+##
+## That is the change of contract. Refusing the file outright was the older
+## answer, and it cost a person the whole Composer for one `for` loop the tool
+## only needed to leave alone. A file is unreadable now for exactly one reason:
+## it has no `_activate_ability()` to draw.
 ##
 ## Comments and blank lines are carried by the statement below them. That is how
 ## a person reads them, and it is what lets the writer put them back where they
@@ -44,21 +49,22 @@ const AWAIT_MARK: String = "await "
 
 ## Read `source` as a graph of `path`.
 ##
-## Always returns a graph. An unreadable file comes back with no nodes and one
-## NOT_REPRESENTABLE diagnostic, which is what the panel and the canvas both
-## read - so neither has to decide on its own whether the file is drawable.
+## Always returns a graph. A file with no entry point comes back with no nodes
+## and one NOT_REPRESENTABLE diagnostic, which is what the panel and the canvas
+## both read - so neither has to decide on its own whether the file is drawable.
 static func read(source: String, path: String) -> ComposerGraph:
 	var graph: ComposerGraph = ComposerGraph.new()
 	graph.source_path = path
 
 	var lines: PackedStringArray = source.split("\n")
-	var span: ComposerSpan = ComposerSubset.body_span(lines)
-	var refusal: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(lines, span)
-	if refusal != null:
-		graph.diagnostics = [refusal] as Array[ComposerGraph.Diagnostic]
+	var entry: ComposerIRFunction = ComposerIR.of(source, path).entry()
+	if entry == null or not entry.body.is_valid():
+		graph.diagnostics = [
+			_refusal("no %s() to draw" % ComposerSubset.ENTRY_POINT, ComposerSpan.new())
+		] as Array[ComposerGraph.Diagnostic]
 		return graph
 
-	_build_nodes(graph, lines, span, path, ComposerSubset.entry_return_type(lines))
+	_build_nodes(graph, lines, entry, path)
 	ComposerFlow.build(graph, lines)
 	ComposerDataWires.apply(graph)
 
@@ -67,46 +73,95 @@ static func read(source: String, path: String) -> ComposerGraph:
 	# and an empty Output panel, which reads as "nothing is wrong" rather than
 	# as "nobody looked".
 	ComposerValidator.apply(graph)
+	_note_opaque_regions(graph, entry)
 	return graph
+
+
+## Say, once per region, which part of the body is being left alone.
+##
+## A warning rather than a refusal: the ability opens, draws and saves. What the
+## person is told is which card they cannot edit and why, because a card that
+## silently refused every edit would read as a broken tool rather than as a
+## deliberate boundary.
+static func _note_opaque_regions(graph: ComposerGraph, entry: ComposerIRFunction) -> void:
+	for event: ComposerIREvent in entry.opaque_events():
+		var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
+		found.severity = ComposerGraph.Severity.WARNING
+		found.message = "%s, and is kept exactly as written" % event.reason
+		found.node_id = StringName("n%d" % event.span.last_line)
+		found.span = event.span
+		graph.diagnostics.append(found)
+
+
+static func _refusal(message: String, where: ComposerSpan) -> ComposerGraph.Diagnostic:
+	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
+	found.severity = ComposerGraph.Severity.NOT_REPRESENTABLE
+	found.message = message
+	found.span = where
+	return found
 
 
 #region Nodes
 static func _build_nodes(
 	graph: ComposerGraph,
 	lines: PackedStringArray,
-	span: ComposerSpan,
-	path: String,
-	returns: StringName
+	entry: ComposerIRFunction,
+	path: String
 ) -> void:
-	var carried: int = ComposerSpan.NO_LINE
 	# What each local was declared to be, gathered on the way down. A receiver
 	# is very often a local - `var data: GameplayAbilityTargetData = ...` and
 	# then `data.get_target_nodes()` - and without this every call on one is a
 	# call the catalog cannot place.
 	var locals: Dictionary[String, StringName] = {}
-	for made: ComposerStatements.Statement in ComposerStatements.of(lines, span):
-		if not made.verdict.is_drawn():
-			# A comment or a blank belongs to whatever comes next, so remember
-			# where the run started and let the statement claim it.
-			if carried == ComposerSpan.NO_LINE:
-				carried = made.first
+	for event: ComposerIREvent in entry.events:
+		if not event.is_drawn():
 			continue
 
-		var first: int = carried if carried != ComposerSpan.NO_LINE else made.first
-		carried = ComposerSpan.NO_LINE
-		var node: ComposerNode = _node(made, first, path, locals, returns)
-		var declared: String = local_name(made.text)
-		if not declared.is_empty():
-			locals[declared] = StringName(_local_type(made.text))
+		var node: ComposerNode = (
+			_opaque_node(event)
+			if event.is_opaque()
+			else _node(event.statement, event.span.first_line, path, locals, entry.returns)
+		)
+		if not event.is_opaque():
+			var declared: String = local_name(event.text)
+			if not declared.is_empty():
+				locals[declared] = StringName(_local_type(event.text))
 		# The node keeps the text it came from, so a save can reprint it rather
 		# than rebuild it. The comments it picked up on the way are kept apart:
 		# nothing in the model stands for a comment, so a rebuilt statement that
 		# carried them along would print itself and lose them.
-		node.carried = PackedStringArray(lines.slice(first - 1, made.first - 1))
-		node.source_text = PackedStringArray(lines.slice(made.first - 1, made.last))
+		node.carried = PackedStringArray(
+			lines.slice(event.span.first_line - 1, event.statement_line - 1)
+		)
+		node.source_text = PackedStringArray(
+			lines.slice(event.statement_line - 1, event.span.last_line)
+		)
 
 		ComposerLayoutMetadata.read_onto(node)
 		graph.nodes.append(node)
+
+
+## A card for a region the tool does not understand.
+##
+## It runs where it is written, so it takes a run of control in and hands one
+## on. Everything else a card can offer - fields, a catalog entry, a value it
+## produces - would be this claiming to know what the region does, which is the
+## one thing it has already said it does not.
+static func _opaque_node(event: ComposerIREvent) -> ComposerNode:
+	var node: ComposerNode = ComposerNode.new()
+	node.id = StringName("n%d" % event.span.last_line)
+	node.span = event.span
+	node.opaque = true
+	node.indent = event.statement.verdict.indent
+	node.text = event.text
+	node.title = event.text
+	node.awaits = ComposerIRAsyncExit.suspends(event.text)
+	node.state = ComposerNode.State.WARNING
+	node.ports = [
+		port(EXEC_IN, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.INPUT),
+		port(EXEC_OUT, ComposerNode.PortKind.EXECUTION, ComposerNode.PortDirection.OUTPUT),
+	]
+	return node
 
 
 static func _node(

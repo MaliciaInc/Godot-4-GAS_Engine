@@ -86,11 +86,15 @@ func test_writing_twice_without_editing_changes_nothing_the_second_time() -> voi
 		assert_eq(twice.text, once.text, "%s is the same text the second time" % name)
 
 
-## A corpus of abilities the subset cannot draw, every one refused with a reason.
+## Every construction the subset does not understand is kept, drawn and said
+## out loud - and none of them costs the rest of the ability.
 ##
-## The refusal has to name a line and say something, or a person is told their
-## file cannot be drawn and left to work out which part of it.
-func test_every_construction_the_subset_refuses_says_so_by_name() -> void:
+## This used to assert the opposite: one of these anywhere in a body and the
+## file opened read-only, so a person with a `for` loop had no Composer for the
+## nine statements around it. What the tool actually needed was to leave the
+## loop alone, which it can only do once it knows where the loop ends.
+func test_every_construction_the_subset_does_not_read_is_kept_and_named() -> void:
+	var checked: int = 0
 	for rule: Array in ComposerSubset.REFUSED:
 		var keyword: String = rule[0]
 		var reason: String = rule[1]
@@ -102,39 +106,67 @@ func _activate_ability() -> void:
 "
 			+ "	" + keyword + "x:
 		end_ability()
+	commit_ability()
 "
 		)
 
 		var graph: ComposerGraph = ComposerReader.read(source, "res://a.gd")
 
-		assert_false(graph.is_editable(), "%s is outside the subset" % keyword.strip_edges())
 		assert_true(
-			graph.blocked_reason().begins_with(reason),
-			"and says so in its own words: %s" % graph.blocked_reason()
+			graph.is_editable(),
+			"%s: the rest of the ability is still open" % keyword.strip_edges()
+		)
+		var opaque: Array[ComposerNode] = _opaque_in(graph)
+		assert_eq(opaque.size(), 1, "%s: one region, kept" % keyword.strip_edges())
+		assert_true(
+			opaque[0].text.contains(keyword.strip_edges()),
+			"%s: and the card says what it is" % keyword.strip_edges()
 		)
 		assert_true(
-			graph.blocked_reason().contains(keyword.strip_edges()),
-			"naming the line it happened on: %s" % graph.blocked_reason()
+			_warning_for(graph, opaque[0].id).begins_with(reason),
+			"%s: in the subset's own words" % keyword.strip_edges()
 		)
+		checked += 1
+	assert_eq(checked, ComposerSubset.REFUSED.size(), "every construction was offered")
+
+
+## The cards standing for a region the tool did not read.
+func _opaque_in(graph: ComposerGraph) -> Array[ComposerNode]:
+	var found: Array[ComposerNode] = []
+	for node: ComposerNode in graph.nodes:
+		if node.opaque:
+			found.append(node)
+	return found
+
+
+## What the Output panel says about that card, or empty when it says nothing.
+func _warning_for(graph: ComposerGraph, node_id: StringName) -> String:
+	for found: ComposerGraph.Diagnostic in graph.diagnostics:
+		if found.node_id == node_id:
+			return found.message
+	return ""
 
 
 ## The corpus, checked against the files rather than against a memory of them.
-func test_every_ability_outside_the_subset_is_refused_with_a_reason() -> void:
+##
+## `fireball_ability.gd` is a real ability with one `for` loop in the middle of
+## it. It was the whole of this corpus, and it was here because the tool used to
+## turn it away - twenty-odd statements a person could not see because of the
+## one it could not read.
+func test_an_ability_with_a_region_it_cannot_read_still_draws_the_rest() -> void:
 	for path: String in OUTSIDE:
 		var graph: ComposerGraph = _read(path)
+		var named: String = path.get_file()
 
-		assert_false(graph.is_editable(), "%s is outside the subset" % path.get_file())
-		assert_eq(ComposerProjection.statements(graph).size(), 0, "%s drew nothing" % path.get_file())
-		assert_eq(graph.diagnostics.size(), 1, "%s said so once" % path.get_file())
-		assert_eq(
-			graph.diagnostics[0].severity, ComposerGraph.Severity.NOT_REPRESENTABLE,
-			"%s: not an error in the file" % path.get_file()
+		assert_true(graph.is_editable(), "%s: open, not turned away" % named)
+		assert_gt(
+			ComposerProjection.statements(graph).size(), 5, "%s: and drawn" % named
 		)
+		var opaque: Array[ComposerNode] = _opaque_in(graph)
+		assert_eq(opaque.size(), 1, "%s: with the one region kept" % named)
+		assert_true(opaque[0].text.begins_with("for "), "%s: which is the loop" % named)
 		assert_false(
-			graph.diagnostics[0].message.is_empty(), "%s said why" % path.get_file()
-		)
-		assert_true(
-			graph.diagnostics[0].span.is_valid(), "%s said where" % path.get_file()
+			_warning_for(graph, opaque[0].id).is_empty(), "%s: and said out loud" % named
 		)
 
 

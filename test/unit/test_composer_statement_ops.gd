@@ -112,16 +112,19 @@ func test_pasting_puts_the_text_in_after_what_was_picked() -> void:
 	)
 
 
-## Text the file cannot take back is refused, and changes nothing.
-func test_text_the_file_cannot_read_is_refused() -> void:
+## An insert with nothing in it is refused, and changes nothing.
+##
+## The guard that stops an edit leaving a file nobody can draw, tested where it
+## is reachable. A `for` loop used to reach it and no longer does: a loop is a
+## region the tool keeps, so the only way an edit can still leave nothing to
+## draw is by writing nothing at all.
+func test_an_insert_with_nothing_in_it_is_refused() -> void:
 	_open(["execute_cue(&\"one\")"])
 	var before: String = _document.printed()
 
-	var refusal: ComposerGraph.Diagnostic = _ops.paste(
-		[] as Array[StringName], "\tfor step: int in 3:\n\t\tend_ability()"
-	)
+	var refusal: ComposerGraph.Diagnostic = _document.insert("   ", 5)
 
-	assert_not_null(refusal, "a loop is not in the subset")
+	assert_not_null(refusal, "there would be nothing to draw")
 	assert_eq(_document.printed(), before, "so the file is untouched")
 #endregion
 

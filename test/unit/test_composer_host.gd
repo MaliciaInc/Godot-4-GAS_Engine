@@ -41,22 +41,25 @@ func test_an_ability_without_a_global_name_is_still_recognised() -> void:
 	assert_true(ComposerHost.is_ability(script), "and it is an ability all the same")
 
 
-## A file the subset cannot fully draw is opened, not refused.
+## A file the subset cannot fully draw is opened, drawn, and honest about the
+## part it kept.
 ##
 ## This is the case worth being careful about. The engine's own fixtures use
 ## constructions outside the subset, and a person opening one should see the
-## ability and be told what cannot be drawn - not be turned away at the door
-## with nothing on screen.
-func test_an_ability_outside_the_subset_opens_read_only_rather_than_being_refused() -> void:
+## ability and be told which part of it is being left alone - not be turned away
+## at the door with nothing on screen, which is what used to happen.
+func test_an_ability_outside_the_subset_opens_and_says_what_it_kept() -> void:
 	var opened: ComposerHost.Opened = ComposerHost.open(
 		"res://test/fixtures/fireball_ability.gd"
 	)
 
 	assert_true(opened.is_ok(), "it opened: %s" % opened.refusal)
-	assert_false(opened.graph.is_editable(), "read-only")
-	assert_false(
-		opened.graph.blocked_reason().is_empty(), "and it says what it cannot draw"
-	)
+	assert_true(opened.graph.is_editable(), "and it is editable")
+	var said: String = ""
+	for found: ComposerGraph.Diagnostic in opened.graph.diagnostics:
+		if found.severity == ComposerGraph.Severity.WARNING and not found.node_id.is_empty():
+			said = found.message
+	assert_false(said.is_empty(), "and it says which part it kept: %s" % said)
 #endregion
 
 

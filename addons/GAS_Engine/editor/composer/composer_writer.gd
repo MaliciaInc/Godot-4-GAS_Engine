@@ -197,7 +197,9 @@ static func apply(graph: ComposerGraph, source: String, verify: bool = true) -> 
 		result.text = rebuilt
 		return result
 
-	var verdict: ComposerGraph.Diagnostic = _verify(graph, rebuilt, graph.source_path)
+	var verdict: ComposerGraph.Diagnostic = _verify(
+		graph, rebuilt, graph.source_path, source
+	)
 	if verdict != null:
 		result.refusal = verdict
 		return result
@@ -229,7 +231,7 @@ static func spliced(
 ## what the graph said - which is exactly the failure nobody notices until the
 ## ability misbehaves in a game.
 static func _verify(
-	graph: ComposerGraph, text: String, path: String
+	graph: ComposerGraph, text: String, path: String, source: String
 ) -> ComposerGraph.Diagnostic:
 	var reread: ComposerGraph = ComposerReader.read(text, path)
 	if not reread.is_editable():
@@ -239,6 +241,35 @@ static func _verify(
 	var got: String = signature(reread)
 	if wanted != got:
 		return refuse("what this produced is not what it was given")
+	return _kept_regions_survived(source, text, path)
+
+
+## Every region the reader kept has to come out of a save exactly as it went in.
+##
+## The signature above cannot say this. It compares structure, and a region the
+## tool did not read has no structure to compare - so a save that reindented a
+## loop, dropped a line out of its body or reflowed it would pass every other
+## check here and change somebody's code without anything noticing.
+##
+## Read off the source that went IN and looked for in the text that came out.
+## Asking the output where its own regions are and then finding them there is a
+## question that answers itself.
+static func _kept_regions_survived(
+	source: String, text: String, path: String
+) -> ComposerGraph.Diagnostic:
+	var before: ComposerIRFunction = ComposerIR.of(source, path).entry()
+	if before == null:
+		return null
+
+	var lines: PackedStringArray = source.split("
+")
+	for event: ComposerIREvent in before.opaque_events():
+		var region: String = "
+".join(
+			lines.slice(event.statement_line - 1, event.span.last_line)
+		)
+		if not text.contains(region):
+			return refuse("a region this tool does not read came out changed")
 	return null
 
 

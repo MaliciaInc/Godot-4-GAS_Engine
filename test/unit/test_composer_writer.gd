@@ -130,18 +130,6 @@ func test_a_write_that_would_not_read_back_the_same_is_refused() -> void:
 	)
 
 
-## A file the reader could not draw is not one the writer may touch. Opening
-## read-only has to mean read-only all the way down.
-func test_an_unreadable_file_is_never_written() -> void:
-	var refused: String = SOURCE.replace(
-		"\tcommit_ability()", "\tfor target in targets:\n\t\tpass"
-	)
-	var graph: ComposerGraph = ComposerReader.read(refused, PATH)
-
-	var result: ComposerWriter.Result = ComposerWriter.apply(graph, refused)
-	assert_false(result.is_ok(), "read-only means the writer stays out too")
-
-
 func test_a_script_with_no_entry_point_is_refused() -> void:
 	var graph: ComposerGraph = _read()
 	var result: ComposerWriter.Result = ComposerWriter.apply(

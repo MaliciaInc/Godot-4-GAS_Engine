@@ -234,9 +234,9 @@ func test_a_statement_can_span_the_lines_it_was_wrapped_across() -> void:
 	assert_eq(found[0].first, 2, "the first starts where it was written")
 	assert_eq(found[0].last, 4, "and ends where its brackets close")
 	assert_eq(found[0].verdict.kind, ComposerSubset.Kind.LOCAL, "and it is a local")
-	assert_null(
-		ComposerStatements.first_refusal(lines, body),
-		"and nothing refuses the file for being formatted"
+	assert_true(
+		ComposerIR.of("\n".join(lines), "res://a.gd").entry().is_fully_representable(),
+		"and nothing in it is left alone for being formatted"
 	)
 
 
@@ -313,38 +313,36 @@ func test_a_body_the_subset_admits_is_not_refused() -> void:
 		"apply_gameplay_effect(burning, 1.0)",
 	])
 
-	assert_null(
-		ComposerStatements.first_refusal(lines, ComposerSubset.body_span(lines)),
+	assert_true(
+		ComposerIR.of("\n".join(lines), "res://a.gd").entry().is_fully_representable(),
 		"every line is something this can draw"
 	)
 
 
-## The refusal carries the line, because a reason without a place sends someone
-## hunting through a file for a construction they have to find themselves.
-func test_a_refusal_names_the_line_it_happened_on() -> void:
+## A kept region carries its line, because a reason without a place sends
+## someone hunting through a file for a construction they have to find
+## themselves.
+func test_a_kept_region_names_the_line_it_starts_on() -> void:
 	var lines: PackedStringArray = _body([
 		"commit_ability()",
 		"for target in targets:",
 		"\tapply_gameplay_effect(burning, 1.0)",
 	])
 
-	var found: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(
-		lines, ComposerSubset.body_span(lines)
-	)
+	var entry: ComposerIRFunction = ComposerIR.of("\n".join(lines), "res://a.gd").entry()
 
-	assert_not_null(found, "it refused")
-	assert_eq(
-		found.severity, ComposerGraph.Severity.NOT_REPRESENTABLE,
-		"read-only, not broken: the file is fine"
+	assert_eq(entry.opaque_events().size(), 1, "one region was kept")
+	assert_eq(entry.opaque_events()[0].span.first_line, 5, "the loop's own line")
+	assert_true(
+		entry.opaque_events()[0].reason.contains("loop"), "and it says what it is"
 	)
-	assert_eq(found.span.first_line, 5, "the loop's own line")
 
 
 func test_a_script_with_no_entry_point_is_refused_by_name() -> void:
 	var lines: PackedStringArray = PackedStringArray(["extends GameplayAbility"])
-	var found: ComposerGraph.Diagnostic = ComposerStatements.first_refusal(
-		lines, ComposerSubset.body_span(lines)
-	)
+	var found: ComposerGraph.Diagnostic = ComposerReader.read(
+		"\n".join(lines), "res://a.gd"
+	).diagnostics[0]
 
 	assert_not_null(found, "there is nothing to open")
 	assert_true(

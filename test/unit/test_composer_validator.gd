@@ -222,16 +222,21 @@ func test_an_ability_with_nothing_wrong_reports_nothing() -> void:
 		assert_eq(node.state, ComposerNode.State.CLEAN, "%s carries no mark" % node.title)
 
 
-## A file the subset cannot draw is not a file with mistakes in it. Adding
-## findings on top of the refusal would tell someone their working code is
-## broken because this tool cannot read it.
-func test_a_file_outside_the_subset_is_not_second_guessed() -> void:
+## A region the reader kept is not a region with mistakes in it.
+##
+## Nobody looked inside it, so nothing here may judge it: the arguments this
+## never parsed would come back reported missing, the values it never traced
+## reported unread, and a person would be told their working code is broken
+## because this tool cannot read it. The one true thing about the region has
+## already been said by the reader - that it is being left alone.
+func test_a_region_the_reader_kept_is_not_second_guessed() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray(["for step in 3:", "\tadd_tag()"]))
 
-	assert_eq(graph.diagnostics.size(), 1, "only the refusal: %s" % [_messages(graph)])
+	assert_eq(graph.diagnostics.size(), 1, "one thing said, no more: %s" % [_messages(graph)])
 	assert_eq(
 		graph.diagnostics[0].severity,
-		ComposerGraph.Severity.NOT_REPRESENTABLE,
-		"which is not an error in the file"
+		ComposerGraph.Severity.WARNING,
+		"a boundary, not an error in the file"
 	)
+	assert_true(graph.is_editable(), "and the ability is still open")
 #endregion

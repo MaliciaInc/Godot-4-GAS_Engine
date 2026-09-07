@@ -59,19 +59,32 @@ func test_a_comment_is_carried_by_the_statement_it_precedes() -> void:
 #endregion
 
 
-#region Refusing rather than half-reading
-## One line outside the subset ends the read. Returning the statements it did
-## understand would be worse than returning nothing: the graph would look whole.
-func test_an_unreadable_file_comes_back_with_no_nodes_at_all() -> void:
+#region Keeping rather than half-reading
+## A region outside the subset is one card, and the statements around it are
+## their own.
+##
+## Never a partial read: what the tool cannot understand it still locates, first
+## line to last, so nothing goes missing. Returning the statements it understood
+## and dropping the rest would be the worst of the three - the graph would look
+## whole, and the writer would emit what it drew.
+func test_a_region_outside_the_subset_is_one_card_and_the_rest_are_theirs() -> void:
 	var graph: ComposerGraph = _read([
 		"commit_ability()",
 		"for target in targets:",
 		"\tapply_gameplay_effect(burning, target)",
+		"end_ability()",
 	])
 
-	assert_eq(ComposerProjection.statements(graph).size(), 0, "not one statement, not some of them")
-	assert_false(graph.is_editable(), "and the file is read-only")
-	assert_true(graph.blocked_reason().contains("loop"), "with the reason named")
+	var drawn: Array[ComposerNode] = ComposerProjection.statements(graph)
+	assert_eq(drawn.size(), 3, "the commit, the loop, and the end")
+	assert_true(graph.is_editable(), "and the ability is open")
+	assert_true(drawn[1].opaque, "the middle one is the region")
+	assert_eq(
+		drawn[1].span.last_line - drawn[1].span.first_line, 1,
+		"which is the header and the line under it, not the header alone"
+	)
+	assert_false(drawn[0].opaque, "the commit is a statement like any other")
+	assert_false(drawn[2].opaque, "and so is the end")
 
 
 func test_a_script_with_no_entry_point_is_refused_rather_than_empty() -> void:

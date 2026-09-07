@@ -221,23 +221,29 @@ func test_there_is_nothing_to_undo_in_a_file_nobody_has_touched() -> void:
 
 
 #region Refusing rather than breaking
-## Text that does not belong in a body is refused before it is accepted.
+## A paste the tool cannot read as statements is kept rather than refused.
 ##
-## The canvas would otherwise go blank and the person would be left holding a
-## file they can no longer see, which is not something an explanation fixes.
-func test_a_paste_that_would_break_the_file_is_refused() -> void:
-	await _open(11)
-	var before: String = screen.printed()
-	DisplayServer.clipboard_set("\tfor step: int in 3:\n\t\tend_ability()")
+## This used to be the opposite claim: a pasted `for` loop was turned away,
+## because a body with one in it was a body the reader refused whole - so a
+## person could not paste their own loop into their own ability. The loop lands
+## now, is drawn as one region, and the file still opens.
+##
+## What still cannot happen is an edit that leaves nothing to draw. That guard
+## is where it is reachable, in test_composer_statement_ops.gd: writing nothing
+## at all is the only way left to reach it.
+func test_a_paste_it_cannot_read_is_kept_as_a_region() -> void:
+	await _open(19)
 
 	var took: bool = await screen.paste_text(
 		"	for step: int in 3:
 		end_ability()"
 	)
 
-	assert_false(took, "refused")
-	assert_push_error(ComposerDocument.BROKE_IT)
-	assert_eq(screen.printed(), before, "and the file is where it was")
+	assert_true(took, "it took")
+	assert_true(
+		screen.printed().contains("for step: int in 3:"),
+		"and the loop is in the file"
+	)
 
 
 func test_copying_puts_the_statement_on_the_clipboard_as_gdscript() -> void:

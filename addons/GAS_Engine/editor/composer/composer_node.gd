@@ -235,6 +235,16 @@ var has_layout_position: bool = false
 var layout_position: Vector2 = Vector2.ZERO
 
 
+## Whether this stands for a region the tool does not understand.
+##
+## Read, placed and drawn - and left exactly as it was written. An opaque node
+## is never rebuilt from this model, because there is no model of it: what is
+## held is its lines. A card that offered to rewrite what the tool could not
+## read is a card that would eventually rewrite it wrong, and the file it
+## damaged would be somebody else's.
+var opaque: bool = false
+
+
 ## Whether this node has been edited since it was read.
 ##
 ## Only a dirty node is rebuilt from the model. A clean one goes back exactly as

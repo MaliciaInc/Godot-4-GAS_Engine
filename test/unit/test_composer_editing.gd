@@ -43,6 +43,14 @@ func _activate_ability() -> bool:
 	return true
 """
 
+## The one file that still has nothing to draw at all.
+const NO_ENTRY: String = """extends GameplayAbility
+
+
+func _some_other_method() -> bool:
+	return true
+"""
+
 ## A call short of a required argument, which by definition does not compile -
 ## so it is never written to disk. Nothing that reads it saves.
 const SHORT: String = """extends GameplayAbility
@@ -220,14 +228,6 @@ func _activate_ability() -> void:
 	)
 	var end: ComposerNode = ComposerProjection.statements(bare)[0]
 	assert_eq(end.fields.size(), 0, "a bare return hands nothing back")
-
-
-## A file outside the subset opens read-only, and nothing in it is offered.
-func test_nothing_is_offered_in_a_file_the_composer_cannot_draw() -> void:
-	var graph: ComposerGraph = await _open(OUTSIDE, 4)
-
-	assert_false(graph.is_editable(), "read-only: %s" % graph.blocked_reason())
-	assert_eq(ComposerProjection.statements(graph).size(), 0, "and there is nothing on the canvas to offer")
 #endregion
 
 
@@ -344,14 +344,15 @@ func test_saving_without_editing_leaves_the_file_byte_for_byte() -> void:
 	assert_eq(FileAccess.get_file_as_string(path), SOURCE, "byte for byte")
 
 
-## A file the Composer cannot draw is never written.
-func test_a_read_only_ability_is_not_written() -> void:
-	await _open(OUTSIDE, 10)
+## A file with no entry point is the one thing that is still not drawable, and
+## it is never written.
+func test_a_file_with_nothing_to_draw_is_not_written() -> void:
+	await _open(NO_ENTRY, 14)
 
 	var result: ComposerWriter.Result = await screen.save()
 
 	assert_false(result.is_ok(), "refused")
-	assert_eq(FileAccess.get_file_as_string(path), OUTSIDE, "and the file is as it was")
+	assert_eq(FileAccess.get_file_as_string(path), NO_ENTRY, "and the file is as it was")
 
 
 ## With nothing open there is nothing to save, and it says so rather than
