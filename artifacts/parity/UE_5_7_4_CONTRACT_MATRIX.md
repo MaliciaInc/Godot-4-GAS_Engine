@@ -140,3 +140,63 @@ tests to pass, the bridge has reached past the surface it promised to depend on.
 What the distribution check proves is the other half - that the addon runs in a
 project where neither is present at all.
 `test/unit/test_dialogic_bridge.gd::test_a_message_for_another_channel_is_ignored_without_complaint`
+
+## Every finding, one line each
+
+The phase closes only when B01-B16 and G01-G32 each have an explicit
+contractual status, so here they are: what the document called the finding
+at the start, the package that closed it, and whether closing it left a
+deviation. Two kinds of row say EXPLICIT_DEVIATION - one the phase itself
+opened as a deliberate GAS_Engine extension, and one whose closure produced
+a numbered deviation above. Neither is a gap and neither is Unreal parity.
+
+| Finding | What it was | Package | State | Note |
+|---|---|---|---|---|
+| B01 |  | F5.1.1 | COMPLETE | closed by F5.1.1 |
+| B02 |  | F5.1.1 | COMPLETE | closed by F5.1.1 |
+| B03 |  | F5.1.1 | COMPLETE | closed by F5.1.1 |
+| B04 |  | F5.1.1 | COMPLETE | closed by F5.1.1 |
+| B05 |  | F5.1.2 | COMPLETE | closed by F5.1.2 |
+| B06 |  | F5.1.2 | COMPLETE | closed by F5.1.2 |
+| B07 |  | F5.1.3 + F5.2.4 | COMPLETE | closed by F5.1.3 + F5.2.4 |
+| B08 |  | F5.1.3 + F5.2.4 | COMPLETE | closed by F5.1.3 + F5.2.4 |
+| B09 |  | F5.1.3 | COMPLETE | closed by F5.1.3 |
+| B10 |  | F5.1.4 + F5.2.3 | COMPLETE | closed by F5.1.4 + F5.2.3 |
+| B11 |  | F5.1.4 | COMPLETE | closed by F5.1.4 |
+| B12 |  | F5.1.5 | COMPLETE | closed by F5.1.5 |
+| B13 |  | F5.1.5 | COMPLETE | closed by F5.1.5 |
+| B14 |  | F5.1.4 | COMPLETE | closed by F5.1.4 |
+| B15 |  | F5.1.4 | COMPLETE | closed by F5.1.4 |
+| B16 |  | F5.1.4 | COMPLETE | closed by F5.1.4 |
+| G01 | capa server-authoritative y replicación | F5.5 | EXPLICIT_DEVIATION | see 4, 5 and 6 |
+| G02 | prediction keys, confirm/reject y reconciliation | F5.5 | EXPLICIT_DEVIATION | see 4, 5 and 6 |
+| G03 | ActorInfo owner/avatar desacoplado | F5.2.1 | COMPLETE | closed by F5.2.1 |
+| G04 | preservar multiply compuesto; añadir álgebra UE por perfil | F5.2.3 | EXPLICIT_DEVIATION | a GAS_Engine extension the phase opened as one |
+| G05 | canales, filtros source/target y override policy | F5.2.3 | COMPLETE | closed by F5.2.3 |
+| G06 | Check/Apply Cost y Cooldown + commit transaccional | F5.2.4 | COMPLETE | closed by F5.2.4 |
+| G07 | auto-end legacy preservado; explicit end en perfil UE | F5.2.5 | EXPLICIT_DEVIATION | a GAS_Engine extension the phase opened as one |
+| G08 | retrigger + non-instanced stateless path | F5.2.5 | COMPLETE | closed by F5.2.5 |
+| G09 | payload completo de GameplayEvent | F5.2.6 | COMPLETE | closed by F5.2.6 |
+| G10 | referencia set+attribute | F5.2.2 | COMPLETE | closed by F5.2.2 |
+| G11 | capture timing explícito | F5.2.7 | COMPLETE | closed by F5.2.7 |
+| G12 | copia/spec y mutación dinámica validadas | F5.2.7 | COMPLETE | closed by F5.2.7 |
+| G13 | duration/period magnitudes | F5.2.7 | COMPLETE | closed by F5.2.7 |
+| G14 | TURN_BASED se conserva; tick-on-application UE se añade | F5.2.7 + F5.1.1 | EXPLICIT_DEVIATION | a GAS_Engine extension the phase opened as one |
+| G15 | stacking math/identity/ExtendDuration | F5.2.3/F5.2.7 | EXPLICIT_DEVIATION | see 1 |
+| G16 | mutaciones de active effect por handle | F5.2.7 | COMPLETE | closed by F5.2.7 |
+| G17 | typed ExecCalc output | F5.2.8 | COMPLETE | closed by F5.2.8 |
+| G18 | dependencias LIVE declarativas para cualquier magnitude | F5.2.7 | COMPLETE | closed by F5.2.7 |
+| G19 | hierarchical counts/events | F5.2.9 | COMPLETE | closed by F5.2.9 |
+| G20 | targeting provider lifecycle | F5.4.1 | COMPLETE | closed by F5.4.1 |
+| G21 | contexto derivado por target sin perder payload | F5.4.2 | COMPLETE | closed by F5.4.2 |
+| G22 | tasks de commit/immunity/count/spawn/state/movement/sync | F5.4.3 | COMPLETE | closed by F5.4.3 |
+| G23 | animation ownership + interrupted/cancelled/blend-out | F5.4.4 | COMPLETE | closed by F5.4.4 |
+| G24 | hierarchical cue dispatch y parámetros completos | F5.4.5 | EXPLICIT_DEVIATION | see 2 and 3 |
+| G25 | authoring reusable asset-first | F5.3.2 | COMPLETE | closed by F5.3.2 |
+| G26 | AST/IR del Composer más expresivo | F5.3.3 | COMPLETE | closed by F5.3.3 |
+| G27 | crear ability debe producir script+scene usable | F5.3.1/F5.3.4 | COMPLETE | closed by F5.3.1/F5.3.4 |
+| G28 | cubierto primero por B12/B13; después document manager | F5.1.5/F5.3 | COMPLETE | closed by F5.1.5/F5.3 |
+| G29 | runtime debugger/trace/breakpoints | F5.3.5/F5.3.6 | COMPLETE | closed by F5.3.5/F5.3.6 |
+| G30 | façade uniforme por handles/resultados | F5.2.10 | COMPLETE | closed by F5.2.10 |
+| G31 | perfiles de carga, memoria y determinismo | F5.6.2 | EXPLICIT_DEVIATION | see 8 and 9 |
+| G32 | matriz versionada + differential corpus | F5.0/F5.6 | EXPLICIT_DEVIATION | see 7 and 10 |
