@@ -465,6 +465,10 @@ func end_ability(
 	if not is_active:
 		return
 	is_active = false
+	# Before anything else that ends: a provider still previewing is a preview on
+	# screen for an ability that is over, and whoever is waiting on it is waiting
+	# for an answer nobody will give.
+	_stop_aiming()
 	if current_spec != null:
 		current_spec.active_count = maxi(current_spec.active_count - 1, 0)
 		if current_spec.active_count == 0:
@@ -669,7 +673,42 @@ func wait_target_data() -> AbilityTaskWaitTargetData:
 
 ## Answer this ability's own request for targets.
 ## @composer
+## The providers this ability is aiming with, so it can call them off.
+##
+## A list rather than one: an ability that asks for a point and then a direction
+## is aiming twice, and the second would silently replace the first if there
+## were only room for one.
+var _aiming: Array[GameplayTargetProvider] = []
+
+
 func submit_target_data(data: GameplayAbilityTargetData) -> void:
 	if owner_asc != null:
 		owner_asc.submit_ability_target_data(self, data)
+
+
+## Aim with `provider`, and hand over whatever it confirms.
+##
+## The join between a provider's life and an ability's. What a provider confirms
+## is submitted the same way any other target data is, so a task already waiting
+## on `wait_target_data()` hears it without knowing a provider was involved -
+## and a game that aims some other way keeps working unchanged.
+##
+## The ability holds the provider until it ends, and then cancels it. A provider
+## that outlived the ability that started it is the shape of bug this whole
+## lifecycle is for: a preview left on screen, and something waiting on a
+## confirm that is never coming.
+## @composer
+func aim_with(provider: GameplayTargetProvider) -> void:
+	if provider == null or not is_active:
+		return
+	_aiming.append(provider)
+	provider.confirmed.connect(submit_target_data)
+	provider.begin(self)
+
+
+## Call off every provider this ability started that is still going.
+func _stop_aiming() -> void:
+	for provider: GameplayTargetProvider in _aiming:
+		provider.cancel()
+	_aiming.clear()
 #endregion

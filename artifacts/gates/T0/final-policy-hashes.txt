@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.3.4 (G27/G30): the @composer marker on every authored operation, and a catalog that consumes metadata rather than inferring it from access.
+# F5.4.1 (G20): a target provider has a life, and the ability that started it calls it off.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T16:33:19Z
-# commit-previo: dc3496e33620ed649bbfd6f1ea8eb0d82e15ceff
+# date-utc: 2026-09-07T17:51:37Z
+# commit-previo: 034f06058cfee149d3685fdf7a9736b53b057ea7
 # files: 25
-3841abcbcee4ce4b3b6857bb26485dcd9bdec6574d1328287b8ea6532540d63b  tooling/.quality-gates.json
+e7c8281ca759b2d4aa480b9c5653622891981fe69061d53b20dafa1ba0bd10c6  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
