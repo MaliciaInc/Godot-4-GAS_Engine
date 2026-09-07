@@ -49,8 +49,8 @@
       },
       {
         "glob": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd",
-        "max_lines": 510,
-        "reason": "The attribute runtime owns every attribute an entity has: the sets, the contributions, the composition, the clamps and the recomposition that follows a write. F5.1.4 (B15) adds the preflight. An application used to publish its contributions and only then find out whether the aggregate they produced could be composed at all - so a magnitude that overflowed to infinity was already registered by the time anybody noticed, and the attribute then failed to recompose for every other effect on it too. Composing is now asked of a list rather than of the field, so the candidate contributions can be tried against a copy first, and the preflight walks each attribute they touch through the same clamp a real write goes through. Thirty-nine lines, and the split of _compose() into _compose_from() that lets them share one composition rather than grow a second."
+        "max_lines": 560,
+        "reason": "The attribute runtime owns every attribute an entity has: the sets, the contributions, the composition, the clamps and the recomposition that follows a write. F5.1.4 (B15) adds the preflight. An application used to publish its contributions and only then find out whether the aggregate they produced could be composed at all - so a magnitude that overflowed to infinity was already registered by the time anybody noticed, and the attribute then failed to recompose for every other effect on it too. Composing is now asked of a list rather than of the field, so the candidate contributions can be tried against a copy first, and the preflight walks each attribute they touch through the same clamp a real write goes through. Thirty-nine lines, and the split of _compose() into _compose_from() that lets them share one composition rather than grow a second. F5.6.2 (G31) indexes the contributions by the attribute they are about. Composing one attribute walked every contribution on the entity, once per channel, skipping the ones about something else - so a set of five attributes walked the whole list twenty times, and a thousand effects on one character measured at six seconds. The lines are the index, the three writers that keep it, and the paragraph saying which of those two lists is the ordered truth: the order within one attribute is the application order the algebra reads, so the index is a second way in to the same objects rather than a second copy of them."
       },
       {
         "glob": "addons/GAS_Engine/editor/composer/composer_screen.gd",
@@ -620,6 +620,11 @@
         "left": "addons/GAS_Engine/networking/gameplay_prediction_operation.gd:_of",
         "right": "test/unit/test_refusal_statuses.gd:_cost",
         "reason": "Two builders on opposite sides of the test boundary that share the shape every builder has: `new()`, a field per argument, `return`. One writes down what a client did ahead of an answer so it can be undone; the other assembles a GameplayAbilityCost so a refusal test can name the shape of cost it is refusing. They have no argument, no field and no type in common, and the only thing they could be merged into is a function that takes four things and knows what none of them mean."
+      },
+      {
+        "left": "test/parity/contracts/*.gd:_*",
+        "right": "test/parity/contracts/*.gd:_*",
+        "reason": "Every case in the differential corpus is the same eleven fields filled in: an id, the reference it was taken from, an initial state, one input, and the seven things the reference says happen. That sameness is the point rather than a smell - a corpus whose cases had different shapes would be a corpus where a dimension is checked in one case and quietly skipped in the next, which is exactly what GameplayParityCase.is_complete() refuses. What differs between two cases is what they say, and there is nothing to extract from that but the shape they already share."
       }
     ]
   }

@@ -14,3 +14,8 @@ artifacts/gates/full/
 # Machine output from a suite run; the runner writes the real one to user://
 # and the evidence that is checked lives in artifacts/gates/<task>/.
 artifacts/gut/
+
+# Corpus results are written by every suite run. The corpus and its runner
+# are committed; what a run made of them is not.
+artifacts/parity/results/*
+!artifacts/parity/results/README.md

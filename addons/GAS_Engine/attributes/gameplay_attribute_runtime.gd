@@ -34,6 +34,24 @@ var _sets: Array[AttributeSet] = []
 ## erase from the middle cannot change the result.
 var _contributions: Array[AttributeModifierContribution] = []
 
+## The same contributions, kept by the attribute they are about.
+##
+## Composing one attribute used to walk every contribution on the entity,
+## once per channel, skipping the ones about something else - so recomposing
+## a set of five attributes walked the whole list twenty times. Measured at
+## a thousand effects on one character that is six seconds, and the shape of
+## it is why: the work per application grows with how much is already there,
+## and every attribute pays for every other attribute's modifiers.
+##
+## An index rather than a sort, because the order within one attribute is
+## the application order the algebra reads and must not move. `_contributions`
+## stays the ordered truth; this is a second way in to the same objects.
+## The value type is a bare `Array` because GDScript will not nest typed
+## collections. What is stored in it is always a typed one, made below and
+## read back into a typed local - so the type survives even though the
+## dictionary cannot declare it.
+var _by_attribute: Dictionary[StringName, Array] = {}
+
 
 #region Sets and lookup
 ## Take a set of authored attribute sets and make them this runtime's.
@@ -146,6 +164,7 @@ func add_contributions(new_contributions: Array[AttributeModifierContribution]) 
 	for contribution: AttributeModifierContribution in new_contributions:
 		if contribution != null:
 			_contributions.append(contribution)
+			_bucket(contribution.attribute_name).append(contribution)
 
 
 ## Drop every contribution belonging to one application. Removal is by
@@ -153,12 +172,15 @@ func add_contributions(new_contributions: Array[AttributeModifierContribution]) 
 ## stale contribution behind by holding a different array.
 func remove_contributions_of(application_order: int) -> void:
 	for index: int in range(_contributions.size() - 1, -1, -1):
-		if _contributions[index].application_order == application_order:
+		var leaving: AttributeModifierContribution = _contributions[index]
+		if leaving.application_order == application_order:
 			_contributions.remove_at(index)
+			_bucket(leaving.attribute_name).erase(leaving)
 
 
 func clear_contributions() -> void:
 	_contributions.clear()
+	_by_attribute.clear()
 
 
 func contribution_count() -> int:
@@ -166,10 +188,17 @@ func contribution_count() -> int:
 
 
 func contributions_for(attribute_name: StringName) -> Array[AttributeModifierContribution]:
-	var found: Array[AttributeModifierContribution] = []
-	for contribution: AttributeModifierContribution in _contributions:
-		if contribution.attribute_name == attribute_name:
-			found.append(contribution)
+	return _bucket(attribute_name).duplicate()
+
+
+## The live list for one attribute, created empty the first time it is asked
+## for. Private, because handing the stored array out is how a caller appends
+## past the validation every contribution goes through on the way in.
+func _bucket(attribute_name: StringName) -> Array[AttributeModifierContribution]:
+	if not _by_attribute.has(attribute_name):
+		var started: Array[AttributeModifierContribution] = []
+		_by_attribute[attribute_name] = started
+	var found: Array[AttributeModifierContribution] = _by_attribute[attribute_name]
 	return found
 #endregion
 
@@ -202,10 +231,14 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 
 
 ## Apply the canonical order to one attribute. Writes failure into `result`.
+## Composed from this attribute's own contributions rather than from every
+## contribution on the entity. The algebra skips the ones about something
+## else either way, so the answer is the same one - it is arrived at without
+## walking a thousand modifiers about mana to work out a health value.
 func _compose(
 	base: float, attribute_name: StringName, result: AttributeEvaluationResult
 ) -> float:
-	return _compose_from(base, attribute_name, result, _contributions)
+	return _compose_from(base, attribute_name, result, _bucket(attribute_name))
 
 
 func _compose_from(
