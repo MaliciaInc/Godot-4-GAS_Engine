@@ -226,7 +226,7 @@ static func repeat(
 ## @composer
 static func play_animation_and_wait(
 	ability: GameplayAbility,
-	player: AnimationPlayer,
+	player: AnimationMixer,
 	animation: StringName,
 	stop_on_cancel: bool = false
 ) -> AbilityTaskPlayAnimationAndWait:

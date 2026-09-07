@@ -111,6 +111,14 @@ var current_spec: GameplayAbilitySpec = null
 
 var is_active: bool = false
 
+## Which activation of this instance is running, counting from one.
+##
+## An instance is reused - a PER_ACTOR ability activated twice is the same
+## Node both times - so "this ability" is not enough to say whose a piece of
+## work is. An animation started by the activation before this one is not this
+## one's to wait on, and a retrigger is exactly that case. Zero while idle.
+var activation_id: int = 0
+
 ## Whether this activation has already paid. One activation charges once.
 var _committed: bool = false
 

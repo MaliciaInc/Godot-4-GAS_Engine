@@ -11,6 +11,14 @@ class_name AbilityLifecycleRuntime extends RefCounted
 
 var ability_runtime: AbilityRuntime = null
 
+## How many activations this runtime has started, ever.
+##
+## The number an activation is stamped with. Monotonic and never reset, because
+## its whole job is to be different from the one before it: an id that came
+## round again would let a task believe it still owns something a later
+## activation took.
+var _activations: int = 0
+
 
 #region Canonical activation
 ## Resolve, gate, instantiate and start - returns the moment activation
@@ -85,6 +93,8 @@ func try_activate_with(
 	result.instance = instance
 	instance._prepare_runtime_activation(context)
 	instance._activation_context = activation
+	_activations += 1
+	instance.activation_id = _activations
 
 	result.status = GameplayAbilityActivationResult.Status.SUCCESS
 	spec.last_activation_result = result
