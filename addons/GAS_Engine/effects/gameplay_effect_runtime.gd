@@ -60,6 +60,13 @@ func live_active_effects() -> Array[ActiveGameplayEffect]:
 	return _active
 
 
+## Whether this exact application is still registered.
+## Scheduler/callback code uses identity, never an index captured before a
+## reentrant removal.
+func contains_active(active: ActiveGameplayEffect) -> bool:
+	return active != null and _active.has(active)
+
+
 func active_count() -> int:
 	return _active.size()
 
@@ -479,8 +486,13 @@ func notify_received(spec: GameplayEffectSpec) -> void:
 ## Play the cues and fire the events of one periodic tick. Called by the
 ## scheduler, which owns when a tick is due.
 func run_periodic_tick(active: ActiveGameplayEffect) -> void:
+	if active == null or not contains_active(active) or active.inhibited:
+		return
+
 	var spec: GameplayEffectSpec = active.spec
-	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, active.application_order, active.handle)
+	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(
+		spec, active.application_order, active.handle
+	)
 	if not evaluation.is_ok():
 		report_refusal(evaluation)
 		return
@@ -490,9 +502,22 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 
 	recompose_and_emit(spec)
 	notify_execute_hooks(evaluation.base_mutations)
+
+	if not contains_active(active) or active.inhibited:
+		return
+
 	components.notify_executed(spec, active, owner_asc)
+	if not contains_active(active) or active.inhibited:
+		return
+
 	if owner_asc != null:
 		owner_asc.gameplay_effect_executed.emit(spec, active)
+	if not contains_active(active) or active.inhibited:
+		return
+
 	play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
+	if not contains_active(active) or active.inhibited:
+		return
+
 	dispatch_events(spec)
 #endregion

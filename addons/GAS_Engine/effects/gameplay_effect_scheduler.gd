@@ -39,36 +39,58 @@ func advance_time(delta: float) -> void:
 	if effects == null:
 		return
 
-	# The live array on purpose: walking it backwards is what makes an effect
-	# removing itself mid-walk safe, and this runs every frame.
-	var active: Array[ActiveGameplayEffect] = effects.live_active_effects()
-	for index: int in range(active.size() - 1, -1, -1):
-		if index >= active.size():
+	# Snapshot identities. A callback may remove an earlier element, remove
+	# itself, or add a new effect. Each identity present at the beginning is
+	# considered at most once; new effects begin on the next update.
+	var snapshot: Array[ActiveGameplayEffect] = effects.active_effects()
+	for index: int in range(snapshot.size() - 1, -1, -1):
+		var active: ActiveGameplayEffect = snapshot[index]
+		if not effects.contains_active(active):
 			continue
-		_advance_one(active[index], delta)
+		_advance_one(active, delta)
 
 
 func _advance_one(active: ActiveGameplayEffect, delta: float) -> void:
-	var policy: GameplayEffect.DurationPolicy = active.get_effect_def().policy
+	if not effects.contains_active(active):
+		return
+
+	var definition: GameplayEffect = active.get_effect_def()
+	if definition == null:
+		return
+
+	var policy: GameplayEffect.DurationPolicy = definition.policy
 	if policy == GameplayEffect.DurationPolicy.TURN_BASED:
 		return
 
-	var backlog: int = _pay_ticks(active, delta)
-	if backlog > 0:
-		# Expiry waits until the backlog is paid: an effect must not expire
-		# owing ticks it never ran.
+	# A finite effect may only create ticks inside the part of this delta where
+	# it is logically alive. Existing backlog remains payable with tick_delta=0.
+	var tick_delta: float = delta
+	if policy == GameplayEffect.DurationPolicy.DURATION:
+		tick_delta = minf(delta, maxf(active.time_remaining, 0.0))
+
+	var backlog: int = _pay_ticks(active, tick_delta)
+	if not effects.contains_active(active):
 		return
 
 	if policy != GameplayEffect.DurationPolicy.DURATION:
 		return
-	active.time_remaining -= delta
-	if active.time_remaining <= 0.0:
+
+	# Lifetime advances independently from the per-frame work cap.
+	active.time_remaining = maxf(0.0, active.time_remaining - delta)
+
+	# If a pre-expiry backlog is larger than the cap, the active object remains
+	# only long enough to pay that already-created debt. Later updates pass a
+	# zero tick horizon, so no post-expiry tick can be invented.
+	if active.time_remaining <= 0.0 and backlog <= 0:
 		effects.expire(active)
 
 
-## Run the ticks this effect owes, up to the per-update cap. Returns the
-## remaining backlog.
+## Run the ticks this effect owes, up to the per-update cap. Returns only debt
+## that was already due inside the logical lifetime.
 func _pay_ticks(active: ActiveGameplayEffect, delta: float) -> int:
+	if not effects.contains_active(active):
+		return 0
+
 	if not active.is_periodic():
 		active.advance_clock(delta)
 		return 0
@@ -82,11 +104,29 @@ func _pay_ticks(active: ActiveGameplayEffect, delta: float) -> int:
 		return 0
 
 	var payable: int = mini(owed, MAX_PERIODIC_CATCH_UP_TICKS_PER_FRAME)
-	for _tick: int in payable:
-		effects.run_periodic_tick(active)
-	active.consume_ticks(payable)
+	var paid: int = 0
 
-	var backlog: int = owed - payable
+	for _tick: int in payable:
+		if not effects.contains_active(active):
+			return 0
+		if active.inhibited:
+			_skip_ticks_while_inhibited(active, owed - paid)
+			return 0
+
+		effects.run_periodic_tick(active)
+
+		# The callback may remove/inhibit this effect.
+		if not effects.contains_active(active):
+			return 0
+
+		active.consume_ticks(1)
+		paid += 1
+
+		if active.inhibited:
+			_skip_ticks_while_inhibited(active, owed - paid)
+			return 0
+
+	var backlog: int = owed - paid
 	_diagnose_backlog(active, backlog)
 	return backlog
 
@@ -130,23 +170,41 @@ func advance_turn(turns: int = 1) -> void:
 
 
 func _advance_single_turn() -> void:
-	var active: Array[ActiveGameplayEffect] = effects.live_active_effects()
-	for index: int in range(active.size() - 1, -1, -1):
-		if index >= active.size():
+	var snapshot: Array[ActiveGameplayEffect] = effects.active_effects()
+	for index: int in range(snapshot.size() - 1, -1, -1):
+		var active: ActiveGameplayEffect = snapshot[index]
+		if not effects.contains_active(active):
 			continue
-		_advance_one_turn(active[index])
+		_advance_one_turn(active)
 
 
 func _advance_one_turn(active: ActiveGameplayEffect) -> void:
-	var effect: GameplayEffect = active.get_effect_def()
-	if effect.policy != GameplayEffect.DurationPolicy.TURN_BASED:
+	if not effects.contains_active(active):
 		return
 
-	if active.is_periodic() and effect.tick_on_turn_start:
+	var effect: GameplayEffect = active.get_effect_def()
+	if effect == null or effect.policy != GameplayEffect.DurationPolicy.TURN_BASED:
+		return
+
+	# tick_on_turn_start=true means before consuming the turn.
+	if active.is_periodic() and effect.tick_on_turn_start and not active.inhibited:
 		effects.run_periodic_tick(active)
+		if not effects.contains_active(active):
+			return
 		active.consume_ticks(1)
 
 	active.spec.remaining_turns -= 1
+
+	if not effects.contains_active(active):
+		return
+
+	# tick_on_turn_start=false is explicitly the end-of-turn tick.
+	if active.is_periodic() and not effect.tick_on_turn_start and not active.inhibited:
+		effects.run_periodic_tick(active)
+		if not effects.contains_active(active):
+			return
+		active.consume_ticks(1)
+
 	if active.spec.remaining_turns <= 0:
 		effects.expire(active)
 #endregion
