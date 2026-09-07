@@ -71,6 +71,19 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 
 ## AbilityRuntime.try_activate() started this instance - accepted, not
 ## finished. See ability_runtime_ended for the outcome.
+## An ability was granted. The moment a handle starts naming something.
+signal ability_granted(handle: GameplayAbilityHandle)
+
+## An ability paid for itself and started its cooldowns, or did not.
+##
+## The moment an activation becomes irreversible, and the one somebody debugging
+## a cost asks about: it is where the resources went and where the cooldown
+## began, and a listener could see neither before.
+signal ability_committed(handle: GameplayAbilityHandle, result: AbilityCommitResult)
+
+## A one-shot cue was played on this entity.
+signal cue_executed(cue_tag: StringName)
+
 signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
 
 ## The body an ability happens to has been swapped for another one.
@@ -160,6 +173,13 @@ var actor_info: GameplayAbilityActorInfo = GameplayAbilityActorInfo.new()
 var _disposed: bool = false
 
 #region Lifecycle
+## Says what happens here to whoever is debugging, and nothing at all when
+## nobody is. See GasDebugChannel: it listens to this component's own signals
+## rather than being reported to from inside the runtimes, so there is one
+## description of what happened rather than two that can disagree.
+var debug_channel: GasDebugChannel = GasDebugChannel.new()
+
+
 func _ready() -> void:
 	_wire_runtimes()
 	# The entity this component hangs under, unless somebody said otherwise
@@ -168,6 +188,12 @@ func _ready() -> void:
 	if actor_info.owner == null:
 		actor_info.initialize(get_parent(), get_parent())
 	_adopt_attribute_sets()
+	# Every entity is inspectable while something is listening, and none of them
+	# has to be wired up for it: a debugger somebody has to remember to attach is
+	# a debugger that is not attached the one time it was needed. `watch()`
+	# answers false and connects nothing when nothing is listening, which is
+	# every exported build.
+	debug_channel.watch(self)
 
 
 ## Whether this component answers by Unreal's contracts where they differ.
@@ -251,6 +277,7 @@ func dispose() -> void:
 		return
 
 	cleanup()
+	debug_channel.stop()
 
 	scheduler.effects = null
 
@@ -411,6 +438,7 @@ func execute_cue(params: GameplayCueParams) -> void:
 	var manager: CueManagerScript = _cue_manager()
 	if manager != null:
 		manager.execute_cue(params)
+	cue_executed.emit(params.cue_tag)
 
 
 ## Start a PERSISTENT cue's on_active/while_active. An invalid handle if

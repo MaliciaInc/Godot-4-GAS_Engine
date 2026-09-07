@@ -62,6 +62,14 @@ const COMPOSER_REFUSED: String = (
 	"GAS_Engine: the Ability Composer has nothing to draw - %s. Open an ability "
 	+ "in the Script editor, then choose Ability Composer again."
 )
+## Hears what a running game says about its entities.
+##
+## An EditorDebuggerPlugin is the only thing that can: what is happening in a
+## game is in another process, and the alternative - reading an ASC out of the
+## scene being edited - answers a different question. See
+## GasRuntimeDebuggerPlugin.
+var _runtime_debugger: GasRuntimeDebuggerPlugin = null
+
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
@@ -220,6 +228,8 @@ func _enter_tree() -> void:
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
 	add_tool_menu_item(EFFECT_MENU, _ask_for_new_effect)
+	_runtime_debugger = GasRuntimeDebuggerPlugin.new()
+	add_debugger_plugin(_runtime_debugger)
 	_make_visible(false)
 
 
@@ -239,6 +249,9 @@ func _disable_plugin() -> void:
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
 	remove_tool_menu_item(EFFECT_MENU)
+	if _runtime_debugger != null:
+		remove_debugger_plugin(_runtime_debugger)
+		_runtime_debugger = null
 	ComposerLibrary.stop_listening_to(
 		EditorInterface.get_resource_filesystem(), FILES_MOVED
 	)

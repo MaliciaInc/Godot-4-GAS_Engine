@@ -407,7 +407,19 @@ func commit_ability() -> AbilityCommitResult:
 
 	_committed = true
 	result.status = AbilityCommitResult.Status.SUCCESS
+	_announce_commit(result)
 	return result
+
+
+## Say what a commit did, whichever way it went.
+##
+## Every path out of `commit_ability()` passes through here or through a refusal
+## above it, so a listener hears about the commits that failed as well - which
+## are the ones somebody is debugging.
+func _announce_commit(result: AbilityCommitResult) -> void:
+	if owner_asc == null or current_spec == null:
+		return
+	owner_asc.ability_committed.emit(current_spec.handle, result)
 
 
 ## Undo cooldowns a failed commit already started; emptied too, so the result reports nothing applied.

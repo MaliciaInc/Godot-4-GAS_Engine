@@ -136,6 +136,8 @@ func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHan
 		spec.per_actor_instance.on_granted()
 	# Only now: the spec must resolve by handle before ON_GRANTED/PASSIVE try.
 	policies.on_spec_granted(spec)
+	if owner_asc != null:
+		owner_asc.ability_granted.emit(handle)
 	return handle
 
 
