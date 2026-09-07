@@ -67,6 +67,13 @@ signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntim
 ## finished. See ability_runtime_ended for the outcome.
 signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
 
+## The body an ability happens to has been swapped for another one.
+##
+## Announced rather than discovered: an ability holding a reference to the
+## old avatar has to be told, and polling for it would mean every ability
+## checking every frame whether the world moved under it.
+signal ability_actor_info_changed(old_avatar: Node, new_avatar: Node)
+
 ## The canonical, handle-addressed superset of the instance's own
 ## `ability_ended` - fires for every activation this ASC started.
 signal ability_runtime_ended(
@@ -139,6 +146,9 @@ var scheduler: GameplayEffectScheduler = GameplayEffectScheduler.new()
 var ability_runtime: AbilityRuntime = AbilityRuntime.new()
 var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
+## Who these abilities belong to, and who they happen to.
+var actor_info: GameplayAbilityActorInfo = GameplayAbilityActorInfo.new()
+
 ## Set once, by dispose(). A second teardown must not run: the first one
 ## already severed the references the second would walk.
 var _disposed: bool = false
@@ -146,6 +156,11 @@ var _disposed: bool = false
 #region Lifecycle
 func _ready() -> void:
 	_wire_runtimes()
+	# The entity this component hangs under, unless somebody said otherwise
+	# before it entered the tree. Owner and avatar both, which is what every
+	# project that never thinks about avatars gets and always got.
+	if actor_info.owner == null:
+		actor_info.initialize(get_parent(), get_parent())
 	_adopt_attribute_sets()
 
 
@@ -239,6 +254,7 @@ func dispose() -> void:
 	effects.dispose()
 
 	attributes.owner_node = null
+	actor_info.clear()
 	_disposed = true
 
 
@@ -281,8 +297,29 @@ func emit_attribute_changed(
 	ability_runtime.request_passive_reevaluation()
 
 
-## The node cues and effects act on: the entity, not this component.
+## Who these abilities belong to, and who they happen to.
+##
+## The component stays where the grants are; the avatar is what effects and
+## cues act on, and it may be swapped for another body at any time. Whoever
+## held the old one is told, because an ability polling for it would be every
+## ability asking every frame whether the world moved.
+func init_ability_actor_info(owner: Node, avatar: Node = null, controller: Node = null) -> void:
+	var old_avatar: Node = actor_info.avatar
+	actor_info.initialize(owner, avatar, controller)
+	if old_avatar != actor_info.avatar:
+		ability_actor_info_changed.emit(old_avatar, actor_info.avatar)
+
+
+## The node cues and effects act on.
+##
+## The avatar when there is one, the owner when the avatar has been freed,
+## and the parent when nobody set either - which is every project that never
+## thinks about avatars, and is what this answered before there were any.
 func get_effect_target() -> Node:
+	if actor_info != null and is_instance_valid(actor_info.avatar):
+		return actor_info.avatar
+	if actor_info != null and is_instance_valid(actor_info.owner):
+		return actor_info.owner
 	var parent: Node = get_parent()
 	return parent if parent != null else self
 

@@ -245,6 +245,27 @@ func test_a_source_snapshot_is_what_it_had_and_not_what_it_gained() -> void:
 	)
 
 
+## An application with no source at all captures an empty snapshot, not an error.
+##
+## Every trap, hazard volume and script that applies an effect without being an
+## entity arrives here: there is an instigator node and no component behind it.
+## The empty case has to be a typed empty, because assigning a bare `[]` to a
+## typed array is a runtime error - and one that only fires on this path, which
+## is why it went unseen.
+func test_an_application_with_no_source_captures_nothing_without_failing() -> void:
+	var hazard: Node = Node.new()
+	hazard.name = "Hazard"
+	add_child_autofree(hazard)
+	var effect: GameplayEffect = Factory.infinite([Factory.add(ATTACK, 1.0)])
+
+	var active: ActiveGameplayEffect = Factory.apply(target.asc, effect, hazard)
+
+	assert_not_null(active, "the effect was applied")
+	assert_eq(
+		Array(active.spec.source_tags_snapshot), [], "with nothing captured from a source"
+	)
+
+
 ## Preparing captures twice does not read the source's tags twice.
 ##
 ## B16. The capture was guarded by `source_asc == null`, which answers a

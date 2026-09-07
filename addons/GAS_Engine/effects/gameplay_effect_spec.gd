@@ -353,8 +353,14 @@ func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 		source_asc = resolved_source_asc
 
 	if not _source_tags_captured:
+		# The empty case is spelled as a typed local, not as `[]`. A bare literal
+		# is an untyped Array, and assigning one to Array[StringName] is a
+		# runtime error - reached by any application whose instigator has no
+		# component of its own, which is every trap, hazard and script that
+		# applies an effect without being an entity.
+		var untagged: Array[StringName] = []
 		source_tags_snapshot = (
-			source_asc.tags.active_tags() if source_asc != null else []
+			source_asc.tags.active_tags() if source_asc != null else untagged
 		)
 		_source_tags_captured = true
 	if effect_def != null:
