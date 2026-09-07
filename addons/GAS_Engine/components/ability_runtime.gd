@@ -202,7 +202,7 @@ func remove(ability: GameplayAbility) -> void:
 	remove_ability(ability.get_ability_handle())
 
 
-func _retire(spec: GameplayAbilitySpec) -> void:
+func _retire(spec: GameplayAbilitySpec, request_reevaluation: bool = true) -> void:
 	# First: a reevaluation reentered from an abort below must see
 	# PENDING_REMOVAL and never restart what this is tearing down.
 	spec.pending_remove = true
@@ -223,7 +223,8 @@ func _retire(spec: GameplayAbilitySpec) -> void:
 	spec.active_instances.clear()
 	_specs.erase(spec)
 	_specs_by_id.erase(spec.handle.id)
-	policies.request_reevaluation()
+	if request_reevaluation:
+		policies.request_reevaluation()
 
 
 ## Abort every running ability, for cleanup - PER_ACTOR stays idle after,
@@ -248,9 +249,34 @@ func abort_all(
 
 
 func clear() -> void:
+	policies.begin_suspension()
+	for spec: GameplayAbilitySpec in _specs.duplicate():
+		_retire(spec, false)
+	tasks.cancel_all(GameplayAbilityTask.CancelReason.ASC_CLEANUP)
 	_specs.clear()
 	_specs_by_id.clear()
 	_held_inputs.clear()
+	policies.end_suspension()
+
+
+## Terminal teardown. Unlike clear(), this object is not reusable afterwards.
+func dispose() -> void:
+	clear()
+
+	tasks.owner_asc = null
+
+	instancing.owner_asc = null
+	instancing.ability_runtime = null
+
+	tag_semantics.owner_asc = null
+	tag_semantics.ability_runtime = null
+
+	policies.ability_runtime = null
+	lifecycle.ability_runtime = null
+	cooldowns.ability_runtime = null
+
+	owner_asc = null
+	tags = null
 #endregion
 
 

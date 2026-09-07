@@ -139,6 +139,10 @@ var scheduler: GameplayEffectScheduler = GameplayEffectScheduler.new()
 var ability_runtime: AbilityRuntime = AbilityRuntime.new()
 var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
+## Set once, by dispose(). A second teardown must not run: the first one
+## already severed the references the second would walk.
+var _disposed: bool = false
+
 #region Lifecycle
 func _ready() -> void:
 	_wire_runtimes()
@@ -219,9 +223,28 @@ func cleanup() -> void:
 	attributes.clear_contributions()
 
 
+## Terminal teardown. cleanup() remains a reusable reset for a live ASC.
+func dispose() -> void:
+	if _disposed:
+		return
+
+	cleanup()
+
+	scheduler.effects = null
+
+	events.owner_asc = null
+	events.ability_runtime = null
+
+	ability_runtime.dispose()
+	effects.dispose()
+
+	attributes.owner_node = null
+	_disposed = true
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		cleanup()
+		dispose()
 #endregion
 
 

@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.1.1 (B01-B04): gameplay_effect_runtime.gd ceiling 500 -> 530 for the re-checks run_periodic_tick now carries between each announcement, and for contains_active().
+# F5.1.2 (B05): dispose-against-dispose declared as a mirror; each names its own references and there is no shorter way to be exhaustive.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T00:04:06Z
-# commit-previo: 9b191c24b0fcd964990a82d7d9c56f0329b54da9
+# date-utc: 2026-09-07T00:18:11Z
+# commit-previo: 542df5fffc4a1edb7d52c499a84ee30556322210
 # files: 24
-c40525139d13d719ffb4bb231c6c96306bd431237ae36d04c8082f28be840dc2  tooling/.quality-gates.json
+81f342ecbbeab135308fdbc8780cafd86329b5be5b2c2510c306bfebe9a75e98  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

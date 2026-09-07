@@ -424,6 +424,26 @@ func cleanup() -> void:
 #region Recomposition and notification
 ## Recompose every attribute once and emit one signal per attribute that
 ## moved. `source_spec` lets a listener tell what caused it; null for removal.
+## Terminal teardown. cleanup() is a reusable reset; dispose() deliberately
+## severs every strong back-reference so RefCounted collaborators can die.
+func dispose() -> void:
+	cleanup()
+
+	live_magnitudes.owner_asc = null
+	live_magnitudes.effects = null
+
+	handles.owner_asc = null
+	handles.runtime = null
+
+	inhibition.effects = null
+	stacking.effects = null
+	chain.effects = null
+
+	owner_asc = null
+	attributes = null
+	tags = null
+
+
 func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 	for mutation: AttributeMutationResult in attributes.recompose_all():
 		if not mutation.current_changed:
