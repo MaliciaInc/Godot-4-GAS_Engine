@@ -197,7 +197,7 @@ func _attach(active: ActiveGameplayEffect) -> void:
 	for tag: StringName in active.granted_tags:
 		var change: GameplayTagRuntime.Change = effects.tags.add(tag)
 		if effects.owner_asc != null:
-			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count(tag))
+			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count_exact(tag))
 	effects.attributes.add_contributions(active.contributed_modifiers)
 	if GameplayEffectRuntime._mode_for(active.spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
 		effects.live_magnitudes.create_bindings_for(active)
@@ -209,7 +209,7 @@ func _detach(active: ActiveGameplayEffect) -> void:
 	for tag: StringName in active.granted_tags:
 		var change: GameplayTagRuntime.Change = effects.tags.remove(tag)
 		if effects.owner_asc != null:
-			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count(tag))
+			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count_exact(tag))
 	effects.live_magnitudes.disconnect_bindings_for(active)
 	effects.attributes.remove_contributions_of(active.application_order)
 	_deactivate_persistent_cues(active)

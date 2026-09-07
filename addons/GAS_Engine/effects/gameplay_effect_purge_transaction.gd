@@ -102,7 +102,7 @@ static func _remove_one_tag(runtime: GameplayEffectRuntime, tag: StringName) -> 
 	var removal: TagRemoval = TagRemoval.new()
 	removal.tag = tag
 	removal.change = runtime.tags.remove(tag)
-	removal.count_after = runtime.tags.count(tag)
+	removal.count_after = runtime.tags.count_exact(tag)
 	return removal
 #endregion
 

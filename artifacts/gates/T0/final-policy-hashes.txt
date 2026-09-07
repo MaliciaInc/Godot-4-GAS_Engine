@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.2.8 (G17) raises the evaluator to 590 and the effect runtime to 580: a typed execution output, the defined order between an execution and a standard modifier writing one attribute, and the cue/child wiring that order needs.
+# F5.2.9 (G19) raises the ASC to 760: the parent-aware half of a tag change, which is two signals and the loop over an ancestor chain that emits them.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T03:50:04Z
-# commit-previo: a8e4bf2fd3c1615f1b9d914b33e227a32ac6bd54
+# date-utc: 2026-09-07T04:02:40Z
+# commit-previo: b34b2b4ea005ea201905b50e177309a492d53e65
 # files: 24
-153cdcb741d0ccad5c02e4cd9924f08d960582aa7cc5f85d5abce88474fc9236  tooling/.quality-gates.json
+988ceea79723050a1186c06d4254cdc172d3ce5b8d4bb0848728346e8246ccd1  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

@@ -173,7 +173,7 @@ func test_refreshing_replaces_the_snapshot_and_keeps_one_instance() -> void:
 	assert_eq(second, first, "the same logical instance")
 	assert_eq(asc.get_active_effects().size(), 1, "not two stacks")
 	assert_almost_eq(fixture.current_of(ATTACK), 60.0, TOLERANCE, "the new magnitude replaced the old")
-	assert_eq(asc.tags.count(BUFFED), 1, "the tag refcount stays at one")
+	assert_eq(asc.tags.count_exact(BUFFED), 1, "the tag refcount stays at one")
 
 
 func test_a_refresh_emits_neither_a_removal_nor_an_addition() -> void:

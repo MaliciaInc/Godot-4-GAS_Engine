@@ -362,7 +362,7 @@ func _assert_invariants(asc: AbilitySystemComponent) -> void:
 			)
 
 	for tag: StringName in asc.tags.active_tags():
-		assert_true(asc.tags.count(tag) >= 0, "tag counts never go negative")
+		assert_true(asc.tags.count_exact(tag) >= 0, "tag counts never go negative")
 #endregion
 
 

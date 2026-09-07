@@ -61,8 +61,46 @@ func clear_all() -> void:
 	_counts.clear()
 
 
-func count(tag: StringName) -> int:
+## How many times this exact tag is held.
+##
+## What every reference count in this engine is asking: a tag granted by two
+## effects is held twice, and dropping one of them leaves it held once.
+## `State` is not `State.Stunned` here, however many stunned things there are.
+func count_exact(tag: StringName) -> int:
 	return _counts.get(tag, 0)
+
+
+## How many times this tag or anything under it is held.
+##
+## The question a listener on `State` is actually asking. Two effects, one
+## stunning and one rooting, are two things under `State` - so `State` is held
+## twice, and losing one of them does not mean the character can move.
+func count(tag: StringName) -> int:
+	var total: int = 0
+	for active: StringName in _counts:
+		if is_descendant_of(active, tag):
+			total += _counts[active]
+	return total
+
+
+## Every tag whose hierarchical count this one contributes to: itself, then
+## each ancestor, nearest first.
+##
+## `State.Debuff.Stunned` is held by `State.Debuff` and by `State`, and by
+## nothing else - a prefix that does not end at a separator is a different tag,
+## for the reason `is_descendant_of` gives.
+static func ancestors_of(tag: StringName) -> Array[StringName]:
+	var chain: Array[StringName] = []
+	if tag == &"":
+		return chain
+	chain.append(tag)
+	var text: String = String(tag)
+	var cut: int = text.rfind(SEPARATOR)
+	while cut > 0:
+		text = text.substr(0, cut)
+		chain.append(StringName(text))
+		cut = text.rfind(SEPARATOR)
+	return chain
 
 
 func active_tags() -> Array[StringName]:

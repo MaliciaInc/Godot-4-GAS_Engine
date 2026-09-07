@@ -24,6 +24,12 @@ signal tag_count_changed(tag: StringName, new_count: int)
 ## A tag's count reached zero and it was dropped.
 signal tag_removed(tag: StringName)
 
+## A tag, or anything under it, changed count. Unreal's AnyCountChange.
+signal tag_or_child_count_changed(tag: StringName, new_count: int)
+
+## A tag, or anything under it, appeared or went away. Unreal's NewOrRemoved.
+signal tag_or_child_presence_changed(tag: StringName, present: bool)
+
 ## An attribute's effective value actually moved. Never emitted for a write that
 ## resolved to the same value.
 signal attribute_changed(
@@ -277,8 +283,37 @@ func emit_tag_change(tag: StringName, change: GameplayTagRuntime.Change, new_cou
 			tag_removed.emit(tag)
 		_:
 			pass
+	_emit_hierarchical_tag_change(tag, change)
 	effects.on_owner_tags_changed()
 	ability_runtime.request_passive_reevaluation()
+
+
+## The parent-aware half of a tag change: a listener watching `State` hears
+## about `State.Stunned`, which is what a hierarchy is for.
+##
+## Presence is announced only where the hierarchical count actually crossed
+## zero. Adding `State.Rooted` beside an existing `State.Stunned` takes `State`
+## from one to two, and a listener treating every count change as "it is held
+## now" would fire twice for one condition and act on the second one.
+##
+## The crossing is read off the change rather than off a before-and-after
+## snapshot: only ADDED can take an ancestor to one, and only REMOVED can take
+## it to zero, because every other change moves the count by one from at
+## least one.
+func _emit_hierarchical_tag_change(
+	tag: StringName, change: GameplayTagRuntime.Change
+) -> void:
+	if change == GameplayTagRuntime.Change.NONE:
+		return
+	var added: bool = change == GameplayTagRuntime.Change.ADDED
+	var removed: bool = change == GameplayTagRuntime.Change.REMOVED
+	for ancestor: StringName in GameplayTagRuntime.ancestors_of(tag):
+		var total: int = tags.count(ancestor)
+		tag_or_child_count_changed.emit(ancestor, total)
+		if added and total == 1:
+			tag_or_child_presence_changed.emit(ancestor, true)
+		elif removed and total == 0:
+			tag_or_child_presence_changed.emit(ancestor, false)
 
 
 ## Emit an attribute change and run the set's dependency hook, in that order.
@@ -585,11 +620,11 @@ func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 
 #region Tags
 func add_tag(tag: StringName) -> void:
-	emit_tag_change(tag, tags.add(tag), tags.count(tag))
+	emit_tag_change(tag, tags.add(tag), tags.count_exact(tag))
 
 
 func remove_tag(tag: StringName) -> void:
-	emit_tag_change(tag, tags.remove(tag), tags.count(tag))
+	emit_tag_change(tag, tags.remove(tag), tags.count_exact(tag))
 
 
 func clear_tag(tag: StringName) -> void:
