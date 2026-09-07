@@ -48,7 +48,19 @@ func test_a_project_with_no_cues_still_gets_a_file() -> void:
 	var source: String = GameplayCueGenerator.render_source(none)
 
 	assert_true(source.contains("const BINDINGS"), "the dictionary is declared")
-	assert_true(source.strip_edges().ends_with("}"), "and closed")
+	assert_true(source.contains(GameplayCueGenerator.OVERRIDE_NAME), "and so is the list")
+	assert_true(source.strip_edges().ends_with("]"), "and both are closed")
+
+
+## A tag that ends a fallback walk reads back as one.
+func test_a_rendered_override_reads_back_as_itself() -> void:
+	var none: Dictionary[StringName, String] = {}
+	var stops: Array[StringName] = [A_TAG]
+
+	var source: String = GameplayCueGenerator.render_source(none, stops)
+
+	assert_true(source.contains(String(A_TAG)), "the tag is in the file")
+	assert_false(source.contains("preload"), "and it is not pretending to be a binding")
 #endregion
 
 
@@ -58,7 +70,9 @@ func test_the_project_has_a_cues_file_and_it_parses() -> void:
 
 	assert_true(FileAccess.file_exists(path), "the file is where the setting says")
 	assert_eq(
-		GameplayCueGenerator.render_source(GameplayCueGenerator.bindings_in_file()),
+		GameplayCueGenerator.render_source(
+			GameplayCueGenerator.bindings_in_file(), GameplayCueGenerator.overrides_in_file()
+		),
 		FileAccess.get_file_as_string(path),
 		"and reading it and writing it again gives it back byte for byte"
 	)
@@ -92,14 +106,24 @@ func test_every_binding_names_a_scene_that_exists() -> void:
 
 
 #region The file says what GDScript says it says
-## What a person leaves in the file, read back.
-func _bindings_in(lines: Array[String]) -> Dictionary[StringName, String]:
-	var read: Variant = HandEditedSource.read(
+## What a person leaves in the file, put where the reader will look.
+func _read_with(reader: Callable, lines: Array[String]) -> Variant:
+	return HandEditedSource.read(
 		GASEngineProjectSettings.PROJECT_SETTINGS_NAME_RESOURCES_CUES_GENERATED_SCRIPT,
 		lines,
-		GameplayCueGenerator.bindings_in_file
+		reader
 	)
-	var found: Dictionary[StringName, String] = read
+
+
+func _bindings_in(lines: Array[String]) -> Dictionary[StringName, String]:
+	var found: Dictionary[StringName, String] = _read_with(
+		GameplayCueGenerator.bindings_in_file, lines
+	)
+	return found
+
+
+func _overrides_in(lines: Array[String]) -> Array[StringName]:
+	var found: Array[StringName] = _read_with(GameplayCueGenerator.overrides_in_file, lines)
 	return found
 
 
@@ -152,4 +176,38 @@ func test_only_the_real_bindings_body_counts() -> void:
 
 	var only_the_real_one: Array[StringName] = [&"Cue.Real"]
 	assert_eq(found.keys(), only_the_real_one, "the bindings, not what resembles them")
+
+
+## The same three roads, on the list beside the bindings.
+##
+## One function reads both bodies, so this is not a second copy of the rule -
+## it is the check that the second caller actually reaches it.
+func test_only_the_real_override_body_counts() -> void:
+	var found: Array[StringName] = _overrides_in([
+		'## For example: &"Cue.FromTheDocs",',
+		GameplayCueGenerator.BINDINGS_DECLARATION,
+		'	&"Cue.Bound": preload("%s"),' % A_SCENE_THAT_EXISTS,
+		"}",
+		"",
+		GameplayCueGenerator.OVERRIDE_DECLARATION,
+		'	&"Cue.Real",',
+		'	# &"Cue.TakenOut",',
+		"]",
+	])
+
+	var only_the_real_one: Array[StringName] = [&"Cue.Real"]
+	assert_eq(found, only_the_real_one, "the list, not what resembles it")
+
+
+## A list somebody hand-wrote without a trailing comma is still a list:
+## GDScript accepts it, so the reader has to as well.
+func test_an_entry_without_a_trailing_comma_still_reads() -> void:
+	var found: Array[StringName] = _overrides_in([
+		GameplayCueGenerator.OVERRIDE_DECLARATION,
+		'	&"Cue.Last"',
+		"]",
+	])
+
+	var last: Array[StringName] = [&"Cue.Last"]
+	assert_eq(found, last)
 #endregion

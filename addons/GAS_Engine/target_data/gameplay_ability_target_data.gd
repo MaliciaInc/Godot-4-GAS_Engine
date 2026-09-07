@@ -128,6 +128,17 @@ func get_hits_for_node(node: Node) -> Array[TargetHit]:
 	return specific
 
 
+## The first hit recorded for one node, or null when none was.
+##
+## A cue plays in one place. A target struck by two of an area effect's
+## traces is still one target being hit, and the first is the one the
+## targeting reported first - not an invented average of two surfaces.
+## @composer
+func first_hit_for(node: Node) -> TargetHit:
+	var hits: Array[TargetHit] = get_hits_for_node(node)
+	return hits[0] if not hits.is_empty() else null
+
+
 ## An aim of this one's own, keeping only what `only` names.
 ##
 ## Two things at once because they are one operation. An area effect is aimed

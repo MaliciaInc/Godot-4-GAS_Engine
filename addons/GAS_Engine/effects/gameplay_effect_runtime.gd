@@ -504,6 +504,9 @@ func cue_params_for(
 	params.target = owner_asc.get_effect_target()
 	params.context = spec.context
 	params.effect_handle = effect_handle
+	params.stack_count = spec.stack_count
+	var aimed: GameplayAbilityTargetData = spec.context.target_data if spec.context != null else null
+	params.target_hit = aimed.first_hit_for(params.target) if aimed != null else null
 	return params
 
 

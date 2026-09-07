@@ -33,9 +33,14 @@ class RecordingPersistentCue extends GameplayCueNotify:
 	## and counting by class alone credits one cue with the other's playbacks.
 	var last_tag: StringName = &""
 
+	## And which binding answered it, which a fallback makes a second
+	## question: a request for a leaf tag is often played by an ancestor.
+	var last_matched_tag: StringName = &""
+
 	func executed(params: GameplayCueParams) -> void:
 		executed_count += 1
 		last_tag = params.cue_tag
+		last_matched_tag = params.matched_cue_tag
 
 	func play_cue(_params: GameplayCueParams) -> void:
 		play_cue_count += 1
@@ -61,6 +66,19 @@ static func install(manager: CueManagerScript, tag: StringName) -> void:
 	template.free()
 	manager._cue_scenes[tag] = scene
 	manager._pool[tag] = GameplayCuePoolBucket.new()
+
+
+## Mark a tag as ending a fallback walk without binding anything to it.
+##
+## What a project writes under OVERRIDE_PARENT in its cues file, injected the
+## same way `install` injects a binding: through the manager's own map, so
+## the manager is exercised rather than stubbed.
+static func silence(manager: CueManagerScript, tag: StringName) -> void:
+	manager._override_parent[tag] = true
+
+
+static func unsilence(manager: CueManagerScript, tag: StringName) -> void:
+	manager._override_parent.erase(tag)
 
 
 ## How many times the cue under `tag` has actually run.

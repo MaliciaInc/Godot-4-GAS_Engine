@@ -68,6 +68,12 @@ static func _header_lines() -> Array[String]:
 		"## this file is the registry rather than a copy of one, so there is",
 		"## nothing for it to fall out of step with.",
 		"##",
+		"## A cue asked for by a tag nobody bound falls back up the family:",
+		"## A.B.C, then A.B, then A, and the first binding found is the one",
+		"## that plays. A tag listed under OVERRIDE_PARENT ends that walk",
+		"## where it stands - with its own binding when it has one, and with",
+		"## silence when it has none.",
+		"##",
 		Source.ADDON_DOC_LINE,
 		Source.LICENSE_DOC_LINE,
 		"",
@@ -81,14 +87,37 @@ static func _header_lines() -> Array[String]:
 const CLOSING_LINE: String = "}"
 const BINDING_LINE: String = '	&"%s": preload("%s"),'
 
+## The second declaration in the file: the tags that end a fallback walk.
+##
+## Separate rather than a third column on a binding, because a binding's value
+## is a PackedScene and its type says so. It is not a list of bindings either:
+## a tag here with no binding is the useful case, and says "nothing plays under
+## here, and do not go looking further up".
+const OVERRIDE_NAME: String = "const OVERRIDE_PARENT"
+const OVERRIDE_DECLARATION: String = OVERRIDE_NAME + ": Array[StringName] = ["
+const OVERRIDE_LINE: String = '	&"%s",'
+const OVERRIDE_CLOSING_LINE: String = "]"
+
+## A tag ends at its closing quote rather than at a comma, so a list somebody
+## hand-edited and left without a trailing comma still reads.
+const QUOTE: String = '"'
+
 
 ## What the file for these bindings looks like.
-static func render_source(bindings: Dictionary[StringName, String]) -> String:
+static func render_source(
+	bindings: Dictionary[StringName, String], overrides: Array[StringName] = []
+) -> String:
 	var lines: Array[String] = []
 	lines.assign(_header_lines())
 	for tag: StringName in bindings:
 		lines.append(BINDING_LINE % [tag, bindings[tag]])
 	lines.append(CLOSING_LINE)
+	lines.append("")
+	lines.append("")
+	lines.append(OVERRIDE_DECLARATION)
+	for tag: StringName in overrides:
+		lines.append(OVERRIDE_LINE % tag)
+	lines.append(OVERRIDE_CLOSING_LINE)
 	return LINE_BREAK.join(lines) + LINE_BREAK
 
 
@@ -109,25 +138,51 @@ static func render_source(bindings: Dictionary[StringName, String]) -> String:
 ## starts. Everything else in the file is somebody else's business.
 static func bindings_in_file() -> Dictionary[StringName, String]:
 	var found: Dictionary[StringName, String] = {}
-	var path: String = Settings.get_generated_cue_script_path()
-	if not FileAccess.file_exists(path):
-		return found
-
-	var inside: bool = false
-	for line: String in FileAccess.get_file_as_string(path).split(LINE_BREAK):
-		var trimmed: String = line.strip_edges()
-		if not inside:
-			inside = _declares_bindings(trimmed)
-			continue
-		if trimmed.begins_with(CLOSING_LINE):
-			break
-		if not trimmed.begins_with(OPEN_TAG):
-			continue
+	for trimmed: String in _body_of(BINDINGS_NAME, CLOSING_LINE):
 		var tag: String = _between(trimmed, OPEN_TAG, CLOSE_TAG)
 		var scene: String = _between(trimmed, OPEN_SCENE, CLOSE_SCENE)
 		if not tag.is_empty() and not scene.is_empty():
 			found[StringName(tag)] = scene
 	return found
+
+
+## The tags that end a fallback walk, read out of the same file.
+##
+## A tag may appear here with or without a binding, and both say something:
+## with one, it plays and nothing above it is consulted; without one, nothing
+## plays and nothing above it is consulted either.
+static func overrides_in_file() -> Array[StringName]:
+	var found: Array[StringName] = []
+	for trimmed: String in _body_of(OVERRIDE_NAME, OVERRIDE_CLOSING_LINE):
+		var tag: String = _between(trimmed, OPEN_TAG, QUOTE)
+		if not tag.is_empty() and not found.has(StringName(tag)):
+			found.append(StringName(tag))
+	return found
+
+
+## The lines inside one declared body, and nothing else in the file.
+##
+## The whole of why the reader is careful lives here. An entry is a line
+## inside the declared body that starts where an entry starts - not any line
+## anywhere holding the same quotes, which is what a commented-out entry, a
+## doc-comment example and a second dictionary further down all are.
+static func _body_of(declaration_name: String, closing: String) -> Array[String]:
+	var body: Array[String] = []
+	var path: String = Settings.get_generated_cue_script_path()
+	if not FileAccess.file_exists(path):
+		return body
+
+	var inside: bool = false
+	for line: String in FileAccess.get_file_as_string(path).split(LINE_BREAK):
+		var trimmed: String = line.strip_edges()
+		if not inside:
+			inside = _declares(trimmed, declaration_name)
+			continue
+		if trimmed.begins_with(closing):
+			break
+		if trimmed.begins_with(OPEN_TAG):
+			body.append(trimmed)
+	return body
 
 
 ## Whether this line declares the bindings, and not something else.
@@ -139,12 +194,12 @@ static func bindings_in_file() -> Dictionary[StringName, String]:
 ## thing, stop at its closing brace, and never reach the one GDScript uses. The
 ## same disagreement as a commented-out binding, arrived at by another road, so
 ## what follows the name has to be something that can follow a name.
-static func _declares_bindings(trimmed: String) -> bool:
-	if not trimmed.begins_with(BINDINGS_NAME):
+static func _declares(trimmed: String, name: String) -> bool:
+	if not trimmed.begins_with(name):
 		return false
-	if trimmed.length() == BINDINGS_NAME.length():
+	if trimmed.length() == name.length():
 		return true
-	return AFTER_THE_NAME.contains(trimmed[BINDINGS_NAME.length()])
+	return AFTER_THE_NAME.contains(trimmed[name.length()])
 
 
 ## What one line holds between two markers, or nothing when it holds neither.
@@ -160,9 +215,11 @@ static func _between(line: String, opens: String, closes: String) -> String:
 
 
 ## Write the cues file for these bindings.
-static func generate_cues_file(bindings: Dictionary[StringName, String]) -> bool:
+static func generate_cues_file(
+	bindings: Dictionary[StringName, String], overrides: Array[StringName] = []
+) -> bool:
 	var path: String = Settings.get_generated_cue_script_path()
-	if not Source.write(path, render_source(bindings)):
+	if not Source.write(path, render_source(bindings, overrides)):
 		return false
 	print(GENERATED_REPORT % [path, bindings.size()])
 	return true

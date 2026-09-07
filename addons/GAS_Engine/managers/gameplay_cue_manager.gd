@@ -27,6 +27,14 @@ const CueParams = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 const CueHandle = preload("res://addons/GAS_Engine/cues/gameplay_cue_handle.gd")
 const PoolBucket = preload("res://addons/GAS_Engine/cues/gameplay_cue_pool_bucket.gd")
 
+## What a tag family is, borrowed from the one place that already knows.
+##
+## The family and not the whole tag store: this file is an autoload, so
+## everything it reaches is bound by the preload rule, and that is a
+## reasonable thing to ask of ten lines about tag names and not of the
+## reference-counted store the whole engine writes through.
+const TagFamily = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_family.gd")
+
 ## Where every caller outside this file's own closure finds this autoload -
 ## `get_node_or_null(AUTOLOAD_NODE_PATH)`, never the bare global identifier,
 ## since a caller that may run before the singleton exists (or, for the
@@ -39,6 +47,12 @@ var _pool: Dictionary[StringName, PoolBucket] = {}
 
 ## Scenes to instantiate, one per cue tag.
 var _cue_scenes: Dictionary[StringName, PackedScene] = {}
+
+## The tags that end a fallback walk, from the same file as the bindings.
+##
+## A set rather than a list: this is asked once per level of every cue
+## resolution, and the answer is only ever yes or no.
+var _override_parent: Dictionary[StringName, bool] = {}
 
 ## Every persistent cue currently running, keyed by its handle's own id -
 ## the id, not the handle object, so a caller's copy of the handle still
@@ -68,6 +82,9 @@ func _load_registry() -> void:
 			continue
 		_cue_scenes[tag] = scene
 		_pool[tag] = PoolBucket.new()
+
+	for tag: StringName in CueGenerator.overrides_in_file():
+		_override_parent[tag] = true
 
 
 ## A missing registry is normal in a project that declares no cues, and noisy in
@@ -140,11 +157,15 @@ func _resolve_and_parent(params: CueParams) -> CueNotify:
 		params == null
 		or not is_instance_valid(params.target)
 		or not params.target.is_inside_tree()
-		or not _cue_scenes.has(params.cue_tag)
 	):
 		return null
 
-	var cue_instance: CueNotify = _get_or_create_cue(params.cue_tag)
+	var matched: StringName = resolve_cue_tag(params.cue_tag)
+	if matched == &"":
+		return null
+	params.matched_cue_tag = matched
+
+	var cue_instance: CueNotify = _get_or_create_cue(matched)
 	if cue_instance == null:
 		return null
 
@@ -153,6 +174,33 @@ func _resolve_and_parent(params: CueParams) -> CueNotify:
 		previous_parent.remove_child(cue_instance)
 	params.target.add_child(cue_instance)
 	return cue_instance
+#endregion
+
+
+#region Resolution
+## Which tag actually answers a request.
+##
+## The cue a game announces is often more specific than the cue it has art
+## for: `Cue.Damage.Fire.Critical` is a reasonable thing to say and a silly
+## thing to demand a separate scene for. So a request nothing answers falls
+## back up its own family - A.B.C, then A.B, then A - and the first binding
+## found is the one that plays.
+##
+## A tag under OVERRIDE_PARENT ends that walk where it stands. With a binding
+## of its own, that binding is what plays; without one, nothing plays and
+## nothing further up is consulted either - which is how a project says "this
+## whole branch is silent" without binding every leaf under it to an empty
+## scene.
+##
+## Answers &"" when nothing does, which every caller already treats as "no
+## cue to show for it, and gameplay carries on regardless".
+func resolve_cue_tag(requested: StringName) -> StringName:
+	for candidate: StringName in TagFamily.ancestors_of(requested):
+		if _cue_scenes.has(candidate):
+			return candidate
+		if _override_parent.has(candidate):
+			return &""
+	return &""
 #endregion
 
 

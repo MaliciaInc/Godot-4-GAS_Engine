@@ -24,9 +24,19 @@ const Params = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 
 const EffectContext = preload("res://addons/GAS_Engine/target_data/gameplay_effect_context.gd")
 const EffectHandle = preload("res://addons/GAS_Engine/effects/gameplay_effect_handle.gd")
+const TargetHit = preload("res://addons/GAS_Engine/target_data/gameplay_target_hit.gd")
 
-## The cue tag being executed.
+## The cue tag as it was asked for.
 var cue_tag: StringName = &""
+
+## The tag whose binding actually answered it, which is not always the same.
+##
+## A request that nothing answers falls back up its own family, so a cue asked
+## for as `Cue.Damage.Fire.Critical` may well be played by the scene bound to
+## `Cue.Damage`. A cue that wants to know how specific the request was needs
+## both tags; one that only needs to know what it itself is needs neither.
+## Empty until the manager has resolved the request.
+var matched_cue_tag: StringName = &""
 
 ## Who triggered the cue, and who it plays on.
 var instigator: Node = null
@@ -34,6 +44,19 @@ var target: Node = null
 
 ## The scalar the cue may scale itself by - damage dealt, healing applied.
 var magnitude: float = 0.0
+
+## How many of the effect were on the target when this cue was made.
+##
+## Carried rather than looked up: a cue that shows or scales with a stack
+## count would otherwise have to resolve the handle and ask, and by the time
+## a removal cue plays the effect it is announcing is already gone.
+var stack_count: int = 1
+
+## Where the effect landed on this target, when the application had a hit
+## recorded for it - the point a spark plays at, the normal a decal aligns
+## to. Null for an effect that hit nothing in particular, which is most of
+## them: a poison tick has a target and no impact point.
+var target_hit: TargetHit = null
 
 ## Where the cue should play, when the effect had a located hit. A cue attached
 ## to the target node ignores this. `has_location` exists because Vector3.ZERO

@@ -21,7 +21,7 @@ class_name GameplayTagRuntime extends RefCounted
 ## re-deriving it by comparing counts.
 enum Change { NONE, ADDED, INCREMENTED, DECREMENTED, REMOVED }
 
-const SEPARATOR: String = "."
+const SEPARATOR: String = GameplayTagFamily.SEPARATOR
 
 var _counts: Dictionary[StringName, int] = {}
 
@@ -89,18 +89,11 @@ func count(tag: StringName) -> int:
 ## `State.Debuff.Stunned` is held by `State.Debuff` and by `State`, and by
 ## nothing else - a prefix that does not end at a separator is a different tag,
 ## for the reason `is_descendant_of` gives.
+## Answered by GameplayTagFamily, which the cue manager also needs and
+## cannot reach through this file: an autoload parses before the global
+## class cache exists, so what it reaches must preload what it names.
 static func ancestors_of(tag: StringName) -> Array[StringName]:
-	var chain: Array[StringName] = []
-	if tag == &"":
-		return chain
-	chain.append(tag)
-	var text: String = String(tag)
-	var cut: int = text.rfind(SEPARATOR)
-	while cut > 0:
-		text = text.substr(0, cut)
-		chain.append(StringName(text))
-		cut = text.rfind(SEPARATOR)
-	return chain
+	return GameplayTagFamily.ancestors_of(tag)
 
 
 func active_tags() -> Array[StringName]:

@@ -77,6 +77,11 @@ func _on_auto_destroy_elapsed(scheduled_id: int) -> void:
 
 ## Call this from an inherited script when the effect is genuinely done, e.g.
 ## from an AudioStreamPlayer `finished` signal.
+## Letting go of the params is what keeps a pooled cue from holding the
+## target node, the effect context and the handle of an effect that is over -
+## state the next activation out of the pool would read, and references the
+## scene could not free. Every road into the pool comes through here, since
+## `cue_finished` is emitted nowhere else.
 func finish_cue() -> void:
 	current_params = null
 	cue_finished.emit(self, gameplay_cue_tag)
