@@ -203,62 +203,30 @@ func _compose_from(
 	result: AttributeEvaluationResult,
 	contributions: Array[AttributeModifierContribution]
 ) -> float:
-	var total_add: float = 0.0
-	var product_multiply: float = 1.0
-	var product_divide: float = 1.0
-	var winner: AttributeModifierContribution = null
+	var folded: AttributeAggregateMath.Composed = (
+		AttributeAggregateMath.unreal(base, attribute_name, contributions)
+		if _uses_unreal_algebra()
+		else AttributeAggregateMath.godot_native(base, attribute_name, contributions)
+	)
 
-	for contribution: AttributeModifierContribution in contributions:
-		if contribution.attribute_name != attribute_name:
-			continue
-		match contribution.operation:
-			GameplayEffectModifier.Operation.ADD:
-				total_add += contribution.magnitude
-			GameplayEffectModifier.Operation.MULTIPLY:
-				product_multiply *= contribution.magnitude
-			GameplayEffectModifier.Operation.DIVIDE:
-				# A zero divisor is an invalid configuration, never a no-op.
-				# Ignoring it silently is how a designer ships a stat that is
-				# quietly wrong instead of loudly broken.
-				if is_zero_approx(contribution.magnitude):
-					result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
-					return 0.0
-				product_divide *= contribution.magnitude
-			GameplayEffectModifier.Operation.OVERRIDE:
-				if _override_beats(contribution, winner):
-					winner = contribution
-			_:
-				result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
-				return 0.0
-
-	var composed: float = ((base + total_add) * product_multiply) / product_divide
-
-	if winner != null:
-		composed = winner.magnitude
-		result.winning_override_application_order = winner.application_order
-		result.winning_override_modifier_index = winner.modifier_index
-
-	if not is_finite(composed):
-		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+	if not folded.is_ok():
+		result.status = folded.status
 		return 0.0
 
-	return composed
+	result.winning_override_application_order = folded.winning_override_application_order
+	result.winning_override_modifier_index = folded.winning_override_modifier_index
+	return folded.value
 
 
-## Last applied override wins: later application first, then higher modifier
-## index within the same application. Both axes are compared, so two overrides
-## from one effect are never resolved by array order.
-func _override_beats(
-	candidate: AttributeModifierContribution, incumbent: AttributeModifierContribution
-) -> bool:
-	if incumbent == null:
-		return true
-	if candidate.application_order != incumbent.application_order:
-		return candidate.application_order > incumbent.application_order
-	return candidate.modifier_index > incumbent.modifier_index
-#endregion
-
-
+## Which arithmetic this entity's attributes are composed by.
+##
+## Asked of the component rather than decided here, and asked every time rather
+## than cached: the profile is data somebody can change, and an aggregate that
+## remembered the answer would keep composing by the old rules until something
+## else happened to invalidate it.
+func _uses_unreal_algebra() -> bool:
+	var component: AbilitySystemComponent = owner_node as AbilitySystemComponent
+	return component != null and component.uses_ue_5_7_contracts()
 ## Pure aggregate preflight. It never publishes or temporarily installs the
 ## candidate contributions in the live runtime.
 func validate_additional_contributions(

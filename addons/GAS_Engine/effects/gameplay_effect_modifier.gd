@@ -14,10 +14,18 @@ class_name GameplayEffectModifier extends Resource
 
 ## Defines the mathematical operation applied to the attribute.
 enum Operation {
-	ADD,      # Adds the magnitude (use negative values for damage/subtraction)
-	MULTIPLY, # Multiplies the current value (e.g., 1.5 for a 50% increase)
-	DIVIDE,   # Divides the current value
-	OVERRIDE  # Completely replaces the current value with the magnitude
+	ADD,
+	## Legacy/Godot-native multiplicative product.
+	MULTIPLY,
+	## Legacy/Godot-native divisor product.
+	DIVIDE,
+	OVERRIDE,
+
+	## UE-compatible aggregator operations.
+	MULTIPLY_ADDITIVE,
+	DIVIDE_ADDITIVE,
+	MULTIPLY_COMPOUND,
+	ADD_FINAL,
 }
 
 ## The exact attribute name in the AttributeSet (e.g. &"health" or &"mana").
@@ -36,3 +44,21 @@ enum Operation {
 ## of the other GameplayMagnitude kinds for a captured, caster-supplied or
 ## custom-computed value.
 @export var magnitude: GameplayMagnitude = null
+
+## Which pass of the aggregate this joins.
+##
+## Channels are folded in order, each one composing over what the last one
+## produced. It is what lets a game say `this multiplies the buffed value,
+## not the base` without every effect having to know about every other.
+@export_range(0, 9, 1) var evaluation_channel: int = 0
+
+## Tags the source must carry for this modifier to count at all.
+##
+## Not a condition on the effect: on this one modifier. An effect can hit
+## harder against the undead and normally against everything else without
+## being authored twice.
+@export var source_requirements: GameplayTagQuery = null
+
+## And the tags the target must carry.
+@export var target_requirements: GameplayTagQuery = null
+

@@ -90,8 +90,9 @@ func _stacking_live(operation: GameplayEffectModifier.Operation) -> GameplayEffe
 ## they disagreed.
 ##
 ## Every operation, because the scaling happens to the magnitude before the
-## operation sees it: a MULTIPLY whose factor was scaled wrongly is wrong in a
-## way an ADD would never show.
+## operation sees it, and what a stack means differs by arm: an additive bonus
+## doubles, a compound factor is applied twice, and an override does not scale
+## at all - it is a value rather than an amount.
 ##
 ##     [what it is, operation, attack, moved to, defense, after applying, after moving]
 func _operations() -> Array:
@@ -99,7 +100,11 @@ func _operations() -> Array:
 		["added", GameplayEffectModifier.Operation.ADD, 7.0, 12.0, 5.0, 19.0, 29.0],
 		["multiplied", GameplayEffectModifier.Operation.MULTIPLY, 2.0, 3.0, 5.0, 20.0, 30.0],
 		["divided", GameplayEffectModifier.Operation.DIVIDE, 2.0, 4.0, 40.0, 10.0, 5.0],
-		["overridden", GameplayEffectModifier.Operation.OVERRIDE, 3.0, 4.0, 5.0, 6.0, 8.0],
+		# An override is never scaled by the stack count. It is a value, not an
+		# amount: two stacks of "set this to 3" is still 3. F5.2.3 says so, and
+		# this row said 6 before it, which was the engine multiplying something
+		# that has no quantity.
+		["overridden", GameplayEffectModifier.Operation.OVERRIDE, 3.0, 4.0, 5.0, 3.0, 4.0],
 	]
 
 

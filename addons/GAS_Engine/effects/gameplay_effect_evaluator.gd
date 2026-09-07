@@ -249,13 +249,25 @@ static func _stage_effect_mutation(
 ## to when the effect asks for it. Never applies to an execution
 ## calculation's own math - that reads spec.stack_count itself and decides.
 static func stack_scaled_value(spec: GameplayEffectSpec, magnitude: float) -> float:
-	if spec != null and spec.effect_def != null and spec.effect_def.factor_in_stack_count:
-		return magnitude * float(spec.stack_count)
-	return magnitude
+	return stack_scaled_for(spec, magnitude, GameplayEffectModifier.Operation.ADD)
+
+
+## What one modifier of a stack is worth, by what its operation means.
+static func stack_scaled_for(
+	spec: GameplayEffectSpec,
+	magnitude: float,
+	operation: GameplayEffectModifier.Operation
+) -> float:
+	if spec == null or spec.effect_def == null or not spec.effect_def.factor_in_stack_count:
+		return magnitude
+	return AttributeAggregateMath.stack_scaled(
+		magnitude, float(spec.stack_count), operation
+	)
 
 
 static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
-	return stack_scaled_value(spec, spec.get_magnitude(index))
+	var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
+	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation)
 
 
 ## Every attribute a standard modifier writes to, without duplicates.
@@ -280,6 +292,30 @@ static func _first_ambiguous_attribute(
 
 
 ## Build one contribution per modifier, for an effect that stays active.
+## Whether this one modifier applies to this pairing at all.
+##
+## A condition on the modifier rather than on the effect, which is what lets one
+## effect hit harder against the undead and normally against everything else
+## without being authored twice. Unmet is not a refusal: the modifier simply is
+## not part of this application, and the rest of the effect goes on as written.
+##
+## The source is judged by the tags it had when the application was made, not by
+## whatever it carries now - it is the same snapshot every other capture reads,
+## for the same reason.
+static func _qualifies(request: Request, modifier: GameplayEffectModifier) -> bool:
+	if modifier.source_requirements != null:
+		if not modifier.source_requirements.matches_tags(request.spec.source_tags_snapshot):
+			return false
+	if modifier.target_requirements != null:
+		var target: AbilitySystemComponent = request.owner_asc
+		var carried: Array[StringName] = (
+			target.tags.active_tags() if target != null else [] as Array[StringName]
+		)
+		if not modifier.target_requirements.matches_tags(carried):
+			return false
+	return true
+
+
 static func _build_contributions(
 	request: Request, modifier_targets: Array[StringName], result: GameplayEffectEvaluationResult
 ) -> void:
@@ -294,6 +330,8 @@ static func _build_contributions(
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
 		if modifier == null or modifier.attribute_name.is_empty():
+			continue
+		if not _qualifies(request, modifier):
 			continue
 
 		var magnitude: float = _stack_scaled_magnitude(spec, index)
@@ -324,6 +362,7 @@ static func _build_contributions(
 		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
 		contribution.attribute_name = modifier.attribute_name
 		contribution.operation = modifier.operation
+		contribution.evaluation_channel = modifier.evaluation_channel
 		contribution.magnitude = magnitude
 		contribution.modifier_index = index
 		contribution.application_order = request.application_order

@@ -44,8 +44,8 @@
       },
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd",
-        "max_lines": 470,
-        "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount."
+        "max_lines": 520,
+        "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount. F5.2.3 (G04/G05/G15) adds two things the evaluator is the only place that can do. A modifier may now carry its own source and target tag requirements - a condition on the one modifier rather than on the effect, so one effect can hit harder against the undead and normally against everything else without being authored twice - and this is where both sets of tags are known: the source's as the snapshot every other capture reads, the target's from the component being applied to. And a stacked magnitude is now scaled by what its operation means rather than by one rule for all of them, because doubling an override is meaningless. The arithmetic itself is in AttributeAggregateMath; what stayed here is the entry point the phase froze and the two questions that need the world."
       },
       {
         "glob": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd",

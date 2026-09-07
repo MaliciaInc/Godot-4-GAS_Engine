@@ -187,8 +187,13 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 	if resolved.is_ok():
 		var contribution: AttributeModifierContribution = _find_contribution(binding)
 		if contribution != null:
-			contribution.magnitude = GameplayEffectEvaluator.stack_scaled_value(
-				spec, resolved.value
+			# Scaled by what the contribution's own operation means, not by the
+			# additive rule for everything: this is the second path a stacked
+			# magnitude reaches, and the first one already knows an override
+			# does not scale. Two paths scaling differently is exactly the bug
+			# this line was written to close.
+			contribution.magnitude = GameplayEffectEvaluator.stack_scaled_for(
+				spec, resolved.value, contribution.operation
 			)
 			if effects != null:
 				effects.recompose_and_emit(spec)

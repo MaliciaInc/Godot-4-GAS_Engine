@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.2.1 (G03): ASC ceiling 640 -> 680 for owner/avatar actor info.
+# F5.2.3 (G04/G05/G15): evaluator ceiling 470 -> 520 for per-modifier source/target requirements and operation-aware stack scaling.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T01:28:37Z
-# commit-previo: 0ad9c66022a48d58fac1e7b9c54be85c6afccaff
+# date-utc: 2026-09-07T02:07:40Z
+# commit-previo: 5f62c756fd90ee991dd3f55b49d84f1e3809a1ca
 # files: 24
-f0dff165cee3a2f9694506a509c721c7503bc6c48b9d2d2887f9a1a5794511bd  tooling/.quality-gates.json
+96036fe82a35771c3facb054f5781c9cfc8355dcf1521f10c1718a420211f98d  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
