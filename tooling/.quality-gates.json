@@ -595,6 +595,21 @@
         "left": "addons/GAS_Engine/**:dispose",
         "right": "addons/GAS_Engine/**:dispose",
         "reason": "Terminal teardown, once per object that holds strong references back at its owner. Each dispose() is a list of assignments naming that object's own references, so two of them read as the same shape and are not the same code: the field names are what differs, and they are the entire content. Writing it once would mean passing the list of references as data - a name-driven detour around the type system in the one function whose whole job is to be exhaustive, where a missed field is a leak nothing would report. Declared narrowly, dispose against dispose only, so any other duplication inside the addon still fails. F5.1.2, B05."
+      },
+      {
+        "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:_towards",
+        "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:create",
+        "reason": "F5.4.3's move task keeps one destination rather than a Vector2 and a Vector3 side by side, so `to_2d` and `to_3d` are a line each over a single private constructor. That constructor holds a node, a point and a duration; AbilityTaskWaitConfirmCancel.create holds the two input names a wait listens for. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. A shared helper would be a function whose three parameters mean nothing until the caller says what they are, which is the thing having named constructors avoids. The entry beside this one records the same collision against GameplayCueParams.for_target."
+      },
+      {
+        "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:_towards",
+        "right": "addons/GAS_Engine/cues/gameplay_cue_params.gd:for_target",
+        "reason": "The same private constructor as the entry above, against the cue params builder the policy already declared unrelated to an ability task's inputs. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. Merging them would couple the movement task to the cue layer to share six lines that say nothing in common."
+      },
+      {
+        "left": "addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:create",
+        "right": "test/fixtures/test_effect_factory.gd:conditional_effect",
+        "reason": "The spawn task names a scene and the parent to put it under; the fixture names a child effect and the two queries that gate it. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. They share nothing else, and they are not even on the same side of the test boundary: one is production code that owns a spawned node for the length of an activation, the other exists only so a test can say what a conditional effect is in one line. Merging them would give a test fixture a dependency on an ability task."
       }
     ]
   }

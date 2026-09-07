@@ -248,3 +248,56 @@ func test_overflow_child_inherits_causer_and_ability_handle() -> void:
 	assert_eq(burst_active.spec.context.causer, projectile, "causer used to be lost here")
 	assert_eq(burst_active.spec.context.ability_handle, handle)
 #endregion
+
+
+#region A context outlives what it names
+## `assert_null` cannot see the failure these tests are about.
+##
+## A freed object is still an OBJECT variant. Godot resolves its dead instance
+## id to a null pointer when comparing, so `freed == null` answers true and
+## every null assertion passes straight over a dangling reference - which is
+## how this defect lived in a suite that said PASS. What separates "nobody"
+## from "somebody who is gone" is the variant's own type: TYPE_NIL for the
+## first, TYPE_OBJECT for the second. That is the same distinction Godot makes
+## when it refuses to assign the second to a typed `Node` property, which is
+## where the engine actually broke.
+func _assert_really_nothing(value: Variant, said: String) -> void:
+	assert_eq(typeof(value), TYPE_NIL, said)
+
+
+## Three references, and every one of them can die before the context does.
+##
+## A context is a RefCounted and the things it names are Nodes, so it routinely
+## outlives them: an effect keeps ticking on its target long after the caster
+## was freed, and what the context kept is a dangling reference by then.
+func test_a_context_answers_null_for_an_actor_that_has_been_freed() -> void:
+	var thrown: Node = Node.new()
+	var context: GameplayEffectContext = GameplayEffectContext.new(source.owner, thrown)
+	context.source_object = thrown
+	assert_eq(context.causer, thrown, "while it is alive, it is the causer")
+
+	thrown.free()
+	_assert_really_nothing(context.causer, "the causer is gone")
+	_assert_really_nothing(context.source_object, "and so is the source object")
+	assert_eq(context.instigator, source.owner, "the one still alive is untouched")
+
+
+## The failure this closes, at the place it was reached from.
+##
+## Godot refuses to assign a freed object to a typed `Node` property, so
+## `params.instigator = spec.context.instigator` failed at the assignment - a
+## SCRIPT ERROR in the middle of a suite that still said PASS - and the cue was
+## built out of a function that had already stopped running.
+func test_a_cue_built_after_the_caster_died_carries_no_instigator() -> void:
+	var caster: Node = Node.new()
+	var no_modifiers: Array[GameplayEffectModifier] = []
+	var active: ActiveGameplayEffect = Factory.apply(target_a.asc, Factory.infinite(no_modifiers))
+	active.spec.context.instigator = caster
+	caster.free()
+
+	var params: GameplayCueParams = target_a.asc.effects.cue_params_for(&"Cue.Gone", active.spec)
+	assert_not_null(params, "building the cue got to the end of the function")
+	_assert_really_nothing(params.instigator, "and it says the caster is nobody")
+	assert_eq(params.target, target_a.owner, "who it plays on is still answered")
+	_assert_really_nothing(active.get_instigator(), "the active effect answers the same way")
+#endregion

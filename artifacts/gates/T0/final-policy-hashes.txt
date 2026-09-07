@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.4.2 (G21): two files in the cue-manager autoload closure must both preload target data by path.
+# F5.4.3 (G22): three shape-only constructor collisions declared - AbilityTaskMoveTo._towards against the confirm/cancel task and the cue params builder, AbilityTaskSpawnActor.create against the conditional-effect fixture.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T18:13:51Z
-# commit-previo: 465297e0e1e678014a47fd7fd2d5fb0893cecb84
+# date-utc: 2026-09-07T18:40:22Z
+# commit-previo: b754c802bd6e2a138f54ed6ef088df86853fb812
 # files: 25
-b74090e53bbf8f64dd1bf0d48cce4cbba086d73eba83751cac2706c0030383d6  tooling/.quality-gates.json
+ee04b9d8aab9fb9db9faf840d414fc59e59bbb110de4cc7a6ca23e49d9ece902  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

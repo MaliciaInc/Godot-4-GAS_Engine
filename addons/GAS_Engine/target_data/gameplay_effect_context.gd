@@ -27,12 +27,35 @@ const TargetData = preload("res://addons/GAS_Engine/target_data/gameplay_ability
 const Payload = preload("res://addons/GAS_Engine/target_data/gameplay_effect_context_payload.gd")
 const AbilityHandle = preload("res://addons/GAS_Engine/abilities/gameplay_ability_handle.gd")
 
+## The three actors a context names, kept behind their reading.
+##
+## A context is a RefCounted and the things it points at are Nodes, so it
+## routinely outlives them: an effect keeps ticking on its target long after
+## the caster was freed, and what is kept here becomes a dangling reference.
+## Every consumer copies these onto another typed `Node` - cue params, event
+## data, a query subject - and Godot refuses to assign a freed object to a
+## typed property, so the copy failed at the assignment and the cue went out
+## with whatever that field already held. Reading through a validity check
+## makes "the caster is gone" an answer rather than a runtime error, and does
+## it once, here, rather than at each of the places that read it.
+var _instigator: Node = null
+var _causer: Node = null
+var _source_object: Node = null
+
 ## The entity that activated the ability, e.g. the player character.
-var instigator: Node = null
+var instigator: Node = null:
+	set(value):
+		_instigator = value
+	get:
+		return _instigator if is_instance_valid(_instigator) else null
 
 ## The entity that physically caused the effect, e.g. a fireball projectile.
 ## Defaults to the instigator when there is no secondary actor.
-var causer: Node = null
+var causer: Node = null:
+	set(value):
+		_causer = value
+	get:
+		return _causer if is_instance_valid(_causer) else null
 
 ## Who, what and where the ability hit.
 var target_data: TargetData = null
@@ -45,8 +68,14 @@ var ability_handle: AbilityHandle = null
 
 ## The physical item/object behind this application when one exists - a
 ## weapon, a thrown item - distinct from `causer` (which may be a spawned
-## projectile with no inventory identity of its own).
-var source_object: Node = null
+## projectile with no inventory identity of its own). Read through the same
+## validity check as the two above, and for the same reason: a thrown item is
+## freed on impact while the effect it applied is still running.
+var source_object: Node = null:
+	set(value):
+		_source_object = value
+	get:
+		return _source_object if is_instance_valid(_source_object) else null
 
 ## Game-defined metadata, typed and opaque to this addon. See
 ## GameplayEffectContextPayload.

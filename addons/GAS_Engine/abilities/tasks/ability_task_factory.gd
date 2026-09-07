@@ -43,6 +43,24 @@ static func wait_attribute_threshold(
 			ability, attribute, threshold, comparison, trigger_immediately_if_already_true
 		)
 	) as AbilityTaskWaitAttributeThreshold
+
+
+## @composer
+static func wait_attribute_ratio_threshold(
+	ability: GameplayAbility,
+	of_attribute: StringName,
+	over_attribute: StringName,
+	ratio: float,
+	direction: AbilityTaskWaitAttributeRatioThreshold.Direction = (
+		AbilityTaskWaitAttributeRatioThreshold.Direction.AT_OR_BELOW
+	)
+) -> AbilityTaskWaitAttributeRatioThreshold:
+	return _own(
+		ability,
+		AbilityTaskWaitAttributeRatioThreshold.create(
+			ability, of_attribute, over_attribute, ratio, direction
+		)
+	) as AbilityTaskWaitAttributeRatioThreshold
 #endregion
 
 
@@ -73,6 +91,15 @@ static func wait_tag_query(
 	return _own(
 		ability, AbilityTaskWaitTagQuery.create(ability, query, desired, target_asc)
 	) as AbilityTaskWaitTagQuery
+
+
+## @composer
+static func wait_tag_count_change(
+	ability: GameplayAbility, tag: StringName, target_asc: AbilitySystemComponent = null
+) -> AbilityTaskWaitTagCountChange:
+	return _own(
+		ability, AbilityTaskWaitTagCountChange.create(ability, tag, target_asc)
+	) as AbilityTaskWaitTagCountChange
 #endregion
 
 
@@ -116,6 +143,15 @@ static func wait_gameplay_effect_stack_change(
 	return _own(
 		ability, AbilityTaskWaitGameplayEffectStackChange.create(ability, handle, target_asc)
 	) as AbilityTaskWaitGameplayEffectStackChange
+
+
+## @composer
+static func wait_effect_blocked_by_immunity(
+	ability: GameplayAbility, target_asc: AbilitySystemComponent = null
+) -> AbilityTaskWaitEffectBlockedByImmunity:
+	return _own(
+		ability, AbilityTaskWaitEffectBlockedByImmunity.create(ability, target_asc)
+	) as AbilityTaskWaitEffectBlockedByImmunity
 #endregion
 
 
@@ -154,6 +190,17 @@ static func wait_ability_ended_matching(
 	return _own(
 		ability, AbilityTaskWaitAbilityEnded.create_matching(ability, query, target_asc)
 	) as AbilityTaskWaitAbilityEnded
+
+
+## @composer
+static func wait_ability_commit(
+	ability: GameplayAbility,
+	handle: GameplayAbilityHandle = null,
+	target_asc: AbilitySystemComponent = null
+) -> AbilityTaskWaitAbilityCommit:
+	return _own(
+		ability, AbilityTaskWaitAbilityCommit.create(ability, handle, target_asc)
+	) as AbilityTaskWaitAbilityCommit
 #endregion
 
 
@@ -186,4 +233,64 @@ static func play_animation_and_wait(
 	return _own(
 		ability, AbilityTaskPlayAnimationAndWait.create(ability, player, animation, stop_on_cancel)
 	) as AbilityTaskPlayAnimationAndWait
+
+
+## @composer
+static func root_motion(
+	ability: GameplayAbility, tree: AnimationTree, body: Node3D, seconds: float = 0.0
+) -> AbilityTaskRootMotion:
+	return _own(
+		ability, AbilityTaskRootMotion.create(ability, tree, body, seconds)
+	) as AbilityTaskRootMotion
+#endregion
+
+
+#region The world
+## @composer
+static func spawn_actor(
+	ability: GameplayAbility, scene: PackedScene, parent: Node = null
+) -> AbilityTaskSpawnActor:
+	return _own(
+		ability, AbilityTaskSpawnActor.create(ability, scene, parent)
+	) as AbilityTaskSpawnActor
+
+
+## @composer
+static func move_to_2d(
+	ability: GameplayAbility, node: Node2D, destination: Vector2, seconds: float
+) -> AbilityTaskMoveTo:
+	return _own(
+		ability, AbilityTaskMoveTo.to_2d(ability, node, destination, seconds)
+	) as AbilityTaskMoveTo
+
+
+## @composer
+static func move_to_3d(
+	ability: GameplayAbility, node: Node3D, destination: Vector3, seconds: float
+) -> AbilityTaskMoveTo:
+	return _own(
+		ability, AbilityTaskMoveTo.to_3d(ability, node, destination, seconds)
+	) as AbilityTaskMoveTo
+
+
+## @composer
+static func wait_state(
+	ability: GameplayAbility, until: Callable, give_up_after: float = 0.0
+) -> AbilityTaskWaitState:
+	return _own(
+		ability, AbilityTaskWaitState.create(ability, until, give_up_after)
+	) as AbilityTaskWaitState
+#endregion
+
+
+#region Between two machines
+## @composer
+static func network_sync_point(
+	ability: GameplayAbility,
+	for_whom: AbilityTaskNetworkSyncPoint.Wait = AbilityTaskNetworkSyncPoint.Wait.BOTH,
+	give_up_after: float = 0.0
+) -> AbilityTaskNetworkSyncPoint:
+	return _own(
+		ability, AbilityTaskNetworkSyncPoint.create(ability, for_whom, give_up_after)
+	) as AbilityTaskNetworkSyncPoint
 #endregion
