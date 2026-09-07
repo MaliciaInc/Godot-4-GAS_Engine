@@ -248,11 +248,14 @@ static func _stage_effect_mutation(
 ## A standard modifier's resolved magnitude, scaled by the stack it belongs
 ## to when the effect asks for it. Never applies to an execution
 ## calculation's own math - that reads spec.stack_count itself and decides.
-static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
-	var magnitude: float = spec.get_magnitude(index)
-	if spec.effect_def.factor_in_stack_count:
+static func stack_scaled_value(spec: GameplayEffectSpec, magnitude: float) -> float:
+	if spec != null and spec.effect_def != null and spec.effect_def.factor_in_stack_count:
 		return magnitude * float(spec.stack_count)
 	return magnitude
+
+
+static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
+	return stack_scaled_value(spec, spec.get_magnitude(index))
 
 
 ## Every attribute a standard modifier writes to, without duplicates.
@@ -325,6 +328,15 @@ static func _build_contributions(
 		contribution.modifier_index = index
 		contribution.application_order = request.application_order
 		result.contributions.append(contribution)
+
+	if not result.contributions.is_empty():
+		var aggregate_check: AttributeAggregateValidationResult = (
+			request.attributes.validate_additional_contributions(result.contributions)
+		)
+		if not aggregate_check.is_ok():
+			result.status = aggregate_check.status
+			result.error_attribute_name = aggregate_check.attribute_name
+			result.contributions.clear()
 
 
 ## Apply the canonical formula to each affected attribute's BASE and stage the

@@ -40,6 +40,27 @@ var shared_cooldown_tags: Array[StringName] = []
 
 ## Read a snapshot from a validated probe instance. The probe is only read,
 ## never mutated or freed by this.
+static func _duplicate_resource(value: Resource) -> Resource:
+	return value.duplicate(true) if value != null else null
+
+
+## Every Resource in an untyped array, copied; everything else passed through.
+##
+## The `as` the strict typing pass will not take is written as an assignment
+## after the `is` instead: a cast from Variant is unchecked, and this file is
+## depended on by most of the addon, so one unsafe cast here fails to compile a
+## hundred other scripts.
+static func _duplicate_resource_array(values: Array) -> Array:
+	var result: Array = []
+	for value: Variant in values:
+		if value is Resource:
+			var resource: Resource = value
+			result.append(resource.duplicate(true))
+		else:
+			result.append(value)
+	return result
+
+
 static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAbilityDefinitionSnapshot:
 	var snapshot: GameplayAbilityDefinitionSnapshot = GameplayAbilityDefinitionSnapshot.new()
 	snapshot.ability_scene = scene
@@ -47,18 +68,57 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.instancing_policy = probe.instancing_policy
 	snapshot.activation_policy = probe.activation_policy
 	snapshot.ability_tags = probe.ability_tags.duplicate()
-	snapshot.activation_required_query = probe.activation_required_query
-	snapshot.activation_blocked_query = probe.activation_blocked_query
+	snapshot.activation_required_query = (
+		_duplicate_resource(probe.activation_required_query) as GameplayTagQuery
+	)
+	snapshot.activation_blocked_query = (
+		_duplicate_resource(probe.activation_blocked_query) as GameplayTagQuery
+	)
 	snapshot.activation_owned_tags = probe.activation_owned_tags.duplicate()
-	snapshot.cancel_abilities_query = probe.cancel_abilities_query
+	snapshot.cancel_abilities_query = (
+		_duplicate_resource(probe.cancel_abilities_query) as GameplayTagQuery
+	)
 	snapshot.allow_self_cancel = probe.allow_self_cancel
-	snapshot.block_abilities_query = probe.block_abilities_query
-	snapshot.target_required_query = probe.target_required_query
-	snapshot.target_blocked_query = probe.target_blocked_query
-	snapshot.gameplay_event_triggers = probe.gameplay_event_triggers.duplicate()
-	snapshot.costs = probe.costs.duplicate()
-	snapshot.cooldown_effect = probe.cooldown_effect
-	snapshot.shared_cooldown_effects = probe.shared_cooldown_effects.duplicate()
+	snapshot.block_abilities_query = (
+		_duplicate_resource(probe.block_abilities_query) as GameplayTagQuery
+	)
+	snapshot.target_required_query = (
+		_duplicate_resource(probe.target_required_query) as GameplayTagQuery
+	)
+	snapshot.target_blocked_query = (
+		_duplicate_resource(probe.target_blocked_query) as GameplayTagQuery
+	)
+
+	snapshot.gameplay_event_triggers.clear()
+	for trigger: GameplayAbilityEventTrigger in probe.gameplay_event_triggers:
+		snapshot.gameplay_event_triggers.append(
+			_duplicate_resource(trigger) as GameplayAbilityEventTrigger
+		)
+
+	snapshot.costs.clear()
+	for cost: GameplayAbilityCost in probe.costs:
+		snapshot.costs.append(_duplicate_resource(cost) as GameplayAbilityCost)
+
+	snapshot.cooldown_effect = _duplicate_resource(probe.cooldown_effect) as GameplayEffect
+
+	# One source Resource becomes one duplicate, even when the author listed it
+	# twice. "A cooldown listed twice is applied once" is decided by comparing
+	# the objects, so two separate copies of one authored effect would start the
+	# same cooldown twice - the snapshot has to keep the aliasing it was given,
+	# not merely the values.
+	var copied_cooldowns: Dictionary[GameplayEffect, GameplayEffect] = {}
+	if probe.cooldown_effect != null:
+		copied_cooldowns[probe.cooldown_effect] = snapshot.cooldown_effect
+
+	snapshot.shared_cooldown_effects.clear()
+	for effect: GameplayEffect in probe.shared_cooldown_effects:
+		if effect != null and copied_cooldowns.has(effect):
+			snapshot.shared_cooldown_effects.append(copied_cooldowns[effect])
+			continue
+		var copy: GameplayEffect = _duplicate_resource(effect) as GameplayEffect
+		if effect != null:
+			copied_cooldowns[effect] = copy
+		snapshot.shared_cooldown_effects.append(copy)
 	snapshot.shared_cooldown_tags = probe.shared_cooldown_tags.duplicate()
 	return snapshot
 
@@ -146,13 +206,54 @@ static func report_drift(
 ## that happen to hold equal numbers are still two authorings, and the engine
 ## reads only one of them.
 static func _same(mine: Variant, theirs: Variant) -> bool:
+	if mine == null or theirs == null:
+		return mine == theirs
+
 	if mine is Array and theirs is Array:
 		var a: Array = mine
 		var b: Array = theirs
 		if a.size() != b.size():
 			return false
 		for index: int in a.size():
-			if a[index] != b[index]:
+			if not _same(a[index], b[index]):
 				return false
 		return true
+
+	if mine is Dictionary and theirs is Dictionary:
+		var a_dict: Dictionary = mine
+		var b_dict: Dictionary = theirs
+		if a_dict.size() != b_dict.size():
+			return false
+		for key: Variant in a_dict:
+			if not b_dict.has(key) or not _same(a_dict[key], b_dict[key]):
+				return false
+		return true
+
+	if mine is Resource and theirs is Resource:
+		var a_resource: Resource = mine
+		var b_resource: Resource = theirs
+		if a_resource.get_script() != b_resource.get_script():
+			return false
+		for property: Dictionary in a_resource.get_property_list():
+			var usage: int = property.get("usage", 0)
+			if (usage & PROPERTY_USAGE_STORAGE) == 0:
+				continue
+			var name: StringName = property.get("name", &"")
+			if name == &"resource_path" or name == &"resource_name":
+				continue
+			if not _same(a_resource.get(name), b_resource.get(name)):
+				return false
+		return true
+
+	if mine is float and theirs is float:
+		var a_float: float = mine
+		var b_float: float = theirs
+		# NaN is not equal to itself, and a copy of a NaN is still the value the
+		# author wrote. Without this, an ability whose cost is deliberately NaN -
+		# there are tests for exactly that, because the engine has to refuse it -
+		# is reported as having drifted from a definition nobody touched.
+		if is_nan(a_float) and is_nan(b_float):
+			return true
+		return a_float == b_float
+
 	return mine == theirs

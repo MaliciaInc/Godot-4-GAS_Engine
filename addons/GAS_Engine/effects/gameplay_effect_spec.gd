@@ -42,6 +42,14 @@ var dynamic_tags: Array[StringName] = []
 ## must not drift as the caster changes afterward.
 var source_tags_snapshot: Array[StringName] = []
 
+## Whether the snapshot above was already taken.
+##
+## Asked instead of `source_asc == null`, which answered a different
+## question: an application with no source has no tags to snapshot and was
+## therefore re-snapshotted on every later capture, while one whose source
+## was resolved late never captured at all.
+var _source_tags_captured: bool = false
+
 ## Runtime duration, mutable by an execution calculation before application.
 var duration: float = 0.0
 
@@ -244,6 +252,7 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.context = context_copy
 	copy.dynamic_tags = dynamic_tags.duplicate()
 	copy.source_tags_snapshot = source_tags_snapshot.duplicate()
+	copy._source_tags_captured = _source_tags_captured
 	copy._runtime_magnitude_overrides = _runtime_magnitude_overrides.duplicate()
 	# SetByCaller is pre-application input an AoE shares, duplicated so a
 	# later set_set_by_caller() on one copy is never observed through
@@ -342,8 +351,12 @@ func register_capture(definition: GameplayAttributeCaptureDefinition) -> bool:
 func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 	if source_asc == null:
 		source_asc = resolved_source_asc
-		if source_asc != null:
-			source_tags_snapshot = source_asc.tags.active_tags()
+
+	if not _source_tags_captured:
+		source_tags_snapshot = (
+			source_asc.tags.active_tags() if source_asc != null else []
+		)
+		_source_tags_captured = true
 	if effect_def != null:
 		for execution: GameplayExecutionCalculation in effect_def.executions:
 			if execution == null:

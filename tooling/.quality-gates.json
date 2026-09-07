@@ -24,8 +24,8 @@
       },
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_spec.gd",
-        "max_lines": 470,
-        "reason": "Task 21 made create_application_copy() propagate a context-payload copy failure as an explicit null spec rather than silently continuing with context=null - a real correctness fix (apply_effect_spec_to_target_result()'s existing null-spec guard is what turns it into a proper refusal), not new surface area. The file is already dense with one-paragraph-per-field 'why' documentation; trimming further would cut the documentation this project treats as load-bearing rather than the five lines of guard logic the fix actually needed. Set with the same small headroom T9's raise used, not re-litigated per task."
+        "max_lines": 500,
+        "reason": "Task 21 made create_application_copy() propagate a context-payload copy failure as an explicit null spec rather than silently continuing with context=null - a real correctness fix (apply_effect_spec_to_target_result()'s existing null-spec guard is what turns it into a proper refusal), not new surface area. The file is already dense with one-paragraph-per-field 'why' documentation; trimming further would cut the documentation this project treats as load-bearing rather than the five lines of guard logic the fix actually needed. Set with the same small headroom T9's raise used, not re-litigated per task. F5.1.4 (B16) adds a flag and its paragraph. The source's tags were snapshotted under `if source_asc == null`, which is a different question than the one it stood in for: an application that already knew its source skipped the guard and captured nothing, while one with no source at all re-captured on every later call. Asked as `have these been captured`, both come out right - and the flag is carried across create_application_copy(), because a copy that re-captured would give one application two ideas of what its source was."
       },
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_runtime.gd",
@@ -46,6 +46,11 @@
         "glob": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd",
         "max_lines": 470,
         "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount."
+      },
+      {
+        "glob": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd",
+        "max_lines": 510,
+        "reason": "The attribute runtime owns every attribute an entity has: the sets, the contributions, the composition, the clamps and the recomposition that follows a write. F5.1.4 (B15) adds the preflight. An application used to publish its contributions and only then find out whether the aggregate they produced could be composed at all - so a magnitude that overflowed to infinity was already registered by the time anybody noticed, and the attribute then failed to recompose for every other effect on it too. Composing is now asked of a list rather than of the field, so the candidate contributions can be tried against a copy first, and the preflight walks each attribute they touch through the same clamp a real write goes through. Thirty-nine lines, and the split of _compose() into _compose_from() that lets them share one composition rather than grow a second."
       }
     ],
     "function_parameter_allowlist": [
@@ -425,6 +430,10 @@
       {
         "literal": "hint_string",
         "reason": "A key of Godot's own property dictionary. The catalog reads it off a method description and project_settings writes it into a setting declaration; both are spelling the engine's word, not a value this project chose, and a constant would only move the spelling somewhere else."
+      },
+      {
+        "literal": "usage",
+        "reason": "A key in Godot's own dictionaries, beside `type` above and for the same reason. The Composer's catalog reads it out of the argument descriptor get_script_method_list() returns; the ability snapshot reads it out of get_property_list() to tell a stored property from a computed one while comparing two Resources structurally. Neither of them chose the word."
       }
     ],
     "allow_globs": [],

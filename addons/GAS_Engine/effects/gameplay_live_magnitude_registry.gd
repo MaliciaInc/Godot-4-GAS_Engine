@@ -187,7 +187,9 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 	if resolved.is_ok():
 		var contribution: AttributeModifierContribution = _find_contribution(binding)
 		if contribution != null:
-			contribution.magnitude = resolved.value
+			contribution.magnitude = GameplayEffectEvaluator.stack_scaled_value(
+				spec, resolved.value
+			)
 			if effects != null:
 				effects.recompose_and_emit(spec)
 

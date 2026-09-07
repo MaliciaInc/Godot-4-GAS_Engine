@@ -216,8 +216,13 @@ func test_an_unaffordable_cost_starts_no_cooldown() -> void:
 
 func test_a_cooldown_that_fails_to_apply_charges_nothing() -> void:
 	var cooldown: GameplayEffect = _cooldown(OWN_COOLDOWN)
+	# Matched by what it grants rather than by identity. A grant snapshots the
+	# definition deeply, so what reaches apply() is the engine's own copy and
+	# never the Resource authored here - which is the point of the snapshot, and
+	# is why the sibling test above already refuses by shape.
 	var caster: ProbeAbility = _caster_refusing(
-		func(effect: GameplayEffect) -> bool: return effect == cooldown,
+		func(effect: GameplayEffect) -> bool:
+			return effect.get_granted_tags().has(OWN_COOLDOWN),
 		func(p: ProbeAbility) -> void:
 			p.costs = _mana_cost(COST_AMOUNT)
 			p.cooldown_effect = cooldown

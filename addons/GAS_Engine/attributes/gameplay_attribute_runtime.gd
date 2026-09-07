@@ -175,12 +175,21 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 func _compose(
 	base: float, attribute_name: StringName, result: AttributeEvaluationResult
 ) -> float:
+	return _compose_from(base, attribute_name, result, _contributions)
+
+
+func _compose_from(
+	base: float,
+	attribute_name: StringName,
+	result: AttributeEvaluationResult,
+	contributions: Array[AttributeModifierContribution]
+) -> float:
 	var total_add: float = 0.0
 	var product_multiply: float = 1.0
 	var product_divide: float = 1.0
 	var winner: AttributeModifierContribution = null
 
-	for contribution: AttributeModifierContribution in _contributions:
+	for contribution: AttributeModifierContribution in contributions:
 		if contribution.attribute_name != attribute_name:
 			continue
 		match contribution.operation:
@@ -229,6 +238,55 @@ func _override_beats(
 		return candidate.application_order > incumbent.application_order
 	return candidate.modifier_index > incumbent.modifier_index
 #endregion
+
+
+## Pure aggregate preflight. It never publishes or temporarily installs the
+## candidate contributions in the live runtime.
+func validate_additional_contributions(
+	additional: Array[AttributeModifierContribution]
+) -> AttributeAggregateValidationResult:
+	var validation: AttributeAggregateValidationResult = (
+		AttributeAggregateValidationResult.new()
+	)
+	if additional.is_empty():
+		return validation
+
+	var combined: Array[AttributeModifierContribution] = _contributions.duplicate()
+	combined.append_array(additional)
+
+	var affected: Array[StringName] = []
+	for contribution: AttributeModifierContribution in additional:
+		if (
+			contribution != null
+			and contribution.attribute_name != &""
+			and not affected.has(contribution.attribute_name)
+		):
+			affected.append(contribution.attribute_name)
+
+	for attribute_name: StringName in affected:
+		var attribute_set: AttributeSet = find_set(attribute_name)
+		if attribute_set == null:
+			validation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
+			validation.attribute_name = attribute_name
+			return validation
+
+		var attribute: AttributeData = attribute_set.get(String(attribute_name))
+		var evaluated: AttributeEvaluationResult = AttributeEvaluationResult.new()
+		var raw: float = _compose_from(
+			attribute.base_value, attribute_name, evaluated, combined
+		)
+		if not evaluated.is_ok():
+			validation.status = evaluated.status
+			validation.attribute_name = attribute_name
+			return validation
+
+		var clamped: float = attribute_set.pre_attribute_change(attribute_name, raw)
+		if not is_finite(clamped):
+			validation.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+			validation.attribute_name = attribute_name
+			return validation
+
+	return validation
 
 
 #region Recomposition

@@ -125,6 +125,7 @@ func commit() -> void:
 		if mutation.current_changed and owner_asc != null:
 			owner_asc.emit_attribute_changed(mutation, null)
 	for active: ActiveGameplayEffect in _removed:
+		_runtime.inhibition.finalize_purged(active)
 		_runtime.components.notify_removed(active.spec, active, owner_asc)
 		_runtime.chain.fire_on_removal(active, ActiveGameplayEffect.RemovalReason.CLEANSE)
 		if owner_asc != null:

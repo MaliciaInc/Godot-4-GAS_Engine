@@ -166,6 +166,17 @@ func initialize(active: ActiveGameplayEffect) -> void:
 		set_attached(active, true)
 
 
+## Finish runtime-only receipts of an effect already provisionally extracted by
+## GameplayEffectPurgeTransaction. Tags/contributions were removed there and
+## must not be removed a second time here.
+func finalize_purged(active: ActiveGameplayEffect) -> void:
+	if active == null:
+		return
+	effects.live_magnitudes.disconnect_bindings_for(active)
+	_deactivate_persistent_cues(active)
+	active.state_attached = false
+
+
 ## attached -> false drops the receipt from the aggregator/tag runtime
 ## without clearing it; false -> true re-adds the same receipt unchanged.
 ## Idempotent either direction.
