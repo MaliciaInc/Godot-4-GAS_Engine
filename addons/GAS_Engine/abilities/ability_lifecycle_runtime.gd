@@ -16,9 +16,39 @@ var ability_runtime: AbilityRuntime = null
 ## Resolve, gate, instantiate and start - returns the moment activation
 ## begins, never waiting for `_activate_ability()` to finish. A channelled
 ## ability can run indefinitely; this call cannot.
+## Activate by handle, carrying whatever it is being activated for.
+##
+## The compatibility door: an effect context alone is what a direct call means,
+## and every caller that had one keeps working unchanged.
 func try_activate(
 	handle: GameplayAbilityHandle, context: GameplayEffectContext = null
 ) -> GameplayAbilityActivationResult:
+	return try_activate_with(
+		handle, GameplayAbilityActivationContext.from_effect_context(context)
+	)
+
+
+## Activate because this event happened.
+##
+## Separate from the effect-context door because the event is the thing that
+## would otherwise be lost: which tag fired it, what magnitude it carried, who
+## it was aimed at. An ability that had to rebuild any of that from the world
+## would be guessing, because the world has moved on since.
+func try_activate_from_event(
+	handle: GameplayAbilityHandle, event: GameplayEventData
+) -> GameplayAbilityActivationResult:
+	return try_activate_with(
+		handle, GameplayAbilityActivationContext.from_gameplay_event(event)
+	)
+
+
+## The one activation path. Everything else is a door into it.
+func try_activate_with(
+	handle: GameplayAbilityHandle, activation: GameplayAbilityActivationContext
+) -> GameplayAbilityActivationResult:
+	var context: GameplayEffectContext = (
+		activation.effect_context if activation != null else null
+	)
 	var result: GameplayAbilityActivationResult = GameplayAbilityActivationResult.new()
 	result.handle = handle
 	var spec: GameplayAbilitySpec = ability_runtime.get_spec(handle)
@@ -54,6 +84,7 @@ func try_activate(
 
 	result.instance = instance
 	instance._prepare_runtime_activation(context)
+	instance._activation_context = activation
 
 	result.status = GameplayAbilityActivationResult.Status.SUCCESS
 	spec.last_activation_result = result

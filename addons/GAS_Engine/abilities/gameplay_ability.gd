@@ -120,7 +120,22 @@ var _reported_drift: bool = false
 var _last_activation_succeeded: bool = false
 
 
+## Why this activation happened, set by the runtime as it starts.
+var _activation_context: GameplayAbilityActivationContext = null
+
+
 #region What an ability is told
+## The event that activated this, or null when a call did.
+##
+## Handed over rather than rebuilt: everything the event knew - the tag that
+## fired it, the magnitude it carried, who it was aimed at - is on it, and an
+## ability that reconstructed any of that from the world would be reading a
+## world that has moved on since.
+func get_activation_event() -> GameplayEventData:
+	return _activation_context.gameplay_event if _activation_context != null else null
+
+
+
 ## Called once, after this ability has been granted and wired to its owner.
 ##
 ## Empty here: it is a hook, and an ability that needs nothing does nothing.

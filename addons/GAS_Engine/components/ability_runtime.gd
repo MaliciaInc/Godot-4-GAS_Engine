@@ -349,6 +349,13 @@ func active_requirements_error(spec: GameplayAbilitySpec) -> AbilityRuntime.Acti
 
 ## The canonical activation entry point - input, event routing and passives
 ## all call this by handle. See AbilityLifecycleRuntime.try_activate().
+## Activate because this event happened, carrying the event with it.
+func try_activate_from_event(
+	handle: GameplayAbilityHandle, event: GameplayEventData
+) -> GameplayAbilityActivationResult:
+	return lifecycle.try_activate_from_event(handle, event)
+
+
 func try_activate(
 	handle: GameplayAbilityHandle, context: GameplayEffectContext = null
 ) -> GameplayAbilityActivationResult:

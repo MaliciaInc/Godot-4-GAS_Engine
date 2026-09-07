@@ -43,16 +43,16 @@ func dispatch(event: GameplayEventData, specs: Array[GameplayAbilitySpec]) -> vo
 		owner_asc.gameplay_event_received.emit(event)
 
 	for spec: GameplayAbilitySpec in listeners:
-		_activate(spec, event.context)
+		_activate(spec, event)
 
 
 ## By handle through the canonical AbilityRuntime.try_activate(), the same
 ## path input routing and passives use - it already resolves/creates the
 ## right instance for either instancing policy, so a PER_EXECUTION listener
 ## wakes without a per-actor template ever existing, with no branch here.
-func _activate(spec: GameplayAbilitySpec, context: GameplayEffectContext) -> void:
+func _activate(spec: GameplayAbilitySpec, event: GameplayEventData) -> void:
 	if ability_runtime != null:
-		ability_runtime.try_activate(spec.handle, context)
+		ability_runtime.try_activate_from_event(spec.handle, event)
 
 
 ## Every ON_GAMEPLAY_EVENT spec with a trigger covering this event, as a
