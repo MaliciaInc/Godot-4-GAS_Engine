@@ -672,32 +672,75 @@ func give_ability(
 	return ability_runtime.give_ability(ability_scene, level, input_id, source)
 
 
-## Convenience for a caller holding the running instance rather than its
-## handle. A caller that only has the handle - GLoot's receipt, mainly -
-## uses ability_runtime.remove_ability(handle) directly; get_ability_spec
-## and get_ability_cooldown_state live there too, for the same reason.
-func remove_ability(ability: GameplayAbility) -> void:
-	ability_runtime.remove(ability)
+## What a handle was granted, or null when it names nothing here.
+##
+## The receipt is the identity. A running instance is a thing that exists for as
+## long as one activation lasts; the grant outlives every one of them, and a
+## caller holding an instance to remember which ability it meant is holding the
+## shorter-lived of the two.
+func get_ability_spec(handle: GameplayAbilityHandle) -> GameplayAbilitySpec:
+	return ability_runtime.get_spec(handle)
 
 
-func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
-	if ability == null or ability.current_spec == null:
-		return false
-	var reason: AbilityRuntime.ActivationError = ability_runtime.activation_error(
-		ability.current_spec
+## Take a grant back. False when the handle names nothing here.
+func remove_ability_handle(
+	handle: GameplayAbilityHandle,
+	policy: AbilityRuntime.AbilityRemovalPolicy = AbilityRuntime.AbilityRemovalPolicy.CANCEL_IMMEDIATELY
+) -> bool:
+	return ability_runtime.remove_ability(handle, policy)
+
+
+## Start what a handle names, and say what happened.
+##
+## The result object, not a bool: "it did not start" has half a dozen reasons
+## and a caller that has to guess which will guess wrong on the one that
+## matters. A null context is an activation with nothing to say about itself,
+## which is most of them.
+func try_activate_ability_handle(
+	handle: GameplayAbilityHandle, context: GameplayAbilityActivationContext = null
+) -> GameplayAbilityActivationResult:
+	return ability_runtime.try_activate_with(handle, context)
+
+
+## Whether what a handle names could start right now.
+func can_activate_ability_handle(
+	handle: GameplayAbilityHandle, emit_failure: bool = false
+) -> bool:
+	return ability_runtime.can_activate_spec(
+		ability_runtime.get_spec(handle), null, emit_failure
 	)
-	if reason == AbilityRuntime.ActivationError.NONE:
-		return true
-	if emit_failure:
-		ability_activation_failed.emit(ability, reason)
-	return false
+
+
+## Route an input slot to a grant. False when it was never granted here.
+func bind_ability_handle_to_input(
+	handle: GameplayAbilityHandle, input_id: int, unbind_others: bool = true
+) -> bool:
+	return ability_runtime.bind_spec_to_input(
+		ability_runtime.get_spec(handle), input_id, unbind_others
+	)
+
+
+## Deprecated: use remove_ability_handle(). Kept for a caller holding the
+## running instance, and holding nothing of its own - every one of these three
+## resolves the grant behind the instance and asks the door above.
+func remove_ability(ability: GameplayAbility) -> void:
+	remove_ability_handle(ability.get_ability_handle() if ability != null else null)
+
+
+## Deprecated: use can_activate_ability_handle(). The instance it was handed is
+## the one a refusal names, because that is the one the caller is waiting to
+## hear about.
+func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
+	return ability_runtime.can_activate_spec(
+		ability.current_spec if ability != null else null, ability, emit_failure
+	)
 
 
 func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 	ability_runtime.cancel_with_tags(cancel_tags)
 
 
-## Route an input slot to a granted ability. False when it was never granted.
+## Deprecated: use bind_ability_handle_to_input().
 ##
 ## The runtime refuses and says so; the facade used to drop the answer, so a
 ## caller binding an ungranted ability found out only when the press reached no one.
@@ -719,6 +762,9 @@ func register_ability_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	return ability_runtime.register_task(task)
 
 
+## These two stay addressed by instance, and are not deprecated for it: a task
+## belongs to one activation and target data is delivered into one, so there is
+## no grant-shaped question either of them could be asked instead.
 func cancel_ability_tasks(ability: GameplayAbility, reason: GameplayAbilityTask.CancelReason) -> void:
 	ability_runtime.cancel_tasks_for_ability(ability, reason)
 

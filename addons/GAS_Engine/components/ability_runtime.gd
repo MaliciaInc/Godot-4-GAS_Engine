@@ -332,6 +332,29 @@ func can_activate(spec: GameplayAbilitySpec) -> bool:
 	return activation_error(spec) == ActivationError.NONE
 
 
+## The same answer, with the refusal announced.
+##
+## `named` is the instance a refusal is reported against. Null means the spec's
+## own, which is what an activation nobody is holding an instance for reports;
+## a caller that handed one in gets that one back, because the instance it asked
+## about is the instance it is waiting to hear about.
+func can_activate_spec(
+	spec: GameplayAbilitySpec,
+	named: GameplayAbility = null,
+	announce_refusal: bool = false
+) -> bool:
+	if spec == null:
+		return false
+	var reason: AbilityRuntime.ActivationError = activation_error(spec)
+	if reason == ActivationError.NONE:
+		return true
+	if announce_refusal and owner_asc != null:
+		owner_asc.ability_activation_failed.emit(
+			named if named != null else spec.per_actor_instance, reason
+		)
+	return false
+
+
 ## See AbilityActivationPolicyRuntime.request_reevaluation().
 func request_passive_reevaluation() -> void:
 	policies.request_reevaluation()
@@ -360,6 +383,13 @@ func try_activate(
 	handle: GameplayAbilityHandle, context: GameplayEffectContext = null
 ) -> GameplayAbilityActivationResult:
 	return lifecycle.try_activate(handle, context)
+
+
+## The one activation path. See AbilityLifecycleRuntime.try_activate_with().
+func try_activate_with(
+	handle: GameplayAbilityHandle, activation: GameplayAbilityActivationContext
+) -> GameplayAbilityActivationResult:
+	return lifecycle.try_activate_with(handle, activation)
 
 
 ## See AbilityLifecycleRuntime.give_and_activate_once().
@@ -402,18 +432,28 @@ func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldow
 
 #region Input routing
 ## `unbind_others` releases any other spec holding the slot already.
-func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool = true) -> bool:
-	if ability == null or ability.current_spec == null or not _specs.has(ability.current_spec):
+## Route an input slot to a granted spec, which is what a binding is about:
+## the grant answers the press, whether or not anything is running right now.
+func bind_spec_to_input(
+	bound: GameplayAbilitySpec, input_id: int, unbind_others: bool = true
+) -> bool:
+	if bound == null or not _specs.has(bound):
 		push_error("GAS_Engine: cannot bind an ability that was never granted to this ASC.")
 		return false
 
 	if unbind_others:
 		for spec: GameplayAbilitySpec in _specs:
-			if spec != ability.current_spec and spec.input_id == input_id:
+			if spec != bound and spec.input_id == input_id:
 				spec.input_id = -1
 
-	ability.current_spec.input_id = input_id
+	bound.input_id = input_id
 	return true
+
+
+## Convenience for a caller holding the instance rather than its handle.
+func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool = true) -> bool:
+	var bound: GameplayAbilitySpec = ability.current_spec if ability != null else null
+	return bind_spec_to_input(bound, input_id, unbind_others)
 
 
 ## As a copy: a caller clearing this must not leave the runtime believing nothing is pressed.
