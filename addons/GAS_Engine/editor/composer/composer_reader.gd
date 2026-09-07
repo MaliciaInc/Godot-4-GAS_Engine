@@ -87,6 +87,7 @@ static func _note_opaque_regions(graph: ComposerGraph, entry: ComposerIRFunction
 	for event: ComposerIREvent in entry.opaque_events():
 		var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
 		found.severity = ComposerGraph.Severity.WARNING
+		found.code = GameplayCompileDiagnostic.KEPT_REGION
 		found.message = "%s, and is kept exactly as written" % event.reason
 		found.node_id = StringName("n%d" % event.span.last_line)
 		found.span = event.span
@@ -96,6 +97,7 @@ static func _note_opaque_regions(graph: ComposerGraph, entry: ComposerIRFunction
 static func _refusal(message: String, where: ComposerSpan) -> ComposerGraph.Diagnostic:
 	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
 	found.severity = ComposerGraph.Severity.NOT_REPRESENTABLE
+	found.code = GameplayCompileDiagnostic.NOT_DRAWABLE
 	found.message = message
 	found.span = where
 	return found

@@ -202,6 +202,7 @@ func _enter_tree() -> void:
 	_composer_instance = ComposerScreen.new()
 	_composer_instance.visible = false
 	_composer_instance.code_requested.connect(_on_code_requested)
+	_composer_instance.go_to_line.connect(_on_go_to_line)
 	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
 	_composer_instance.create_requested.connect(_ask_for_new_ability)
 	main_screen.add_child(_composer_instance)
@@ -490,6 +491,21 @@ func _cancel_pending_open() -> void:
 ## The ability stays loaded here, so coming back to this screen shows what the
 ## person left rather than starting them over. They are two views of one file,
 ## and neither is a copy of the other.
+## A finding in the Output panel is a place in the file, so go there.
+##
+## The card is revealed by the screen; the line is this plugin's half, because
+## the script editor is something only a plugin can reach. A finding with no
+## line - one about the file rather than about anything in it - takes nobody
+## anywhere, which is right: there is no line to be at.
+func _on_go_to_line(line: int) -> void:
+	if line <= 0 or _composer_instance == null:
+		return
+	var script: Script = load(_composer_instance.open_path()) as Script
+	if script == null:
+		return
+	EditorInterface.edit_script(script, line - 1)
+
+
 func _on_code_requested(source_path: String) -> void:
 	if not source_path.is_empty():
 		var script: Script = load(source_path) as Script

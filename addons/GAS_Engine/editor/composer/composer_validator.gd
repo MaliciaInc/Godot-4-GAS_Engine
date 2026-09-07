@@ -93,6 +93,7 @@ static func _check_arguments(
 		found.append(
 			_at(
 				ComposerGraph.Severity.ERROR,
+				GameplayCompileDiagnostic.MISSING_ARGUMENT,
 				MISSING_ARGUMENT % [node.title, declared.label],
 				node
 			)
@@ -121,6 +122,7 @@ static func _check_wires(
 		found.append(
 			_at(
 				ComposerGraph.Severity.ERROR,
+				GameplayCompileDiagnostic.WRONG_TYPE,
 				WRONG_TYPE % [
 					target.title, ComposerTypes.refusal(lands.type_name, leaves.type_name)
 				],
@@ -147,7 +149,12 @@ static func _check_unread(
 		return
 	if _named_after(graph, node, value.label):
 		return
-	found.append(_at(ComposerGraph.Severity.WARNING, UNREAD_VALUE % value.label, node))
+	found.append(_at(
+		ComposerGraph.Severity.WARNING,
+		GameplayCompileDiagnostic.UNREAD_VALUE,
+		UNREAD_VALUE % value.label,
+		node
+	))
 #endregion
 
 
@@ -217,10 +224,14 @@ static func _forget_gaps(node: ComposerNode) -> void:
 
 
 static func _at(
-	severity: ComposerGraph.Severity, message: String, node: ComposerNode
+	severity: ComposerGraph.Severity,
+	code: StringName,
+	message: String,
+	node: ComposerNode
 ) -> ComposerGraph.Diagnostic:
 	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
 	found.severity = severity
+	found.code = code
 	found.message = message
 	found.node_id = node.id
 	found.span = node.span

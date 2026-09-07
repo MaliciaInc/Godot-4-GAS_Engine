@@ -15,6 +15,13 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerScreen extends Control
 
+## Where in the file a finding is, for whoever can put a caret there.
+##
+## Emitted rather than acted on: this screen draws a canvas and does not own the
+## script editor, and a Control that reached for one would be a Control that
+## cannot be built in a test. The plugin listens and takes the editor there.
+signal go_to_line(line: int)
+
 const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"
 
 const TOP_BAR: float = 54.0
@@ -162,9 +169,15 @@ func _on_selection_changed(picked: Array[StringName]) -> void:
 	)
 
 
-## A row in the Output panel is a place in the graph, not just a message.
-func _on_row_picked(node_id: StringName, _line: int) -> void:
+## A row in the Output panel is a place, and a place has two halves.
+##
+## The card is where somebody is looking; the line is where the mistake is
+## written. Only the card was answered before and the line was taken and
+## dropped - so a finding about a region with no card, or about the file rather
+## than anything in it, went nowhere at all when it was clicked.
+func _on_row_picked(node_id: StringName, line: int) -> void:
 	_canvas.reveal(node_id)
+	go_to_line.emit(line)
 
 
 ## Nothing could be opened, and here is why.

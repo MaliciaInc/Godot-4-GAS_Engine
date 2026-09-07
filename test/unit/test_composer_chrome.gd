@@ -271,12 +271,19 @@ func test_clicking_an_output_row_reveals_that_node_on_the_canvas() -> void:
 	await screen.show_graph(graph)
 
 	assert_eq(graph.diagnostics.size(), 1, "the body has one thing wrong with it")
-	screen._on_row_picked(graph.diagnostics[0].node_id, 0)
+	var went_to: Array[int] = []
+	screen.go_to_line.connect(func(line: int) -> void: went_to.append(line))
+
+	screen._on_row_picked(graph.diagnostics[0].node_id, graph.diagnostics[0].span.first_line)
 
 	assert_eq(
 		screen.canvas().picked(), [graph.diagnostics[0].node_id] as Array[StringName],
 		"the node the row was about"
 	)
+	# The other half of a place. Only the card was answered before and the line
+	# was taken and dropped, so a finding about the file rather than about any
+	# card went nowhere at all when it was clicked.
+	assert_eq(went_to, [6] as Array[int], "and the line the mistake is written on")
 
 
 ## The whole screen comes forward on a refusal, not just the panel.

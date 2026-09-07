@@ -30,6 +30,15 @@ class Diagnostic extends RefCounted:
 	var node_id: StringName = &""
 	var span: ComposerSpan = ComposerSpan.new()
 
+	## Which kind of mistake this is, as a stable name.
+	##
+	## Set where the finding is made, by the thing that knows - never worked out
+	## afterwards from the wording, which changes as the wording improves and
+	## should. See GameplayCompileDiagnostic for the list and for what a code is
+	## for: saying "this one again" across two versions, and filtering a build
+	## for the kind of mistake somebody is hunting.
+	var code: StringName = GameplayCompileDiagnostic.UNCLASSIFIED
+
 
 ## One wire, of either family.
 ##
