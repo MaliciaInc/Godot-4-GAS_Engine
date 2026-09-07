@@ -40,7 +40,7 @@ const RESOURCE_PREFIX: String = "res://"
 const BROWSE_INSTEAD: String = "Browse…"
 const LOOK_AGAIN: String = "Re-scan abilities"
 const NEW_ABILITY_NAME: String = "new_ability.gd"
-const CREATE_ABILITY_TITLE: String = "Create Gameplay Ability"
+const CREATE_ABILITY_TITLE: String = "Create Gameplay Ability (script and scene)"
 const NONE_FOUND: String = (
 	"This project has no abilities yet. A script that extends GameplayAbility "
 	+ "is one; there are six to copy from in addons/GAS_Engine/reference/."
@@ -378,7 +378,12 @@ func _ask_for_new_ability() -> void:
 	_show_picker(picker)
 
 
-## Create exactly one normal GDScript and open it in Composer.
+## Create the script and the scene beside it, and open the script in Composer.
+##
+## The title says both, because the picker only ever shows one filename and only
+## warns about overwriting that one - so the second output is a file the person
+## never chose. Either of them already existing refuses the whole thing and says
+## which, on the screen they are already looking at.
 func _create_ability_at(source_path: String) -> void:
 	var refusal: String = ComposerAbilityTemplate.create(source_path)
 	if not refusal.is_empty():

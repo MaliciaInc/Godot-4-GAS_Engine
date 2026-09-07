@@ -444,6 +444,10 @@
       {
         "literal": "usage",
         "reason": "A key in Godot's own dictionaries, beside `type` above and for the same reason. The Composer's catalog reads it out of the argument descriptor get_script_method_list() returns; the ability snapshot reads it out of get_property_list() to tell a stored property from a computed one while comparing two Resources structurally. Neither of them chose the word."
+      },
+      {
+        "literal": ".tscn",
+        "reason": "Godot's scene extension. Named once in the addon, as the suffix the scene generated beside an ability's script carries, and once in tooling/product_identity.py, inside the set of every extension that gate reads as text. The second is a list of file types rather than a statement about scenes, so the two are not one fact written twice - and a shared constant would be a dependency from a gate to the thing it is checking, which is the one direction a gate must not have."
       }
     ],
     "allow_globs": [],
