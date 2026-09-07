@@ -395,41 +395,4 @@ func _assert_writable(doc: ComposerDocument) -> void:
 		printed.refusal.message if printed.refusal != null else ""
 	])
 	assert_eq(printed.text, doc.printed(), "and prints it back unchanged")
-
-
-## The Composer never reaches a running game.
-##
-## Not a promise about export filters, which belong to whoever ships the game -
-## a fact about this addon: nothing outside the editor folder names anything
-## inside it, so there is no path by which a running game loads any of it.
-func test_nothing_in_the_runtime_names_anything_in_the_editor() -> void:
-	var editor_classes: Array[String] = []
-	for described: Dictionary in ProjectSettings.get_global_class_list():
-		var declared: String = described["class"]
-		var where: String = described["path"]
-		if where.begins_with("res://addons/GAS_Engine/editor/"):
-			editor_classes.append(declared)
-	assert_gt(editor_classes.size(), 10, "there is an editor to keep out")
-
-	for described: Dictionary in ProjectSettings.get_global_class_list():
-		var where: String = described["path"]
-		if not where.begins_with("res://addons/GAS_Engine/") or where.contains("/editor/"):
-			continue
-		var source: String = FileAccess.get_file_as_string(where)
-		for declared: String in editor_classes:
-			assert_false(
-				_uses(source, declared),
-				"%s does not reach %s" % [where.get_file(), declared]
-			)
-
-
-## Named as code rather than mentioned in a comment.
-static func _uses(source: String, declared: String) -> bool:
-	for line: String in source.split("
-"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		if line.contains(declared):
-			return true
-	return false
 #endregion

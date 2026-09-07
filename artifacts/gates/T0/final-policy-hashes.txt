@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.3.1 (G27): .tscn is named in the addon and in a gate's own list of text extensions, which are not one fact.
+# F5.3.2 (G25): the effect-asset creator's menu, and .tres named in the addon and in a gate's own extension list.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T04:38:23Z
-# commit-previo: 1ce38f078150b6f4eb18c82102fe13902df1f78e
+# date-utc: 2026-09-07T04:55:43Z
+# commit-previo: 4e166a9af0d18c0c8b0be70f53cf35c71370d34c
 # files: 25
-02ab7ff606b52316b9313a35c92aa78d07366add2eb62745403d203a38598871  tooling/.quality-gates.json
+afeb9277d040d17f4121fe477e0728bfa00269d7670291e0191438284f31cc14  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

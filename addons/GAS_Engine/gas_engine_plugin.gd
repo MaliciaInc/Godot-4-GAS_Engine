@@ -36,6 +36,12 @@ const SCRIPT_SCREEN: String = "Script"
 const FILES_MOVED: StringName = &"filesystem_changed"
 const MENU_SIZE: Vector2i = Vector2i(520, 420)
 const SCRIPT_FILTER: String = "*.gd"
+const EFFECT_FILTER: String = "*.tres"
+const EFFECT_FILTER_NAME: String = "GameplayEffect"
+const EFFECT_MENU: String = "Create Gameplay Effect"
+const NEW_EFFECT_NAME: String = "new_effect.tres"
+const CREATE_EFFECT_TITLE: String = "Create Gameplay Effect asset"
+const EFFECT_REFUSED: String = "GAS_Engine: no effect asset was created - %s"
 const RESOURCE_PREFIX: String = "res://"
 const BROWSE_INSTEAD: String = "Browse…"
 const LOOK_AGAIN: String = "Re-scan abilities"
@@ -212,6 +218,7 @@ func _enter_tree() -> void:
 	ComposerLibrary.listen_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
+	add_tool_menu_item(EFFECT_MENU, _ask_for_new_effect)
 	_make_visible(false)
 
 
@@ -230,6 +237,7 @@ func _disable_plugin() -> void:
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
+	remove_tool_menu_item(EFFECT_MENU)
 	ComposerLibrary.stop_listening_to(
 		EditorInterface.get_resource_filesystem(), FILES_MOVED
 	)
@@ -366,6 +374,33 @@ func _ask_for_an_ability() -> void:
 	_show_picker(
 		_ability_picker(EditorFileDialog.FILE_MODE_OPEN_FILE, _draw_ability_at)
 	)
+
+
+## Choose where a new GameplayEffect asset will live.
+##
+## Nothing follows the save but a filesystem scan: the inspector edits the very
+## Resource this wrote, so there is no second screen for it and no second way to
+## spell what an effect is.
+func _ask_for_new_effect() -> void:
+	var picker: EditorFileDialog = EditorFileDialog.new()
+	picker.file_mode = EditorFileDialog.FILE_MODE_SAVE_FILE
+	picker.access = EditorFileDialog.ACCESS_RESOURCES
+	picker.add_filter(EFFECT_FILTER, EFFECT_FILTER_NAME)
+	picker.file_selected.connect(_create_effect_at)
+	picker.canceled.connect(picker.queue_free)
+	picker.title = CREATE_EFFECT_TITLE
+	picker.current_file = NEW_EFFECT_NAME
+	_show_picker(picker)
+
+
+func _create_effect_at(asset_path: String) -> void:
+	var refusal: String = GameplayEffectAsset.create(asset_path)
+	if not refusal.is_empty():
+		push_warning(EFFECT_REFUSED % refusal)
+		return
+
+	EditorInterface.get_resource_filesystem().scan()
+	EditorInterface.edit_resource(load(asset_path))
 
 
 ## Choose where a new GameplayAbility script will live.

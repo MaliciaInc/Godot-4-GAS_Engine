@@ -18,13 +18,6 @@ class_name ComposerAbilityTemplate extends RefCounted
 const SCRIPT_SUFFIX: String = ".gd"
 const SCENE_SUFFIX: String = ".tscn"
 
-## The two roots Godot can resolve a path under. Anything else - a relative
-## path, an absolute one off the filesystem - is a path this cannot create
-## into, and refusing it here is how a caller finds that out before a half
-## written pair exists.
-const RESOURCE_PREFIX: String = "res://"
-const USER_PREFIX: String = "user://"
-
 const SOURCE: String = """@tool
 extends GameplayAbility
 
@@ -54,7 +47,7 @@ static func scene_path_for(script_path: String) -> String:
 ## for. The refusal names both outputs, so the answer to "what would this have
 ## done" does not require guessing at the second one.
 static func create(path: String) -> String:
-	if not _is_creatable(path):
+	if not AuthoredPath.is_creatable(path, SCRIPT_SUFFIX):
 		return INVALID_PATH
 
 	var scene_path: String = scene_path_for(path)
@@ -76,11 +69,6 @@ static func create(path: String) -> String:
 
 	ComposerLibrary.forget()
 	return ""
-
-
-static func _is_creatable(path: String) -> bool:
-	var rooted: bool = path.begins_with(RESOURCE_PREFIX) or path.begins_with(USER_PREFIX)
-	return rooted and path.ends_with(SCRIPT_SUFFIX)
 
 
 static func _first_existing(script_path: String, scene_path: String) -> String:

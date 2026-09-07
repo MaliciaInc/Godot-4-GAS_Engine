@@ -25,6 +25,7 @@
 extends GutTest
 
 const Plugin = preload("res://addons/GAS_Engine/gas_engine_plugin.gd")
+const PluginWiring = preload("res://test/fixtures/plugin_wiring.gd")
 
 const HEAD: String = "extends GameplayAbility\n\n\nfunc _activate_ability() -> bool:\n"
 const BODY: String = "\tcommit_ability()\n\treturn true\n"
@@ -307,8 +308,6 @@ func test_the_recovery_copy_is_named_after_the_ability_it_came_from() -> void:
 ##
 ## The manual case remains: open an ability, edit it, open another, and answer
 ## the question three times.
-const PLUGIN_SOURCE: String = "res://addons/GAS_Engine/gas_engine_plugin.gd"
-
 ## What the navigation is made of, and why each line has to be there.
 const WIRED: Array = [
 	[
@@ -328,14 +327,7 @@ const WIRED: Array = [
 
 
 func test_the_plugin_wires_every_answer_to_the_unsaved_question() -> void:
-	var source: String = FileAccess.get_file_as_string(PLUGIN_SOURCE)
-	assert_false(source.is_empty(), "the plugin's source was read")
-
-	var checked: int = 0
-	for row: Array in WIRED:
-		var described: String = row[0]
-		var needle: String = row[1]
-		assert_true(source.contains(needle), "%s: %s" % [described, needle])
-		checked += 1
-	assert_eq(checked, WIRED.size(), "every part of the navigation was asked about")
+	assert_eq(
+		PluginWiring.missing(WIRED), [] as Array[String], "every answer is wired"
+	)
 #endregion
