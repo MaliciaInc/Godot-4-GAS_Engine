@@ -74,6 +74,11 @@ signal ability_ended(was_cancelled: bool)
 	NetExecutionPolicy.LOCAL_ONLY
 )
 
+## The name of the field above, for the two readers that have to look it up
+## rather than read it: the snapshot's drift watch, and the network runtime
+## reading a policy off a packed scene it has no instance of.
+const NET_EXECUTION_POLICY_FIELD: StringName = &"net_execution_policy"
+
 ## Identity, not activation gating - effective tags are these plus dynamic_tags.
 @export var ability_tags: Array[StringName] = []
 

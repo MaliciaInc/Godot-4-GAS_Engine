@@ -168,6 +168,19 @@ var events: GameplayEventRuntime = GameplayEventRuntime.new()
 ## Who these abilities belong to, and who they happen to.
 var actor_info: GameplayAbilityActorInfo = GameplayAbilityActorInfo.new()
 
+## The one way this component talks to another machine, or null.
+##
+## Exactly one, and it is a reference rather than something looked up: two
+## would be a component two authorities disagree about, and a lookup would be
+## a component whose network can be changed without it knowing. Null is the
+## ordinary case and always will be - a single-player game has no authority
+## to ask, and nothing in this component behaves differently for the absence.
+##
+## Set by GameplayNetworkRuntime.attach() rather than by hand: a component
+## pointing at a runtime that has not registered it is one whose messages
+## name an entity nobody can resolve.
+var network: GameplayNetworkRuntime = null
+
 ## Set once, by dispose(). A second teardown must not run: the first one
 ## already severed the references the second would walk.
 var _disposed: bool = false
@@ -289,6 +302,7 @@ func dispose() -> void:
 
 	attributes.owner_node = null
 	actor_info.clear()
+	network = null
 	_disposed = true
 
 

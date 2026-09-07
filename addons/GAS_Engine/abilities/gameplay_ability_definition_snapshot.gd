@@ -152,7 +152,7 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"auto_end_on_activate_return",
 	&"retrigger_while_active",
 	&"activation_policy",
-	&"net_execution_policy",
+	GameplayAbility.NET_EXECUTION_POLICY_FIELD,
 	&"ability_tags",
 	&"activation_required_query",
 	&"activation_blocked_query",

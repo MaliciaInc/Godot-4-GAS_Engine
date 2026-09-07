@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.5.2 (G01/G02): gameplay_ability.gd ceiling 740 -> 790 for NetExecutionPolicy and the field that carries it.
+# F5.5.4 (G01/G02): GameplayNetAuthority.client_start declared against the enum-to-enum translation family.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T20:22:31Z
-# commit-previo: 248947d05c0c5796ccef52dce13625796a1d8212
+# date-utc: 2026-09-07T20:50:05Z
+# commit-previo: 9bae80b20e41803a61ee40e1897bc8f744807dea
 # files: 25
-78b8cbb0194d64b5a5ba8dcf9e544f64a21e1d23db98065fef10ac419fda2d59  tooling/.quality-gates.json
+01ce045b3f1462d82b8441463e6c67e51b338879492a00cbbeebb7683b34092e  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
