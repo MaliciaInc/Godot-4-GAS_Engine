@@ -309,10 +309,15 @@ func _commit(
 		owner_asc.active_effect_added.emit(active)
 
 	components.notify_applied(spec, active, owner_asc)
-	play_cues(spec.effect_def.get_application_cue_tags(), spec, active.handle)
+	if evaluation.plays_cues():
+		play_cues(spec.effect_def.get_application_cue_tags(), spec, active.handle)
 	dispatch_events(spec)
 	notify_received(spec)
 	chain.fire_on_application(spec)
+	# An execution's own children follow its numbers, so a periodic effect fires
+	# none here - nothing of its was committed - and fires them per tick instead.
+	if commits_base:
+		chain.fire_from_execution(evaluation, spec)
 
 	# A periodic effect that says so ticks the moment it lands, rather than one
 	# period later. Last, so that first tick sees an application that has
@@ -546,9 +551,11 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 	if not contains_active(active) or active.inhibited:
 		return
 
-	play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
+	if evaluation.plays_cues():
+		play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
 	if not contains_active(active) or active.inhibited:
 		return
 
 	dispatch_events(spec)
+	chain.fire_from_execution(evaluation, spec)
 #endregion

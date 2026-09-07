@@ -85,6 +85,17 @@ func is_ambiguous(attribute_name: StringName) -> bool:
 	return GameplayAttributeLookup.is_ambiguous(_sets, attribute_name)
 
 
+## The first of these names this entity cannot uniquely address.
+##
+## Empty when every one of them means exactly one attribute, which is every
+## entity carrying one set and most carrying two.
+func first_ambiguous(names: Array[StringName]) -> StringName:
+	for attribute_name: StringName in names:
+		if is_ambiguous(attribute_name):
+			return attribute_name
+	return &""
+
+
 ## The set a reference names, or null when nothing answers to it.
 func find_set_by_ref(reference: GameplayAttributeRef) -> AttributeSet:
 	return GameplayAttributeLookup.set_for(_sets, reference)

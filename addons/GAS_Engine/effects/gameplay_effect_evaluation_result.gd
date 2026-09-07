@@ -23,6 +23,22 @@ var contributions: Array[AttributeModifierContribution] = []
 ## Which attribute the failure was about, when the status names one. Empty on OK.
 var error_attribute_name: StringName = &""
 
+## What this spec's executions decided beyond their numbers.
+##
+## Carried rather than re-derived: the calculations have already run, and asking
+## them again what else they wanted would be a second run with a second answer.
+## Null only when the evaluation failed before they ran.
+var execution_output: GameplayExecutionOutput = null
+
+
+## Whether the effect's cues play for this application.
+##
+## An execution can decide they should not - a hundred hits landing in one frame
+## should be a hundred numbers and one sound - and an effect that ran none keeps
+## what every effect has always done.
+func plays_cues() -> bool:
+	return execution_output == null or execution_output.trigger_cues
+
 
 func is_ok() -> bool:
 	return status == AttributeEvaluationResult.Status.OK

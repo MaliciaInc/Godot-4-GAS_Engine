@@ -1,4 +1,4 @@
-## The evaluator itself: execution calculations, ambiguity and typed status.
+## The evaluator itself: execution calculations, ordering and typed status.
 ##
 ## The evaluator is pure - it reads state and returns staged work. These tests
 ## call it directly, so what is asserted is the staging, not a value that
@@ -160,20 +160,21 @@ func test_an_execution_calculation_writing_an_unknown_attribute_fails() -> void:
 #endregion
 
 
-#region Ambiguity
-func test_an_attribute_written_by_both_mechanisms_is_refused() -> void:
-	# An ExecCalc flat delta and a standard modifier on the same attribute have
-	# no defined order: "add 5" then "double it" is not the same as the reverse,
-	# and neither mechanism is the outer one. The engine refuses rather than
-	# choosing.
+#region Both mechanisms on one attribute
+func test_an_attribute_written_by_both_mechanisms_composes_in_order() -> void:
+	# "Take ten off" and "double it" have an order, and it is the one this file
+	# has always run in: the execution decides the base and the modifier composes
+	# over what it decided. The other order gives 190. Refusing the combination
+	# outright, which is what happened before, gave neither.
 	var effect: GameplayEffect = Factory.instant([Factory.multiply(HEALTH, 2.0)])
 	effect.executions = [FlatDamage.new()] as Array[GameplayExecutionCalculation]
 
 	var result: GameplayEffectEvaluationResult = _evaluate(effect, Evaluator.Mode.BASE_MUTATION)
-	assert_false(result.is_ok())
-	assert_eq(result.status, AttributeEvaluationResult.Status.AMBIGUOUS_ATTRIBUTE_WRITE)
-	assert_eq(result.error_attribute_name, HEALTH, "and names the attribute")
-	assert_eq(result.base_mutations.size(), 0, "nothing staged")
+	assert_true(result.is_ok(), "no longer refused for want of an order")
+	assert_eq(result.base_mutations.size(), 1, "one write, not one per mechanism")
+	assert_almost_eq(
+		result.base_mutations[0].requested_base_value, 180.0, TOLERANCE, "(100 - 10) doubled"
+	)
 
 
 func test_the_two_mechanisms_may_write_different_attributes() -> void:
@@ -185,17 +186,6 @@ func test_the_two_mechanisms_may_write_different_attributes() -> void:
 	var result: GameplayEffectEvaluationResult = _evaluate(effect, Evaluator.Mode.BASE_MUTATION)
 	assert_true(result.is_ok(), "different attributes are unambiguous")
 	assert_eq(result.base_mutations.size(), 2)
-
-
-func test_an_ambiguous_effect_changes_nothing_when_applied() -> void:
-	var before: float = fixture.base_of(HEALTH)
-	var effect: GameplayEffect = Factory.instant([Factory.multiply(HEALTH, 2.0)])
-	effect.executions = [FlatDamage.new()] as Array[GameplayExecutionCalculation]
-
-	watch_signals(asc)
-	assert_null(Factory.apply(asc, effect), "refused")
-	assert_almost_eq(fixture.base_of(HEALTH), before, TOLERANCE, "untouched")
-	assert_signal_not_emitted(asc, "attribute_changed")
 #endregion
 
 

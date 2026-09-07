@@ -43,6 +43,26 @@ func fire_on_removal(active: ActiveGameplayEffect, reason: ActiveGameplayEffect.
 	_apply_matching(component.on_any_removal, active.spec)
 
 
+## Apply what an execution decided to apply as well, once its numbers landed.
+##
+## An authored chain is decided before the effect is evaluated, which is exactly
+## when a calculation's numbers do not exist yet - so "burn them if that hit
+## took more than half their health" cannot be authored, only computed.
+##
+## Through the same child-building an authored chain uses: same derived context,
+## same instigator, same depth increment. An execution therefore cannot spawn a
+## child that escapes the recursion limit an authored one is held to.
+func fire_from_execution(
+	evaluation: GameplayEffectEvaluationResult, parent_spec: GameplayEffectSpec
+) -> void:
+	if evaluation.execution_output == null or effects.owner_asc == null:
+		return
+	for child_effect: GameplayEffect in evaluation.execution_output.conditional_effects:
+		if child_effect == null:
+			continue
+		effects.owner_asc.apply_effect_spec_result(_build_child(child_effect, parent_spec))
+
+
 func _apply_matching(conditionals: Array[GameplayEffectConditionalEffect], parent_spec: GameplayEffectSpec) -> void:
 	if effects.owner_asc == null:
 		return

@@ -34,9 +34,10 @@ class_name GameplayExecutionCalculation extends Resource
 ## here happens whether or not the application it was part of ever
 ## commits.
 ##
-## An attribute this returns a delta for must NOT also be written by a standard
-## modifier of the same effect. That combination has no defined order and the
-## evaluator refuses the whole application with AMBIGUOUS_ATTRIBUTE_WRITE.
+## An attribute this returns a delta for may also be written by a standard
+## modifier of the same effect. The order is defined and is the pipeline's own:
+## the execution decides the base, and the effect's modifiers compose over what
+## it decided.
 func execute(
 	_spec: GameplayEffectSpec, _target_asc: AbilitySystemComponent
 ) -> Dictionary[StringName, float]:
@@ -45,6 +46,28 @@ func execute(
 		+ "Override it in your specific child script."
 	)
 	return {}
+
+
+## What this calculation decided, in full.
+##
+## The door the engine asks through. The default adapts whatever `execute()`
+## returned, so a calculation written before this - which could only say "add
+## this much to that" - keeps working exactly as it did, and one with more to
+## say overrides this instead of `execute()`.
+##
+## More to say means: which of two same-named attributes it meant, whether its
+## number multiplies rather than adds, effects to apply now that its numbers
+## exist, and whether any of it should make a sound.
+##
+## Named apart from `execute()` rather than replacing its return type, which
+## GDScript has no way to express: one function cannot answer with a Dictionary
+## under one profile and an object under another. The engine only ever calls
+## this one, so there is still a single path regardless of which a calculation
+## overrode.
+func execute_typed(
+	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
+) -> GameplayExecutionOutput:
+	return GameplayExecutionOutput.from_deltas(execute(spec, target_asc))
 
 
 ## Every attribute this calculation needs captured before execute() runs.
