@@ -20,6 +20,7 @@ static func _own(ability: GameplayAbility, task: GameplayAbilityTask) -> Gamepla
 
 
 #region Attributes
+## @composer
 static func wait_attribute_change(
 	ability: GameplayAbility, attribute: StringName, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitAttributeChange:
@@ -28,6 +29,7 @@ static func wait_attribute_change(
 	) as AbilityTaskWaitAttributeChange
 
 
+## @composer
 static func wait_attribute_threshold(
 	ability: GameplayAbility,
 	attribute: StringName,
@@ -45,12 +47,14 @@ static func wait_attribute_threshold(
 
 
 #region Tags
+## @composer
 static func wait_tag_added(
 	ability: GameplayAbility, tag: StringName, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitTagAdded:
 	return _own(ability, AbilityTaskWaitTagAdded.create(ability, tag, target_asc)) as AbilityTaskWaitTagAdded
 
 
+## @composer
 static func wait_tag_removed(
 	ability: GameplayAbility, tag: StringName, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitTagRemoved:
@@ -59,6 +63,7 @@ static func wait_tag_removed(
 	) as AbilityTaskWaitTagRemoved
 
 
+## @composer
 static func wait_tag_query(
 	ability: GameplayAbility,
 	query: GameplayTagQuery,
@@ -72,6 +77,7 @@ static func wait_tag_query(
 
 
 #region Gameplay effects
+## @composer
 static func wait_gameplay_effect_applied(
 	ability: GameplayAbility,
 	query: GameplayEffectQuery,
@@ -85,6 +91,7 @@ static func wait_gameplay_effect_applied(
 	) as AbilityTaskWaitGameplayEffectApplied
 
 
+## @composer
 static func wait_gameplay_effect_removed(
 	ability: GameplayAbility, handle: GameplayEffectHandle, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitGameplayEffectRemoved:
@@ -93,6 +100,7 @@ static func wait_gameplay_effect_removed(
 	) as AbilityTaskWaitGameplayEffectRemoved
 
 
+## @composer
 static func wait_gameplay_effect_removed_matching(
 	ability: GameplayAbility, query: GameplayEffectQuery, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitGameplayEffectRemoved:
@@ -101,6 +109,7 @@ static func wait_gameplay_effect_removed_matching(
 	) as AbilityTaskWaitGameplayEffectRemoved
 
 
+## @composer
 static func wait_gameplay_effect_stack_change(
 	ability: GameplayAbility, handle: GameplayEffectHandle, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitGameplayEffectStackChange:
@@ -111,6 +120,7 @@ static func wait_gameplay_effect_stack_change(
 
 
 #region Abilities
+## @composer
 static func wait_ability_activated(
 	ability: GameplayAbility, handle: GameplayAbilityHandle, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitAbilityActivated:
@@ -119,6 +129,7 @@ static func wait_ability_activated(
 	) as AbilityTaskWaitAbilityActivated
 
 
+## @composer
 static func wait_ability_activated_matching(
 	ability: GameplayAbility, query: GameplayTagQuery, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitAbilityActivated:
@@ -127,6 +138,7 @@ static func wait_ability_activated_matching(
 	) as AbilityTaskWaitAbilityActivated
 
 
+## @composer
 static func wait_ability_ended(
 	ability: GameplayAbility, handle: GameplayAbilityHandle, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitAbilityEnded:
@@ -135,6 +147,7 @@ static func wait_ability_ended(
 	) as AbilityTaskWaitAbilityEnded
 
 
+## @composer
 static func wait_ability_ended_matching(
 	ability: GameplayAbility, query: GameplayTagQuery, target_asc: AbilitySystemComponent = null
 ) -> AbilityTaskWaitAbilityEnded:
@@ -145,6 +158,7 @@ static func wait_ability_ended_matching(
 
 
 #region Confirm/cancel, repeat, animation
+## @composer
 static func wait_confirm_cancel(
 	ability: GameplayAbility, confirm_input_id: int, cancel_input_id: int
 ) -> AbilityTaskWaitConfirmCancel:
@@ -153,6 +167,7 @@ static func wait_confirm_cancel(
 	) as AbilityTaskWaitConfirmCancel
 
 
+## @composer
 static func repeat(
 	ability: GameplayAbility, interval_seconds: float, repetitions: int = 0
 ) -> AbilityTaskRepeat:
@@ -161,6 +176,7 @@ static func repeat(
 	) as AbilityTaskRepeat
 
 
+## @composer
 static func play_animation_and_wait(
 	ability: GameplayAbility,
 	player: AnimationPlayer,

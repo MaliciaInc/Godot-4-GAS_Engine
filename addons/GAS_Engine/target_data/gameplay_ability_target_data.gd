@@ -32,6 +32,7 @@ var _hits: Array[TargetHit] = []
 ##
 ## Returns whether the hit was accepted. A caller that ignores the return value
 ## still cannot corrupt the payload: a rejected hit adds nothing at all.
+## @composer
 func append_physics_hit(hit_dict: Dictionary) -> bool:
 	var hit: TargetHit = TargetHit.try_from_physics_hit(hit_dict)
 	if hit == null:
@@ -45,6 +46,7 @@ func append_physics_hit(hit_dict: Dictionary) -> bool:
 ##
 ## The space is read from the node's actual type rather than from an untyped
 ## position argument, so a 2D node can never be recorded as a 3D hit.
+## @composer
 func append_node(node: Node) -> bool:
 	if node == null:
 		return false
@@ -75,6 +77,7 @@ func append_node(node: Node) -> bool:
 
 
 ## Append every node of an overlap query.
+## @composer
 func append_overlap(nodes: Array[Node]) -> int:
 	var accepted: int = 0
 	for node: Node in nodes:
@@ -96,17 +99,20 @@ func _record(hit: TargetHit) -> void:
 ## This class validates every hit at the append boundary so nothing
 ## half-understood is stored. Handing out the array it stores them in let
 ## a caller append straight past that.
+## @composer
 func get_target_nodes() -> Array[Node]:
 	return _target_nodes.duplicate()
 
 
 ## Every registered hit, as a copy, for multi-hit and AoE processing.
+## @composer
 func get_all_hits() -> Array[TargetHit]:
 	return _hits.duplicate()
 
 
 ## Only the hits belonging to one node, for precision calculations such as
 ## "did this particular bullet hit the head shape?".
+## @composer
 func get_hits_for_node(node: Node) -> Array[TargetHit]:
 	var specific: Array[TargetHit] = []
 	for hit: TargetHit in _hits:
@@ -115,6 +121,7 @@ func get_hits_for_node(node: Node) -> Array[TargetHit]:
 	return specific
 
 
+## @composer
 func has_targets() -> bool:
 	return not _target_nodes.is_empty()
 #endregion
@@ -123,6 +130,7 @@ func has_targets() -> bool:
 #region Mutators
 ## Remove a node and every hit that belongs to it. Used by channelled and aura
 ## abilities when a target physically leaves the area.
+## @composer
 func force_remove_target(node: Node) -> void:
 	_target_nodes.erase(node)
 	for index: int in range(_hits.size() - 1, -1, -1):
@@ -130,6 +138,7 @@ func force_remove_target(node: Node) -> void:
 			_hits.remove_at(index)
 
 
+## @composer
 func clear() -> void:
 	_target_nodes.clear()
 	_hits.clear()

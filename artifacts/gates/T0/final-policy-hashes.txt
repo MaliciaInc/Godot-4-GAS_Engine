@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.3.3 (G26) raises the composer reader to 490: a second kind of card, for a region the tool keeps rather than refuses.
+# F5.3.4 (G27/G30): the @composer marker on every authored operation, and a catalog that consumes metadata rather than inferring it from access.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T16:12:28Z
-# commit-previo: 7c817a81d224e0018b7bb01fd790427f071b6d42
+# date-utc: 2026-09-07T16:33:19Z
+# commit-previo: dc3496e33620ed649bbfd6f1ea8eb0d82e15ceff
 # files: 25
-882b70f4108b799a7d7334f8f06a36cf0cd31643f7d807fc577b0c7acc126e20  tooling/.quality-gates.json
+3841abcbcee4ce4b3b6857bb26485dcd9bdec6574d1328287b8ea6532540d63b  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

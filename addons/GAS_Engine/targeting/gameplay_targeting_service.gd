@@ -19,6 +19,7 @@ const COLLIDER_KEY: StringName = GameplayTargetHit.COLLIDER_KEY
 
 
 #region Traces
+## @composer
 static func raycast_2d(
 	source_asc: AbilitySystemComponent, world: World2D, request: GameplayRaycastRequest2D
 ) -> GameplayAbilityTargetData:
@@ -36,6 +37,7 @@ static func raycast_2d(
 	return found
 
 
+## @composer
 static func raycast_3d(
 	source_asc: AbilitySystemComponent, world: World3D, request: GameplayRaycastRequest3D
 ) -> GameplayAbilityTargetData:
@@ -55,6 +57,7 @@ static func raycast_3d(
 
 
 #region Sweeps
+## @composer
 static func overlap_2d(
 	source_asc: AbilitySystemComponent, world: World2D, request: GameplayOverlapRequest2D
 ) -> GameplayAbilityTargetData:
@@ -79,6 +82,7 @@ static func overlap_2d(
 	return found
 
 
+## @composer
 static func overlap_3d(
 	source_asc: AbilitySystemComponent, world: World3D, request: GameplayOverlapRequest3D
 ) -> GameplayAbilityTargetData:

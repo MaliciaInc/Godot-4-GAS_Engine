@@ -198,31 +198,51 @@ func test_an_empty_body_is_drawn_as_empty_rather_than_refused() -> void:
 
 
 #region VOCABULARY_STABLE
-## The catalog covers the engine.
+## The catalog covers the engine, and nothing more.
 ##
-## The plan's claim, asked of the tree. Not "every method somebody remembered to
-## list is there" - every public method the engine declares is a node, with no
-## exceptions list to consult and none to keep true. A call added to the engine
-## is on the palette; one renamed takes its node with it; one removed cannot
-## linger, because there is nowhere for it to linger.
-func test_every_public_method_of_every_source_is_offered() -> void:
+## This used to claim every public method is a node - right that a list
+## somewhere else stops being true, wrong that "public" answers the question.
+## `dispose()` and `cleanup()` are public, and nobody authors those.
+##
+## So the claim is now two-sided and both sides are asked of the tree. Every
+## method carrying `@composer` is offered, and every method offered carries it -
+## there is still no list to keep true, because the marker lives on the method.
+func test_the_catalog_offers_exactly_what_the_engine_declares_an_operation() -> void:
 	assert_gt(ComposerCatalog.SOURCES.size(), 0, "there are sources to check")
-	var offered: int = 0
+	var declared_operations: int = 0
+	var skipped: int = 0
 	for declared: StringName in ComposerCatalog.SOURCES:
 		var path: String = ComposerCatalog.script_for(declared)
 		var script: GDScript = load(path) as GDScript
+		var documented: Dictionary[StringName, PackedStringArray] = (
+			ComposerDeclarations.doc_comments_in(path)
+		)
 		for described: Dictionary in script.get_script_method_list():
 			var name: String = described["name"]
 			if name.begins_with("_") or name.begins_with("@"):
 				continue
-			assert_not_null(
-				ComposerCatalog.find_on(path, StringName(name)),
-				"%s.%s is offered" % [path.get_file(), name]
+			var doc: PackedStringArray = documented.get(
+				StringName(name), PackedStringArray()
 			)
-			offered += 1
-	# A loop over an empty list asserts nothing and reports success. The count is
-	# what tells "every method is offered" apart from "no method was looked at".
-	assert_gt(offered, 0, "public methods were actually compared")
+			var says_so: bool = ComposerOperation.is_declared_in(doc)
+			var found: ComposerCatalog.Entry = ComposerCatalog.find_on(
+				path, StringName(name)
+			)
+			assert_eq(
+				found != null, says_so,
+				"%s.%s: offered exactly if it says it is an operation" % [
+					path.get_file(), name
+				]
+			)
+			if says_so:
+				declared_operations += 1
+			else:
+				skipped += 1
+	# A loop over an empty list asserts nothing and reports success. Both counts
+	# are what tell "the two sides agree" apart from "nothing was looked at" - and
+	# the second one apart from "everything is an operation after all".
+	assert_gt(declared_operations, 50, "operations were actually compared")
+	assert_gt(skipped, 5, "and public methods that are not operations exist")
 
 
 ## And nothing is offered that the engine does not declare.

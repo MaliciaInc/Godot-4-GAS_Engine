@@ -131,6 +131,7 @@ var _activation_context: GameplayAbilityActivationContext = null
 ## fired it, the magnitude it carried, who it was aimed at - is on it, and an
 ## ability that reconstructed any of that from the world would be reading a
 ## world that has moved on since.
+## @composer
 func get_activation_event() -> GameplayEventData:
 	return _activation_context.gameplay_event if _activation_context != null else null
 
@@ -170,15 +171,18 @@ func can_be_cancelled() -> bool:
 
 #region Spec accessors
 ## current_spec once granted; the exported default for an uncommitted probe.
+## @composer
 func get_ability_level() -> float:
 	return current_spec.level if current_spec != null else ability_level
 
 
+## @composer
 func get_input_id() -> int:
 	return current_spec.input_id if current_spec != null else input_id
 
 
 ## Null when this instance was never granted through the grant pipeline.
+## @composer
 func get_ability_handle() -> GameplayAbilityHandle:
 	return current_spec.handle if current_spec != null else null
 #endregion
@@ -186,6 +190,7 @@ func get_ability_handle() -> GameplayAbilityHandle:
 
 #region Execution
 ## Compat: blocks until this finishes, unlike AbilityRuntime.try_activate().
+## @composer
 func try_activate(context: GameplayEffectContext = null) -> bool:
 	if is_active or owner_asc == null:
 		return false
@@ -261,6 +266,7 @@ func _run_activation() -> void:
 ## than let somebody press it and be refused. Resolving is not free, and what it
 ## produces is carried out rather than recomputed: two resolutions of one cost
 ## are two opinions about what an ability costs.
+## @composer
 func check_cost() -> AbilityCommitPreflight:
 	var preflight: AbilityCommitPreflight = AbilityCommitPreflight.new()
 	if owner_asc == null or current_spec == null:
@@ -295,6 +301,7 @@ func check_cost() -> AbilityCommitPreflight:
 ## Both halves, because either alone lets an ability through that should not
 ## be: a cooldown that cannot legally be applied is a definition mistake, and
 ## one that is already running means somebody else got there first.
+## @composer
 func check_cooldown() -> AbilityCommitPreflight:
 	var preflight: AbilityCommitPreflight = AbilityCommitPreflight.new()
 	if owner_asc == null or current_spec == null:
@@ -317,6 +324,7 @@ func check_cooldown() -> AbilityCommitPreflight:
 
 
 ## Start every cooldown the preflight found, or undo what was started.
+## @composer
 func apply_cooldown(
 	preflight: AbilityCommitPreflight, result: AbilityCommitResult
 ) -> bool:
@@ -333,6 +341,7 @@ func apply_cooldown(
 
 
 ## Take the charge the preflight resolved, or undo the cooldowns already started.
+## @composer
 func apply_cost(preflight: AbilityCommitPreflight, result: AbilityCommitResult) -> bool:
 	var charge: GameplayEffect = preflight.resolved_cost.absolute_effect
 	if charge == null:
@@ -354,6 +363,7 @@ func apply_cost(preflight: AbilityCommitPreflight, result: AbilityCommitResult) 
 ## purpose - once to decide, and once immediately before the first write,
 ## because starting a cooldown raises signals and a listener is entitled to move
 ## the resources this was about to take.
+## @composer
 func commit_ability() -> AbilityCommitResult:
 	var result: AbilityCommitResult = AbilityCommitResult.new()
 	if owner_asc == null:
@@ -413,6 +423,7 @@ func _activate_ability() -> bool:
 
 
 ## Interrupt mid-cast.
+## @composer
 func abort_ability(
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
 ) -> void:
@@ -434,6 +445,7 @@ func completed() -> void:
 	await ability_ended
 
 
+## @composer
 func end_ability(
 	was_cancelled: bool = false,
 	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ENDED
@@ -472,6 +484,7 @@ func _cancel_conflicting_abilities() -> void:
 
 #region Helpers
 ## Play a cue on the owning entity.
+## @composer
 func execute_cue(tag: StringName) -> void:
 	if owner_asc == null:
 		return
@@ -483,6 +496,7 @@ func execute_cue(tag: StringName) -> void:
 
 
 ## Reads the frozen snapshot's target_required/blocked_query, immune to edits.
+## @composer
 func accepts_target(target_asc: AbilitySystemComponent) -> bool:
 	if target_asc == null or current_spec == null or current_spec.definition == null:
 		return false
@@ -497,6 +511,7 @@ func accepts_target(target_asc: AbilitySystemComponent) -> bool:
 
 ## Each target gets its own spec copy - sharing one across an AoE let target
 ## A's evaluation change what target B received.
+## @composer
 func apply_effect_to_targets(
 	effect_res: GameplayEffect, target_data: GameplayAbilityTargetData
 ) -> GameplayTargetApplicationResult:
@@ -549,16 +564,20 @@ func apply_effect_to_targets(
 
 
 ## The ability system a node belongs to - no algorithm of its own, one search.
+## @composer
+## @composer_name: Find The Ability System On
 static func find_asc_on(node: Node) -> AbilitySystemComponent:
 	return AbilitySystemLocator.find_for_node(node)
 
 
 ## Convenience wrapper - the implementation lives on AbilityRuntime, keyed by spec.
+## @composer
 func get_cooldown_tags() -> Array[StringName]:
 	return AbilityRuntime.get_cooldown_tags(current_spec)
 
 
 ## Everything a UI needs, read fresh. Live-instance wrapper; AbilityRuntime answers by handle.
+## @composer
 func get_cooldown_state() -> AbilityCooldownState:
 	if owner_asc == null or current_spec == null:
 		return AbilityCooldownState.new()
@@ -601,16 +620,19 @@ func _own(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	return owner_asc.register_ability_task(task)
 
 
+## @composer
 func wait_delay(seconds: float) -> AbilityTaskWaitDelay:
 	return _own(AbilityTaskWaitDelay.create(self, seconds)) as AbilityTaskWaitDelay
 
 
 ## `-1` means this ability's own bound slot. Resolved in the body, not a
 ## default parameter value: that would freeze `input_id` at parse time.
+## @composer
 func wait_input_pressed(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.PRESSED)
 
 
+## @composer
 func wait_input_released(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.RELEASED)
 
@@ -622,16 +644,19 @@ func _wait_input(
 	return _own(AbilityTaskWaitInput.create(self, slot, transition)) as AbilityTaskWaitInput
 
 
+## @composer
 func wait_gameplay_event(tag: StringName) -> AbilityTaskWaitGameplayEvent:
 	var task: GameplayAbilityTask = _own(AbilityTaskWaitGameplayEvent.create(self, tag))
 	return task as AbilityTaskWaitGameplayEvent
 
 
+## @composer
 func wait_target_data() -> AbilityTaskWaitTargetData:
 	return _own(AbilityTaskWaitTargetData.create(self)) as AbilityTaskWaitTargetData
 
 
 ## Answer this ability's own request for targets.
+## @composer
 func submit_target_data(data: GameplayAbilityTargetData) -> void:
 	if owner_asc != null:
 		owner_asc.submit_ability_target_data(self, data)

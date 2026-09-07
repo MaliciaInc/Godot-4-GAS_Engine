@@ -223,6 +223,7 @@ func _process(delta: float) -> void:
 
 ## Advance turn-based effects. Called by an external turn manager; the frame
 ## loop never consumes turns.
+## @composer
 func advance_turn(turns: int = 1) -> void:
 	scheduler.advance_turn(turns)
 
@@ -359,6 +360,7 @@ func init_ability_actor_info(owner: Node, avatar: Node = null, controller: Node 
 ## The avatar when there is one, the owner when the avatar has been freed,
 ## and the parent when nobody set either - which is every project that never
 ## thinks about avatars, and is what this answered before there were any.
+## @composer
 func get_effect_target() -> Node:
 	if actor_info != null and is_instance_valid(actor_info.avatar):
 		return actor_info.avatar
@@ -400,6 +402,7 @@ func _cue_manager() -> CueManagerScript:
 
 
 ## Play a one-shot cue on this entity through the global manager.
+## @composer
 func execute_cue(params: GameplayCueParams) -> void:
 	if params == null:
 		return
@@ -430,23 +433,28 @@ func deactivate_persistent_cue(handle: GameplayCueHandle, params: GameplayCuePar
 
 
 #region Attributes
+## @composer
 func get_attribute(attribute_name: StringName) -> AttributeData:
 	return attributes.find(attribute_name)
 
 
+## @composer
 func has_attribute(attribute_name: StringName) -> bool:
 	return attributes.has(attribute_name)
 
 
+## @composer
 func get_attribute_base(attribute_name: StringName) -> float:
 	return attributes.get_base_value(attribute_name)
 
 
+## @composer
 func get_attribute_current(attribute_name: StringName) -> float:
 	return attributes.get_current_value(attribute_name)
 
 
 ## The one durable-mutation path. No gameplay code writes `current_value`.
+## @composer
 func set_attribute_base(
 	attribute_name: StringName, new_base_value: float, source_spec: GameplayEffectSpec = null
 ) -> AttributeMutationResult:
@@ -462,6 +470,7 @@ func set_attribute_base(
 	return result
 
 
+## @composer
 func apply_attribute_base_delta(
 	attribute_name: StringName, amount: float, source_spec: GameplayEffectSpec = null
 ) -> AttributeMutationResult:
@@ -483,6 +492,7 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 ## The one entry point every application reaches, self-application included.
 ## `self` is always the target, so an unresolved SOURCE gets one last chance
 ## - `context.instigator` - before a required capture refuses.
+## @composer
 func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	var result: GameplayEffectApplicationResult
 	if spec == null:
@@ -495,6 +505,7 @@ func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplica
 	return result
 
 ## F2 wrapper: the active effect a successful application produced, or null.
+## @composer
 func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	return apply_effect_spec_result(spec).active_effect
 
@@ -502,6 +513,8 @@ func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 ## Captures are prepared here, on the shared spec, before it is copied - taken
 ## later, inside the copy's own apply, a SOURCE+SNAPSHOT would be one target's
 ## read, not the shared one every target needs.
+## @composer
+## @composer_name: Apply Spec To Target, With Result
 func apply_effect_spec_to_target_result(
 	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
 ) -> GameplayEffectApplicationResult:
@@ -516,11 +529,13 @@ func apply_effect_spec_to_target_result(
 		effect_applied_to_target.emit(target_asc, spec)
 	return result
 
+## @composer
 func apply_effect_spec_to_target(
 	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
 ) -> ActiveGameplayEffect:
 	return apply_effect_spec_to_target_result(spec, target_asc).active_effect
 
+## @composer
 func apply_gameplay_effect_result(
 	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
 ) -> GameplayEffectApplicationResult:
@@ -532,24 +547,30 @@ func apply_gameplay_effect_result(
 	spec.source_asc = source_asc
 	return apply_effect_spec_result(spec)
 
+## @composer
 func apply_gameplay_effect(
 	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
 ) -> ActiveGameplayEffect:
 	return apply_gameplay_effect_result(effect, source_asc, effect_level).active_effect
 
 
+## @composer
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:
 	effects.remove(active_effect)
 
+## @composer
 func get_active_effect(handle: GameplayEffectHandle) -> ActiveGameplayEffect:
 	return effects.handles.resolve(handle)
 
+## @composer
 func find_active_effects(query: GameplayEffectQuery) -> Array[ActiveGameplayEffect]:
 	return effects.handles.find(query)
 
+## @composer
 func find_active_effect_handles(query: GameplayEffectQuery) -> Array[GameplayEffectHandle]:
 	return effects.handles.find_handles(query)
 
+## @composer
 func count_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.count(query)
 
@@ -558,54 +579,67 @@ func count_active_effects(query: GameplayEffectQuery) -> int:
 ## The five doors the phase names. What each of them means is
 ## `GameplayEffectMutations`: this is the surface, and a surface with the work
 ## in it is a component that grows every time anything new can be done.
+## @composer
 func set_active_effect_level(
 	handle: GameplayEffectHandle, level: float
 ) -> GameplayEffectMutationResult:
 	return GameplayEffectMutations.set_level(effects, handle, level)
 
 
+## @composer
 func set_active_effect_stack_count(
 	handle: GameplayEffectHandle, count: int
 ) -> GameplayEffectMutationResult:
 	return GameplayEffectMutations.set_stack_count(effects, handle, count)
 
 
+## @composer
 func remove_active_effect_stacks(
 	handle: GameplayEffectHandle, count: int
 ) -> GameplayEffectMutationResult:
 	return GameplayEffectMutations.remove_stacks(effects, handle, count)
 
 
+## @composer
+## @composer_name: Set A Caller-Supplied Value
 func update_active_effect_set_by_caller(
 	handle: GameplayEffectHandle, tag: StringName, value: float
 ) -> GameplayEffectMutationResult:
 	return GameplayEffectMutations.update_set_by_caller(effects, handle, tag, value)
 
 
+## @composer
 func set_active_effect_duration(
 	handle: GameplayEffectHandle, seconds: float
 ) -> GameplayEffectMutationResult:
 	return GameplayEffectMutations.set_duration(effects, handle, seconds)
 
 
+## @composer
 func remove_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.remove_matching(query)
 
+## @composer
 func remove_active_effect_by_handle(handle: GameplayEffectHandle) -> bool:
 	return effects.handles.remove_by_handle(handle)
 
+## @composer
 func get_effect_duration_remaining(handle: GameplayEffectHandle) -> float:
 	return effects.handles.duration_remaining(handle)
 
+## @composer
 func get_effect_turns_remaining(handle: GameplayEffectHandle) -> int:
 	return effects.handles.turns_remaining(handle)
 
+## @composer
 func remove_effects_with_tag(tag: StringName) -> void:
 	effects.remove_effects_with_tag(tag)
 
+## @composer
 func remove_effects_from_source(source_node: Node) -> void:
 	effects.remove_effects_from_source(source_node)
 
+## @composer
 func get_active_effects() -> Array[ActiveGameplayEffect]:
 	return effects.active_effects()
 
@@ -613,47 +647,57 @@ func get_active_effects() -> Array[ActiveGameplayEffect]:
 ## Whether every attribute this cost touches can pay it in full from its
 ## durable base. `GameplayEffectEvaluator.can_afford()` carries the why, and
 ## runs the very request a commit runs, so a preview cannot disagree with it.
+## @composer
 func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 	return GameplayEffectEvaluator.can_afford(effect, effect_level, self)
 #endregion
 
 
 #region Tags
+## @composer
 func add_tag(tag: StringName) -> void:
 	emit_tag_change(tag, tags.add(tag), tags.count_exact(tag))
 
 
+## @composer
 func remove_tag(tag: StringName) -> void:
 	emit_tag_change(tag, tags.remove(tag), tags.count_exact(tag))
 
 
+## @composer
 func clear_tag(tag: StringName) -> void:
 	emit_tag_change(tag, tags.clear(tag), 0)
 
 
+## @composer
 func has_tag_exact(tag: StringName) -> bool:
 	return tags.has_exact(tag)
 
 
+## @composer
 func has_tag(tag: StringName) -> bool:
 	return tags.has(tag)
 
 
+## @composer
 func has_any_tags(query: Array[StringName]) -> bool:
 	return tags.has_any(query)
 
 
+## @composer
 func has_all_tags(query: Array[StringName]) -> bool:
 	return tags.has_all(query)
 
 
 ## Seconds left on a tag, or INF when something grants it with no end.
+## @composer
 func get_tag_duration_remaining(tag: StringName) -> float:
 	return effects.tag_duration_remaining(tag)
 
 
 ## Turns left on a tag. Seconds and turns are different units and get different
 ## questions, so a UI cannot count a turn-based debuff down in seconds.
+## @composer
 func get_tag_turns_remaining(tag: StringName) -> int:
 	return effects.tag_turns_remaining(tag)
 #endregion
@@ -663,6 +707,7 @@ func get_tag_turns_remaining(tag: StringName) -> int:
 ## Grant an ability from its scene - the one way an ability is ever granted.
 ## prepare -> commit under the hood; a failed prepare frees whatever it
 ## instantiated rather than leaving a Node nobody owns.
+## @composer
 func give_ability(
 	ability_scene: PackedScene,
 	level: float = 1.0,
@@ -678,11 +723,13 @@ func give_ability(
 ## long as one activation lasts; the grant outlives every one of them, and a
 ## caller holding an instance to remember which ability it meant is holding the
 ## shorter-lived of the two.
+## @composer
 func get_ability_spec(handle: GameplayAbilityHandle) -> GameplayAbilitySpec:
 	return ability_runtime.get_spec(handle)
 
 
 ## Take a grant back. False when the handle names nothing here.
+## @composer
 func remove_ability_handle(
 	handle: GameplayAbilityHandle,
 	policy: AbilityRuntime.AbilityRemovalPolicy = AbilityRuntime.AbilityRemovalPolicy.CANCEL_IMMEDIATELY
@@ -696,6 +743,7 @@ func remove_ability_handle(
 ## and a caller that has to guess which will guess wrong on the one that
 ## matters. A null context is an activation with nothing to say about itself,
 ## which is most of them.
+## @composer
 func try_activate_ability_handle(
 	handle: GameplayAbilityHandle, context: GameplayAbilityActivationContext = null
 ) -> GameplayAbilityActivationResult:
@@ -703,6 +751,7 @@ func try_activate_ability_handle(
 
 
 ## Whether what a handle names could start right now.
+## @composer
 func can_activate_ability_handle(
 	handle: GameplayAbilityHandle, emit_failure: bool = false
 ) -> bool:
@@ -712,6 +761,7 @@ func can_activate_ability_handle(
 
 
 ## Route an input slot to a grant. False when it was never granted here.
+## @composer
 func bind_ability_handle_to_input(
 	handle: GameplayAbilityHandle, input_id: int, unbind_others: bool = true
 ) -> bool:
@@ -723,6 +773,8 @@ func bind_ability_handle_to_input(
 ## Deprecated: use remove_ability_handle(). Kept for a caller holding the
 ## running instance, and holding nothing of its own - every one of these three
 ## resolves the grant behind the instance and asks the door above.
+## @composer
+## @composer_deprecated: use remove_ability_handle(): a grant outlives its instance
 func remove_ability(ability: GameplayAbility) -> void:
 	remove_ability_handle(ability.get_ability_handle() if ability != null else null)
 
@@ -730,12 +782,15 @@ func remove_ability(ability: GameplayAbility) -> void:
 ## Deprecated: use can_activate_ability_handle(). The instance it was handed is
 ## the one a refusal names, because that is the one the caller is waiting to
 ## hear about.
+## @composer
+## @composer_deprecated: use can_activate_ability_handle() for the same reason
 func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
 	return ability_runtime.can_activate_spec(
 		ability.current_spec if ability != null else null, ability, emit_failure
 	)
 
 
+## @composer
 func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 	ability_runtime.cancel_with_tags(cancel_tags)
 
@@ -744,16 +799,22 @@ func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 ##
 ## The runtime refuses and says so; the facade used to drop the answer, so a
 ## caller binding an ungranted ability found out only when the press reached no one.
+## @composer
+## @composer_deprecated: use bind_ability_handle_to_input(): a binding is on the grant
 func bind_ability_to_input(
 	ability: GameplayAbility, input_id: int, unbind_others: bool = true
 ) -> bool:
 	return ability_runtime.bind_to_input(ability, input_id, unbind_others)
 
 
+## @composer
+## @composer_name: Input Pressed
 func ability_local_input_pressed(input_id: int) -> void:
 	ability_runtime.input_pressed(input_id)
 
 
+## @composer
+## @composer_name: Input Released
 func ability_local_input_released(input_id: int) -> void:
 	ability_runtime.input_released(input_id)
 
@@ -765,14 +826,17 @@ func register_ability_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
 ## These two stay addressed by instance, and are not deprecated for it: a task
 ## belongs to one activation and target data is delivered into one, so there is
 ## no grant-shaped question either of them could be asked instead.
+## @composer
 func cancel_ability_tasks(ability: GameplayAbility, reason: GameplayAbilityTask.CancelReason) -> void:
 	ability_runtime.cancel_tasks_for_ability(ability, reason)
 
 
+## @composer
 func submit_ability_target_data(ability: GameplayAbility, data: GameplayAbilityTargetData) -> void:
 	ability_runtime.submit_target_data(ability, data)
 
 
+## @composer
 func send_gameplay_event(event: GameplayEventData) -> void:
 	# A task already waiting for this event hears it before it can wake a
 	# sleeping ability that would then wait for the same one.
