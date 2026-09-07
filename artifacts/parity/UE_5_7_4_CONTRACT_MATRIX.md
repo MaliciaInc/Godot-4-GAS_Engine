@@ -37,3 +37,4 @@ suite by `tooling/parity_receipt.py`.
 | Package | Receipt |
 |---|---|
 | F5.2 | `artifacts/parity/GATE_F5_2.md` |
+| F5.3 | `artifacts/parity/GATE_F5_3.md` |
