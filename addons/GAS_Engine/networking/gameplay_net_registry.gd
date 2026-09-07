@@ -40,6 +40,16 @@ var _entity_by_asc: Dictionary[AbilitySystemComponent, int] = {}
 var _owner_by_entity: Dictionary[int, int] = {}
 var _definition_by_id: Dictionary[int, Resource] = {}
 
+## What a local effect handle is called on the wire.
+##
+## Mapped and not converted, which is the difference the phase draws: a
+## handle names an application in one process, this names it on every
+## machine that heard about it, and a number counted here is the one thing
+## that can be both. Keyed by the handle object because a local table wanting
+## a local key already has one.
+var _net_effect_by_handle: Dictionary[GameplayEffectHandle, int] = {}
+var _effects_named: int = 0
+
 
 #region Entities
 ## Put a component under an id, owned by a peer.
@@ -140,6 +150,23 @@ func definition_for(id: GameplayNetDefinitionId) -> Resource:
 
 func definition_count() -> int:
 	return _definition_by_id.size()
+
+
+## The wire name for a local effect handle, assigned the first time it is
+## asked for and the same one every time after.
+##
+## Counted rather than derived. There is nothing about an application to
+## derive a stable number from - it is one moment on one machine - so the
+## authority counts and everyone else is told, which is the same shape the
+## entity ids have and for the same reason.
+func net_effect_id(handle: GameplayEffectHandle) -> int:
+	if handle == null:
+		return GameplayNetEffectState.NONE
+	if _net_effect_by_handle.has(handle):
+		return _net_effect_by_handle[handle]
+	_effects_named += 1
+	_net_effect_by_handle[handle] = _effects_named
+	return _effects_named
 #endregion
 
 
@@ -152,3 +179,4 @@ func clear() -> void:
 	_entity_by_asc.clear()
 	_owner_by_entity.clear()
 	_definition_by_id.clear()
+	_net_effect_by_handle.clear()

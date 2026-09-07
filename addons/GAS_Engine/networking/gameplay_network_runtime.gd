@@ -34,6 +34,11 @@ signal ability_granted_by_authority(entity: GameplayNetEntityId, definition: Res
 ## An entity's grant was taken away.
 signal ability_revoked_by_authority(entity: GameplayNetEntityId, definition: Resource)
 
+## A reading of an entity's state was written onto it. Carries the state as
+## well as the entity, because what a game shows - which buffs, how long left
+## - is in the reading and deliberately not written into the component.
+signal state_applied(entity: GameplayNetEntityId, state: GameplayNetState)
+
 const REASON_WRONG_DIRECTION: StringName = &"wrong_direction"
 const REASON_INCOMPLETE: StringName = &"incomplete"
 const REASON_UNKNOWN_ENTITY: StringName = &"unknown_entity"
@@ -41,6 +46,8 @@ const REASON_UNKNOWN_DEFINITION: StringName = &"unknown_definition"
 const REASON_NOT_OWNED: StringName = &"not_owned"
 const REASON_POLICY: StringName = &"policy_refuses"
 const REASON_ALREADY_APPLIED: StringName = &"already_applied"
+const REASON_OUT_OF_ORDER: StringName = &"out_of_order"
+const REASON_NOTHING_TO_UPDATE: StringName = &"nothing_to_update"
 
 var role: GameplayNetAuthority.Role = GameplayNetAuthority.Role.CLIENT
 
@@ -48,6 +55,24 @@ var role: GameplayNetAuthority.Role = GameplayNetAuthority.Role.CLIENT
 var peer: int = GameplayNetRegistry.NO_PEER
 
 var registry: GameplayNetRegistry = GameplayNetRegistry.new()
+
+## How much of an entity's state a peer is told.
+##
+## MIXED by default, which is what most games want and is also most of the
+## bandwidth: what a character is doing is public, the twelve modifiers
+## behind it are the owner's business.
+var replication_mode: GameplayNetReplication.Mode = GameplayNetReplication.Mode.MIXED
+
+## What each peer was last told about each entity, so the next delta knows
+## what changed. Keyed by entity and peer together: two peers are told
+## different things under MIXED, so one record of "what was sent" would make
+## the second peer's delta a diff against the first peer's news.
+var _told: Dictionary[String, GameplayNetState] = {}
+var _counted: Dictionary[int, int] = {}
+
+## The last reading of each entity this machine has applied, so an older one
+## arriving late is ignored rather than undoing a newer one.
+var _applied_sequence: Dictionary[int, int] = {}
 
 ## What has already been acted on.
 ##
@@ -94,6 +119,9 @@ func detach(asc: AbilitySystemComponent) -> void:
 func dispose() -> void:
 	registry.clear()
 	_applied.clear()
+	_told.clear()
+	_counted.clear()
+	_applied_sequence.clear()
 #endregion
 
 
@@ -171,6 +199,54 @@ func _policy_of(definition: Resource) -> GameplayAbility.NetExecutionPolicy:
 #endregion
 
 
+#region What the peers are told about state
+## Everything this peer may be told about an entity, as a message.
+##
+## A late joiner gets one of these and then deltas, and the two are the same
+## shape on purpose: a peer whose whole state is news and a peer whose news
+## is small are the same peer told different amounts.
+func snapshot_for(id: GameplayNetEntityId, to_peer: int) -> GameplayNetMessage:
+	return _state_message(GameplayNetMessage.Kind.STATE_SNAPSHOT, id, to_peer)
+
+
+## What changed since that peer was last told, or null when nothing did.
+##
+## Null rather than an empty message, because a delta computed every frame is
+## mostly empty and sending one is bandwidth spent to say nothing happened.
+func delta_for(id: GameplayNetEntityId, to_peer: int) -> GameplayNetMessage:
+	return _state_message(GameplayNetMessage.Kind.STATE_DELTA, id, to_peer)
+
+
+func _state_message(
+	kind: GameplayNetMessage.Kind, id: GameplayNetEntityId, to_peer: int
+) -> GameplayNetMessage:
+	var asc: AbilitySystemComponent = registry.asc_for(id)
+	if asc == null or not GameplayNetAuthority.may_author(role):
+		return null
+
+	var now: GameplayNetState = GameplayNetReplication.snapshot_of(
+		asc, registry, replication_mode, registry.is_owned_by(id, to_peer)
+	)
+	var remembered: String = "%d|%d" % [id.value, to_peer]
+	var sending: GameplayNetState = now
+	if kind == GameplayNetMessage.Kind.STATE_DELTA:
+		var before: GameplayNetState = _told.get(remembered)
+		if before == null:
+			return null
+		sending = GameplayNetReplication.delta_between(before, now)
+		if sending.is_empty():
+			return null
+
+	_told[remembered] = now.copied()
+	_counted[id.value] = _counted.get(id.value, 0) + 1
+	var message: GameplayNetMessage = GameplayNetMessage.of(kind, id)
+	message.state = sending
+	message.sequence = _counted[id.value]
+	message_ready.emit(message)
+	return message
+#endregion
+
+
 #region What arrives
 ## Act on a message, or say why not.
 ##
@@ -187,6 +263,9 @@ func receive(message: GameplayNetMessage) -> bool:
 		_refuse(message, REASON_WRONG_DIRECTION)
 		return false
 
+	if message.is_state():
+		return _apply_state(message)
+
 	var seen: String = _fingerprint(message)
 	if _applied.has(seen):
 		_refuse(message, REASON_ALREADY_APPLIED)
@@ -195,6 +274,35 @@ func receive(message: GameplayNetMessage) -> bool:
 	if not _act_on(message):
 		return false
 	_applied[seen] = true
+	return true
+
+
+## A reading of an entity's state, written on if it is news.
+##
+## Ordered rather than deduplicated. A state message is safe to apply twice -
+## it carries values, not increments - so what has to be refused is not the
+## repeat but the older reading arriving after a newer one, which would put a
+## character back the way it was and leave it there.
+##
+## And a delta before any snapshot is refused outright: a delta is what
+## changed, and a peer with nothing for it to have changed from would apply
+## half a character and believe it had all of one. That is the late joiner,
+## and the answer is that it is sent a snapshot first.
+func _apply_state(message: GameplayNetMessage) -> bool:
+	var asc: AbilitySystemComponent = registry.asc_for(message.entity)
+	if asc == null:
+		_refuse(message, REASON_UNKNOWN_ENTITY)
+		return false
+	if message.sequence <= _applied_sequence.get(message.entity.value, 0):
+		_refuse(message, REASON_OUT_OF_ORDER)
+		return false
+	if message.state.is_delta() and not _applied_sequence.has(message.entity.value):
+		_refuse(message, REASON_NOTHING_TO_UPDATE)
+		return false
+
+	GameplayNetReplication.apply(message.state, asc)
+	_applied_sequence[message.entity.value] = message.sequence
+	state_applied.emit(message.entity, message.state)
 	return true
 
 

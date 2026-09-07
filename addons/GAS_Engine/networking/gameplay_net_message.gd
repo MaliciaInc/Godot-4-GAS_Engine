@@ -53,6 +53,20 @@ var activation: GameplayNetActivationId = null
 ## anything the server said on its own account.
 var prediction_key: GameplayPredictionKey = null
 
+## The state a snapshot or a delta carries. Null on every other kind.
+var state: GameplayNetState = null
+
+## Which reading of an entity's state this is, counted by the authority.
+##
+## State is the one kind where arriving twice and arriving late are
+## different problems. Twice is harmless, because a delta carries values
+## rather than increments and writing the same value again changes nothing.
+## Late is not: an older reading applied after a newer one puts a character
+## back the way it was half a second ago, and nothing afterwards corrects it
+## until the next change to that same attribute. So a reading says which one
+## it is, and a receiver ignores anything it has already moved past.
+var sequence: int = 0
+
 ## The game's own data. Never read by this addon.
 var payload: Dictionary = {}
 
@@ -79,6 +93,12 @@ func is_predicted() -> bool:
 	return prediction_key != null and prediction_key.is_valid()
 
 
+## Whether this message is a reading of an entity's state rather than
+## something that happened to it.
+func is_state() -> bool:
+	return kind == Kind.STATE_SNAPSHOT or kind == Kind.STATE_DELTA
+
+
 ## Whether this message carries everything its kind is required to carry.
 ##
 ## Checked at the boundary rather than at every reader. A confirm without a run
@@ -95,5 +115,7 @@ func is_complete() -> bool:
 			return definition != null and definition.is_valid()
 		Kind.ACTIVATION_CONFIRM, Kind.ACTIVATION_REJECT:
 			return activation != null and activation.is_valid()
+		Kind.STATE_SNAPSHOT, Kind.STATE_DELTA:
+			return state != null
 		_:
 			return true

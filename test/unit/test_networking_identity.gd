@@ -162,16 +162,18 @@ func test_a_message_is_about_somebody() -> void:
 ## Checked at the boundary, so no reader finds the missing half in the middle
 ## of acting on it.
 ##
-##     [what it is, what it carries, whether that is enough]
+##     [what it is, the kind, definition, run, state, whether that is enough]
 func _completeness() -> Array:
 	return [
-		["a grant with its definition", GameplayNetMessage.Kind.GRANT, true, false, true],
-		["a grant with nothing to grant", GameplayNetMessage.Kind.GRANT, false, false, false],
-		["a request with its definition", GameplayNetMessage.Kind.ACTIVATION_REQUEST, true, false, true],
-		["a confirm with the run it confirms", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, true, true],
-		["a confirm with no run", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, false, false],
-		["a reject with the run it refuses", GameplayNetMessage.Kind.ACTIVATION_REJECT, false, true, true],
-		["a delta, which names only whose", GameplayNetMessage.Kind.STATE_DELTA, false, false, true],
+		["a grant with its definition", GameplayNetMessage.Kind.GRANT, true, false, false, true],
+		["a grant with nothing to grant", GameplayNetMessage.Kind.GRANT, false, false, false, false],
+		["a request with its definition", GameplayNetMessage.Kind.ACTIVATION_REQUEST, true, false, false, true],
+		["a confirm with the run it confirms", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, true, false, true],
+		["a confirm with no run", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, false, false, false],
+		["a reject with the run it refuses", GameplayNetMessage.Kind.ACTIVATION_REJECT, false, true, false, true],
+		["a delta with a reading in it", GameplayNetMessage.Kind.STATE_DELTA, false, false, true, true],
+		["a delta with nothing to read", GameplayNetMessage.Kind.STATE_DELTA, false, false, false, false],
+		["a cue, which names only whose", GameplayNetMessage.Kind.CUE, false, false, false, true],
 	]
 
 
@@ -183,13 +185,16 @@ func test_a_message_carries_what_its_kind_requires() -> void:
 		var kind: GameplayNetMessage.Kind = row[1]
 		var with_definition: bool = row[2]
 		var with_activation: bool = row[3]
-		var enough: bool = row[4]
+		var with_state: bool = row[4]
+		var enough: bool = row[5]
 
 		var message: GameplayNetMessage = GameplayNetMessage.of(kind, GameplayNetEntityId.of(1))
 		if with_definition:
 			message.definition = GameplayNetDefinitionId.of_path(A_PATH)
 		if with_activation:
 			message.activation = GameplayNetActivationId.of(GameplayNetEntityId.of(1), 1)
+		if with_state:
+			message.state = GameplayNetState.delta()
 
 		assert_eq(message.is_complete(), enough, described)
 		checked += 1
@@ -250,52 +255,52 @@ func test_what_a_grant_may_do_is_decided_when_it_is_granted() -> void:
 #endregion
 
 
-#region The rule the whole folder exists for
-## Nothing local to one process is named in the networking folder, asserted
-## against the source rather than against a comment saying so.
+#region The rule the folder exists for
+## An ObjectID never crosses the network, asserted against the source rather
+## than against a comment saying so.
 ##
 ## The failure it guards is not a crash. `get_instance_id()` answers a number on
 ## both machines, and a message built out of one arrives looking perfectly
 ## valid - naming whatever object happens to occupy that slot on the receiver,
-## or nothing at all once the original has been freed and the slot reused. A
-## handle is the same problem wearing a type: it names an object in one process,
-## and mapping it onto a net id is a table the runtime keeps, not a cast.
+## or nothing at all once the original has been freed and the slot reused.
+func test_nothing_in_the_networking_folder_reaches_for_an_object_id() -> void:
+	var offenders: Array[String] = []
+	for path: String in _networking_sources():
+		if _code_of(path).contains("get_instance_id("):
+			offenders.append(path)
+
+	assert_gt(_networking_sources().size(), 0, "there were files to look at")
+	assert_eq(offenders, [] as Array[String], "an ObjectID is a slot, not a name")
+
+
+## A local handle is mapped onto a net id, never converted into one.
 ##
-##     [what must not appear in code, why]
-func _forbidden() -> Array:
+## Mapping is what the registry does and what the phase asks for: a table with
+## a handle on one side and a counted number on the other. Converting is what
+## the ids themselves must never do - a handle turned into an id would be a
+## local number sent as a shared one, which is the ObjectID failure again with
+## a type in front of it. So this is asked of the things that travel, and only
+## of those: five classes, named rather than globbed, because the folder also
+## holds the tables and the journal, whose whole job is to hold local things.
+func _what_travels() -> Array[String]:
 	return [
-		[
-			"get_instance_id(",
-			"an ObjectID is a slot in one process, not a name two machines share",
-		],
-		[
-			"GameplayAbilityHandle",
-			"a local handle is mapped onto a net id by a table, never converted into one",
-		],
-		[
-			"GameplayEffectHandle",
-			"and the same for the handle an effect is addressed by",
-		],
+		NETWORKING + "/gameplay_net_entity_id.gd",
+		NETWORKING + "/gameplay_net_definition_id.gd",
+		NETWORKING + "/gameplay_net_activation_id.gd",
+		NETWORKING + "/gameplay_prediction_key.gd",
+		NETWORKING + "/gameplay_net_message.gd",
 	]
 
 
-func test_the_networking_folder_names_nothing_local_to_one_process() -> void:
-	var rows: Array = _forbidden()
-	var sources: Array[String] = _networking_sources()
-	assert_gt(sources.size(), 0, "there were files to look at")
+func test_nothing_that_travels_is_built_out_of_a_local_handle() -> void:
+	var offenders: Array[String] = []
+	for path: String in _what_travels():
+		assert_true(FileAccess.file_exists(path), "%s is there to look at" % path)
+		var code: String = _code_of(path)
+		if code.contains("GameplayAbilityHandle") or code.contains("GameplayEffectHandle"):
+			offenders.append(path)
 
-	var checked: int = 0
-	for row: Array in rows:
-		var forbidden: String = row[0]
-		var because: String = row[1]
-		var offenders: Array[String] = []
-		for path: String in sources:
-			if _code_of(path).contains(forbidden):
-				offenders.append(path)
-
-		assert_eq(offenders, [] as Array[String], because)
-		checked += 1
-	assert_eq(checked, rows.size(), "every rule was asked")
+	assert_eq(offenders, [] as Array[String], "mapping is the registry's job, and it is a table")
 
 
 ## The file with its prose taken out.
