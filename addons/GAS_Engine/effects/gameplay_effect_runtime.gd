@@ -313,6 +313,17 @@ func _commit(
 	dispatch_events(spec)
 	notify_received(spec)
 	chain.fire_on_application(spec)
+
+	# A periodic effect that says so ticks the moment it lands, rather than one
+	# period later. Last, so that first tick sees an application that has
+	# entirely happened - its tags granted, its cues played, its listeners told.
+	if (
+		not is_instant
+		and active.is_periodic()
+		and spec.effect_def.execute_periodic_on_application
+	):
+		run_periodic_tick(active)
+
 	return active
 #endregion
 

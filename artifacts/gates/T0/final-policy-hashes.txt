@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.2.5 (G07/G08): gameplay_ability.gd 590 -> 640 for the two lifecycle flags and the four hooks.
+# F5.2.7 (G11-G13/G16/G18): ceilings for the five mutation doors and the spec's four new instructions.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T02:32:19Z
-# commit-previo: 93996a112d9deea9c26f6382d4d11f6267896671
+# date-utc: 2026-09-07T03:05:16Z
+# commit-previo: be9285870c98c3834f75e2070d4f6896af961516
 # files: 24
-e60cb2ede620ca67653adce9ff48eaf6625f3ea30171ddf7516ffd2fc33aa881  tooling/.quality-gates.json
+4b258a5915dda678c79557bd11ba7c35338157e81293944614328264a39d3ce8  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

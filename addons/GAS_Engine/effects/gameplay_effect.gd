@@ -56,6 +56,22 @@ enum PeriodInhibitionPolicy {
 ## Note: For Turn-Based effects, set this to 1.0 to tell the system it is a DoT, not a Buff.
 @export_range(0.0, 999.0, 0.1, "or_greater") var period: float = 0.0
 ## What ticks owed while this effect is inhibited do to the periodic clock.
+## How long this lasts and how often it ticks, when either is not a constant.
+##
+## A poison whose duration is the caster's intellect, a burn whose period is the
+## target's fire resistance: both are magnitudes, resolved the same way every
+## other magnitude is. Null leaves the plain `duration` and `period` above in
+## charge, which is what every effect authored before this has.
+@export var duration_magnitude: GameplayMagnitude = null
+@export var period_magnitude: GameplayMagnitude = null
+
+## Whether a periodic effect ticks the moment it is applied.
+##
+## Off by default, which is what this engine has always done: the first tick
+## comes one period later. Unreal ticks on application, and an effect that means
+## to says so.
+@export var execute_periodic_on_application: bool = false
+
 @export var period_inhibition_policy: GameplayEffect.PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS
 
 @export_category("Turn Based Settings")

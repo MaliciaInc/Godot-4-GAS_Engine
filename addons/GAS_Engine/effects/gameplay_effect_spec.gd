@@ -236,6 +236,52 @@ func get_set_by_caller(tag: StringName) -> GameplayMagnitudeResult:
 ## shared, so writing to this copy cannot be observed through the original.
 ## Null propagates from a context whose own copy failed (an uncopyable
 ## payload) - apply_effect_spec_result() already refuses a null spec.
+## Capture the source's attributes now, whatever was captured before.
+##
+## For an outgoing spec that is built once and applied later, or repeatedly: the
+## moment the numbers are taken is a decision the author makes, and before this
+## it was whenever the engine happened to first need them.
+func capture_source_now(source: AbilitySystemComponent) -> bool:
+	if source == null:
+		return false
+	source_asc = source
+	source_tags_snapshot = source.tags.active_tags()
+	_source_tags_captured = true
+	return capture_source_attributes(source)
+
+
+## And the target's, the same way.
+func capture_target_now(target: AbilitySystemComponent) -> bool:
+	if target == null:
+		return false
+	return capture_target_attributes(target)
+
+
+## Replace the tags this application grants, before it is applied.
+##
+## Refused once it has been: the tags an active effect grants are already on
+## somebody, and swapping the list without taking those back would leave the
+## target carrying tags no effect claims. Changing a running effect's tags is a
+## removal and a reapplication, and this is not it.
+func set_dynamic_granted_tags(tags: Array[StringName]) -> bool:
+	if _source_tags_captured and source_asc != null and stack_count > 1:
+		return false
+	dynamic_tags = tags.duplicate()
+	return true
+
+
+## Change what a SetByCaller tag is worth on this spec.
+##
+## The named door, so a caller does not write the dictionary itself. A value
+## that is not finite is refused rather than stored: it would resolve into a
+## magnitude nothing downstream can use, and the refusal would then surface
+## somewhere with no idea who set it.
+func update_set_by_caller(tag: StringName, value: float) -> bool:
+	if not is_finite(value):
+		return false
+	return set_set_by_caller(tag, value)
+
+
 func create_application_copy() -> GameplayEffectSpec:
 	var context_copy: GameplayEffectContext = context.create_application_copy() if context != null else null
 	if context != null and context_copy == null:
@@ -248,6 +294,10 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.duration = duration
 	copy.remaining_turns = remaining_turns
 	copy.period = period
+	# How many of this the input carried. An AoE built at three stacks applies
+	# three stacks to everything it touches, and a copy that reset to one would
+	# have every target take a third of what was aimed at them.
+	copy.stack_count = stack_count
 	copy.chain_depth = chain_depth
 	copy.context = context_copy
 	copy.dynamic_tags = dynamic_tags.duplicate()
@@ -351,6 +401,8 @@ func register_capture(definition: GameplayAttributeCaptureDefinition) -> bool:
 func prepare_captures(resolved_source_asc: AbilitySystemComponent) -> bool:
 	if source_asc == null:
 		source_asc = resolved_source_asc
+
+	resolve_authored_timing()
 
 	if not _source_tags_captured:
 		# The empty case is spelled as a typed local, not as `[]`. A bare literal
@@ -472,6 +524,40 @@ func _read_attribute(
 	result.value = value
 	return result
 #endregion
+
+
+## Work out how long this lasts and how often it ticks, when either is authored
+## as a magnitude rather than as a number.
+##
+## Done here because here is the moment the application knows who it came from:
+## a duration that reads the caster's intellect has nothing to read before that.
+## An effect that authored neither keeps the plain numbers it was built with,
+## which is every effect written before there were magnitudes to author.
+##
+## A magnitude that cannot be resolved leaves the number alone rather than
+## writing a wrong one. `is_applicable()` still refuses a non-finite result, so
+## a broken magnitude cannot quietly become a permanent effect.
+func resolve_authored_timing() -> void:
+	if effect_def == null:
+		return
+
+	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
+	context.spec = self
+	context.source_asc = source_asc
+	context.target_asc = null
+	context.level = level
+
+	duration = _resolved_or(effect_def.duration_magnitude, context, duration)
+	period = _resolved_or(effect_def.period_magnitude, context, period)
+
+
+static func _resolved_or(
+	magnitude: GameplayMagnitude, context: GameplayMagnitudeContext, authored: float
+) -> float:
+	if magnitude == null:
+		return authored
+	var resolved: GameplayMagnitudeResult = magnitude.resolve(context)
+	return resolved.value if resolved.is_ok() else authored
 
 
 #region Applicability

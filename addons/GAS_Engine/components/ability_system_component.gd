@@ -518,6 +518,41 @@ func find_active_effect_handles(query: GameplayEffectQuery) -> Array[GameplayEff
 func count_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.count(query)
 
+## Change what a running effect is worth, by handle.
+##
+## The five doors the phase names. What each of them means is
+## `GameplayEffectMutations`: this is the surface, and a surface with the work
+## in it is a component that grows every time anything new can be done.
+func set_active_effect_level(
+	handle: GameplayEffectHandle, level: float
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.set_level(effects, handle, level)
+
+
+func set_active_effect_stack_count(
+	handle: GameplayEffectHandle, count: int
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.set_stack_count(effects, handle, count)
+
+
+func remove_active_effect_stacks(
+	handle: GameplayEffectHandle, count: int
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.remove_stacks(effects, handle, count)
+
+
+func update_active_effect_set_by_caller(
+	handle: GameplayEffectHandle, tag: StringName, value: float
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.update_set_by_caller(effects, handle, tag, value)
+
+
+func set_active_effect_duration(
+	handle: GameplayEffectHandle, seconds: float
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.set_duration(effects, handle, seconds)
+
+
 func remove_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.remove_matching(query)
 

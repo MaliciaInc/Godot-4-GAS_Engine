@@ -18,6 +18,19 @@ func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
 	return []
 
 
+## Anything outside the attribute system this magnitude depends on.
+##
+## A LIVE magnitude is only live if something re-resolves it when what it reads
+## moves. `required_captures()` above says which attributes that is; this says
+## the rest - the weather, the time of day, an inventory - as signals, because a
+## dependency the engine cannot subscribe to is one it cannot honour.
+##
+## Empty by default: a magnitude that reads only attributes has nothing to add.
+func external_dependencies() -> Array[Signal]:
+	var none: Array[Signal] = []
+	return none
+
+
 ## Compute this magnitude's value for one evaluation.
 func resolve(_context: GameplayMagnitudeContext) -> GameplayMagnitudeResult:
 	push_error(
