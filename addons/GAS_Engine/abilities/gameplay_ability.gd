@@ -36,6 +36,31 @@ enum ActivationPolicy {
 	PASSIVE,
 }
 
+
+## Where this ability is allowed to run, once a game has a network.
+##
+## LOCAL_ONLY: it runs here and is nobody else's business. The default, and
+##     deliberately: it is what every ability written before this existed
+##     already did, and a default that changed behaviour under an existing
+##     project would be this field breaking games to describe them.
+## LOCAL_PREDICTED: the owning client runs it at once and asks; the authority
+##     answers, and a refusal is reversed rather than argued with.
+## SERVER_INITIATED: the client asks and waits. Nothing happens on the asking
+##     machine until the authority says it did.
+## SERVER_ONLY: the authority runs it and nobody may ask - a scripted effect,
+##     an environmental trigger, anything a client requesting would be a
+##     client fabricating.
+##
+## Frozen at grant time like the policies above it: what a grant may do is
+## decided when it is granted, not by editing the scene it came from while a
+## match is running.
+enum NetExecutionPolicy {
+	LOCAL_ONLY,
+	LOCAL_PREDICTED,
+	SERVER_INITIATED,
+	SERVER_ONLY,
+}
+
 signal ability_ended(was_cancelled: bool)
 
 @export_category("Ability Rules")
@@ -43,6 +68,11 @@ signal ability_ended(was_cancelled: bool)
 
 ## Frozen at grant time, same as instancing_policy.
 @export var activation_policy: GameplayAbility.ActivationPolicy = ActivationPolicy.MANUAL
+
+## Frozen at grant time, same as activation_policy.
+@export var net_execution_policy: GameplayAbility.NetExecutionPolicy = (
+	NetExecutionPolicy.LOCAL_ONLY
+)
 
 ## Identity, not activation gating - effective tags are these plus dynamic_tags.
 @export var ability_tags: Array[StringName] = []

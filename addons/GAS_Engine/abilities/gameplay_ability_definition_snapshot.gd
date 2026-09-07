@@ -26,6 +26,13 @@ var auto_end_on_activate_return: bool = true
 var retrigger_while_active: bool = false
 var activation_policy: GameplayAbility.ActivationPolicy = GameplayAbility.ActivationPolicy.MANUAL
 
+## Where this grant is allowed to run. Frozen with the rest, so what a client
+## may ask for is decided at grant time rather than by whatever the scene on
+## disk says while a match is in progress.
+var net_execution_policy: GameplayAbility.NetExecutionPolicy = (
+	GameplayAbility.NetExecutionPolicy.LOCAL_ONLY
+)
+
 ## Task 15's complete tag semantics - see GameplayAbility for what each means.
 var ability_tags: Array[StringName] = []
 var activation_required_query: GameplayTagQuery = null
@@ -77,6 +84,7 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.auto_end_on_activate_return = probe.auto_end_on_activate_return
 	snapshot.retrigger_while_active = probe.retrigger_while_active
 	snapshot.activation_policy = probe.activation_policy
+	snapshot.net_execution_policy = probe.net_execution_policy
 	snapshot.ability_tags = probe.ability_tags.duplicate()
 	snapshot.activation_required_query = (
 		_duplicate_resource(probe.activation_required_query) as GameplayTagQuery
@@ -144,6 +152,7 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"auto_end_on_activate_return",
 	&"retrigger_while_active",
 	&"activation_policy",
+	&"net_execution_policy",
 	&"ability_tags",
 	&"activation_required_query",
 	&"activation_blocked_query",

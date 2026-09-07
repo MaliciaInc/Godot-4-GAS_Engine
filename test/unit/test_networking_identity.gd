@@ -10,6 +10,10 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
+const Fixture = preload("res://test/fixtures/asc_fixture.gd")
+const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
+const Probe = preload("res://test/fixtures/probe_ability.gd")
+
 const NETWORKING: String = "res://addons/GAS_Engine/networking"
 
 const A_PATH: String = "res://abilities/fireball.tscn"
@@ -200,6 +204,49 @@ func test_a_message_says_whether_it_is_part_of_a_guess() -> void:
 
 	message.prediction_key = GameplayPredictionKey.of(2, 1)
 	assert_true(message.is_predicted())
+#endregion
+
+
+#region Where an ability is allowed to run
+## Two claims, and only two, because only two of them have behaviour yet.
+##
+## What LOCAL_PREDICTED means as opposed to SERVER_INITIATED is a question for
+## whoever reads the policy, and nothing reads it until the authority rules do.
+## Asserting here that four enum values are four different numbers would be a
+## test of the vocabulary rather than of anything the engine does.
+##
+## What is real now is the default and the freeze.
+func test_an_ability_that_has_never_heard_of_a_network_runs_locally() -> void:
+	var written_before_any_of_this: GameplayAbility = autofree(Probe.build(&"Ability.Old"))
+
+	assert_eq(
+		written_before_any_of_this.net_execution_policy,
+		GameplayAbility.NetExecutionPolicy.LOCAL_ONLY,
+		"the default is what every ability written before this field already did"
+	)
+
+
+## Frozen at grant time, like every other policy.
+##
+## What a grant may do is decided when it is granted. An ability scene edited
+## while a match is running is a definition two machines would disagree about,
+## and the disagreement would be about who is allowed to ask for what.
+func test_what_a_grant_may_do_is_decided_when_it_is_granted() -> void:
+	var fixture: ASCFixture = Fixture.create("Caster")
+	add_child_autofree(fixture.owner)
+	var authored: ProbeAbility = Probe.build(&"Ability.Authored")
+	authored.net_execution_policy = GameplayAbility.NetExecutionPolicy.SERVER_ONLY
+
+	var spec: GameplayAbilitySpec = AbilityFactory.give(fixture.asc, authored)
+	spec.per_actor_instance.net_execution_policy = (
+		GameplayAbility.NetExecutionPolicy.LOCAL_PREDICTED
+	)
+
+	assert_eq(
+		spec.definition.net_execution_policy,
+		GameplayAbility.NetExecutionPolicy.SERVER_ONLY,
+		"the grant says what it said when it was made"
+	)
 #endregion
 
 
