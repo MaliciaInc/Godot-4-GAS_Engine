@@ -129,6 +129,11 @@ func commit_prepared_grant(prepared: PreparedAbilityGrant) -> GameplayAbilityHan
 	_specs.append(spec)
 	_specs_by_id[handle.id] = spec
 	prepared.consumed = true
+	# Told before the policies run, and only once the spec resolves by handle:
+	# an ability that reacts to being granted may well activate itself, and it
+	# has to be able to find itself when it does.
+	if spec.per_actor_instance != null:
+		spec.per_actor_instance.on_granted()
 	# Only now: the spec must resolve by handle before ON_GRANTED/PASSIVE try.
 	policies.on_spec_granted(spec)
 	return handle
@@ -208,6 +213,8 @@ func _retire(spec: GameplayAbilitySpec, request_reevaluation: bool = true) -> vo
 	spec.pending_remove = true
 	var instance: GameplayAbility = spec.per_actor_instance
 	if instance != null and is_instance_valid(instance):
+		# Told before anything is severed, so it can still reach what it owns.
+		instance.on_removed()
 		# Must not outlive its activation - else ability_ended never fires.
 		if instance.is_active:
 			instance.abort_ability(GameplayAbilityTask.CancelReason.ABILITY_REMOVED)
@@ -289,7 +296,11 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 		return ActivationError.PENDING_REMOVAL
 	# PER_EXECUTION keeps per_actor_instance null by construction, never refused here.
 	var instance: GameplayAbility = spec.per_actor_instance
-	if instance != null and instance.is_active:
+	if (
+		instance != null
+		and instance.is_active
+		and not spec.definition.retrigger_while_active
+	):
 		return ActivationError.ALREADY_ACTIVE
 	if query_matches_runtime(spec.definition.activation_blocked_query, tags):
 		return ActivationError.BLOCKED_TAG

@@ -306,8 +306,17 @@ func emit_attribute_changed(
 func init_ability_actor_info(owner: Node, avatar: Node = null, controller: Node = null) -> void:
 	var old_avatar: Node = actor_info.avatar
 	actor_info.initialize(owner, avatar, controller)
-	if old_avatar != actor_info.avatar:
-		ability_actor_info_changed.emit(old_avatar, actor_info.avatar)
+	if old_avatar == actor_info.avatar:
+		return
+
+	# Every granted ability is told directly as well as through the signal. An
+	# ability holding the old body is the thing most likely to act on a corpse,
+	# and asking it to subscribe to its own component to find out would be a
+	# subscription every ability has to remember to make.
+	for spec: GameplayAbilitySpec in ability_runtime.specs():
+		if spec.per_actor_instance != null:
+			spec.per_actor_instance.on_avatar_changed(old_avatar, actor_info.avatar)
+	ability_actor_info_changed.emit(old_avatar, actor_info.avatar)
 
 
 ## The node cues and effects act on.

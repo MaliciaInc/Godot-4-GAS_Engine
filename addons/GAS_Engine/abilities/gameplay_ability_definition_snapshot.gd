@@ -16,6 +16,14 @@ class_name GameplayAbilityDefinitionSnapshot extends RefCounted
 var ability_scene: PackedScene = null
 var ability_name: String = ""
 var instancing_policy: GameplayAbility.InstancingPolicy = GameplayAbility.InstancingPolicy.PER_ACTOR
+
+## Whether returning from `_activate_ability()` ends the ability, and
+## whether activating it again while it runs replaces the activation in
+## flight. Frozen with everything else the runtime decides by: an author
+## who changed either of these after the grant would be changing what a
+## running ability does, from outside it.
+var auto_end_on_activate_return: bool = true
+var retrigger_while_active: bool = false
 var activation_policy: GameplayAbility.ActivationPolicy = GameplayAbility.ActivationPolicy.MANUAL
 
 ## Task 15's complete tag semantics - see GameplayAbility for what each means.
@@ -66,6 +74,8 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.ability_scene = scene
 	snapshot.ability_name = probe.ability_name
 	snapshot.instancing_policy = probe.instancing_policy
+	snapshot.auto_end_on_activate_return = probe.auto_end_on_activate_return
+	snapshot.retrigger_while_active = probe.retrigger_while_active
 	snapshot.activation_policy = probe.activation_policy
 	snapshot.ability_tags = probe.ability_tags.duplicate()
 	snapshot.activation_required_query = (
@@ -131,6 +141,8 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 const CAPTURED_FIELDS: Array[StringName] = [
 	&"ability_name",
 	&"instancing_policy",
+	&"auto_end_on_activate_return",
+	&"retrigger_while_active",
 	&"activation_policy",
 	&"ability_tags",
 	&"activation_required_query",

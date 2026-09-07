@@ -34,6 +34,18 @@ func try_activate(
 			ability_runtime.owner_asc.ability_activation_failed.emit(spec.per_actor_instance, error)
 		return result
 
+	# Retriggering replaces rather than stacks: the activation in flight is
+	# ended first, so the ability is announced as starting once for each time
+	# somebody actually started it. Ended rather than cancelled, because the
+	# player asked for this - it is not an interruption.
+	var running: GameplayAbility = spec.per_actor_instance
+	if (
+		running != null
+		and running.is_active
+		and spec.definition.retrigger_while_active
+	):
+		running.end_ability(false)
+
 	var instance: GameplayAbility = ability_runtime.instancing.instance_for_activation(spec)
 	if instance == null:
 		result.status = GameplayAbilityActivationResult.Status.ACTIVATION_FAILED

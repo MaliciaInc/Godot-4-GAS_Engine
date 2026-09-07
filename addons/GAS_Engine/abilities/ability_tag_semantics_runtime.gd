@@ -83,12 +83,27 @@ func cancel_with_tags(cancel_tags: Array[StringName]) -> void:
 	cancel_matching_query(query)
 
 
+## Cancelling by tag asks each instance whether it may be cancelled.
+##
+## This is a request from somebody else's ability, not a teardown: an
+## uninterruptible finisher is entitled to say no, and the cancel goes on to the
+## next instance rather than being abandoned. A component being cleaned up does
+## not come through here, and does not ask.
 func _abort_every_instance(spec: GameplayAbilitySpec) -> void:
 	var instance: GameplayAbility = spec.per_actor_instance
-	if instance != null and is_instance_valid(instance) and instance.is_active:
+	if (
+		instance != null
+		and is_instance_valid(instance)
+		and instance.is_active
+		and instance.can_be_cancelled()
+	):
 		instance.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
 	for execution: GameplayAbility in spec.active_instances.duplicate():
-		if is_instance_valid(execution) and execution.is_active:
+		if (
+			is_instance_valid(execution)
+			and execution.is_active
+			and execution.can_be_cancelled()
+		):
 			execution.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
 
 

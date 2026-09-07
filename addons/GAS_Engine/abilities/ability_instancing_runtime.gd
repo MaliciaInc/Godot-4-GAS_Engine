@@ -49,6 +49,10 @@ func instance_for_activation(spec: GameplayAbilitySpec) -> GameplayAbility:
 	if spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_ACTOR:
 		return spec.per_actor_instance
 
+	# PER_EXECUTION and NON_INSTANCED both get a Node of their own, and neither
+	# is ever adopted as the spec's instance. That is what stops two concurrent
+	# activations of a NON_INSTANCED ability from seeing each other's state:
+	# there is no shared Node for them to see it on.
 	var instance: GameplayAbility = instantiate_ability(spec)
 	if instance == null:
 		return null

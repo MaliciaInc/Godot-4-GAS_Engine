@@ -11,9 +11,19 @@ class_name GameplayAbility extends Node
 
 ## PER_ACTOR: one instance for the grant's lifetime, second activation
 ## refused while running. PER_EXECUTION: one instance per activation.
+##
+## NON_INSTANCED declares that an activation keeps no state of its own: whatever
+## it needs comes from the definition or from the context it is handed. Godot
+## has no class default object to run it on, and sharing one mutable Node
+## between concurrent activations would give them each other's state - which is
+## the bug the policy exists to make impossible. So it runs on a fresh Node that
+## is never adopted as the spec's instance and never outlives the activation,
+## and what the policy buys is the contract: nothing may be read back off it
+## afterwards, because there is nothing to read.
 enum InstancingPolicy {
 	PER_ACTOR,
 	PER_EXECUTION,
+	NON_INSTANCED,
 }
 
 ## MANUAL: input/explicit call. ON_GRANTED: tries once, never auto-retries.
@@ -39,6 +49,22 @@ signal ability_ended(was_cancelled: bool)
 
 ## Read once at grant time into the frozen definition - editing after does nothing.
 @export var instancing_policy: GameplayAbility.InstancingPolicy = InstancingPolicy.PER_ACTOR
+
+## Whether returning from `_activate_ability()` ends the ability.
+##
+## True is what this engine has always done and stays the default, because
+## turning it off under an existing project would leave every ability running
+## forever. An ability that means to outlive its own activation function - one
+## that waits on a task, or on an event, and ends itself later - sets it false
+## and calls `end_ability()` when it is actually done.
+@export var auto_end_on_activate_return: bool = true
+
+## Whether activating this again while it is already running is allowed.
+##
+## False refuses, which is what a cooldown-less ability wants: pressing twice
+## does not stack. True ends the activation in flight and starts a new one, so
+## the second press replaces the first rather than being ignored.
+@export var retrigger_while_active: bool = false
 
 @export var ability_level: float = 1.0
 
@@ -92,6 +118,39 @@ var _reported_drift: bool = false
 
 ## What _run_activation() resolved to - read after try_activate() awaits `ability_ended`.
 var _last_activation_succeeded: bool = false
+
+
+#region What an ability is told
+## Called once, after this ability has been granted and wired to its owner.
+##
+## Empty here: it is a hook, and an ability that needs nothing does nothing.
+func on_granted() -> void:
+	pass
+
+
+## Called once, as the grant is being taken away, before anything is severed.
+func on_removed() -> void:
+	pass
+
+
+## Called when the body this ability happens to has been exchanged.
+##
+## Announced rather than polled, so an ability holding a reference to the old
+## avatar is told rather than finding out by acting on a corpse.
+func on_avatar_changed(_old_avatar: Node, _new_avatar: Node) -> void:
+	pass
+
+
+## Whether this ability may be cancelled from outside right now.
+##
+## True by default, because refusing to be cancelled is the exception and an
+## ability that never says otherwise should behave the way every ability
+## behaved before there was a way to say it. An uninterruptible finisher
+## overrides it; a teardown ignores it, because a component going away is not a
+## request.
+func can_be_cancelled() -> bool:
+	return true
+#endregion
 
 
 #region Spec accessors
@@ -150,6 +209,18 @@ func _begin_runtime_activation(context: GameplayEffectContext) -> void:
 	_execute_runtime_activation()
 
 
+## Whether returning from `_activate_ability()` ends this ability.
+##
+## Read off the frozen definition once granted, and off the export before that.
+## The grant is what every other decision is made from, and an ability whose own
+## field said one thing while its definition said another would end at a
+## different moment depending on which one was asked.
+func _ends_when_activation_returns() -> bool:
+	if current_spec != null and current_spec.definition != null:
+		return current_spec.definition.auto_end_on_activate_return
+	return auto_end_on_activate_return
+
+
 func _run_activation() -> void:
 	# `await` hands a coroutine's value back untyped - a channelled ability
 	# crashed on resume with an Object where a bool belonged.
@@ -157,10 +228,13 @@ func _run_activation() -> void:
 	var success: bool = outcome is bool and outcome
 	_last_activation_succeeded = success
 
-	# Only close if the subclass hasn't already, so `ability_ended` fires once.
-	if is_active:
+	# Only close if the subclass hasn't already, so `ability_ended` fires once -
+	# and only if this ability ends when its activation function returns. One
+	# that waits on something and finishes later says so, and closing it here
+	# would end it before the thing it is waiting for ever happens.
+	if is_active and _ends_when_activation_returns():
 		end_ability(not success)
-	current_context = null
+		current_context = null
 
 
 ## Pay cost and start cooldowns as one transaction, called from
