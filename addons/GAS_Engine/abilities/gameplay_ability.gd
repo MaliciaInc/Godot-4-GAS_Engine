@@ -166,6 +166,105 @@ func _run_activation() -> void:
 ## Pay cost and start cooldowns as one transaction, called from
 ## `_activate_ability` once committed - all-or-nothing, no cues/events by
 ## contract, so a rollback leaves nothing observable.
+## What this ability's cost would be, and whether it can be paid right now.
+##
+## Asked without charging, so a caller can offer an ability greyed out rather
+## than let somebody press it and be refused. Resolving is not free, and what it
+## produces is carried out rather than recomputed: two resolutions of one cost
+## are two opinions about what an ability costs.
+func check_cost() -> AbilityCommitPreflight:
+	var preflight: AbilityCommitPreflight = AbilityCommitPreflight.new()
+	if owner_asc == null or current_spec == null:
+		preflight.status = AbilityCommitPreflight.Status.INVALID_COST
+		return preflight
+
+	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
+		current_spec.definition.costs, owner_asc, current_spec.level
+	)
+	preflight.resolved_cost = resolved
+
+	if (
+		resolved.status != GameplayResolvedCost.Status.OK
+		and resolved.status != GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES
+	):
+		preflight.status = AbilityCommitPreflight.Status.INVALID_COST
+		return preflight
+
+	# Self-check against the resolver's own output - a violation means it is
+	# broken, and paying a charge that cannot be reversed is unrecoverable.
+	if not AbilityCommitContract.is_reversible_charge(resolved.absolute_effect, 1.0):
+		preflight.status = AbilityCommitPreflight.Status.INVALID_COST
+		return preflight
+
+	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
+		preflight.status = AbilityCommitPreflight.Status.INSUFFICIENT_RESOURCES
+	return preflight
+
+
+## Which cooldowns this ability would start, and whether one is already running.
+##
+## Both halves, because either alone lets an ability through that should not
+## be: a cooldown that cannot legally be applied is a definition mistake, and
+## one that is already running means somebody else got there first.
+func check_cooldown() -> AbilityCommitPreflight:
+	var preflight: AbilityCommitPreflight = AbilityCommitPreflight.new()
+	if owner_asc == null or current_spec == null:
+		preflight.status = AbilityCommitPreflight.Status.INVALID_COOLDOWN
+		return preflight
+
+	preflight.cooldowns = AbilityCommitContract.unique_cooldowns(
+		current_spec.definition.cooldown_effect,
+		current_spec.definition.shared_cooldown_effects
+	)
+	for cooldown: GameplayEffect in preflight.cooldowns:
+		if not AbilityCommitContract.is_legal_cooldown(cooldown):
+			preflight.status = AbilityCommitPreflight.Status.INVALID_COOLDOWN
+			return preflight
+
+	var running: Array[StringName] = AbilityCooldownRuntime.get_cooldown_tags(current_spec)
+	if owner_asc.tags.has_any(running):
+		preflight.status = AbilityCommitPreflight.Status.ON_COOLDOWN
+	return preflight
+
+
+## Start every cooldown the preflight found, or undo what was started.
+func apply_cooldown(
+	preflight: AbilityCommitPreflight, result: AbilityCommitResult
+) -> bool:
+	for cooldown: GameplayEffect in preflight.cooldowns:
+		var started: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
+			cooldown, owner_asc, current_spec.level
+		)
+		if started == null:
+			_roll_back(result)
+			result.status = AbilityCommitResult.Status.COOLDOWN_APPLICATION_FAILED
+			return false
+		result.applied_cooldowns.append(started)
+	return true
+
+
+## Take the charge the preflight resolved, or undo the cooldowns already started.
+func apply_cost(preflight: AbilityCommitPreflight, result: AbilityCommitResult) -> bool:
+	var charge: GameplayEffect = preflight.resolved_cost.absolute_effect
+	if charge == null:
+		return true
+
+	var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(charge, owner_asc, 1.0)
+	if charged == null:
+		_roll_back(result)
+		result.status = AbilityCommitResult.Status.COST_APPLICATION_FAILED
+		return false
+	result.applied_cost = charged
+	return true
+
+
+## The whole price, or none of it.
+##
+## The only transactional coordinator: check, check again, pay, and undo what
+## was paid if the second half cannot be finished. Both checks run twice on
+## purpose - once to decide, and once immediately before the first write,
+## because starting a cooldown raises signals and a listener is entitled to move
+## the resources this was about to take.
 func commit_ability() -> AbilityCommitResult:
 	var result: AbilityCommitResult = AbilityCommitResult.new()
 	if owner_asc == null:
@@ -181,74 +280,31 @@ func commit_ability() -> AbilityCommitResult:
 		_reported_drift = GameplayAbilityDefinitionSnapshot.report_drift(
 			self, current_spec.definition)
 
-	# current_spec is guaranteed non-null. Every step after reads
-	# resolved.absolute_effect, never the definition's costs again.
-	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
-		current_spec.definition.costs, owner_asc, current_spec.level
-	)
-	result.resolved_cost = resolved
-	if (
-		resolved.status != GameplayResolvedCost.Status.OK
-		and resolved.status != GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES
-	):
-		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
-		return result
-	# Self-check against the resolver's own output - a violation means it is broken.
-	if not AbilityCommitContract.is_reversible_charge(resolved.absolute_effect, 1.0):
-		result.status = AbilityCommitResult.Status.INVALID_COST_DEFINITION
+	var cost: AbilityCommitPreflight = check_cost()
+	result.resolved_cost = cost.resolved_cost
+	if not cost.is_ok():
+		result.status = cost.as_commit_status()
 		return result
 
-	var cooldowns: Array[GameplayEffect] = AbilityCommitContract.unique_cooldowns(
-		current_spec.definition.cooldown_effect, current_spec.definition.shared_cooldown_effects
-	)
-	for cooldown: GameplayEffect in cooldowns:
-		if not AbilityCommitContract.is_legal_cooldown(cooldown):
-			result.status = AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION
-			return result
-
-	# Activation may have started before another execution committed the same
-	# cooldown. Commit is the last authority before payment.
-	var live_cooldown_tags: Array[StringName] = AbilityCooldownRuntime.get_cooldown_tags(
-		current_spec
-	)
-	if owner_asc.tags.has_any(live_cooldown_tags):
-		result.status = AbilityCommitResult.Status.ON_COOLDOWN
+	var cooldown: AbilityCommitPreflight = check_cooldown()
+	if not cooldown.is_ok():
+		result.status = cooldown.as_commit_status()
 		return result
 
-	# Asked before anything applies, so it never starts a cooldown unpaid.
-	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
-		result.status = AbilityCommitResult.Status.INSUFFICIENT_RESOURCES
+	if not apply_cooldown(cooldown, result):
 		return result
 
-	for cooldown: GameplayEffect in cooldowns:
-		var started: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
-			cooldown, owner_asc, current_spec.level
-		)
-		if started == null:
-			_roll_back(result)
-			result.status = AbilityCommitResult.Status.COOLDOWN_APPLICATION_FAILED
-			return result
-		result.applied_cooldowns.append(started)
-
-	# Re-asked here, not trusted from resolve time - a cooldown's signals can
-	# let a listener move the resources about to be taken.
-	if (
-		resolved.absolute_effect != null
-		and not owner_asc.can_afford_cost(resolved.absolute_effect, 1.0)
-	):
+	# Asked again, not trusted from a moment ago: every cooldown that just
+	# started raised signals, and a listener is allowed to have spent the
+	# resources this is about to take.
+	var again: AbilityCommitPreflight = check_cost()
+	if not again.is_ok():
 		_roll_back(result)
 		result.status = AbilityCommitResult.Status.RESOURCES_CHANGED_DURING_COMMIT
 		return result
 
-	if resolved.absolute_effect != null:
-		var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
-			resolved.absolute_effect, owner_asc, 1.0
-		)
-		if charged == null:
-			_roll_back(result)
-			result.status = AbilityCommitResult.Status.COST_APPLICATION_FAILED
-			return result
-		result.applied_cost = charged
+	if not apply_cost(again, result):
+		return result
 
 	_committed = true
 	result.status = AbilityCommitResult.Status.SUCCESS

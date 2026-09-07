@@ -494,7 +494,16 @@ static func can_afford(
 	if not evaluation.is_ok():
 		return false
 
+	var against_current: bool = asc.uses_ue_5_7_contracts()
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
+		if against_current:
+			# Unreal's question, and the whole question: does it fit in what the
+			# attribute is worth right now. The durable base is not what funds a
+			# cost there, so its sign says nothing about affordability.
+			if not _affordable_from_current(asc, staged):
+				return false
+			continue
+
 		# A cost cannot create debt merely because an AttributeSet chose not to
 		# clamp below zero. This check is independent of clamp behavior.
 		if staged.requested_base_value < 0.0:
@@ -502,4 +511,21 @@ static func can_afford(
 		if not is_equal_approx(staged.committed_base_value, staged.requested_base_value):
 			return false
 	return true
+
+
+## Whether the charge fits in what the attribute is worth right now.
+##
+## Unreal prices against the current value, this engine has always priced
+## against the durable base, and on a buffed attribute those are different
+## numbers: a shield that adds 50 mana is mana you can spend under one contract
+## and cannot under the other. Neither is wrong, and a project that changed
+## answer without asking would have every cost in it silently repriced - so the
+## profile decides, and the default keeps what a project already had.
+static func _affordable_from_current(
+	asc: AbilitySystemComponent, staged: AttributeBaseMutation
+) -> bool:
+	var spent: float = staged.old_base_value - staged.requested_base_value
+	if spent <= 0.0:
+		return true
+	return asc.get_attribute_current(staged.attribute_name) >= spent
 #endregion
