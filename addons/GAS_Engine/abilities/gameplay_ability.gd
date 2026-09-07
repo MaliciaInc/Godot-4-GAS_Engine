@@ -123,8 +123,9 @@ func try_activate(context: GameplayEffectContext = null) -> bool:
 	return _last_activation_succeeded
 
 
-## Registers active state, starts _run_activation() without awaiting.
-func _begin_runtime_activation(context: GameplayEffectContext) -> void:
+## Registers active state only. The lifecycle runtime must announce activation
+## before user code is allowed to finish/cancel/remove it.
+func _prepare_runtime_activation(context: GameplayEffectContext) -> void:
 	is_active = true
 	if current_spec != null:
 		current_spec.active_count += 1
@@ -133,7 +134,20 @@ func _begin_runtime_activation(context: GameplayEffectContext) -> void:
 		owner_asc.ability_runtime.request_passive_reevaluation()
 	current_context = context
 	_cancel_conflicting_abilities()
+
+
+## Execute only while this activation is still alive. A listener of
+## ability_activated is allowed to cancel/remove it before this runs.
+func _execute_runtime_activation() -> void:
+	if not is_active:
+		return
 	_run_activation()
+
+
+## Compatibility wrapper for old direct callers.
+func _begin_runtime_activation(context: GameplayEffectContext) -> void:
+	_prepare_runtime_activation(context)
+	_execute_runtime_activation()
 
 
 func _run_activation() -> void:
@@ -191,6 +205,15 @@ func commit_ability() -> AbilityCommitResult:
 		if not AbilityCommitContract.is_legal_cooldown(cooldown):
 			result.status = AbilityCommitResult.Status.INVALID_COOLDOWN_DEFINITION
 			return result
+
+	# Activation may have started before another execution committed the same
+	# cooldown. Commit is the last authority before payment.
+	var live_cooldown_tags: Array[StringName] = AbilityCooldownRuntime.get_cooldown_tags(
+		current_spec
+	)
+	if owner_asc.tags.has_any(live_cooldown_tags):
+		result.status = AbilityCommitResult.Status.ON_COOLDOWN
+		return result
 
 	# Asked before anything applies, so it never starts a cooldown unpaid.
 	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:

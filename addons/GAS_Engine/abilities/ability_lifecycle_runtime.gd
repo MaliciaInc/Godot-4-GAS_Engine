@@ -41,11 +41,18 @@ func try_activate(
 		return result
 
 	result.instance = instance
-	instance._begin_runtime_activation(context)
+	instance._prepare_runtime_activation(context)
+
 	result.status = GameplayAbilityActivationResult.Status.SUCCESS
 	spec.last_activation_result = result
+
 	if ability_runtime.owner_asc != null:
 		ability_runtime.owner_asc.ability_activated.emit(handle, instance)
+
+	# The activation callback may have cancelled or removed the instance.
+	if is_instance_valid(instance) and instance.is_active:
+		instance._execute_runtime_activation()
+
 	return result
 
 

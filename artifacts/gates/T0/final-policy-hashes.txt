@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.1.2 (B05): dispose-against-dispose declared as a mirror; each names its own references and there is no shorter way to be exhaustive.
+# F5.1.3 (B07/B08/B09): gameplay_ability.gd 470 -> 510 for the commit-time cooldown recheck and the prepare/execute split; gameplay_effect_evaluator.gd 450 -> 470 for affordability by amount.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T00:18:11Z
-# commit-previo: 542df5fffc4a1edb7d52c499a84ee30556322210
+# date-utc: 2026-09-07T00:38:00Z
+# commit-previo: a8cdd9ee54fd1957de9a65764a1d17a32814c61f
 # files: 24
-81f342ecbbeab135308fdbc8780cafd86329b5be5b2c2510c306bfebe9a75e98  tooling/.quality-gates.json
+e4422cae17226299d539209bd16658492f3a46a7f28b6a530f51c767d9bcb4b3  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py

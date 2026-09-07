@@ -444,6 +444,10 @@ static func can_afford(
 		return false
 
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
+		# A cost cannot create debt merely because an AttributeSet chose not to
+		# clamp below zero. This check is independent of clamp behavior.
+		if staged.requested_base_value < 0.0:
+			return false
 		if not is_equal_approx(staged.committed_base_value, staged.requested_base_value):
 			return false
 	return true

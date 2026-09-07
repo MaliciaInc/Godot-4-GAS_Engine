@@ -19,8 +19,8 @@
       },
       {
         "glob": "addons/GAS_Engine/abilities/gameplay_ability.gd",
-        "max_lines": 470,
-        "reason": "Raised from the general limit for `completed()`, the ability-side counterpart of GameplayAbilityTask.completed(). try_activate() returns when activation BEGINS, so an ability that refuses a cost or has nothing to aim at has already ended by the time a caller reads the result; awaiting ability_ended then waits for a signal that will not fire again and the caller stops for good. Found by a real game built on this addon, where a battler awaiting an ended ability stopped the battle on that battler's turn permanently. Four lines of guard and the paragraph a reader deleting it would need - the doc was already cut to that half before the ceiling was touched. The file is otherwise the ability contract itself, one paragraph per authoring field, and its length tracks how much an ability can declare rather than how tangled it is."
+        "max_lines": 510,
+        "reason": "Raised from the general limit for `completed()`, the ability-side counterpart of GameplayAbilityTask.completed(). try_activate() returns when activation BEGINS, so an ability that refuses a cost or has nothing to aim at has already ended by the time a caller reads the result; awaiting ability_ended then waits for a signal that will not fire again and the caller stops for good. Found by a real game built on this addon, where a battler awaiting an ended ability stopped the battle on that battler's turn permanently. Four lines of guard and the paragraph a reader deleting it would need - the doc was already cut to that half before the ceiling was touched. The file is otherwise the ability contract itself, one paragraph per authoring field, and its length tracks how much an ability can declare rather than how tangled it is. F5.1.3 raises it again, 470 -> 510, for B08 and B09. commit_ability() asks the cooldown question a second time, at the only moment that answers it: activation checks the cooldown when it starts, payment happens at commit, and two executions that both started before either paid each saw a world with no cooldown in it. Eight lines. And _begin_runtime_activation() splits into a prepare and an execute, because the activation has to be announced between them - a listener of ability_activated is entitled to cancel what it just heard about, and before this the body had already run by the time it was told. The old entry point stays as a wrapper over both halves, so nothing that called it has to change."
       },
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_spec.gd",
@@ -41,6 +41,11 @@
         "glob": "addons/GAS_Engine/components/ability_runtime.gd",
         "max_lines": 500,
         "reason": "The ability runtime is the registry every ability lives in: granting, retiring, input, and the five collaborators it wires together. F5.1.2 (B05) gives this object a dispose(): a terminal teardown, distinct from the reusable reset cleanup() already was, which severs every strong back-reference so the RefCounted collaborators can actually die. The runtimes hold each other both ways -- the component points at them and each of them points back at the component and at its siblings -- so nothing in the graph ever reached a refcount of zero and a scene that created and destroyed entities leaked all of them. The lines are the severing itself, one assignment per reference, and there is no shorter way to say which references exist: a loop over them would need a list of the same length."
+      },
+      {
+        "glob": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd",
+        "max_lines": 470,
+        "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount."
       }
     ],
     "function_parameter_allowlist": [
