@@ -27,3 +27,13 @@ Rules:
 | Targeting/tasks/animation/cues | PARTIAL | F5.4 |
 | Authority/replication/prediction | ABSENT | F5.5 |
 | Performance/determinism certification | ABSENT | F5.6 |
+
+## Closed packages
+
+The table above is the state at phase start and stays that way. What a package
+closed is its own receipt, whose every named scenario is checked against the
+suite by `tooling/parity_receipt.py`.
+
+| Package | Receipt |
+|---|---|
+| F5.2 | `artifacts/parity/GATE_F5_2.md` |
