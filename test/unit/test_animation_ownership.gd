@@ -37,16 +37,6 @@ func after_each() -> void:
 	ability = null
 
 
-func _player_with(names: Array[StringName]) -> AnimationPlayer:
-	var player: AnimationPlayer = AnimationPlayer.new()
-	var library: AnimationLibrary = AnimationLibrary.new()
-	for name: StringName in names:
-		library.add_animation(name, Animation.new())
-	player.add_animation_library("", library)
-	add_child_autofree(player)
-	return player
-
-
 func _casting(player: AnimationMixer) -> AbilityTaskPlayAnimationAndWait:
 	return AbilityTaskFactory.play_animation_and_wait(ability, player, CAST)
 
@@ -54,7 +44,7 @@ func _casting(player: AnimationMixer) -> AbilityTaskPlayAnimationAndWait:
 #region The five ways it can end
 ## Played to the end.
 func test_an_animation_that_finishes_completes() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 
 	player.animation_finished.emit(CAST)
@@ -65,7 +55,7 @@ func test_an_animation_that_finishes_completes() -> void:
 
 ## Something else started on the surface this task believed it owned.
 func test_another_animation_starting_interrupts_it() -> void:
-	var player: AnimationPlayer = _player_with([CAST, OTHER] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST, OTHER] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 
 	player.animation_started.emit(OTHER)
@@ -80,7 +70,7 @@ func test_another_animation_starting_interrupts_it() -> void:
 ## animation over, the receipt this task holds is no longer the one the mixer
 ## records, and the next tick is where it finds out.
 func test_losing_the_claim_interrupts_it_on_the_next_tick() -> void:
-	var player: AnimationPlayer = _player_with([CAST, OTHER] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST, OTHER] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 	assert_true(task.claim.still_holds(), "it took the surface when it started")
 
@@ -96,7 +86,7 @@ func test_losing_the_claim_interrupts_it_on_the_next_tick() -> void:
 
 ## The ability ended while it was still playing.
 func test_the_ability_ending_cancels_it() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 
 	ability.end_ability(true)
@@ -107,7 +97,7 @@ func test_the_ability_ending_cancels_it() -> void:
 
 ## The ability stopped waiting on purpose and left the body to finish.
 func test_blending_out_ends_the_wait_and_leaves_the_animation_alone() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = AbilityTaskFactory.play_animation_and_wait(
 		ability, player, CAST, true
 	)
@@ -121,7 +111,7 @@ func test_blending_out_ends_the_wait_and_leaves_the_animation_alone() -> void:
 
 ## There was nothing to play.
 func test_an_animation_the_surface_does_not_have_fails() -> void:
-	var player: AnimationPlayer = _player_with([OTHER] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [OTHER] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 
 	assert_true(task.is_finished(), "it does not wait for something that cannot happen")
@@ -144,11 +134,11 @@ func test_a_node_that_is_not_a_surface_fails() -> void:
 ## replaced it: stopping after a takeover would kill the animation the
 ## interrupting ability had just started.
 func test_a_cancelled_owner_stops_the_surface_but_an_interrupted_one_does_not() -> void:
-	var cancelled_player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var cancelled_player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var cancelled: AbilityTaskPlayAnimationAndWait = AbilityTaskFactory.play_animation_and_wait(
 		ability, cancelled_player, CAST, true
 	)
-	var taken_player: AnimationPlayer = _player_with([CAST, OTHER] as Array[StringName])
+	var taken_player: AnimationPlayer = Bench.player(self, [CAST, OTHER] as Array[StringName])
 	var taken: AbilityTaskPlayAnimationAndWait = AbilityTaskFactory.play_animation_and_wait(
 		ability, taken_player, CAST, true
 	)
@@ -165,7 +155,7 @@ func test_a_cancelled_owner_stops_the_surface_but_an_interrupted_one_does_not() 
 ## A task that was already replaced does not take the new claim with it when it
 ## cleans up.
 func test_cleaning_up_after_a_takeover_leaves_the_new_claim_standing() -> void:
-	var player: AnimationPlayer = _player_with([CAST, OTHER] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST, OTHER] as Array[StringName])
 	var task: AbilityTaskPlayAnimationAndWait = _casting(player)
 
 	var thief: GameplayAbilitySpec = AbilityFactory.give(asc, Probe.build(&"Ability.Thief"))
@@ -197,7 +187,7 @@ func test_each_activation_is_stamped_with_its_own_id() -> void:
 ## The claim carries it, so the previous activation cannot mistake a new
 ## activation's animation for its own.
 func test_a_new_activation_does_not_inherit_the_previous_ones_claim() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var mine: GameplayAnimationOwnership = GameplayAnimationOwnership.claim(player, ability, CAST)
 	ability.activation_id += 1
 
@@ -225,7 +215,7 @@ func _tree_with(state: StringName) -> AnimationTree:
 ## has the state. A task that asked a tree the player's question would refuse
 ## every animation the tree has.
 func test_the_surface_asks_each_kind_of_node_its_own_question() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var tree: AnimationTree = _tree_with(CAST)
 
 	var over_player: GameplayAnimationSurface = GameplayAnimationSurface.of(player)
@@ -247,7 +237,7 @@ func test_a_node_that_animates_nothing_is_not_a_surface() -> void:
 
 
 func test_a_player_surface_plays_stops_and_says_what_is_playing() -> void:
-	var player: AnimationPlayer = _player_with([CAST] as Array[StringName])
+	var player: AnimationPlayer = Bench.player(self, [CAST] as Array[StringName])
 	var surface: GameplayAnimationSurface = GameplayAnimationSurface.of(player)
 
 	assert_true(surface.play(CAST))

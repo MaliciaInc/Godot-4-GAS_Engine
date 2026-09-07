@@ -64,6 +64,18 @@ static func spatial(host: GutTest) -> Node3D:
 	return made
 
 
+## A player holding one empty clip per name, so a task has something real to
+## ask for and a test can drive `animation_finished` by hand.
+static func player(host: GutTest, names: Array[StringName]) -> AnimationPlayer:
+	var made: AnimationPlayer = AnimationPlayer.new()
+	var library: AnimationLibrary = AnimationLibrary.new()
+	for name: StringName in names:
+		library.add_animation(name, Animation.new())
+	made.add_animation_library("", library)
+	host.add_child_autofree(made)
+	return made
+
+
 static func tree(host: GutTest) -> AnimationTree:
 	var made: AnimationTree = AnimationTree.new()
 	host.add_child_autofree(made)

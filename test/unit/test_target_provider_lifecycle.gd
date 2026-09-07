@@ -56,16 +56,6 @@ func _watched() -> GameplayTargetProvider:
 	return provider
 
 
-## A provider aiming at whatever it is told to, so the lifecycle can be driven
-## without a physics world.
-class FixedProvider extends GameplayTargetProvider:
-	var aimed_at: Array[Node] = []
-
-	func _aim() -> GameplayAbilityTargetData:
-		var found: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
-		for node: Node in aimed_at:
-			found.append_node(node)
-		return found
 #endregion
 
 
@@ -137,7 +127,7 @@ func test_every_preview_is_announced_and_handed_back() -> void:
 
 ## What is confirmed is what was last previewed.
 func test_confirming_takes_what_was_last_previewed() -> void:
-	var provider: FixedProvider = FixedProvider.new()
+	var provider: FixedTargetProvider = FixedTargetProvider.new()
 	var taken: Array[GameplayAbilityTargetData] = []
 	provider.confirmed.connect(
 		func(data: GameplayAbilityTargetData) -> void: taken.append(data)
@@ -160,7 +150,7 @@ func test_confirming_takes_what_was_last_previewed() -> void:
 func test_a_target_that_dies_during_the_preview_is_gone_from_the_next_one() -> void:
 	var doomed: Node = Node.new()
 	add_child(doomed)
-	var provider: FixedProvider = FixedProvider.new()
+	var provider: FixedTargetProvider = FixedTargetProvider.new()
 	provider.aimed_at = [doomed] as Array[Node]
 	provider.begin(ability)
 	assert_eq(provider.update_preview().get_target_nodes().size(), 1, "aimed at it")
@@ -250,7 +240,7 @@ func test_an_ended_provider_lets_go_and_previews_nothing_more() -> void:
 func test_what_a_provider_confirms_reaches_the_ability() -> void:
 	ability.is_active = true
 	var waiting: AbilityTaskWaitTargetData = ability.wait_target_data()
-	var provider: FixedProvider = FixedProvider.new()
+	var provider: FixedTargetProvider = FixedTargetProvider.new()
 	provider.aimed_at = [fixture.owner] as Array[Node]
 
 	ability.aim_with(provider)

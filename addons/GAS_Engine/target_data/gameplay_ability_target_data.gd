@@ -101,14 +101,25 @@ func _record(hit: TargetHit) -> void:
 
 
 #region Getters
-## The strictly unique target nodes, as a copy.
+## The strictly unique target nodes that are still there, as a copy.
 ##
 ## This class validates every hit at the append boundary so nothing
 ## half-understood is stored. Handing out the array it stores them in let
 ## a caller append straight past that.
+##
+## Still there, because aiming has a middle. A target picked at the start of
+## a preview can be dead by the time somebody confirms, and what `confirm()`
+## hands over is the last preview rather than a fresh look at the world. A
+## freed Node compares equal to null in Godot, so a caller looping over these
+## and skipping nulls was already skipping it - and a caller counting them was
+## being told an ability hit one more thing than it did.
 ## @composer
 func get_target_nodes() -> Array[Node]:
-	return _target_nodes.duplicate()
+	var alive: Array[Node] = []
+	for node: Node in _target_nodes:
+		if is_instance_valid(node):
+			alive.append(node)
+	return alive
 
 
 ## Every registered hit, as a copy, for multi-hit and AoE processing.
@@ -169,9 +180,10 @@ func copied(only: Node = null) -> Self:
 	return theirs
 
 
+## Whether anything it aimed at is still there to be hit.
 ## @composer
 func has_targets() -> bool:
-	return not _target_nodes.is_empty()
+	return not get_target_nodes().is_empty()
 #endregion
 
 
