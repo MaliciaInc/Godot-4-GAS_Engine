@@ -126,6 +126,8 @@ static func _translate(error: AbilityRuntime.ActivationError) -> GameplayAbility
 			return GameplayAbilityActivationResult.Status.MISSING_REQUIRED_TAGS
 		AbilityRuntime.ActivationError.BLOCKED_BY_ACTIVE_ABILITY:
 			return GameplayAbilityActivationResult.Status.BLOCKED_BY_ACTIVE_ABILITY
+		AbilityRuntime.ActivationError.BLOCKED_EXTERNALLY:
+			return GameplayAbilityActivationResult.Status.BLOCKED_EXTERNALLY
 		AbilityRuntime.ActivationError.INSUFFICIENT_RESOURCES:
 			return GameplayAbilityActivationResult.Status.INSUFFICIENT_RESOURCES
 		AbilityRuntime.ActivationError.PENDING_REMOVAL:

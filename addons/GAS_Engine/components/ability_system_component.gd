@@ -116,6 +116,15 @@ signal effect_requirement_cycle_aborted(handle: GameplayEffectHandle)
 
 ## A stack's count actually changed - never for a non-growing overflow, nor
 ## an expiration policy re-set at the same count.
+## How long an active effect has left, when something changed it - a refresh,
+## a stack, a caller setting it. Emitted where the value moves rather than
+## polled, so a UI bar can follow it without asking every frame.
+signal active_effect_time_changed(handle: GameplayEffectHandle, remaining: float)
+
+## A grant's own state changed: its level, its input binding, its dynamic
+## tags. What a list of abilities redraws on.
+signal ability_spec_changed(handle: GameplayAbilityHandle)
+
 signal active_effect_stack_changed(handle: GameplayEffectHandle, old_count: int, new_count: int)
 
 ## A stack was already at its limit when another application arrived.
@@ -251,6 +260,7 @@ func _wire_runtimes() -> void:
 	ability_runtime.policies.bind_to(self)
 	ability_runtime.lifecycle.ability_runtime = ability_runtime
 	ability_runtime.cooldowns.ability_runtime = ability_runtime
+	ability_runtime.queries.ability_runtime = ability_runtime
 
 	events.owner_asc = self
 	events.ability_runtime = ability_runtime
@@ -630,14 +640,16 @@ func count_active_effects(query: GameplayEffectQuery) -> int:
 func set_active_effect_level(
 	handle: GameplayEffectHandle, level: float
 ) -> GameplayEffectMutationResult:
-	return GameplayEffectMutations.set_level(effects, handle, level)
+	# Announced: a level can move a duration authored as a magnitude of it.
+	return _timed(handle, GameplayEffectMutations.set_level(effects, handle, level))
 
 
 ## @composer
 func set_active_effect_stack_count(
 	handle: GameplayEffectHandle, count: int
 ) -> GameplayEffectMutationResult:
-	return GameplayEffectMutations.set_stack_count(effects, handle, count)
+	# Announced: a stack can refresh the clock.
+	return _timed(handle, GameplayEffectMutations.set_stack_count(effects, handle, count))
 
 
 ## @composer
@@ -659,7 +671,24 @@ func update_active_effect_set_by_caller(
 func set_active_effect_duration(
 	handle: GameplayEffectHandle, seconds: float
 ) -> GameplayEffectMutationResult:
-	return GameplayEffectMutations.set_duration(effects, handle, seconds)
+	return _timed(handle, GameplayEffectMutations.set_duration(effects, handle, seconds))
+
+
+## Announce how long is left when a mutation actually changed it, and hand the
+## result straight back so a door stays one line.
+##
+## Only on success, and reading what the effect now says rather than what the
+## caller asked for: a duration that was clamped or refused would otherwise be
+## announced as the number nobody got.
+func _timed(
+	handle: GameplayEffectHandle, done: GameplayEffectMutationResult
+) -> GameplayEffectMutationResult:
+	if done == null or not done.is_ok():
+		return done
+	var active: ActiveGameplayEffect = get_active_effect(handle)
+	if active != null:
+		active_effect_time_changed.emit(handle, active.time_remaining)
+	return done
 
 
 ## @composer
@@ -709,6 +738,24 @@ func add_tag(tag: StringName) -> void:
 ## @composer
 func remove_tag(tag: StringName) -> void:
 	emit_tag_change(tag, tags.remove(tag), tags.count_exact(tag))
+
+
+## Hold this tag exactly `count` times, whatever it is held now.
+##
+## By adding and removing rather than by writing the number: the count is a
+## reference count, and everything watching it - a passive's requirement, an
+## immunity, a trigger - is watching the signals those emit. Writing the
+## field would move the number without telling anybody.
+## @composer
+func set_tag_count(tag: StringName, count: int) -> void:
+	var wanted: int = maxi(count, 0)
+	var held: int = tags.count_exact(tag)
+	while held < wanted:
+		add_tag(tag)
+		held += 1
+	while held > wanted:
+		remove_tag(tag)
+		held -= 1
 
 
 ## @composer
@@ -812,9 +859,12 @@ func can_activate_ability_handle(
 func bind_ability_handle_to_input(
 	handle: GameplayAbilityHandle, input_id: int, unbind_others: bool = true
 ) -> bool:
-	return ability_runtime.bind_spec_to_input(
+	var bound: bool = ability_runtime.bind_spec_to_input(
 		ability_runtime.get_spec(handle), input_id, unbind_others
 	)
+	if bound:
+		ability_spec_changed.emit(handle)
+	return bound
 
 
 ## Deprecated: use remove_ability_handle(). Kept for a caller holding the
@@ -901,6 +951,76 @@ func cancel_all_abilities(
 ## @composer
 func clear_all_abilities() -> void:
 	ability_runtime.clear()
+
+## Start every grant whose effective tags match, and answer which started.
+##
+## Over a snapshot of the grants: an activation can grant or retire another
+## ability, and a loop reading the live list while that happens is reading a
+## list that moved under it.
+## @composer
+func try_activate_abilities_by_query(
+	query: GameplayTagQuery
+) -> Array[GameplayAbilityHandle]:
+	var started: Array[GameplayAbilityHandle] = []
+	for spec: GameplayAbilitySpec in ability_runtime.queries.specs_matching(query):
+		if ability_runtime.try_activate(spec.handle).is_ok():
+			started.append(spec.handle)
+	return started
+
+
+## Every grant whose effective tags match, in the order they were granted.
+## @composer
+func find_ability_specs(query: GameplayTagQuery) -> Array[GameplayAbilitySpec]:
+	return ability_runtime.queries.specs_matching(query)
+
+
+## The first grant bound to this input slot.
+## @composer
+func find_ability_spec_by_input(input_id: int) -> GameplayAbilitySpec:
+	return ability_runtime.queries.spec_for_input(input_id)
+
+
+## The first grant of this ability script, which is what "by class" means in
+## a language where a class is a script.
+## @composer
+func find_ability_spec_by_script(script: Script) -> GameplayAbilitySpec:
+	return ability_runtime.queries.spec_for_script(script)
+
+
+## Retire every grant bound to this slot, and say how many went.
+## @composer
+func clear_abilities_with_input(input_id: int) -> int:
+	return ability_runtime.queries.clear_specs_with_input(input_id)
+
+
+## Block every ability whose effective tags match, until this is taken back.
+##
+## Counted: a cutscene and a stun that both block, and one that ends, leave
+## the other's block standing. A flag would have ended both.
+## @composer
+func block_abilities_with_query(query: GameplayTagQuery) -> void:
+	ability_runtime.queries.block_with_query(query)
+
+
+## Take one block back.
+## @composer
+func unblock_abilities_with_query(query: GameplayTagQuery) -> void:
+	ability_runtime.queries.unblock_with_query(query)
+
+
+## Whether an outstanding external block covers this grant. Not the same
+## question as whether another ability is blocking it.
+## @composer
+func is_ability_blocked(spec: GameplayAbilitySpec) -> bool:
+	return ability_runtime.queries.blocked_externally(spec)
+
+
+## Which effect granted this ability, when one did.
+## @composer
+func find_effect_handle_that_granted(
+	handle: GameplayAbilityHandle
+) -> GameplayEffectHandle:
+	return ability_runtime.queries.effect_that_granted(handle)
 
 
 ## Deprecated: use bind_ability_handle_to_input().

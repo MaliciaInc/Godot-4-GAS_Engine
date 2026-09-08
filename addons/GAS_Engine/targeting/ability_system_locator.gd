@@ -22,8 +22,22 @@ class_name AbilitySystemLocator extends RefCounted
 ## The name the component is conventionally given. An optimisation, not a rule.
 const ASC_CHILD_NAME: StringName = &"AbilitySystemComponent"
 
+## The method a node declares to say where its ability system is, whatever
+## the tree happens to look like - a Pawn whose component lives on its
+## PlayerState, an equipment node whose component is its wearer's.
+const EXPLICIT_ACCESSOR: StringName = &"get_ability_system_component"
+
 
 static func find_for_node(node: Node) -> AbilitySystemComponent:
+	# Asked first, because a node that answers this has said where its
+	# ability system is, and a convention that overruled an explicit answer
+	# would be the engine deciding it knows better. This is what lets an ASC
+	# live somewhere other than under the thing it acts on.
+	if node != null and node.has_method(EXPLICIT_ACCESSOR):
+		var said: Variant = node.call(EXPLICIT_ACCESSOR)
+		if said is AbilitySystemComponent:
+			return said
+
 	var candidate: Node = node
 	while candidate != null:
 		var itself: AbilitySystemComponent = candidate as AbilitySystemComponent

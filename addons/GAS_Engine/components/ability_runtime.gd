@@ -24,6 +24,11 @@ enum ActivationError {
 	PENDING_REMOVAL,
 	## Refused by another spec's block_abilities_query, or a block effect.
 	BLOCKED_BY_ACTIVE_ABILITY,
+	## Refused by a block somebody outside the ability system asked for -
+	## a cutscene, a stun applied by game code, a menu. Distinct from the
+	## one above because nothing about the granted abilities explains it,
+	## and a UI saying "another ability is blocking this" would be wrong.
+	BLOCKED_EXTERNALLY,
 }
 
 ## remove_ability()'s timing: right away, or once nothing is still running.
@@ -49,6 +54,9 @@ var policies: AbilityActivationPolicyRuntime = AbilityActivationPolicyRuntime.ne
 var lifecycle: AbilityLifecycleRuntime = AbilityLifecycleRuntime.new()
 
 var cooldowns: AbilityCooldownRuntime = AbilityCooldownRuntime.new()
+
+## Finding grants, and the blocks asked for from outside the ability system.
+var queries: AbilityQueryRuntime = AbilityQueryRuntime.new()
 
 var _specs: Array[GameplayAbilitySpec] = []
 var _specs_by_id: Dictionary[int, GameplayAbilitySpec] = {}
@@ -284,6 +292,7 @@ func dispose() -> void:
 	policies.ability_runtime = null
 	lifecycle.ability_runtime = null
 	cooldowns.ability_runtime = null
+	queries.ability_runtime = null
 
 	owner_asc = null
 	tags = null
@@ -297,6 +306,10 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 		return ActivationError.INTERNAL_ERROR
 	if spec.pending_remove:
 		return ActivationError.PENDING_REMOVAL
+	# Before cost and cooldown: a caller told "you cannot afford it" while a
+	# cutscene is what is really stopping them would go and find the money.
+	if queries.blocked_externally(spec):
+		return ActivationError.BLOCKED_EXTERNALLY
 	# PER_EXECUTION keeps per_actor_instance null by construction, never refused here.
 	var instance: GameplayAbility = spec.per_actor_instance
 	if (

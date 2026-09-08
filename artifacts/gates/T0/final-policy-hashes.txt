@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.1 raises gameplay_ability.gd from 790 to 900 for the contract surface the phase adds: F6.1.1's two source tag gates and the event-refusal hook, F6.1.2's kept-open event wait, with headroom for F6.1.6 and F6.1.8.
+# F6.1.4 (G-04): the component's ceiling goes 1000 -> 1120 for the ten ability questions it now answers, and ability_runtime's 570 -> 600 for what remains after the search and external-block work moved into AbilityQueryRuntime.
 #
 # python: 3.14.6
-# date-utc: 2026-09-08T23:03:28Z
-# commit-previo: 1d806c53a9b00843a160b3119485a0eea8c8fada
+# date-utc: 2026-09-08T23:23:32Z
+# commit-previo: f08f824e0c69066246f1362f9686967e2f2a5adf
 # files: 26
-a877dbc8bd7b05fbbfc45339f98442390990af010822f420c2d6a2adfa744f42  tooling/.quality-gates.json
+49c78f43c965d575a18211e8fb8d79e347f9ca502b5df812806dd9b9bb4d70ed  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
