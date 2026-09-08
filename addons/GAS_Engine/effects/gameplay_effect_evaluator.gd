@@ -236,7 +236,7 @@ static func _composed_execution_base(
 	# Which arithmetic this entity composes by is asked of the component every
 	# time rather than cached, for the reason GameplayAttributeRuntime gives:
 	# the profile is data somebody can change.
-	var unreal: bool = request.owner_asc != null and request.owner_asc.uses_ue_5_7_contracts()
+	var unreal: bool = _unreal_profile(request)
 	var folded: AttributeAggregateMath.Composed = GameplayExecutionPipeline.compose(
 		request.attributes, attribute_name, writes, unreal
 	)
@@ -283,26 +283,41 @@ static func _stage_effect_mutation(
 ## A standard modifier's resolved magnitude, scaled by the stack it belongs
 ## to when the effect asks for it. Never applies to an execution
 ## calculation's own math - that reads spec.stack_count itself and decides.
-static func stack_scaled_value(spec: GameplayEffectSpec, magnitude: float) -> float:
-	return stack_scaled_for(spec, magnitude, GameplayEffectModifier.Operation.ADD)
+static func stack_scaled_value(
+	spec: GameplayEffectSpec, magnitude: float, unreal: bool = false
+) -> float:
+	return stack_scaled_for(
+		spec, magnitude, GameplayEffectModifier.Operation.ADD, unreal
+	)
 
 
 ## What one modifier of a stack is worth, by what its operation means.
 static func stack_scaled_for(
 	spec: GameplayEffectSpec,
 	magnitude: float,
-	operation: GameplayEffectModifier.Operation
+	operation: GameplayEffectModifier.Operation,
+	unreal: bool = false
 ) -> float:
 	if spec == null or spec.effect_def == null or not spec.effect_def.factor_in_stack_count:
 		return magnitude
 	return AttributeAggregateMath.stack_scaled(
-		magnitude, float(spec.stack_count), operation
+		magnitude, float(spec.stack_count), operation, unreal
 	)
 
 
-static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
+static func _stack_scaled_magnitude(
+	spec: GameplayEffectSpec, index: int, unreal: bool
+) -> float:
 	var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation)
+	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation, unreal)
+
+
+## Which arithmetic this request's entity composes by.
+##
+## Asked of the component every time rather than cached, for the reason
+## GameplayAttributeRuntime gives: the profile is data somebody can change.
+static func _unreal_profile(request: Request) -> bool:
+	return request.owner_asc != null and request.owner_asc.uses_ue_5_7_contracts()
 
 
 ## Every attribute a standard modifier writes to, without duplicates.
@@ -359,7 +374,7 @@ static func _build_contributions(
 		if not _qualifies(request, modifier):
 			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = modifier.attribute_name
@@ -460,7 +475,7 @@ static func _compose_for_attribute(
 		if modifier == null or modifier.attribute_name != attribute_name:
 			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name

@@ -243,6 +243,29 @@ func test_an_override_is_not_multiplied_by_the_stack_count() -> void:
 	Factory.apply(asc, stacking)
 
 	assert_almost_eq(_attack(), 30.0, TOLERANCE, "two stacks of it is still it")
+
+
+## A stack scales the arm its magnitude will be folded into.
+##
+## The fold treats the legacy MULTIPLY as the additive arm under this profile,
+## so stack scaling has to as well. Scaling it as a bare product and then
+## folding it additively is two answers to one question, and the disagreement
+## only ever appears on a stacking effect authored with the legacy spelling -
+## which is the hardest place to notice it.
+func test_a_stacked_legacy_multiplier_scales_the_arm_it_is_folded_into() -> void:
+	_use_unreal()
+	var one: Array[GameplayEffectModifier] = [
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5)
+	]
+	var stacking: GameplayEffect = Factory.stacked(
+		Factory.infinite(one), GameplayEffect.StackingType.AGGREGATE_BY_SOURCE, 4, true
+	)
+
+	Factory.apply(asc, stacking)
+	Factory.apply(asc, stacking)
+
+	# The bias stacks, not the factor: two stacks of x1.5 are +100%.
+	assert_almost_eq(_attack(), 200.0, TOLERANCE, "two stacks of half-again is twice")
 #endregion
 
 
@@ -302,4 +325,49 @@ func _requiring(tag: StringName) -> GameplayTagQuery:
 	var query: GameplayTagQuery = GameplayTagQuery.new()
 	query.root = expression
 	return query
+#endregion
+#region The legacy names mean what the reference means by them
+## `MULTIPLY` and `DIVIDE` are Unreal's own legacy spellings, and there they are
+## aliases of the additive arms rather than compounding ones. Folding them as
+## compound under the profile that exists to agree with Unreal produced 2.25x
+## where the reference produces 2.0x, under an operation spelled the same in
+## both - the worst shape a difference can take, because nothing about the
+## authoring looks wrong.
+##
+## Godot-native keeps compounding them. That is its contract and no project
+## built on it is rebalanced by this.
+func test_the_legacy_multiply_name_folds_the_way_the_reference_folds_it() -> void:
+	_use_unreal()
+	_apply_each([
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
+	])
+	assert_almost_eq(_attack(), 200.0, TOLERANCE, "the bonuses add and multiply once")
+
+
+func test_the_legacy_multiply_name_still_compounds_under_godot_native() -> void:
+	_apply_each([
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
+	])
+	assert_almost_eq(_attack(), 225.0, TOLERANCE, "the products multiply")
+
+
+func test_a_compound_multiplier_still_compounds_under_the_unreal_profile() -> void:
+	_use_unreal()
+	_apply_each([
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5),
+		_modifier(GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5),
+	])
+	assert_almost_eq(_attack(), 225.0, TOLERANCE, "compound is still the compounding arm")
+
+
+## The legacy divisor is the same story on the other side of the fraction.
+func test_the_legacy_divide_name_folds_additively_under_the_unreal_profile() -> void:
+	_use_unreal()
+	_apply_each([
+		_modifier(GameplayEffectModifier.Operation.DIVIDE, 1.5),
+		_modifier(GameplayEffectModifier.Operation.DIVIDE, 1.5),
+	])
+	assert_almost_eq(_attack(), 50.0, TOLERANCE, "the divisors add: 100 / 2.0")
 #endregion

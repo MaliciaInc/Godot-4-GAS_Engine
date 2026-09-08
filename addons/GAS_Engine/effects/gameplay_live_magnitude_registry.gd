@@ -193,7 +193,10 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 			# does not scale. Two paths scaling differently is exactly the bug
 			# this line was written to close.
 			contribution.magnitude = GameplayEffectEvaluator.stack_scaled_for(
-				spec, resolved.value, contribution.operation
+				spec,
+				resolved.value,
+				contribution.operation,
+				owner_asc != null and owner_asc.uses_ue_5_7_contracts()
 			)
 			if effects != null:
 				effects.recompose_and_emit(spec)

@@ -161,3 +161,104 @@ func test_an_empty_cost_row_is_reported() -> void:
 	assert_eq(findings[0].code, Result.Code.MISSING_REFERENCE)
 	assert_eq(findings[0].field, "costs[0]", "and says which row")
 #endregion
+#region What only a profile can answer
+## Two questions an effect cannot answer on its own, because the answer depends
+## on which arithmetic the entity applying it composes by. Both are warnings:
+## each configuration is legal, and only one of them surprises somebody who
+## came from the reference.
+func _unreal_profile() -> GameplayCompatibilityProfile:
+	var profile: GameplayCompatibilityProfile = GameplayCompatibilityProfile.new()
+	profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
+	return profile
+
+
+func _codes(findings: Array[Result]) -> Array:
+	var codes: Array = []
+	for finding: Result in findings:
+		codes.append(finding.code)
+	return codes
+
+
+func test_a_legacy_multiply_under_the_unreal_profile_is_said_out_loud() -> void:
+	var effect: GameplayEffect = Factory.infinite(
+		[Factory.multiply(ATTACK, 1.5)] as Array[GameplayEffectModifier]
+	)
+
+	assert_false(
+		_codes(Validator.validate_effect(effect)).has(
+			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
+		),
+		"with no profile in front of it there is no question to answer"
+	)
+
+	var findings: Array[Result] = Validator.validate_effect(effect, _unreal_profile())
+	assert_true(
+		_codes(findings).has(Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE),
+		"and under the profile that gives the name a second meaning, there is"
+	)
+	for finding: Result in findings:
+		if finding.code == Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE:
+			assert_eq(finding.severity, Result.Severity.WARNING, "it is not an error")
+
+
+func test_an_explicit_arm_says_nothing_under_either_profile() -> void:
+	var effect: GameplayEffect = Factory.infinite(
+		[
+			Factory.modifier(
+				ATTACK, GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5
+			)
+		] as Array[GameplayEffectModifier]
+	)
+
+	assert_false(
+		_codes(Validator.validate_effect(effect, _unreal_profile())).has(
+			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
+		),
+		"a name that only means one thing needs no warning"
+	)
+
+
+func test_a_stacking_effect_that_never_answered_the_stack_question_is_said_out_loud() -> void:
+	var stacking: GameplayEffect = Factory.stacked(
+		Factory.infinite([Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]),
+		GameplayEffect.StackingType.AGGREGATE_BY_SOURCE,
+		4,
+		false
+	)
+
+	assert_true(
+		_codes(Validator.validate_effect(stacking, _unreal_profile())).has(
+			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
+		),
+		"the reference scales by the stack and this engine does not"
+	)
+
+
+func test_answering_the_stack_question_ends_it() -> void:
+	var stacking: GameplayEffect = Factory.stacked(
+		Factory.infinite([Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]),
+		GameplayEffect.StackingType.AGGREGATE_BY_SOURCE,
+		4,
+		true
+	)
+
+	assert_false(
+		_codes(Validator.validate_effect(stacking, _unreal_profile())).has(
+			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
+		),
+		"answered on purpose is not a warning"
+	)
+
+
+func test_a_non_stacking_effect_is_never_asked_the_stack_question() -> void:
+	var effect: GameplayEffect = Factory.infinite(
+		[Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]
+	)
+
+	assert_false(
+		_codes(Validator.validate_effect(effect, _unreal_profile())).has(
+			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
+		),
+		"nothing stacks, so nothing to answer"
+	)
+#endregion

@@ -50,9 +50,22 @@ class Composed extends RefCounted:
 ## than +100%; and doubling an override is meaningless, because an override is a
 ## value rather than an amount and two of them are still that value.
 static func stack_scaled(
-	magnitude: float, stacks: float, operation: GameplayEffectModifier.Operation
+	magnitude: float,
+	stacks: float,
+	operation: GameplayEffectModifier.Operation,
+	unreal: bool = false
 ) -> float:
-	match operation:
+	# Under the Unreal profile the legacy names are the additive arms, in the
+	# fold and therefore here as well. A stack has to scale the arm its
+	# magnitude will be folded into, or the two disagree the first time a
+	# stacking effect is authored with the legacy spelling.
+	var arm: GameplayEffectModifier.Operation = operation
+	if unreal:
+		if operation == GameplayEffectModifier.Operation.MULTIPLY:
+			arm = GameplayEffectModifier.Operation.MULTIPLY_ADDITIVE
+		elif operation == GameplayEffectModifier.Operation.DIVIDE:
+			arm = GameplayEffectModifier.Operation.DIVIDE_ADDITIVE
+	match arm:
 		GameplayEffectModifier.Operation.OVERRIDE:
 			return magnitude
 		GameplayEffectModifier.Operation.MULTIPLY_ADDITIVE, \
@@ -185,13 +198,20 @@ static func _one_channel(
 				multiply_additive += contribution.magnitude - 1.0
 			GameplayEffectModifier.Operation.DIVIDE_ADDITIVE:
 				divide_additive += contribution.magnitude - 1.0
-			GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, \
-			GameplayEffectModifier.Operation.MULTIPLY:
+			GameplayEffectModifier.Operation.MULTIPLY_COMPOUND:
 				multiply_compound *= contribution.magnitude
+			# Unreal's own legacy spellings. `Multiplicitive` and `Division` are
+			# aliases of the additive arms there rather than compounding ones, so
+			# a modifier authored as MULTIPLY under this profile has to fold the
+			# way the reference folds a modifier by that name. Otherwise two x1.5
+			# are 2.25 here and 2.0 in the engine this profile exists to agree
+			# with, under an operation spelled the same in both.
+			GameplayEffectModifier.Operation.MULTIPLY:
+				multiply_additive += contribution.magnitude - 1.0
 			GameplayEffectModifier.Operation.DIVIDE:
 				if is_zero_approx(contribution.magnitude):
 					return Composed.failed(AttributeEvaluationResult.Status.DIVISION_BY_ZERO)
-				divide_compound *= contribution.magnitude
+				divide_additive += contribution.magnitude - 1.0
 			GameplayEffectModifier.Operation.OVERRIDE:
 				if _first_eligible_beats(contribution, winner):
 					winner = contribution

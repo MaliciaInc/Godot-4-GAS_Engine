@@ -16,7 +16,13 @@ const Result = preload("res://addons/GAS_Engine/editor/gameplay_asset_validation
 
 
 #region GameplayEffect
-static func validate_effect(effect: GameplayEffect) -> Array[Result]:
+## `profile` is optional because most authoring has no entity in front of
+## it. When one is given, the two questions that only a profile can answer
+## are answered as well - and they are warnings, because both configurations
+## are legal and only one of them is surprising.
+static func validate_effect(
+	effect: GameplayEffect, profile: GameplayCompatibilityProfile = null
+) -> Array[Result]:
 	var findings: Array[Result] = []
 	if effect == null:
 		findings.append(Result.error(null, "", Result.Code.MISSING_REFERENCE))
@@ -34,6 +40,54 @@ static func validate_effect(effect: GameplayEffect) -> Array[Result]:
 			findings.append(_empty_slot(effect, "modifiers[%d]" % index))
 			continue
 		findings.append_array(validate_magnitude(modifier.magnitude, effect, "modifiers[%d].magnitude" % index))
+		findings.append_array(_profile_findings_for(modifier, effect, index, profile))
+	findings.append_array(_stacking_findings_for(effect, profile))
+	return findings
+
+
+## The legacy operation names, said out loud under the profile that gives
+## them a second meaning.
+static func _profile_findings_for(
+	modifier: GameplayEffectModifier,
+	effect: GameplayEffect,
+	index: int,
+	profile: GameplayCompatibilityProfile
+) -> Array[Result]:
+	var findings: Array[Result] = []
+	if profile == null or not profile.is_ue_5_7():
+		return findings
+	if (
+		modifier.operation == GameplayEffectModifier.Operation.MULTIPLY
+		or modifier.operation == GameplayEffectModifier.Operation.DIVIDE
+	):
+		findings.append(
+			Result.warning(
+				effect,
+				"modifiers[%d].operation" % index,
+				Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
+			)
+		)
+	return findings
+
+
+## A stacking effect that never answered whether the stack count scales it.
+static func _stacking_findings_for(
+	effect: GameplayEffect, profile: GameplayCompatibilityProfile
+) -> Array[Result]:
+	var findings: Array[Result] = []
+	if profile == null or not profile.is_ue_5_7():
+		return findings
+	if (
+		effect.stacking_type != GameplayEffect.StackingType.NONE
+		and not effect.factor_in_stack_count
+	):
+		findings.append(
+			Result.warning(
+				effect,
+				"factor_in_stack_count",
+				Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
+			)
+		)
 	return findings
 #endregion
 
