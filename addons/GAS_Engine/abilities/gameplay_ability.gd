@@ -118,6 +118,14 @@ const NET_EXECUTION_POLICY_FIELD: StringName = &"net_execution_policy"
 @export var block_abilities_query: GameplayTagQuery = null
 
 ## Gates accepts_target() - see apply_effect_to_targets(), the sole enforcement route.
+## Tag gates on whoever caused this activation, read from the event's
+## instigator snapshot rather than from the world.
+##
+## Only consulted when an activation arrives carrying a GameplayEventData
+## with tags on it. An event with no instigator does not invent one, so a
+## non-empty required query refuses rather than passing by default.
+@export var source_required_query: GameplayTagQuery = null
+@export var source_blocked_query: GameplayTagQuery = null
 @export var target_required_query: GameplayTagQuery = null
 @export var target_blocked_query: GameplayTagQuery = null
 
@@ -207,6 +215,15 @@ func on_avatar_changed(_old_avatar: Node, _new_avatar: Node) -> void:
 ## behaved before there was a way to say it. An uninterruptible finisher
 ## overrides it; a teardown ignores it, because a component going away is not a
 ## request.
+## Whether this ability wants the event that matched one of its triggers.
+##
+## The trigger says the event is for this ability; this says whether it wants
+## it right now. Answering false is a refusal without a reason, so anything
+## the caller should be told about belongs in a tag gate instead.
+func should_respond_to_event(_event: GameplayEventData) -> bool:
+	return true
+
+
 func can_be_cancelled() -> bool:
 	return true
 #endregion

@@ -288,3 +288,56 @@ func test_cancelling_an_active_ability_emits_ability_ended_exactly_once() -> voi
 	target.asc.ability_runtime.cancel_matching_query(_tag_query([FIRE], GameplayTagQueryExpression.Operator.ANY))
 	assert_signal_emit_count(instance, "ability_ended", 1)
 #endregion
+#region Gates on whoever caused it
+## The source gates read the event's own snapshot of the instigator, not the
+## world. An activation that arrives later is about the moment the event was
+## sent, and reading the world then would answer a different question.
+func _source_gated(required: Array[StringName], blocked: Array[StringName]) -> GameplayAbilitySpec:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.Gated")
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [GameplayAbilityEventTrigger.for_tag(&"Event.Gated")]
+	if not required.is_empty():
+		probe.source_required_query = _tag_query(required, GameplayTagQueryExpression.Operator.ANY)
+	if not blocked.is_empty():
+		probe.source_blocked_query = _tag_query(blocked, GameplayTagQueryExpression.Operator.ANY)
+	return AbilityFactory.give(target.asc, probe)
+
+
+func _gated_event(instigator_tags: Array[StringName]) -> GameplayEventData:
+	var event: GameplayEventData = GameplayEventData.new()
+	event.event_tag = &"Event.Gated"
+	event.instigator_tags = instigator_tags
+	return event
+
+
+func test_source_required_query_reads_the_event_instigator_snapshot() -> void:
+	var spec: GameplayAbilitySpec = _source_gated([&"Caster.Undead"] as Array[StringName], [])
+	var probe: ProbeAbility = spec.per_actor_instance as ProbeAbility
+
+	target.asc.send_gameplay_event(_gated_event([&"Caster.Living"] as Array[StringName]))
+	assert_eq(probe.activations, 0, "a living caster does not qualify")
+
+	target.asc.send_gameplay_event(_gated_event([&"Caster.Undead"] as Array[StringName]))
+	assert_eq(probe.activations, 1, "an undead one does")
+
+
+## An event with nothing on it does not invent tags, so a non-empty required
+## query refuses rather than passing by default.
+func test_a_required_source_query_refuses_an_event_with_no_tags() -> void:
+	var spec: GameplayAbilitySpec = _source_gated([&"Caster.Undead"] as Array[StringName], [])
+	var probe: ProbeAbility = spec.per_actor_instance as ProbeAbility
+
+	target.asc.send_gameplay_event(_gated_event([] as Array[StringName]))
+	assert_eq(probe.activations, 0, "nothing to qualify with is not qualifying")
+
+
+func test_source_blocked_query_reads_the_event_instigator_snapshot() -> void:
+	var spec: GameplayAbilitySpec = _source_gated([], [&"Caster.Silenced"] as Array[StringName])
+	var probe: ProbeAbility = spec.per_actor_instance as ProbeAbility
+
+	target.asc.send_gameplay_event(_gated_event([&"Caster.Silenced"] as Array[StringName]))
+	assert_eq(probe.activations, 0, "a silenced caster is refused")
+
+	target.asc.send_gameplay_event(_gated_event([&"Caster.Living"] as Array[StringName]))
+	assert_eq(probe.activations, 1, "and anybody else is not")
+#endregion

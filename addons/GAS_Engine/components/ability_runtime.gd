@@ -280,6 +280,7 @@ func dispose() -> void:
 	tag_semantics.owner_asc = null
 	tag_semantics.ability_runtime = null
 
+	policies.unbind()
 	policies.ability_runtime = null
 	lifecycle.ability_runtime = null
 	cooldowns.ability_runtime = null
@@ -328,6 +329,32 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 ## Public: AbilityActivationPolicyRuntime needs the same check.
 static func query_matches_runtime(query: GameplayTagQuery, runtime: GameplayTagRuntime) -> bool:
 	return query != null and not query.is_empty() and query.matches_runtime(runtime)
+
+
+## Whether whoever caused this activation qualifies for the spec's source
+## gates.
+##
+## Read from the event's own snapshot rather than from the world: the
+## instigator's tags are what they were when the event was sent, and an
+## activation that arrives three frames later is about that moment. An event
+## with no tags on it does not invent any, so a non-empty required query
+## refuses rather than passing by default.
+##
+## No new refusal reasons: a blocked source is BLOCKED_TAG and a missing one
+## is MISSING_TAG, which is what they are.
+func source_gate_error(
+	spec: GameplayAbilitySpec, event: GameplayEventData
+) -> AbilityRuntime.ActivationError:
+	if spec == null or spec.definition == null or event == null:
+		return ActivationError.NONE
+	var blocked: GameplayTagQuery = spec.definition.source_blocked_query
+	var required: GameplayTagQuery = spec.definition.source_required_query
+	var carried: Array[StringName] = event.instigator_tags
+	if blocked != null and not blocked.is_empty() and blocked.matches_tags(carried):
+		return ActivationError.BLOCKED_TAG
+	if required != null and not required.is_empty() and not required.matches_tags(carried):
+		return ActivationError.MISSING_TAG
+	return ActivationError.NONE
 
 
 func can_activate(spec: GameplayAbilitySpec) -> bool:

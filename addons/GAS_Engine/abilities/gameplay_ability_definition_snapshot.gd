@@ -41,6 +41,10 @@ var activation_owned_tags: Array[StringName] = []
 var cancel_abilities_query: GameplayTagQuery = null
 var allow_self_cancel: bool = false
 var block_abilities_query: GameplayTagQuery = null
+## Frozen with the rest: an author who edited these after the grant would be
+## changing who is allowed to trigger a running grant, from outside it.
+var source_required_query: GameplayTagQuery = null
+var source_blocked_query: GameplayTagQuery = null
 var target_required_query: GameplayTagQuery = null
 var target_blocked_query: GameplayTagQuery = null
 
@@ -99,6 +103,12 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.allow_self_cancel = probe.allow_self_cancel
 	snapshot.block_abilities_query = (
 		_duplicate_resource(probe.block_abilities_query) as GameplayTagQuery
+	)
+	snapshot.source_required_query = (
+		_duplicate_resource(probe.source_required_query) as GameplayTagQuery
+	)
+	snapshot.source_blocked_query = (
+		_duplicate_resource(probe.source_blocked_query) as GameplayTagQuery
 	)
 	snapshot.target_required_query = (
 		_duplicate_resource(probe.target_required_query) as GameplayTagQuery
@@ -160,6 +170,8 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"cancel_abilities_query",
 	&"allow_self_cancel",
 	&"block_abilities_query",
+	&"source_required_query",
+	&"source_blocked_query",
 	&"target_required_query",
 	&"target_blocked_query",
 	&"gameplay_event_triggers",

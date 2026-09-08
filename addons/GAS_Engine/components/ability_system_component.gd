@@ -248,6 +248,7 @@ func _wire_runtimes() -> void:
 	ability_runtime.tag_semantics.owner_asc = self
 	ability_runtime.tag_semantics.ability_runtime = ability_runtime
 	ability_runtime.policies.ability_runtime = ability_runtime
+	ability_runtime.policies.bind_to(self)
 	ability_runtime.lifecycle.ability_runtime = ability_runtime
 	ability_runtime.cooldowns.ability_runtime = ability_runtime
 

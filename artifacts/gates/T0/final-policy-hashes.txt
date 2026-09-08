@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.0.7 (D-06) raises the ability system component's file ceiling 920 -> 1000 for the eight ability operations the phase moves onto the component itself: grant-and-run-once, retire-on-end, the grants, a grant's cooldown state, the held input slots, cancel-by-query, cancel-everything and clear-everything. Same one-line delegation shape every raise before this accepted, with headroom for F6.1.4's search and block surface rather than a second raise in one phase. The reason is written into the allowlist entry itself.
+# F6.1.3 (G-03) declares the event codec's two directions as a mirror: to_wire and from_wire walk the same field list in opposite directions, and writing the pair once would mean a Variant-driven table in the one place that exists to keep a contract typed.
 #
 # python: 3.14.6
-# date-utc: 2026-09-08T22:38:31Z
-# commit-previo: edd5e3349bc69957c4154245857f049670134534
+# date-utc: 2026-09-08T22:56:33Z
+# commit-previo: 1d00bff7bcd4ef926d57e5cc9476de64997e875c
 # files: 26
-5eb274611edaf6dbcb8620e988f3d5bc32aca20e31f6d9ad80ce1a03fadc1202  tooling/.quality-gates.json
+d915c1d1d8df20d0d99628b5d5fdc58929f674a1f45c8a4282fd51078b9e287b  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

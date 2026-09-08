@@ -258,3 +258,99 @@ func test_an_effect_granted_passive_activates_and_removal_retires_it() -> void:
 		"CANCEL_AND_REMOVE_ON_EFFECT_END retired it with the effect"
 	)
 #endregion
+#region Triggers that answer a tag
+## A trigger of `source` over `tag`, ready to hang on an ON_GAMEPLAY_EVENT
+## ability. `for_tag` builds the event kind; the two tag kinds differ from it
+## only in which question they ask of the same query.
+func _tag_trigger(
+	source: GameplayAbilityEventTrigger.Source, tag: StringName
+) -> GameplayAbilityEventTrigger:
+	var trigger: GameplayAbilityEventTrigger = GameplayAbilityEventTrigger.for_tag(tag)
+	trigger.source = source
+	return trigger
+
+
+func _triggered_by(
+	source: GameplayAbilityEventTrigger.Source, tag: StringName
+) -> GameplayAbilitySpec:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.Triggered")
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [_tag_trigger(source, tag)]
+	return AbilityFactory.give(target.asc, probe)
+
+
+## An edge, not a level: the tag has to arrive.
+func test_owned_tag_added_fires_only_on_the_acquisition_edge() -> void:
+	target.asc.add_tag(BUFF)
+	var spec: GameplayAbilitySpec = _triggered_by(
+		GameplayAbilityEventTrigger.Source.OWNED_TAG_ADDED, BUFF
+	)
+
+	assert_eq(_probe(spec).activations, 0, "a tag that was already there is not an arrival")
+
+	target.asc.remove_tag(BUFF)
+	target.asc.add_tag(BUFF)
+	assert_eq(_probe(spec).activations, 1, "and arriving is")
+
+
+## Losing the tag again is the whole difference between the two sources: an
+## edge started something and has no further opinion, a level was the condition
+## the ability ran under. Asserted side by side, because separately they are the
+## same test with one word changed.
+func test_losing_the_tag_cancels_a_level_trigger_and_not_an_edge_one() -> void:
+	var edge: GameplayAbilitySpec = _triggered_by(
+		GameplayAbilityEventTrigger.Source.OWNED_TAG_ADDED, BUFF
+	)
+	var level: GameplayAbilitySpec = _triggered_by(
+		GameplayAbilityEventTrigger.Source.OWNED_TAG_PRESENT, BUFF
+	)
+	_probe(edge).channels = true
+	_probe(level).channels = true
+
+	target.asc.add_tag(BUFF)
+	assert_true(_probe(edge).is_active, "the arrival started the edge one")
+	assert_true(_probe(level).is_active, "and the condition started the level one")
+
+	target.asc.remove_tag(BUFF)
+	assert_true(_probe(edge).is_active, "losing it left the edge one running")
+	assert_false(_probe(level).is_active, "and took the level one with it")
+
+	_probe(edge).channel_gate.emit()
+
+
+## A level, and the level it was granted into counts.
+func test_owned_tag_present_fires_when_the_tag_is_already_present_at_grant() -> void:
+	target.asc.add_tag(BUFF)
+	var spec: GameplayAbilitySpec = _triggered_by(
+		GameplayAbilityEventTrigger.Source.OWNED_TAG_PRESENT, BUFF
+	)
+
+	assert_eq(_probe(spec).activations, 1, "already burning at the moment it was granted")
+
+
+## An ability whose own activation grants the tag that triggers it is a loop
+## somebody writes by accident. It stops counting rather than recursing.
+func test_trigger_reentrancy_stops_at_the_policy_pass_limit() -> void:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.Looping")
+	probe.activation_policy = GameplayAbility.ActivationPolicy.ON_GAMEPLAY_EVENT
+	probe.gameplay_event_triggers = [
+		_tag_trigger(GameplayAbilityEventTrigger.Source.OWNED_TAG_ADDED, BUFF)
+	]
+	probe.retrigger_while_active = true
+	var spec: GameplayAbilitySpec = AbilityFactory.give(target.asc, probe)
+
+	# The loop: every activation drops the tag and takes it again, so the trigger
+	# it just answered is waiting for it on the way out.
+	var looping: ProbeAbility = _probe(spec)
+	looping.ability_ended.connect(
+		func(_cancelled: bool) -> void:
+			target.asc.remove_tag(BUFF)
+			target.asc.add_tag(BUFF)
+	)
+
+	target.asc.add_tag(BUFF)
+
+	# It converged or it was stopped; either way the engine is still answering.
+	assert_gt(looping.activations, 0, "it ran")
+	assert_true(target.asc.tags.has_exact(BUFF), "and the component is still coherent")
+#endregion

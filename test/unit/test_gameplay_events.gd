@@ -166,3 +166,115 @@ func test_an_effect_broadcasts_its_declared_event_tags() -> void:
 	Factory.apply(asc, effect)
 	assert_eq(listener.activations, 1, "the effect woke the passive")
 #endregion
+#region The whole payload, and the shape a wire can carry
+## Ten pieces, because a hit is not describable in five: what was struck, what
+## struck with, and what either of them was at the moment it happened.
+func test_an_event_carries_all_ten_payload_fields() -> void:
+	var weapon: GameplayEffect = Factory.infinite([] as Array[GameplayEffectModifier])
+	var event: GameplayEventData = GameplayEventData.new()
+	event.event_tag = DAMAGE
+	event.instigator = fixture.owner
+	event.target = fixture.owner
+	event.magnitude = 7.0
+	event.context = GameplayEffectContext.new(fixture.owner)
+	event.optional_object = weapon
+	event.optional_object2 = weapon
+	event.instigator_tags = [&"Caster.Undead"] as Array[StringName]
+	event.target_tags = [&"Victim.Living"] as Array[StringName]
+	event.target_data = GameplayAbilityTargetData.new()
+
+	assert_eq(event.event_tag, DAMAGE, "the tag")
+	assert_eq(event.instigator, fixture.owner, "who caused it")
+	assert_eq(event.target, fixture.owner, "who it is about")
+	assert_eq(event.magnitude, 7.0, "the one number")
+	assert_not_null(event.context, "where it came from")
+	assert_eq(event.optional_object, weapon, "the first slot")
+	assert_eq(event.optional_object2, weapon, "and the second")
+	assert_eq(event.instigator_tags.size(), 1, "what the instigator was")
+	assert_eq(event.target_tags.size(), 1, "what the target was")
+	assert_not_null(event.target_data, "and what it was aimed at")
+
+
+## The snapshots are of the moment it was sent. A listener woken later is about
+## that moment, and re-reading the world would answer a different question.
+func test_event_tag_snapshots_do_not_change_after_dispatch() -> void:
+	asc.add_tag(&"Caster.Undead")
+
+	var event: GameplayEventData = _event(DAMAGE)
+	asc.send_gameplay_event(event)
+
+	assert_true(event.instigator_tags.has(&"Caster.Undead"), "frozen as it was")
+
+	asc.remove_tag(&"Caster.Undead")
+	asc.add_tag(&"Caster.Living")
+
+	assert_true(event.instigator_tags.has(&"Caster.Undead"), "and it stays that way")
+	assert_false(event.instigator_tags.has(&"Caster.Living"), "the world moved on without it")
+
+
+## A sender that filled the snapshot in itself knew something dispatch does not,
+## so dispatch leaves it alone.
+func test_a_sender_that_said_what_the_tags_were_is_believed() -> void:
+	asc.add_tag(&"Caster.Living")
+
+	var event: GameplayEventData = _event(DAMAGE)
+	event.instigator_tags = [&"Caster.Undead"] as Array[StringName]
+	asc.send_gameplay_event(event)
+
+	assert_eq(event.instigator_tags, [&"Caster.Undead"] as Array[StringName], "as it was told")
+
+
+func test_gameplay_event_wire_round_trips_without_object_references() -> void:
+	var said: GameplayEventWire = GameplayEventWire.new()
+	said.event_tag = CRITICAL
+	said.instigator = GameplayNetEntityId.of(7)
+	said.target = GameplayNetEntityId.of(9)
+	said.instigator_tags = [&"Caster.Undead"] as Array[StringName]
+	said.target_tags = [&"Victim.Living"] as Array[StringName]
+	said.magnitude = 3.5
+
+	var wire: Dictionary = said.to_wire()
+	for key: Variant in wire:
+		var carried: Variant = wire[key]
+		assert_false(carried is Object, "`%s` crosses as a value, not a reference" % key)
+
+	var back: GameplayEventWire = GameplayEventWire.from_wire(wire)
+	assert_not_null(back, "it came back")
+	assert_eq(back.event_tag, CRITICAL, "the tag survived")
+	assert_eq(back.instigator.value, 7, "and who caused it")
+	assert_eq(back.target.value, 9, "and who it was about")
+	assert_eq(back.instigator_tags, said.instigator_tags, "and both snapshots")
+	assert_eq(back.target_tags, said.target_tags, "both of them")
+	assert_almost_eq(back.magnitude, 3.5, 0.0001, "and the number")
+
+
+## A malformed wire is refused rather than repaired: it came from a machine that
+## disagrees about this contract, and guessing what it meant is how one bad
+## sender becomes two.
+func test_a_malformed_wire_is_refused_rather_than_repaired() -> void:
+	var wire: Dictionary = GameplayEventWire.new().to_wire()
+	wire[GameplayEventWire.MAGNITUDE_KEY] = "not a number"
+
+	assert_null(GameplayEventWire.from_wire(wire), "a field of the wrong type is a refusal")
+	assert_null(GameplayEventWire.from_wire({}), "and so is nothing at all")
+
+
+## An object with no place to live has no name another machine could resolve, so
+## it is left out - not sent as its address, and not as its class.
+func test_an_unregistered_optional_object_is_omitted_not_stringified() -> void:
+	var registry: GameplayNetRegistry = GameplayNetRegistry.new()
+
+	var event: GameplayEventData = _event(DAMAGE)
+	event.optional_object = GameplayEffect.new()
+
+	var said: GameplayEventWire = GameplayEventTranslator.to_wire(event, registry)
+
+	assert_not_null(said, "the event still crosses")
+	assert_null(said.optional_definition, "the nameless object did not")
+	var wire: Dictionary = said.to_wire()
+	# Compared as a bool rather than handed to assert_eq: a Dictionary answers
+	# Variant, tests are not excluded from this project's warnings, and an
+	# untyped argument to a typed parameter is one of them.
+	var says_none: bool = wire[GameplayEventWire.OPTIONAL_KEY] == GameplayNetDefinitionId.NONE
+	assert_true(says_none, "the wire says there was none rather than describing it")
+#endregion

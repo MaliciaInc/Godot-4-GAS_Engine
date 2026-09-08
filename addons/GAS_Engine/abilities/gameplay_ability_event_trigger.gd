@@ -11,6 +11,25 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAbilityEventTrigger extends Resource
 
+## What wakes this trigger.
+##
+## Three, matching the reference. The two tag sources are not the same
+## question: OWNED_TAG_ADDED is an edge and OWNED_TAG_PRESENT is a level, so
+## an ability that wants "while burning" answered by the edge would never
+## start on a character that was already burning when it was granted.
+enum Source {
+	## An event was dispatched. The ability receives its payload.
+	GAMEPLAY_EVENT,
+	## The owner just acquired a matching tag. Losing it again does not
+	## cancel what the acquisition started.
+	OWNED_TAG_ADDED,
+	## The owner has a matching tag now - including at the moment of the
+	## grant. Losing it cancels the activation, because the tag is the
+	## condition the ability runs under rather than the thing that started it.
+	OWNED_TAG_PRESENT,
+}
+
+@export var source: GameplayAbilityEventTrigger.Source = Source.GAMEPLAY_EVENT
 @export var event_query: GameplayTagQuery = null
 
 
@@ -21,6 +40,7 @@ static func for_tag(tag: StringName) -> GameplayAbilityEventTrigger:
 	expression.operator = GameplayTagQueryExpression.Operator.ANY
 	expression.tags = [tag]
 	var trigger: GameplayAbilityEventTrigger = GameplayAbilityEventTrigger.new()
+	trigger.source = GameplayAbilityEventTrigger.Source.GAMEPLAY_EVENT
 	trigger.event_query = GameplayTagQuery.new()
 	trigger.event_query.root = expression
 	return trigger

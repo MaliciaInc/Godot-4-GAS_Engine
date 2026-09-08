@@ -625,6 +625,11 @@
         "left": "test/parity/contracts/*.gd:_*",
         "right": "test/parity/contracts/*.gd:_*",
         "reason": "Every case in the differential corpus is the same eleven fields filled in: an id, the reference it was taken from, an initial state, one input, and the seven things the reference says happen. That sameness is the point rather than a smell - a corpus whose cases had different shapes would be a corpus where a dimension is checked in one case and quietly skipped in the next, which is exactly what GameplayParityCase.is_complete() refuses. What differs between two cases is what they say, and there is nothing to extract from that but the shape they already share."
+      },
+      {
+        "left": "addons/GAS_Engine/networking/gameplay_event_translator.gd:to_wire",
+        "right": "addons/GAS_Engine/networking/gameplay_event_translator.gd:from_wire",
+        "reason": "A codec's two directions are the same list of fields walked in opposite directions, so they mirror each other by construction. Writing the pair once would mean a table of field names driving both, which in GDScript means Variant on every read and write - a dynamic boundary in the middle of the one place that exists to keep a contract typed, and precisely what this project's typing rules forbid. F6.1.3 declares the mirror here so a future duplication that is an oversight still fails."
       }
     ]
   }

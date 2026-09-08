@@ -65,6 +65,11 @@ func try_activate_with(
 		return result
 
 	var error: AbilityRuntime.ActivationError = ability_runtime.activation_error(spec)
+	if error == AbilityRuntime.ActivationError.NONE and activation != null:
+		# Only an activation carrying an event can answer the source gates, and
+		# only after the ordinary gates have had their say - a spec that is on
+		# cooldown is on cooldown whoever asked.
+		error = ability_runtime.source_gate_error(spec, activation.gameplay_event)
 	if error != AbilityRuntime.ActivationError.NONE:
 		result.status = _translate(error)
 		spec.last_activation_result = result
