@@ -1,13 +1,13 @@
 {
-  "units": 2375,
-  "units_by_language": "gdscript 2333, powershell 4, python 38",
-  "elapsed_seconds": 9.528913699999976,
+  "units": 2382,
+  "units_by_language": "gdscript 2340, powershell 4, python 38",
+  "elapsed_seconds": 9.901727700002084,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 22951
+    "behavioral": 22962
   },
   "blocking": 0,
   "findings": [
@@ -930,6 +930,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:371-383:apply_cooldown",
+      "right": "test/unit/test_authoring_friction.gd:65-73:_scripts_in",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:141-149:_end_with",
       "right": "addons/GAS_Engine/editor/composer/composer_flow_anchors.gd:105-112:edge_in",
       "score": 0.875,
@@ -1378,13 +1385,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:30-37:create_matching",
-      "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_effect_blocked_by_immunity.gd:18-26:create",
-      "score": 0.8125,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal",
       "right": "addons/GAS_Engine/editor/composer/composer_statement_factory.gd:56-67:arguments",
       "score": 0.8095238095238095,
@@ -1402,6 +1402,13 @@
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:90-100:_place",
       "right": "addons/GAS_Engine/animation/gameplay_animation_ownership.gd:46-57:claim",
       "score": 0.8076923076923077,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal",
+      "right": "test/unit/test_authoring_friction.gd:65-73:_scripts_in",
+      "score": 0.8,
       "category": "executable"
     },
     {
@@ -1666,13 +1673,6 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:20-27:create",
-      "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_effect_applied.gd:29-42:create",
-      "score": 0.7894736842105263,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:30-37:create_matching",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_effect_applied.gd:29-42:create",
       "score": 0.7894736842105263,
       "category": "executable"
