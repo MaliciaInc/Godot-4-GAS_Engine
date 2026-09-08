@@ -731,6 +731,23 @@ func wait_gameplay_event(tag: StringName) -> AbilityTaskWaitGameplayEvent:
 	return task as AbilityTaskWaitGameplayEvent
 
 
+## The same wait, kept open.
+##
+## Every match is announced through `event_received` and the task stays until
+## the ability ends or somebody cancels it - which is what "while I channel,
+## every time I am hit" needs, and what a loop around the one-shot above was
+## standing in for.
+## @composer
+func wait_gameplay_events(
+	tag: StringName,
+	only_match_exact: bool = false,
+	from_asc: AbilitySystemComponent = null
+) -> AbilityTaskWaitGameplayEvent:
+	return _own(
+		AbilityTaskWaitGameplayEvent.create(self, tag, false, only_match_exact, from_asc)
+	) as AbilityTaskWaitGameplayEvent
+
+
 ## @composer
 func wait_target_data() -> AbilityTaskWaitTargetData:
 	return _own(AbilityTaskWaitTargetData.create(self)) as AbilityTaskWaitTargetData

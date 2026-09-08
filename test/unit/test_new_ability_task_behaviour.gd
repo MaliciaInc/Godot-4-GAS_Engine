@@ -328,3 +328,92 @@ func test_a_sync_point_can_be_told_not_to_wait_for_ever() -> void:
 	assert_true(task.is_finished(), "it went on")
 	assert_true(task.timed_out, "and says it did so without them")
 #endregion
+
+#region An event wait that can be told three things
+const EVENT_DAMAGE: StringName = &"Event.Damage"
+const EVENT_CRITICAL: StringName = &"Event.Damage.Critical"
+
+
+## An event from this component, with nothing on it but its tag.
+func _damage_event(tag: StringName) -> GameplayEventData:
+	var event: GameplayEventData = GameplayEventData.new()
+	event.event_tag = tag
+	event.instigator = fixture.owner
+	event.target = fixture.owner
+	return event
+
+
+## Kept open, it is a listener rather than a wait.
+##
+## An ability that wants "every time I am hit, while I channel" wrapped the
+## one-shot in a loop before, and a loop is a thing that can be left running.
+func test_a_continuous_gameplay_event_task_receives_more_than_one_event() -> void:
+	var task: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_events(EVENT_DAMAGE)
+	var heard: Array[StringName] = []
+	task.event_received.connect(
+		func(event: GameplayEventData) -> void: heard.append(event.event_tag)
+	)
+
+	asc.send_gameplay_event(_damage_event(EVENT_DAMAGE))
+	asc.send_gameplay_event(_damage_event(EVENT_CRITICAL))
+
+	assert_eq(heard, [EVENT_DAMAGE, EVENT_CRITICAL] as Array[StringName], "both of them")
+	assert_false(task.is_finished(), "and it is still listening")
+
+
+func test_exact_gameplay_event_wait_ignores_children() -> void:
+	var task: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_events(EVENT_DAMAGE, true)
+	var heard: Array[StringName] = []
+	task.event_received.connect(
+		func(event: GameplayEventData) -> void: heard.append(event.event_tag)
+	)
+
+	asc.send_gameplay_event(_damage_event(EVENT_CRITICAL))
+	assert_true(heard.is_empty(), "a child is not the tag it was asked for")
+
+	asc.send_gameplay_event(_damage_event(EVENT_DAMAGE))
+	assert_eq(heard, [EVENT_DAMAGE] as Array[StringName], "the tag itself is")
+
+
+func test_gameplay_event_wait_can_listen_to_an_external_asc() -> void:
+	var other: ASCFixture = ASCFixture.create("Ally")
+	add_child_autofree(other.owner)
+
+	var task: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_events(
+		EVENT_DAMAGE, false, other.asc
+	)
+	# An array rather than an int: GDScript captures a primitive by value, so a
+	# counter incremented inside the lambda would be incremented on a copy.
+	var heard: Array[StringName] = []
+	task.event_received.connect(
+		func(event: GameplayEventData) -> void: heard.append(event.event_tag)
+	)
+
+	other.asc.send_gameplay_event(_damage_event(EVENT_DAMAGE))
+	assert_eq(heard.size(), 1, "somebody else's event reached it")
+
+	# And its own component does not reach it twice: the runtime routes to tasks
+	# it owns, and a task listening elsewhere connected to one signal only.
+	asc.send_gameplay_event(_damage_event(EVENT_DAMAGE))
+	assert_eq(heard.size(), 2, "its own still arrives, once")
+
+
+func test_gameplay_event_wait_disconnects_from_external_asc_on_finish() -> void:
+	var other: ASCFixture = ASCFixture.create("Ally")
+	add_child_autofree(other.owner)
+
+	var task: AbilityTaskWaitGameplayEvent = ability.wait_gameplay_events(
+		EVENT_DAMAGE, false, other.asc
+	)
+	assert_true(
+		other.asc.gameplay_event_received.is_connected(task.handle_gameplay_event),
+		"listening while it runs"
+	)
+
+	task.cancel(GameplayAbilityTask.CancelReason.ABILITY_ABORTED)
+
+	assert_false(
+		other.asc.gameplay_event_received.is_connected(task.handle_gameplay_event),
+		"and let go on the way out, however it went out"
+	)
+#endregion
