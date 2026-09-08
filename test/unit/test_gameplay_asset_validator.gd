@@ -201,23 +201,6 @@ func test_a_legacy_multiply_under_the_unreal_profile_is_said_out_loud() -> void:
 			assert_eq(finding.severity, Result.Severity.WARNING, "it is not an error")
 
 
-func test_an_explicit_arm_says_nothing_under_either_profile() -> void:
-	var effect: GameplayEffect = Factory.infinite(
-		[
-			Factory.modifier(
-				ATTACK, GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5
-			)
-		] as Array[GameplayEffectModifier]
-	)
-
-	assert_false(
-		_codes(Validator.validate_effect(effect, _unreal_profile())).has(
-			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
-		),
-		"a name that only means one thing needs no warning"
-	)
-
-
 func test_a_stacking_effect_that_never_answered_the_stack_question_is_said_out_loud() -> void:
 	var stacking: GameplayEffect = Factory.stacked(
 		Factory.infinite([Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]),
@@ -250,15 +233,40 @@ func test_answering_the_stack_question_ends_it() -> void:
 	)
 
 
-func test_a_non_stacking_effect_is_never_asked_the_stack_question() -> void:
-	var effect: GameplayEffect = Factory.infinite(
-		[Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]
-	)
+## An effect that answered the question, in each of the two ways there are to
+## answer it, says nothing under either profile.
+##
+##     [what it is, the effect, the code it must not carry]
+func _quiet_cases() -> Array:
+	return [
+		[
+			"an explicit arm",
+			Factory.infinite(
+				[
+					Factory.modifier(
+						ATTACK, GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5
+					)
+				] as Array[GameplayEffectModifier]
+			),
+			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE,
+		],
+		[
+			"nothing that stacks",
+			Factory.infinite([Factory.add(ATTACK, 10.0)] as Array[GameplayEffectModifier]),
+			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER,
+		],
+	]
+
+
+func test_an_effect_with_nothing_to_answer_is_left_alone(
+	case: Array = use_parameters(_quiet_cases())
+) -> void:
+	var described: String = case[0]
+	var effect: GameplayEffect = case[1]
+	var never: Result.Code = case[2]
 
 	assert_false(
-		_codes(Validator.validate_effect(effect, _unreal_profile())).has(
-			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
-		),
-		"nothing stacks, so nothing to answer"
+		_codes(Validator.validate_effect(effect, _unreal_profile())).has(never),
+		"%s: nothing to warn about" % described
 	)
 #endregion

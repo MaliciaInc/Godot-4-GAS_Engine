@@ -841,6 +841,67 @@ func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 	ability_runtime.cancel_with_tags(cancel_tags)
 
 
+## Grant and run once, retiring the grant when that run ends.
+##
+## The activation result, not a handle: the grant is gone either way, and
+## what a caller needs to know is why it did not start.
+## @composer
+func give_ability_and_activate_once(
+	scene: PackedScene,
+	level: float = 1.0,
+	source: GameplayAbilitySource = null,
+	context: GameplayEffectContext = null
+) -> GameplayAbilityActivationResult:
+	return ability_runtime.give_and_activate_once(scene, level, source, context)
+
+
+## Retire this grant once nothing is still running it. False when the handle
+## names nothing here.
+## @composer
+func set_remove_ability_on_end(handle: GameplayAbilityHandle) -> bool:
+	return ability_runtime.remove_ability_on_end(handle)
+
+
+## Every grant on this component.
+## @composer
+func get_ability_specs() -> Array[GameplayAbilitySpec]:
+	return ability_runtime.specs()
+
+
+## What this grant's cooldown is doing right now.
+## @composer
+func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldownState:
+	return ability_runtime.get_ability_cooldown_state(handle)
+
+
+## Which input slots are held down, as this component understands it.
+## @composer
+func get_held_inputs() -> Array[int]:
+	return ability_runtime.held_inputs()
+
+
+## Cancel every activation whose ability matches, leaving `excluding` alone.
+## @composer
+func cancel_abilities_matching(
+	query: GameplayTagQuery, excluding: GameplayAbilitySpec = null
+) -> void:
+	ability_runtime.cancel_matching_query(query, excluding)
+
+
+## Cancel every activation in flight, for whatever reason is given.
+## @composer
+func cancel_all_abilities(
+	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
+) -> void:
+	ability_runtime.abort_all(reason)
+
+
+## Retire every grant. Activations in flight are cancelled first.
+## @composer
+func clear_all_abilities() -> void:
+	ability_runtime.clear()
+
+
 ## Deprecated: use bind_ability_handle_to_input().
 ##
 ## The runtime refuses and says so; the facade used to drop the answer, so a

@@ -15,4 +15,4 @@ class_name GameplayEffectCancelAbilityTagsComponent extends GameplayEffectCompon
 func on_effect_applied(context: GameplayEffectComponentRuntimeContext) -> void:
 	if context.target_asc == null or context.target_asc.ability_runtime == null:
 		return
-	context.target_asc.ability_runtime.cancel_matching_query(query)
+	context.target_asc.cancel_abilities_matching(query)

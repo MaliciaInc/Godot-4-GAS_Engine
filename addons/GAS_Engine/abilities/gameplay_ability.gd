@@ -645,7 +645,7 @@ func get_cooldown_tags() -> Array[StringName]:
 func get_cooldown_state() -> AbilityCooldownState:
 	if owner_asc == null or current_spec == null:
 		return AbilityCooldownState.new()
-	return owner_asc.ability_runtime.get_ability_cooldown_state(current_spec.handle)
+	return owner_asc.get_ability_cooldown_state(current_spec.handle)
 #endregion
 
 

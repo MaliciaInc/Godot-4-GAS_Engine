@@ -154,23 +154,37 @@ const NETWORK_MUST_NOT_APPEAR: Array[String] = [
 ]
 
 
-func test_the_readme_says_what_the_network_layer_actually_ships() -> void:
+## One section of the README, from its heading to the next one that ends it.
+##
+## Read rather than assumed: a section somebody deleted fails loudly here
+## instead of matching nothing and passing quietly.
+func _section(heading: String, ends_at: String) -> String:
 	var printed: String = FileAccess.get_file_as_string(README)
-	var opened: int = printed.find("### Networking")
-	assert_true(opened >= 0, "the README still has a networking section")
+	var opened: int = printed.find(heading)
+	assert_true(opened >= 0, "the README still has a `%s` section" % heading)
+	if opened < 0:
+		return ""
+	var closed: int = printed.find(ends_at, opened + 1)
+	return printed.substr(opened, closed - opened if closed > opened else -1)
 
-	var closed: int = printed.find("
-## ", opened)
-	var section: String = printed.substr(opened, closed - opened if closed > opened else -1)
 
-	# Matched without case, because what is being checked is that the section
-	# tells a reader about the thing - not that it capitalised it the way this
-	# test happened to be written.
+## Matched without case throughout. What is checked is that the section tells
+## a reader about the thing, not that it capitalised it the way a test expected.
+func _assert_section_says(
+	section: String, must_appear: Array[String], about: String
+) -> void:
 	var lowered: String = section.to_lower()
-	for said: String in NETWORK_MUST_APPEAR:
+	for said: String in must_appear:
 		assert_true(
-			lowered.contains(said.to_lower()), "the networking section names `%s`" % said
+			lowered.contains(said.to_lower()), "the %s section names `%s`" % [about, said]
 		)
+
+
+func test_the_readme_says_what_the_network_layer_actually_ships() -> void:
+	var section: String = _section("### Networking", "\n## ")
+	_assert_section_says(section, NETWORK_MUST_APPEAR, "networking")
+
+	var lowered: String = section.to_lower()
 	for denied: String in NETWORK_MUST_NOT_APPEAR:
 		assert_false(
 			lowered.contains(denied.to_lower()), "the section no longer claims `%s`" % denied
@@ -181,6 +195,9 @@ func test_the_readme_says_what_the_network_layer_actually_ships() -> void:
 		section.contains("not") and section.contains("transport"),
 		"the section says the transport is not here yet"
 	)
+
+
+
 ## What the attributes section has to document.
 ##
 ## Two profiles ship and they are different arithmetic, not a setting on one
@@ -202,17 +219,8 @@ const AGGREGATION_MUST_APPEAR: Array[String] = [
 
 
 func test_the_readme_documents_both_aggregation_profiles() -> void:
-	var printed: String = FileAccess.get_file_as_string(README)
-	var opened: int = printed.find("### Attributes")
-	assert_true(opened >= 0, "the README still has an attributes section")
-
-	var closed: int = printed.find("
-### ", opened + 1)
-	var section: String = printed.substr(opened, closed - opened if closed > opened else -1)
-	var lowered: String = section.to_lower()
-
-	for said: String in AGGREGATION_MUST_APPEAR:
-		assert_true(lowered.contains(said.to_lower()), "the attributes section names `%s`" % said)
+	var section: String = _section("### Attributes", "\n### ")
+	_assert_section_says(section, AGGREGATION_MUST_APPEAR, "attributes")
 
 	# The channels are the part somebody gets wrong: a modifier that lands on a
 	# later one multiplies what the earlier ones produced.

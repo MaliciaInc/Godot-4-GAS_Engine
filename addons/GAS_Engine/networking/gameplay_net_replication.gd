@@ -43,7 +43,7 @@ static func snapshot_of(
 		state.attributes[name] = asc.get_attribute_base(name)
 	for tag: StringName in asc.tags.active_tags():
 		state.tags[tag] = asc.tags.count_exact(tag)
-	for spec: GameplayAbilitySpec in asc.ability_runtime.specs():
+	for spec: GameplayAbilitySpec in asc.get_ability_specs():
 		var granted: GameplayNetDefinitionId = registry.register_definition(_scene_of(spec))
 		if granted.is_valid():
 			state.abilities.append(granted.value)

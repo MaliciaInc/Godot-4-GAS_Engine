@@ -214,3 +214,116 @@ func test_cleanup_empties_the_spec_registry() -> void:
 
 	assert_eq(asc.ability_runtime.specs().size(), 0, "nothing granted survives cleanup")
 #endregion
+#region Reachable from the component itself
+## Eight ordinary questions about an ability that used to be answerable only
+## through `asc.ability_runtime`.
+##
+## Game code was reaching past the component to ask them - four places inside
+## this addon were doing it too - which means the runtime's shape was part of
+## the public contract by accident. These are pass-throughs and nothing more:
+## what each one is worth proving is that it is there, that it kept the
+## runtime's own return type, and that it did the thing.
+func test_the_component_answers_for_every_grant_it_holds() -> void:
+	var first: GameplayAbilityHandle = asc.give_ability(_scene())
+	var second: GameplayAbilityHandle = asc.give_ability(_scene())
+
+	var held: Array[GameplayAbilitySpec] = asc.get_ability_specs()
+	assert_eq(held.size(), 2, "both grants, from the component")
+	assert_true(asc.get_ability_spec(first) in held, "the first is one of them")
+	assert_true(asc.get_ability_spec(second) in held, "and the second")
+
+
+func test_grant_and_run_once_answers_with_a_result_rather_than_a_handle() -> void:
+	var ran: GameplayAbilityActivationResult = asc.give_ability_and_activate_once(_scene())
+
+	assert_true(ran.is_ok(), "it started: %s" % ran.status)
+	assert_true(
+		asc.get_ability_specs().is_empty(),
+		"and the grant is gone again, which is what once means"
+	)
+
+
+## The refusal survives the pass-through. A caller that got a bare bool back
+## would have to guess which of half a dozen reasons it was.
+func test_a_refused_grant_and_run_once_still_says_why() -> void:
+	asc.add_tag(&"Status.Silenced")
+	var probe: ProbeAbility = Probe.build(PROBE_TAG)
+	probe.activation_blocked_query = GameplayTagQuery.new()
+	probe.activation_blocked_query.root = GameplayTagQueryExpression.new()
+	probe.activation_blocked_query.root.operator = GameplayTagQueryExpression.Operator.ANY
+	probe.activation_blocked_query.root.tags = [&"Status.Silenced"] as Array[StringName]
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(probe)
+	probe.free()
+
+	var ran: GameplayAbilityActivationResult = asc.give_ability_and_activate_once(scene)
+
+	assert_false(ran.is_ok(), "blocked")
+	# By the result's own vocabulary. It is a different enum from
+	# AbilityRuntime.ActivationError on purpose: one is why the runtime
+	# refused, the other is what a caller is handed, and they do not line up
+	# value for value.
+	assert_eq(
+		ran.status,
+		GameplayAbilityActivationResult.Status.BLOCKED_BY_TAGS,
+		"and it says which"
+	)
+
+
+func test_retire_on_end_is_asked_of_the_component() -> void:
+	var handle: GameplayAbilityHandle = asc.give_ability(_scene())
+
+	assert_true(asc.set_remove_ability_on_end(handle), "the grant is known here")
+	assert_false(
+		asc.set_remove_ability_on_end(GameplayAbilityHandle.new()),
+		"and one that is not, is not"
+	)
+
+
+func test_a_grants_cooldown_state_is_asked_of_the_component() -> void:
+	var handle: GameplayAbilityHandle = asc.give_ability(_scene())
+	var state: AbilityCooldownState = asc.get_ability_cooldown_state(handle)
+
+	assert_not_null(state, "there is always an answer")
+	assert_false(state.active, "and nothing has been committed yet")
+
+
+## Held inputs stay ints. They are slots the component routes by, and a caller
+## that got names back would be holding a second vocabulary for the same thing.
+func test_the_component_reports_the_input_slots_it_is_holding() -> void:
+	var handle: GameplayAbilityHandle = asc.give_ability(_scene(), 1.0, SLOT)
+	assert_true(handle.is_valid(), "granted onto a slot")
+
+	assert_eq(asc.get_held_inputs(), [] as Array[int], "nothing is held to start")
+
+	asc.ability_local_input_pressed(SLOT)
+	assert_eq(asc.get_held_inputs(), [SLOT] as Array[int], "the slot, as an int")
+
+	asc.ability_local_input_released(SLOT)
+	assert_eq(asc.get_held_inputs(), [] as Array[int], "and let go again")
+
+
+func test_cancelling_by_query_and_cancelling_everything_both_run_here() -> void:
+	asc.give_ability_and_activate_once(_scene())
+
+	var query: GameplayTagQuery = GameplayTagQuery.new()
+	query.root = GameplayTagQueryExpression.new()
+	query.root.operator = GameplayTagQueryExpression.Operator.ANY
+	query.root.tags = [PROBE_TAG] as Array[StringName]
+
+	# Neither has anything to cancel here, and the point is that both are
+	# reachable and neither refuses: the runtime already owns what they mean.
+	asc.cancel_abilities_matching(query)
+	asc.cancel_all_abilities()
+	assert_true(asc.get_ability_specs().is_empty(), "nothing was left running")
+
+
+func test_clearing_every_grant_is_asked_of_the_component() -> void:
+	asc.give_ability(_scene())
+	asc.give_ability(_scene())
+	assert_eq(asc.get_ability_specs().size(), 2, "two grants")
+
+	asc.clear_all_abilities()
+
+	assert_true(asc.get_ability_specs().is_empty(), "and none")
+#endregion

@@ -225,47 +225,47 @@ func test_a_second_channel_multiplies_what_the_first_one_produced() -> void:
 
 
 #region Overrides
-## An override is not scaled by the stack count.
-##
-## It is a value rather than an amount: two stacks of "set this to 30" is still
-## 30. Everything else about a stack multiplies, which is exactly why this one
-## has to be said out loud.
-func test_an_override_is_not_multiplied_by_the_stack_count() -> void:
-	_use_unreal()
-	var one: Array[GameplayEffectModifier] = [
-		_modifier(GameplayEffectModifier.Operation.OVERRIDE, 30.0)
-	]
+## Two stacks of one modifier, so a test can say what the count did to it.
+func _two_stacks_of(
+	operation: GameplayEffectModifier.Operation, magnitude: float
+) -> float:
 	var stacking: GameplayEffect = Factory.stacked(
-		Factory.infinite(one), GameplayEffect.StackingType.AGGREGATE_BY_SOURCE, 4, true
+		Factory.infinite([_modifier(operation, magnitude)] as Array[GameplayEffectModifier]),
+		GameplayEffect.StackingType.AGGREGATE_BY_SOURCE,
+		4,
+		true
+	)
+	Factory.apply(asc, stacking)
+	Factory.apply(asc, stacking)
+	return _attack()
+
+
+## What a stack count does to a magnitude, by what its operation means.
+##
+## An override is a value rather than an amount, so two stacks of "set this to
+## 30" is still 30. A half-again buff spelled with the legacy name has to scale
+## the arm the fold will put it in: scaling it as a bare product and then
+## folding it additively is two answers to one question, and only a stacking
+## effect authored with that spelling ever shows the disagreement.
+func test_a_stack_scales_a_magnitude_by_what_its_operation_means() -> void:
+	_use_unreal()
+	assert_almost_eq(
+		_two_stacks_of(GameplayEffectModifier.Operation.OVERRIDE, 30.0),
+		30.0,
+		TOLERANCE,
+		"two stacks of an override is still it"
 	)
 
-	Factory.apply(asc, stacking)
-	Factory.apply(asc, stacking)
-
-	assert_almost_eq(_attack(), 30.0, TOLERANCE, "two stacks of it is still it")
-
-
-## A stack scales the arm its magnitude will be folded into.
-##
-## The fold treats the legacy MULTIPLY as the additive arm under this profile,
-## so stack scaling has to as well. Scaling it as a bare product and then
-## folding it additively is two answers to one question, and the disagreement
-## only ever appears on a stacking effect authored with the legacy spelling -
-## which is the hardest place to notice it.
-func test_a_stacked_legacy_multiplier_scales_the_arm_it_is_folded_into() -> void:
+	# A fresh entity, because the assertion above left one standing on this one.
+	before_each()
 	_use_unreal()
-	var one: Array[GameplayEffectModifier] = [
-		_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5)
-	]
-	var stacking: GameplayEffect = Factory.stacked(
-		Factory.infinite(one), GameplayEffect.StackingType.AGGREGATE_BY_SOURCE, 4, true
+	assert_almost_eq(
+		_two_stacks_of(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
+		200.0,
+		TOLERANCE,
+		"the bias stacks and not the factor: two stacks of half-again is twice"
 	)
 
-	Factory.apply(asc, stacking)
-	Factory.apply(asc, stacking)
-
-	# The bias stacks, not the factor: two stacks of x1.5 are +100%.
-	assert_almost_eq(_attack(), 200.0, TOLERANCE, "two stacks of half-again is twice")
 #endregion
 
 

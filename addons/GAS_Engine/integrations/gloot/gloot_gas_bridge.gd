@@ -203,7 +203,7 @@ func _take_back(receipt: GlootGasEquipmentReceipt) -> void:
 	for handle: GameplayEffectHandle in receipt.applied_effects:
 		target_asc.remove_active_effect_by_handle(handle)
 	for handle: GameplayAbilityHandle in receipt.granted_abilities:
-		target_asc.ability_runtime.remove_ability(handle)
+		target_asc.remove_ability_handle(handle)
 
 
 ## Take back the worn item's grant, if there is one. Safe to call repeatedly.
