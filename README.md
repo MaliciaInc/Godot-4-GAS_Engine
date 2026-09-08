@@ -216,9 +216,41 @@ GAS_Engine is maintained centrally by **MaliciaInc**. Bug reports and feature re
 
 ### Networking
 
-GAS_Engine does **not** provide built-in network replication, client-side prediction, reconciliation, or other multiplayer networking infrastructure.
+Multiplayer is in scope, and this section says where the line currently falls
+rather than leaving a project to find it after committing.
 
-Networking is intentionally outside the scope of the framework and may be implemented separately according to the needs of each project.
+What the framework already contains:
+
+- **Authority.** One runtime authors. A runtime that does not own a thing
+  refuses to author it rather than being trusted not to, and a client's request
+  is answered with one of four things: run it, predict it and ask, ask and
+  wait, or refused.
+- **State as readings.** Attributes, tag counts, granted abilities, and each
+  running effect with which definition, how many stacks, how long is left in
+  seconds and in turns, and whether it is inhibited. Effects are not re-applied
+  on the receiving machine: the values that arrive already have them in. The
+  authority is the one machine that simulates.
+- **Three replication modes.** `FULL` tells everybody everything. `MIXED`, the
+  default, sends the running effects to the owner alone and the attributes,
+  tags and cues to everyone. `MINIMAL` sends no effects at all. Snapshots and
+  deltas both respect it.
+- **Prediction for four things, and a refusal for the rest.** A cost, a
+  cooldown, an allowed attribute delta and a cue can each be undone from what
+  the operation itself remembers. A periodic tick, an arbitrary execution and a
+  server-only side effect cannot, and are not promised.
+- **A sync point** an ability can wait on.
+
+What it does **not** contain yet is the transport. Messages leave through a
+signal and arrive through a call, and the identities inside them have a wire
+form while the message itself does not, so today a project carries them over
+its own connection. RPC batching, replicated target data and per-ability net
+security policies are not implemented either. End-to-end multiplayer is not a
+claim this framework can make yet; it is planned, and this section will read
+differently when it ships.
+
+The suite drives three runtimes in one process over a link that can be told to
+repeat, reorder, lose and delay messages, which is how every adverse condition
+here is reachable and deterministic.
 
 ## Proven in a real game
 
@@ -284,17 +316,47 @@ An activation returns a typed result describing what happened instead of collaps
 
 Attributes separate durable base state from derived current state.
 
-The standard aggregation model is:
+Two aggregation profiles ship, chosen per component through
+`compatibility_profile`. They are genuinely different arithmetic rather than a
+setting on one formula, so both are written out.
+
+**`GODOT_NATIVE`** - this engine's own, and the default:
 
 ```text
 current = ((base + sum(ADD)) * product(MULTIPLY)) / product(DIVIDE)
 ```
 
-followed by the last applicable override and the effective clamp.
+followed by the last applicable override and the effective clamp. A base of
+`10`, an additive `+10` and a multiplier of `x2` resolve to `40`, not `30`, and
+two `+50%` buffs are worth `2.25x` because the products multiply.
 
-This means, for example, that a base value of `10`, an additive `+10`, and a multiplier of `x2` resolve to `40`, not `30`.
+**`UE_5_7`** - Unreal's, folded once per evaluation channel, over channels `0`
+to `9`, each channel composing over the value the previous one produced:
 
-Base and effective-value clamps are separate hooks so temporary presentation constraints cannot silently corrupt durable state.
+```text
+value =
+(
+	(value + sum(ADD_BASE))
+	* (1 + sum(MULTIPLY_ADDITIVE - 1))
+	/ (1 + sum(DIVIDE_ADDITIVE - 1))
+)
+* product(MULTIPLY_COMPOUND)
++ sum(ADD_FINAL)
+```
+
+with the override resolved per channel. Two `+50%` buffs authored as
+`MULTIPLY_ADDITIVE` are worth `2.0x`, because the bonuses add and multiply
+once; the same two authored as `MULTIPLY_COMPOUND` are worth `2.25x`. The
+channels are what let a game say "this multiplies the buffed value, not the
+base" without every effect having to know about every other one.
+
+Neither profile is a bug and neither is the fix for the other. **Switching
+profile rebalances every stat in a game that already shipped on the other one**,
+so it is a decision made once, at the start.
+
+Base and effective-value clamps are separate hooks so temporary presentation
+constraints cannot silently corrupt durable state.
+
 
 ### Gameplay effects
 

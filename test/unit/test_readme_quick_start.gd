@@ -129,3 +129,94 @@ func test_the_readme_still_prints_the_calls_that_were_run() -> void:
 	for line: String in MUST_APPEAR:
 		assert_true(printed.contains(line), "the quick start still prints `%s`" % line)
 #endregion
+## What the networking section has to tell a reader, in its own words.
+##
+## The repository contains authority, replication with three modes and a
+## prediction journal, and it contains no transport. A README that denies the
+## first is wrong to anybody who opens the folder; one that omits the second
+## lets a project discover the missing half after it has committed to the
+## framework. Both are checked, because a half-true section is the one that
+## costs somebody a sprint.
+const NETWORK_MUST_APPEAR: Array[String] = [
+	"Authority.",
+	"FULL",
+	"MIXED",
+	"MINIMAL",
+	"prediction",
+	"transport",
+]
+
+## The sentence that was there, and that the code contradicts.
+const NETWORK_MUST_NOT_APPEAR: Array[String] = [
+	"does not** provide built-in network replication",
+	"does not provide built-in network replication",
+	"intentionally outside the scope",
+]
+
+
+func test_the_readme_says_what_the_network_layer_actually_ships() -> void:
+	var printed: String = FileAccess.get_file_as_string(README)
+	var opened: int = printed.find("### Networking")
+	assert_true(opened >= 0, "the README still has a networking section")
+
+	var closed: int = printed.find("
+## ", opened)
+	var section: String = printed.substr(opened, closed - opened if closed > opened else -1)
+
+	# Matched without case, because what is being checked is that the section
+	# tells a reader about the thing - not that it capitalised it the way this
+	# test happened to be written.
+	var lowered: String = section.to_lower()
+	for said: String in NETWORK_MUST_APPEAR:
+		assert_true(
+			lowered.contains(said.to_lower()), "the networking section names `%s`" % said
+		)
+	for denied: String in NETWORK_MUST_NOT_APPEAR:
+		assert_false(
+			lowered.contains(denied.to_lower()), "the section no longer claims `%s`" % denied
+		)
+
+	# The half a reader has to act on: there is no wire yet, and it is coming.
+	assert_true(
+		section.contains("not") and section.contains("transport"),
+		"the section says the transport is not here yet"
+	)
+## What the attributes section has to document.
+##
+## Two profiles ship and they are different arithmetic, not a setting on one
+## formula. A README that prints only one of them leaves a reader who chose the
+## other with numbers that look like a bug, so both formulas, the channels the
+## Unreal one folds over, and the warning that switching rebalances a game are
+## all load-bearing prose.
+const AGGREGATION_MUST_APPEAR: Array[String] = [
+	"GODOT_NATIVE",
+	"UE_5_7",
+	"MULTIPLY_ADDITIVE",
+	"DIVIDE_ADDITIVE",
+	"MULTIPLY_COMPOUND",
+	"ADD_FINAL",
+	"override",
+	"channel",
+	"rebalance",
+]
+
+
+func test_the_readme_documents_both_aggregation_profiles() -> void:
+	var printed: String = FileAccess.get_file_as_string(README)
+	var opened: int = printed.find("### Attributes")
+	assert_true(opened >= 0, "the README still has an attributes section")
+
+	var closed: int = printed.find("
+### ", opened + 1)
+	var section: String = printed.substr(opened, closed - opened if closed > opened else -1)
+	var lowered: String = section.to_lower()
+
+	for said: String in AGGREGATION_MUST_APPEAR:
+		assert_true(lowered.contains(said.to_lower()), "the attributes section names `%s`" % said)
+
+	# The channels are the part somebody gets wrong: a modifier that lands on a
+	# later one multiplies what the earlier ones produced.
+	assert_true(
+		section.contains("0") and section.contains("9"),
+		"the section names the range of evaluation channels"
+	)
