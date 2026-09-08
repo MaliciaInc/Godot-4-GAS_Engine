@@ -253,8 +253,12 @@ func _resume_periodic_clock(active: ActiveGameplayEffect) -> void:
 		return
 	match active.get_effect_def().period_inhibition_policy:
 		GameplayEffect.PeriodInhibitionPolicy.EXECUTE_IMMEDIATELY_ON_UNINHIBIT:
-			if active.missed_tick_while_inhibited:
-				effects.run_periodic_tick(active)
+			# Unconditionally, which is what the name says and what the
+			# reference does. It used to fire only when a whole period had
+			# gone by under inhibition, so an effect inhibited for a fifth of
+			# its period executed there and did nothing here - a difference
+			# neither reading looked wrong for.
+			effects.run_periodic_tick(active)
 			active.restart_period_clock()
 		GameplayEffect.PeriodInhibitionPolicy.RESET_PERIOD_ON_UNINHIBIT:
 			active.restart_period_clock()

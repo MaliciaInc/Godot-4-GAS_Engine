@@ -132,15 +132,14 @@ func _pay_ticks(active: ActiveGameplayEffect, delta: float) -> int:
 
 
 ## No policy runs a tick while inhibited - they only differ in what happens
-## on uninhibit (see GameplayEffectInhibitionRuntime._resume_periodic_clock).
+## on uninhibit (see GameplayEffectInhibitionRuntime._resume_periodic_clock),
+## and none of them needs to be told from here whether a tick went by.
 ## The whole backlog is consumed at once, uncapped: an effect inhibited for
 ## a long time must not arrive at uninhibit still owing thousands of ticks.
 func _skip_ticks_while_inhibited(active: ActiveGameplayEffect, owed: int) -> void:
 	if owed <= 0:
 		return
 	active.consume_ticks(owed)
-	if active.get_effect_def().period_inhibition_policy == GameplayEffect.PeriodInhibitionPolicy.EXECUTE_IMMEDIATELY_ON_UNINHIBIT:
-		active.missed_tick_while_inhibited = true
 
 
 ## One diagnostic per effect per backlog episode, not one per frame.

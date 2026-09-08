@@ -202,3 +202,47 @@ func test_removing_a_periodic_effect_does_not_undo_its_ticks() -> void:
 	# Damage already dealt is durable. Curing a poison does not refund it.
 	assert_almost_eq(fixture.base_of(HEALTH), 47.0, TOLERANCE, "the damage stays")
 #endregion
+#region Uninhibiting is not conditional on having missed something
+## `EXECUTE_IMMEDIATELY_ON_UNINHIBIT` executes when the effect comes back, and
+## not only when a tick went by while it was away.
+##
+## It used to fire only if a whole period had elapsed under inhibition, so an
+## effect inhibited for a fifth of its period executed in the reference and did
+## nothing here. Neither reading looked wrong from the outside, which is why
+## this is asserted from the short side: a five-second inhibition on a
+## one-second period passes either way and proves nothing about the rule.
+func test_uninhibiting_executes_even_when_no_tick_was_missed() -> void:
+	asc.add_tag(&"Status.Blessed")
+	var effect: GameplayEffect = Factory.with_ongoing_requirement(
+		Factory.infinite_periodic([Factory.add(ATTACK, 1.0)], 1.0), [&"Status.Blessed"]
+	)
+	effect.period_inhibition_policy = (
+		GameplayEffect.PeriodInhibitionPolicy.EXECUTE_IMMEDIATELY_ON_UNINHIBIT
+	)
+	var active: ActiveGameplayEffect = Factory.apply(asc, effect)
+	var base: float = asc.get_attribute_current(ATTACK)
+
+	# Less than one period, so nothing was owed at any point.
+	asc.remove_tag(&"Status.Blessed")
+	asc.scheduler.advance_time(0.2)
+	assert_almost_eq(asc.get_attribute_current(ATTACK), base, TOLERANCE, "nothing ticked away")
+
+	asc.add_tag(&"Status.Blessed")
+	assert_almost_eq(
+		asc.get_attribute_current(ATTACK),
+		base + 1.0,
+		TOLERANCE,
+		"coming back executes, missed tick or not"
+	)
+
+	# And the clock starts again from here rather than from where it left off.
+	asc.scheduler.advance_time(0.9)
+	assert_almost_eq(
+		asc.get_attribute_current(ATTACK), base + 1.0, TOLERANCE, "the period restarted"
+	)
+	asc.scheduler.advance_time(0.2)
+	assert_almost_eq(
+		asc.get_attribute_current(ATTACK), base + 2.0, TOLERANCE, "and completes from there"
+	)
+	assert_false(active.inhibited, "left uninhibited")
+#endregion
