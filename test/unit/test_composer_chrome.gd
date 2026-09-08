@@ -252,6 +252,31 @@ func test_a_node_registered_later_reaches_the_palette() -> void:
 	)
 
 
+## A screen whose children are gone answers null rather than handing one back.
+##
+## Returning a freed object through a typed return raises at the caller, and
+## the caller is wherever the editor happened to ask - several frames from the
+## teardown that caused it, which is the worst place to read about it.
+func test_a_screen_whose_children_are_gone_answers_null() -> void:
+	var screen: ComposerScreen = autofree(ComposerScreen.new())
+	screen.size = Vector2(1400.0, 800.0)
+	add_child_autofree(screen)
+	await wait_frames(1)
+
+	assert_not_null(screen.canvas(), "a live screen has a canvas")
+	assert_not_null(screen.inspector(), "and an inspector")
+
+	screen.canvas().free()
+	screen.inspector().free()
+
+	# By type, not by `== null`. A freed object compares equal to null in
+	# GDScript, so assert_null passes just as happily on the corpse this fix
+	# exists to stop being handed out - the assertion has to ask what came back,
+	# not what it compares to.
+	assert_eq(typeof(screen.canvas()), TYPE_NIL, "and once it does not, it says so")
+	assert_eq(typeof(screen.inspector()), TYPE_NIL, "both of them")
+
+
 ## A row in the Output panel takes you to the node it is about.
 ##
 ## Read end to end through the screen rather than by calling the canvas: the

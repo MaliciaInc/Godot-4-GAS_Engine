@@ -432,12 +432,19 @@ func _save_now() -> void:
 		push_error(SAVE_REFUSED % result.refusal.message)
 
 
+## Null once the child is gone, rather than the freed instance itself.
+##
+## Handing a freed object back through a typed return is a SCRIPT ERROR at
+## the caller, several frames away from the teardown that caused it - the
+## same shape of failure GameplayEffectContext had before its getters started
+## answering this question.
 func canvas() -> ComposerCanvas:
-	return _canvas
+	return _canvas if is_instance_valid(_canvas) else null
 
 
+## Null once the child is gone, for the reason canvas() gives.
 func inspector() -> ComposerInspector:
-	return _inspector
+	return _inspector if is_instance_valid(_inspector) else null
 
 
 ## Which keys this screen answers for itself, so the rule that no key has two

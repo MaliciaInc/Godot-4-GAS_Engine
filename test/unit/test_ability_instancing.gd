@@ -95,6 +95,33 @@ func test_per_actor_refuses_a_second_activation_while_the_first_runs() -> void:
 
 
 #region PER_EXECUTION: a fresh instance every time
+## Retiring an execution happens once, and happens completely.
+##
+## The release path used to guard the instance with is_instance_valid before
+## touching it, which could not be false: the only caller is the ability's own
+## `ability_ended`, and an already-freed object can neither emit that nor be
+## bound to the typed parameter that would be asked about. This holds the
+## behaviour the guard pretended to protect - the spec forgets it, and the Node
+## goes - so that removing the guard is a change something can disagree with.
+func test_a_per_execution_instance_is_retired_exactly_once() -> void:
+	var spec: GameplayAbilitySpec = _grant_channeling(
+		GameplayAbility.InstancingPolicy.PER_EXECUTION
+	)
+	var running: ChannelingAbility = _start_execution(spec)
+	var id: int = running.get_instance_id()
+	assert_eq(spec.active_instances.size(), 1, "one execution in flight")
+
+	running.channel_gate.emit()
+
+	assert_true(spec.active_instances.is_empty(), "the spec forgot it")
+	assert_eq(spec.active_count, 0, "and stopped counting it")
+
+	# queue_free lands at the end of the frame, so the Node is gone by the
+	# next one and nothing released it a second time on the way.
+	await wait_frames(2)
+	assert_false(is_instance_id_valid(id), "the Node went with it")
+
+
 func test_per_execution_grants_no_persistent_instance() -> void:
 	var spec: GameplayAbilitySpec = _grant_channeling(GameplayAbility.InstancingPolicy.PER_EXECUTION)
 	assert_null(spec.per_actor_instance, "nothing to reuse - there is no template Node left alive")

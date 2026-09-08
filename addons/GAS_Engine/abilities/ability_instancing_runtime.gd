@@ -67,11 +67,15 @@ func instance_for_activation(spec: GameplayAbilitySpec) -> GameplayAbility:
 ## to `ability_ended`, so this always runs after `end_ability()` has already
 ## cancelled its tasks, forgotten its commit, and decremented `active_count`.
 func release_execution_instance(spec: GameplayAbilitySpec, ability: GameplayAbility) -> void:
+	# No validity guard. The only caller is this ability's own `ability_ended`,
+	# which cannot be emitted by a freed object, and a freed one could not be
+	# bound to a typed parameter to be asked about here either - the call would
+	# fail before the body ran. A guard no test can turn red is a guard that is
+	# not there, and one that reads as if some path needs it.
 	spec.active_instances.erase(ability)
-	if is_instance_valid(ability):
-		ability.owner_asc = null
-		ability.current_spec = null
-		ability.queue_free()
+	ability.owner_asc = null
+	ability.current_spec = null
+	ability.queue_free()
 
 
 ## Start a spec running through whatever its instancing policy means by that -
