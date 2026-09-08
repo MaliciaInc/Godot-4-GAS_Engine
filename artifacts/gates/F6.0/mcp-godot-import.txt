@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: c2ce9b921c48e89303544baf61ba3d2450c8e590926d11fdc1369f2c055af71b
+godot --headless --path . --import; project.godot restored afterwards, which the documented workflow requires because the import rewrites it

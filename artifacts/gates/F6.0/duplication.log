@@ -1,3 +1,12 @@
+RESULT: PASS
+stage:      duplication
+command:    python tooling\gates\run_gate.py duplication artifacts\gates\F6.0
+started:    2026-09-08T22:39:22.1151140Z
+ended:      2026-09-08T22:39:31.9516702Z
+duration_s: 9.837
+exit_code:  0
+
+--- stdout ---
 # Duplication Gate
 
 - Status: **PASS**
@@ -8,7 +17,7 @@
 - Units scanned: 2382
 - Units by language: gdscript 2340, powershell 4, python 38
 - Findings: 366
-- Elapsed: 9.902s
+- Elapsed: 9.659s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
 - Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 22962 (raise with --max-pairs)
@@ -391,3 +400,6 @@
 ## Scan Issues
 
 - None
+
+--- stderr ---
+

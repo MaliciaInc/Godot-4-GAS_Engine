@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F5.6.4 (G32): tooling/distribution_check.py added to the sealed policy set.
+# F6.0.7 (D-06) raises the ability system component's file ceiling 920 -> 1000 for the eight ability operations the phase moves onto the component itself: grant-and-run-once, retire-on-end, the grants, a grant's cooldown state, the held input slots, cancel-by-query, cancel-everything and clear-everything. Same one-line delegation shape every raise before this accepted, with headroom for F6.1.4's search and block surface rather than a second raise in one phase. The reason is written into the allowlist entry itself.
 #
 # python: 3.14.6
-# date-utc: 2026-09-07T23:18:50Z
-# commit-previo: 0a714b0c7f57c34ea95be288d0011487c91ebbf9
+# date-utc: 2026-09-08T22:38:31Z
+# commit-previo: edd5e3349bc69957c4154245857f049670134534
 # files: 26
-771437790f241ae47eac36644b18327e48ecf978c054f329b27c632a1bc7bd33  tooling/.quality-gates.json
+5eb274611edaf6dbcb8620e988f3d5bc32aca20e31f6d9ad80ce1a03fadc1202  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
