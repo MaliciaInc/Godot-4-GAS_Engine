@@ -57,4 +57,27 @@ func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldow
 
 	if state.infinite or state.seconds_remaining > 0.0 or state.turns_remaining > 0:
 		state.active = true
+	_read_authorised_duration(spec, state)
 	return state
+
+
+## What the running cooldown was authorised for, from the application itself.
+##
+## The spec of the active effect rather than the authored number on the
+## definition: a duration written as a magnitude of the ability's level is
+## only a number once it has been applied, and the authored field would report
+## whatever fallback it happened to carry.
+func _read_authorised_duration(
+	spec: GameplayAbilitySpec, state: AbilityCooldownState
+) -> void:
+	var declared: Array[GameplayEffect] = AbilityCommitContract.unique_cooldowns(
+		spec.definition.cooldown_effect, spec.definition.shared_cooldown_effects
+	)
+	for effect: GameplayEffect in declared:
+		var asking: GameplayEffectQuery = GameplayEffectQuery.new()
+		asking.effect_definition = effect
+		for active: ActiveGameplayEffect in ability_runtime.owner_asc.find_active_effects(asking):
+			state.duration = maxf(state.duration, active.spec.duration)
+			# Turns are authorised on the definition and counted down on the
+			# spec, so the definition is the one that still knows the whole.
+			state.turns = maxi(state.turns, effect.duration_turns)

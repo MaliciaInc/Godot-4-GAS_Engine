@@ -98,6 +98,20 @@ func input_released(input_id: int) -> void:
 	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_input_released(input_id))
 
 
+## Somebody said yes, without naming a slot.
+##
+## Its own door rather than an input id, because the generic confirm is not a
+## key: it is whatever the game decided means yes, and a task waiting for it
+## should not have to know which key that was today.
+func input_confirm() -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_confirm())
+
+
+## And somebody said no.
+func input_cancel() -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_cancel())
+
+
 func gameplay_event(event: GameplayEventData) -> void:
 	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_gameplay_event(event))
 

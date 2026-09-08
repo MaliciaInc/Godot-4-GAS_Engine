@@ -142,3 +142,29 @@ func effect_that_granted(handle: GameplayAbilityHandle) -> GameplayEffectHandle:
 		return null
 	var from_effect: GameplayAbilityEffectSource = spec.source as GameplayAbilityEffectSource
 	return from_effect.effect_handle if from_effect != null else null
+
+
+## Every provider still choosing, across every running ability.
+##
+## A snapshot: confirming one can end an ability, which calls off the rest,
+## and a loop reading the live lists while that happens is reading lists that
+## moved under it.
+func previewing_providers() -> Array[GameplayTargetProvider]:
+	var waiting: Array[GameplayTargetProvider] = []
+	for spec: GameplayAbilitySpec in ability_runtime.specs():
+		for instance: GameplayAbility in _instances_of(spec):
+			for provider: GameplayTargetProvider in instance.aiming_providers():
+				if provider.is_choosing():
+					waiting.append(provider)
+	return waiting
+
+
+## Every live instance behind one grant, whichever instancing policy it has.
+func _instances_of(spec: GameplayAbilitySpec) -> Array[GameplayAbility]:
+	var running: Array[GameplayAbility] = []
+	if spec.per_actor_instance != null and is_instance_valid(spec.per_actor_instance):
+		running.append(spec.per_actor_instance)
+	for execution: GameplayAbility in spec.active_instances:
+		if is_instance_valid(execution):
+			running.append(execution)
+	return running

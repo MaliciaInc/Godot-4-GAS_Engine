@@ -301,3 +301,47 @@ func test_asking_for_the_state_changes_nothing() -> void:
 		"and reading it three times spent no time"
 	)
 #endregion
+#region What it was authorised for
+## A bar needs a denominator, and "elapsed plus remaining" is not it: anything
+## that refreshed or extended the cooldown would move it.
+func test_cooldown_state_reports_original_seconds_and_remaining_seconds() -> void:
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _seconds_cooldown(OWN_COOLDOWN, SECONDS)
+	)
+	_commit()
+
+	var fresh: AbilityCooldownState = ability.get_cooldown_state()
+	assert_almost_eq(fresh.duration, SECONDS, TOLERANCE, "the whole wait")
+	assert_almost_eq(fresh.seconds_remaining, SECONDS, TOLERANCE, "and none of it spent")
+
+	fixture.asc.scheduler.advance_time(SHORTER)
+
+	var later: AbilityCooldownState = ability.get_cooldown_state()
+	assert_almost_eq(later.duration, SECONDS, TOLERANCE, "the whole wait is still the whole")
+	assert_almost_eq(
+		later.seconds_remaining, SECONDS - SHORTER, TOLERANCE, "and what is left moved"
+	)
+
+
+func test_turn_cooldown_state_reports_original_turns_and_remaining_turns() -> void:
+	ability = _granted(func(p: ProbeAbility) -> void:
+		p.cooldown_effect = _turns_cooldown(OWN_COOLDOWN, TURNS)
+	)
+	_commit()
+
+	var fresh: AbilityCooldownState = ability.get_cooldown_state()
+	assert_eq(fresh.turns, TURNS, "the whole wait, in turns")
+	assert_eq(fresh.turns_remaining, TURNS, "and none of it taken")
+
+	fixture.asc.advance_turn()
+
+	var later: AbilityCooldownState = ability.get_cooldown_state()
+	assert_eq(later.turns, TURNS, "still the whole")
+	assert_eq(later.turns_remaining, TURNS - 1, "and one fewer left")
+
+
+func test_an_ability_with_no_cooldown_was_authorised_for_nothing() -> void:
+	var state: AbilityCooldownState = ability.get_cooldown_state()
+	assert_almost_eq(state.duration, 0.0, TOLERANCE, "no seconds authorised")
+	assert_eq(state.turns, 0, "and no turns")
+#endregion

@@ -84,6 +84,11 @@ signal ability_committed(handle: GameplayAbilityHandle, result: AbilityCommitRes
 ## A one-shot cue was played on this entity.
 signal cue_executed(cue_tag: StringName)
 
+## Somebody said yes, or no, without naming a slot. Announced as well as
+## routed, so a UI can dismiss itself on the same press that confirmed a cast.
+signal generic_confirmed
+signal generic_cancelled
+
 signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
 
 ## The body an ability happens to has been swapped for another one.
@@ -152,6 +157,16 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		share_attributes = value
 		if is_node_ready():
 			_adopt_attribute_sets()
+
+@export_category("Input")
+## The slots that mean yes and no when nothing more specific is bound.
+##
+## Two ids rather than a convention, because which key confirms is the game's
+## decision and an engine that picked one would be picking it for every game.
+## Left at -1, the generic doors are still callable directly - a touch UI has
+## a confirm button and no key at all.
+@export var generic_confirm_input_id: int = -1
+@export var generic_cancel_input_id: int = -1
 
 @export_category("Compatibility")
 ## Which set of contracts this component answers by.
@@ -1045,6 +1060,33 @@ func ability_local_input_pressed(input_id: int) -> void:
 ## @composer_name: Input Released
 func ability_local_input_released(input_id: int) -> void:
 	ability_runtime.input_released(input_id)
+	if input_id == generic_confirm_input_id and input_id != -1:
+		input_confirm()
+	elif input_id == generic_cancel_input_id and input_id != -1:
+		input_cancel()
+
+
+## Yes, from whatever said it.
+##
+## Tasks first and providers second, and that order is the contract: a task
+## that ends the ability on confirm has to be able to, and a provider that
+## confirmed first would have handed target data to an ability about to stop.
+## A provider that already finished hears nothing - it is not waiting.
+## @composer
+func input_confirm() -> void:
+	generic_confirmed.emit()
+	ability_runtime.tasks.input_confirm()
+	for provider: GameplayTargetProvider in ability_runtime.queries.previewing_providers():
+		provider.confirm()
+
+
+## And no, on the same terms.
+## @composer
+func input_cancel() -> void:
+	generic_cancelled.emit()
+	ability_runtime.tasks.input_cancel()
+	for provider: GameplayTargetProvider in ability_runtime.queries.previewing_providers():
+		provider.cancel()
 
 
 func register_ability_task(task: GameplayAbilityTask) -> GameplayAbilityTask:

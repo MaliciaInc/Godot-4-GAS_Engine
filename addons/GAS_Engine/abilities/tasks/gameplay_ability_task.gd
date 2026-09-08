@@ -156,6 +156,18 @@ func handle_gameplay_event(_event: GameplayEventData) -> void:
 	pass
 
 
+## The generic confirm, which is not a key. A task that waits on a slot hears
+## it through handle_input_pressed instead; both doors exist because the two
+## are different questions and an ability may care about either.
+func handle_confirm() -> void:
+	pass
+
+
+## And the generic cancel.
+func handle_cancel() -> void:
+	pass
+
+
 func handle_target_data(_data: GameplayAbilityTargetData) -> void:
 	pass
 #endregion

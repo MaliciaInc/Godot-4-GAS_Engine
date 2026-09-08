@@ -221,3 +221,81 @@ func test_locator_still_walks_the_tree_when_nobody_says_anything() -> void:
 
 	assert_eq(AbilitySystemLocator.find_for_node(plain), asc, "the convention still answers")
 #endregion
+#region Yes and no, without naming a key
+## Tasks first and providers second, and that order is the contract: a task that
+## ends the ability on confirm has to be able to, and a provider that confirmed
+## first would have handed target data to an ability about to stop.
+func _aiming_probe() -> Array:
+	var probe: TargetingProbeAbility = TargetingProbeAbility.new()
+	var spec: GameplayAbilitySpec = AbilityFactory.give(asc, probe)
+	asc.try_activate_ability_handle(spec.handle)
+	var running: TargetingProbeAbility = spec.per_actor_instance as TargetingProbeAbility
+
+	var provider: FixedTargetProvider = FixedTargetProvider.new()
+	var task: AbilityTaskWaitConfirmCancel = AbilityTaskWaitConfirmCancel.create(running)
+	running._own(task)
+	running.aim_with(provider)
+	return [running, provider, task]
+
+
+## Whichever it is, the task hears it before the providers do.
+##
+## That order is the contract: a task that ends the ability on confirm has to be
+## able to, and a provider that confirmed first would have handed target data to
+## an ability about to stop. Asserted for both answers in one test, because
+## separately they are the same test with one word changed.
+func test_a_generic_answer_reaches_tasks_before_target_providers(
+	saying_yes: bool = use_parameters([true, false])
+) -> void:
+	var pieces: Array = _aiming_probe()
+	var provider: FixedTargetProvider = pieces[1]
+	var task: AbilityTaskWaitConfirmCancel = pieces[2]
+
+	var order: Array[StringName] = []
+	task.finished.connect(
+		func(_t: GameplayAbilityTask, _ok: bool, _r: GameplayAbilityTask.CancelReason) -> void:
+			order.append(&"task")
+	)
+	if saying_yes:
+		provider.confirmed.connect(
+			func(_data: GameplayAbilityTargetData) -> void: order.append(&"provider")
+		)
+		asc.input_confirm()
+	else:
+		provider.cancelled.connect(func() -> void: order.append(&"provider"))
+		asc.input_cancel()
+
+	assert_eq(order, [&"task", &"provider"] as Array[StringName], "the task heard it first")
+	assert_eq(
+		task.decision,
+		(
+			AbilityTaskWaitConfirmCancel.Decision.CONFIRMED
+			if saying_yes
+			else AbilityTaskWaitConfirmCancel.Decision.CANCELLED
+		),
+		"and it was the answer that was given"
+	)
+
+
+## A provider that already finished is not waiting for an answer, so it does not
+## get one - and confirming twice must not hand the ability a second target set.
+func test_finished_target_provider_does_not_receive_generic_input() -> void:
+	var pieces: Array = _aiming_probe()
+	var provider: FixedTargetProvider = pieces[1]
+
+	provider.update_preview()
+	provider.confirm()
+	assert_false(provider.is_choosing(), "it is done")
+
+	# An array, not an int: GDScript captures a primitive by value, so a counter
+	# incremented inside the lambda would stay zero whether or not it was called -
+	# and the assertion would pass for the wrong reason.
+	var again: Array[bool] = []
+	provider.confirmed.connect(
+		func(_data: GameplayAbilityTargetData) -> void: again.append(true)
+	)
+
+	asc.input_confirm()
+
+	assert_true(again.is_empty(), "nothing more was asked of it")
+#endregion

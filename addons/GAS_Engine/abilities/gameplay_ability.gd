@@ -789,6 +789,14 @@ func aim_with(provider: GameplayTargetProvider) -> void:
 
 
 ## Call off every provider this ability started that is still going.
+## The providers this ability is currently choosing with.
+##
+## A copy: the component walks these to route a generic confirm, and
+## confirming one can end the ability, which clears the list it is walking.
+func aiming_providers() -> Array[GameplayTargetProvider]:
+	return _aiming.duplicate()
+
+
 func _stop_aiming() -> void:
 	for provider: GameplayTargetProvider in _aiming:
 		provider.cancel()

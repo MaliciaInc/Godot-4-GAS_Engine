@@ -27,5 +27,16 @@ var seconds_remaining: float = 0.0
 ## The longest wait left in turns, on the same basis.
 var turns_remaining: int = 0
 
+## What the cooldown was authorised for, as opposed to what is left of it.
+##
+## The denominator of a bar. Read from the running cooldown's own resolved
+## duration rather than reconstructed as elapsed plus remaining, which would
+## be a different number the moment anything refreshed or extended it.
+##
+## Both are zero when nothing is on cooldown, and each stays in its own unit:
+## a turn-based cooldown has no seconds and a real-time one has no turns.
+var duration: float = 0.0
+var turns: int = 0
+
 ## The tags that were consulted, in the order they were declared, once each.
 var tags: Array[StringName] = []
