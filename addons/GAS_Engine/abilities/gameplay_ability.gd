@@ -241,6 +241,30 @@ func should_respond_to_event(_event: GameplayEventData) -> bool:
 	return true
 
 
+## An answer set at runtime, when something set one. -1 means nobody did and
+## the virtual below decides.
+##
+## An override rather than a field replacing the virtual: an ability that
+## computes whether it may be interrupted - not while the blade is down, not
+## during the last half second - is answering a question a boolean cannot,
+## and replacing it with one would silently break every ability that did.
+var _cancelability_override: int = -1
+
+
+## Say whether this may be cancelled, overruling what the ability computes.
+## @composer
+func set_can_be_cancelled(value: bool) -> void:
+	_cancelability_override = 1 if value else 0
+
+
+## What everything asks. The override when there is one, the ability's own
+## answer when there is not.
+func is_cancellable() -> bool:
+	if _cancelability_override >= 0:
+		return _cancelability_override == 1
+	return can_be_cancelled()
+
+
 func can_be_cancelled() -> bool:
 	return true
 #endregion
@@ -878,6 +902,97 @@ func aim_with(provider: GameplayTargetProvider) -> void:
 
 
 ## Call off every provider this ability started that is still going.
+## Wait for something to enter an area the game already put in the world.
+##
+## The area is handed in because an engine that built one would be choosing a
+## game's collision layers, shape and placement - three decisions it cannot
+## make and should not guess at.
+## @composer
+func wait_overlap(
+	area: Node, filter: GameplayTargetFilter = null
+) -> AbilityTaskWaitOverlap:
+	return _own(AbilityTaskWaitOverlap.create(self, area, filter)) as AbilityTaskWaitOverlap
+
+
+## Wait until the avatar is moving the way it was told to.
+##
+## A zero direction means any direction and the speed alone decides; a real
+## one asks for movement along it, which is how a dash waits for the dash
+## rather than for any motion at all.
+## @composer
+func wait_velocity_change(
+	direction: Vector3 = Vector3.ZERO, min_magnitude: float = 0.0
+) -> AbilityTaskWaitVelocityChange:
+	return _own(
+		AbilityTaskWaitVelocityChange.create(self, direction, min_magnitude)
+	) as AbilityTaskWaitVelocityChange
+
+
+## Wait until this ability lands an effect on somebody else.
+## @composer
+func wait_effect_applied_to_target(
+	query: GameplayEffectQuery = null
+) -> AbilityTaskWaitEffectAppliedToTarget:
+	return _own(
+		AbilityTaskWaitEffectAppliedToTarget.create(self, query)
+	) as AbilityTaskWaitEffectAppliedToTarget
+
+
+## Declare that the ability is in a named stretch of itself.
+##
+## Ended by name from outside, which is the point: an animation, a listener or
+## another ability can end a wind-up without holding the task that is the
+## wind-up. Two states with different names run at once.
+## @composer
+func start_ability_state(state_name: StringName) -> AbilityTaskAbilityState:
+	return _own(
+		AbilityTaskAbilityState.create(self, state_name)
+	) as AbilityTaskAbilityState
+
+
+## End every state of this name. Answers how many there were.
+## @composer
+func end_ability_state(state_name: StringName) -> int:
+	return end_task(state_name)
+
+
+## Call off every state of this name. Answers how many there were.
+## @composer
+func cancel_ability_state(state_name: StringName) -> int:
+	return cancel_task(state_name)
+
+
+## Finish every task this ability owns by that name, successfully.
+##
+## Every one, not the first: three tasks called "channel" are the channel, and
+## ending one of them would leave the ability half in a state it declared it
+## had left.
+## @composer
+func end_task(instance_name: StringName) -> int:
+	return _finish_named(instance_name, true)
+
+
+## Call off every task this ability owns by that name.
+## @composer
+func cancel_task(instance_name: StringName) -> int:
+	return _finish_named(instance_name, false)
+
+
+func _finish_named(instance_name: StringName, successfully: bool) -> int:
+	if instance_name == &"" or owner_asc == null:
+		return 0
+	var affected: int = 0
+	for task: GameplayAbilityTask in owner_asc.ability_runtime.tasks.active_tasks():
+		if task.owner_ability != self or task.instance_name != instance_name:
+			continue
+		affected += 1
+		if successfully:
+			task.succeed()
+		else:
+			task.cancel(GameplayAbilityTask.CancelReason.ABILITY_ABORTED)
+	return affected
+
+
 ## The providers this ability is currently choosing with.
 ##
 ## A copy: the component walks these to route a generic confirm, and

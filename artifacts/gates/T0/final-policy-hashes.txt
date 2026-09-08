@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.1.4 (G-04): the component's ceiling goes 1000 -> 1120 for the ten ability questions it now answers, and ability_runtime's 570 -> 600 for what remains after the search and external-block work moved into AbilityQueryRuntime.
+# F6.1.8 (G-09) raises gameplay_ability.gd 900 -> 1050 for the four task factories, the named-task doors and the cancelability override.
 #
 # python: 3.14.6
-# date-utc: 2026-09-08T23:23:32Z
-# commit-previo: f08f824e0c69066246f1362f9686967e2f2a5adf
+# date-utc: 2026-09-08T23:56:04Z
+# commit-previo: 89eb841679c0a82f26246e3a1f44fe4904341146
 # files: 26
-49c78f43c965d575a18211e8fb8d79e347f9ca502b5df812806dd9b9bb4d70ed  tooling/.quality-gates.json
+dbb4e0c83e5f9c3df2c68834483e287d4cbc82360020dad8cd37957d146541b8  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

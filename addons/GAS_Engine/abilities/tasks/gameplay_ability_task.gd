@@ -47,6 +47,15 @@ signal finished(task: GameplayAbilityTask, succeeded: bool, reason: GameplayAbil
 ## task without one cannot be reached and is refused at registration.
 var owner_ability: GameplayAbility = null
 
+## What this task is called, when anything needs to name it later.
+##
+## Empty for most tasks, because most are held by the ability that made them and
+## need no name. A name is for the ones something else has to reach - a state an
+## animation ends, a wait a UI cancels - and it is not unique: ending a name ends
+## every task carrying it, which is what "stop channelling" means when three
+## tasks are the channel.
+var instance_name: StringName = &""
+
 var state: GameplayAbilityTask.State = State.CREATED
 
 

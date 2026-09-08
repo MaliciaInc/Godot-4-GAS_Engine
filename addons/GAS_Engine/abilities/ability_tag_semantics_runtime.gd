@@ -95,14 +95,14 @@ func _abort_every_instance(spec: GameplayAbilitySpec) -> void:
 		instance != null
 		and is_instance_valid(instance)
 		and instance.is_active
-		and instance.can_be_cancelled()
+		and instance.is_cancellable()
 	):
 		instance.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
 	for execution: GameplayAbility in spec.active_instances.duplicate():
 		if (
 			is_instance_valid(execution)
 			and execution.is_active
-			and execution.can_be_cancelled()
+			and execution.is_cancellable()
 		):
 			execution.abort_ability(GameplayAbilityTask.CancelReason.CANCEL_TAG)
 

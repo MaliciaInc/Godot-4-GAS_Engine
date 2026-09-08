@@ -46,6 +46,21 @@ var outcome: AbilityTaskPlayAnimationAndWait.Outcome = Outcome.FAILED
 ## describe the activation that made it.
 var activation_id: int = 0
 
+## How fast to play it. Zero or less is a refusal rather than a guess: a
+## caller that asked for it meant something, and no rate this engine picked
+## would be that something.
+var rate: float = 1.0
+
+## Where to start, in seconds, clamped to the animation's own length. A start
+## past the end is a caller asking for the end, which is answerable; a
+## negative one is asking for before the beginning, which is not.
+var start_time: float = 0.0
+
+## A named point to start from, which is what a section is in an engine with
+## no montages: a marker on the animation. Named and missing is a failure,
+## never a silent start from the top.
+var section: StringName = &""
+
 var surface: GameplayAnimationSurface = null
 var claim: GameplayAnimationOwnership = null
 
@@ -66,9 +81,44 @@ static func create(
 	return task
 
 
+## The same playback, said in full.
+##
+## A second factory rather than four more defaults on the first: the ordinary
+## call is three arguments and stays three, and a caller that needs the rest
+## is saying something specific enough to be worth its own name.
+static func create_shaped(
+	ability: GameplayAbility,
+	animation_player: AnimationMixer,
+	animation_name: StringName,
+	shape: AbilityTaskAnimationShape
+) -> AbilityTaskPlayAnimationAndWait:
+	var task: AbilityTaskPlayAnimationAndWait = create(
+		ability, animation_player, animation_name, shape.stop_on_cancel
+	)
+	task.rate = shape.rate
+	task.start_time = shape.start_time
+	task.section = shape.section
+	return task
+
+
 func _on_start() -> void:
 	surface = GameplayAnimationSurface.of(player)
 	if surface == null or not surface.can_play(animation):
+		_end_with(Outcome.FAILED)
+		return
+	# A rate nobody can play, and a section that is not there, are both the
+	# caller having asked for something that does not exist. Neither is
+	# repaired: an animation that started at the top when it was asked to
+	# start at the impact is worse than one that did not start.
+	if rate <= 0.0:
+		push_error("GAS_Engine: an animation rate of %f cannot be played." % rate)
+		_end_with(Outcome.FAILED)
+		return
+	var from: float = _start_seconds()
+	if from < 0.0:
+		push_error(
+			"GAS_Engine: the animation has no marker called %s." % section
+		)
 		_end_with(Outcome.FAILED)
 		return
 	activation_id = owner_ability.activation_id if owner_ability != null else 0
@@ -76,6 +126,29 @@ func _on_start() -> void:
 	player.animation_finished.connect(_on_animation_finished)
 	player.animation_started.connect(_on_animation_started)
 	surface.play(animation)
+	_shape_playback(from)
+
+
+## Where this playback starts, in seconds. Negative means a section was named
+## and the animation does not carry it.
+func _start_seconds() -> float:
+	if section != &"":
+		return surface.marker_time(animation, section)
+	return clampf(start_time, 0.0, surface.length_of(animation))
+
+
+## Apply rate and start point to whatever is now playing.
+##
+## After the play rather than as arguments to it, because a state machine and
+## a player take them in different places and the surface exists precisely so
+## nothing above it has to know which one it is holding.
+func _shape_playback(from: float) -> void:
+	var as_player: AnimationPlayer = player as AnimationPlayer
+	if as_player == null:
+		return
+	as_player.speed_scale = rate
+	if from > 0.0:
+		as_player.seek(from, true)
 
 
 ## The second way the takeover is noticed, and the one that does not need a

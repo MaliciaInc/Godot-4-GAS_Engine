@@ -75,6 +75,30 @@ func play(animation: StringName) -> bool:
 
 
 ## What is playing now - which is how a task notices somebody else took over.
+## Where a named marker sits in an animation, in seconds, or -1 for a name
+## the animation does not carry.
+##
+## Markers are what Godot gives an author to name a point in time with, and
+## naming a point in time is the whole of what a section is. A name that is not
+## there answers -1 rather than zero: starting from the top is a different
+## thing from starting where you asked, and a caller has to be able to tell.
+func marker_time(animation: StringName, marker: StringName) -> float:
+	if not _alive() or marker == &"":
+		return -1.0
+	var library: Animation = mixer.get_animation(String(animation))
+	if library == null or not library.has_marker(marker):
+		return -1.0
+	return library.get_marker_time(marker)
+
+
+## How long an animation runs, or zero when there is no such animation.
+func length_of(animation: StringName) -> float:
+	if not _alive():
+		return 0.0
+	var library: Animation = mixer.get_animation(String(animation))
+	return library.length if library != null else 0.0
+
+
 func now_playing() -> StringName:
 	if not _alive():
 		return &""

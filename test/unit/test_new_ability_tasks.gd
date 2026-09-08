@@ -40,6 +40,9 @@ func after_each() -> void:
 	fixture = null
 	asc = null
 	ability = null
+	# Restored here rather than inside a test: GUT reads the tracker when the
+	# test ends, so a test that put it back itself would put it back too early.
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.FAILURE
 
 
 #region Getting there
@@ -134,4 +137,116 @@ func test_every_task_ends_exactly_once() -> void:
 		assert_true(task.is_finished(), "%s: and it is over" % described)
 		checked += 1
 	assert_eq(checked, 9, "all nine were asked")
+#endregion
+#region The four that were missing
+## The area is handed in, never built: an engine that made one would be choosing
+## a game's collision layers, shape and placement.
+func test_wait_overlap_refuses_anything_that_is_not_an_area() -> void:
+	# The refusal is loud on purpose - a caller passing the wrong node has a bug -
+	# so this test says it expects one rather than lowering the engine's severity.
+	GutUtils.get_error_tracker().treat_push_error_as = GutUtils.TREAT_AS.NOTHING
+
+	var not_an_area: Node = Node.new()
+	add_child_autofree(not_an_area)
+
+	assert_null(
+		AbilityTaskWaitOverlap.create(ability, not_an_area),
+		"a plain node is not something overlaps happen in"
+	)
+
+
+func test_wait_overlap_ends_on_the_first_thing_that_gets_through() -> void:
+	var area: Area3D = Area3D.new()
+	add_child_autofree(area)
+	var task: AbilityTaskWaitOverlap = ability.wait_overlap(area)
+	task.start()
+
+	var passer_by: Node3D = Node3D.new()
+	add_child_autofree(passer_by)
+	area.area_entered.emit(passer_by)
+
+	assert_true(task.is_finished(), "it ended")
+	assert_eq(task.overlapped_node, passer_by, "on the thing that came in")
+
+
+func test_wait_velocity_change_ends_when_the_avatar_is_moving_fast_enough() -> void:
+	var body: CharacterBody3D = CharacterBody3D.new()
+	fixture.owner.add_child(body)
+	asc.init_ability_actor_info(fixture.owner, body)
+
+	var task: AbilityTaskWaitVelocityChange = ability.wait_velocity_change(Vector3.ZERO, 5.0)
+	task.start()
+
+	body.velocity = Vector3(1.0, 0.0, 0.0)
+	task.advance_time(0.1)
+	assert_false(task.is_finished(), "not fast enough yet")
+
+	body.velocity = Vector3(6.0, 0.0, 0.0)
+	task.advance_time(0.1)
+	assert_true(task.is_finished(), "and now it is")
+	assert_almost_eq(task.reached.x, 6.0, 0.0001, "with what it was moving at")
+
+
+## Two states with different names run at once, and ending one leaves the other.
+func test_named_ability_states_are_ended_by_name() -> void:
+	var winding: AbilityTaskAbilityState = ability.start_ability_state(&"winding")
+	var guarding: AbilityTaskAbilityState = ability.start_ability_state(&"guarding")
+
+	var ended: Array[StringName] = []
+	winding.state_ended.connect(
+		func(named: StringName, _cancelled: bool) -> void: ended.append(named)
+	)
+
+	assert_eq(ability.end_ability_state(&"winding"), 1, "one state by that name")
+
+	assert_eq(ended, [&"winding"] as Array[StringName], "and it said so")
+	assert_true(winding.is_finished(), "it ended")
+	assert_false(guarding.is_finished(), "and the other one did not")
+
+
+func test_ending_a_name_nothing_carries_affects_nothing() -> void:
+	ability.start_ability_state(&"winding")
+	assert_eq(ability.end_ability_state(&"nothing"), 0, "no task by that name")
+
+
+func test_cancelling_a_state_says_it_was_cancelled() -> void:
+	var winding: AbilityTaskAbilityState = ability.start_ability_state(&"winding")
+	var how: Array[bool] = []
+	winding.state_ended.connect(
+		func(_named: StringName, cancelled: bool) -> void: how.append(cancelled)
+	)
+
+	assert_eq(ability.cancel_ability_state(&"winding"), 1, "it was called off")
+	assert_eq(how, [true] as Array[bool], "and it knows the difference")
+
+
+func test_wait_effect_applied_to_target_hears_what_this_ability_landed() -> void:
+	var other: ASCFixture = ASCFixture.create("Struck")
+	add_child_autofree(other.owner)
+
+	var task: AbilityTaskWaitEffectAppliedToTarget = ability.wait_effect_applied_to_target()
+	task.start()
+
+	var landed: GameplayEffect = GameplayEffect.new()
+	landed.policy = GameplayEffect.DurationPolicy.INSTANT
+	asc.apply_effect_spec_to_target(GameplayEffectSpec.new(landed), other.asc)
+
+	assert_true(task.is_finished(), "it heard about it")
+	assert_eq(task.matched_target, other.asc, "and who it landed on")
+#endregion
+
+
+#region Saying whether it may be interrupted
+## An override, not a replacement: an ability that computes the answer - not
+## while the blade is down - is answering a question a boolean cannot.
+func test_cancelability_defaults_to_what_the_ability_computes() -> void:
+	assert_true(ability.is_cancellable(), "the base answer")
+
+
+func test_setting_cancelability_overrules_the_computed_answer() -> void:
+	ability.set_can_be_cancelled(false)
+	assert_false(ability.is_cancellable(), "what it was told")
+
+	ability.set_can_be_cancelled(true)
+	assert_true(ability.is_cancellable(), "and told again")
 #endregion
