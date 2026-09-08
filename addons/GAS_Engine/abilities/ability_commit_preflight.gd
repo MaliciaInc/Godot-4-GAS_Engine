@@ -23,6 +23,10 @@ enum Status {
 	INVALID_COOLDOWN,
 }
 
+## The custom cost that said no, when one did. Carried so a caller can say
+## which thing is missing rather than only that something is.
+var refused_custom_cost: GameplayAbilityCustomCostCheck = null
+
 var status: AbilityCommitPreflight.Status = Status.OK
 var resolved_cost: GameplayResolvedCost = null
 var cooldowns: Array[GameplayEffect] = []

@@ -34,6 +34,11 @@ var status: AbilityCommitResult.Status = Status.SUCCESS
 ## The cooldowns this commit started, in the order it applied them. Empty on
 ## every failure, including one that had already started some: a commit that
 ## rolled back reports nothing applied, because nothing is.
+## Everything this commit is holding, and the one thing that knows how to put
+## all of it back. The two fields below stay for the callers that read them;
+## this is what a rollback actually walks.
+var transaction: GameplayAbilityCostTransaction = GameplayAbilityCostTransaction.new()
+
 var applied_cooldowns: Array[ActiveGameplayEffect] = []
 
 ## The cost handle, or null when the ability is free or the commit failed.

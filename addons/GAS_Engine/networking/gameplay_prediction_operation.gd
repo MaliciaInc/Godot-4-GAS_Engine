@@ -26,7 +26,13 @@ class_name GameplayPredictionOperation extends RefCounted
 ## COOLDOWN: the cooldown effect the client applied to itself.
 ## ATTRIBUTE_DELTA: a change to an attribute the ability made directly.
 ## CUE: something that was played.
-enum Kind { COST, COOLDOWN, ATTRIBUTE_DELTA, CUE }
+## What a client may guess at, and undo when it guessed wrong.
+##
+## NONE is last so the four that existed keep the numbers they had. It is not a
+## fifth thing to predict: it is a cost saying it is not predictable at all,
+## which is the default for anything the journal cannot reverse from what the
+## operation itself remembers - an inventory, a durability, a quest step.
+enum Kind { COST, COOLDOWN, ATTRIBUTE_DELTA, CUE, NONE }
 
 var kind: GameplayPredictionOperation.Kind = Kind.ATTRIBUTE_DELTA
 var key: GameplayPredictionKey = null
@@ -107,6 +113,11 @@ func reverse(asc: AbilitySystemComponent) -> bool:
 			return _take_back_the_change(asc)
 		Kind.COOLDOWN:
 			return _take_off_the_effect(asc)
+		Kind.NONE:
+			# Nothing was guessed, so there is nothing to take back. Answered
+			# rather than fallen through: reaching the cue arm with NONE would
+			# have been a silent wrong answer.
+			return true
 		_:
 			return _stop_the_cue(asc)
 

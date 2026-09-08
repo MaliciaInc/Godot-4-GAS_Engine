@@ -52,6 +52,11 @@ var target_blocked_query: GameplayTagQuery = null
 var gameplay_event_triggers: Array[GameplayAbilityEventTrigger] = []
 
 var costs: Array[GameplayAbilityCost] = []
+## The two other ways a price can be written. Frozen with everything else:
+## an author who swapped the cost effect after the grant would be changing
+## what a running ability charges, from outside it.
+var cost_effect: GameplayEffect = null
+var custom_costs: Array[GameplayAbilityCustomCost] = []
 var cooldown_effect: GameplayEffect = null
 var shared_cooldown_effects: Array[GameplayEffect] = []
 var shared_cooldown_tags: Array[StringName] = []
@@ -127,6 +132,12 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	for cost: GameplayAbilityCost in probe.costs:
 		snapshot.costs.append(_duplicate_resource(cost) as GameplayAbilityCost)
 
+	snapshot.cost_effect = _duplicate_resource(probe.cost_effect) as GameplayEffect
+	snapshot.custom_costs.clear()
+	for custom: GameplayAbilityCustomCost in probe.custom_costs:
+		snapshot.custom_costs.append(
+			_duplicate_resource(custom) as GameplayAbilityCustomCost
+		)
 	snapshot.cooldown_effect = _duplicate_resource(probe.cooldown_effect) as GameplayEffect
 
 	# One source Resource becomes one duplicate, even when the author listed it
@@ -176,6 +187,8 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"target_blocked_query",
 	&"gameplay_event_triggers",
 	&"costs",
+	&"cost_effect",
+	&"custom_costs",
 	&"cooldown_effect",
 	&"shared_cooldown_effects",
 	&"shared_cooldown_tags",

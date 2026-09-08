@@ -132,6 +132,23 @@ const NET_EXECUTION_POLICY_FIELD: StringName = &"net_execution_policy"
 @export_category("Ability Mechanics")
 ## Every priced entry this charges. Empty means free; resolved once at commit.
 @export var costs: Array[GameplayAbilityCost] = []
+
+## A cost authored as a gameplay effect, for a project that prices things
+## that way already.
+##
+## Accepted only when the commit contract can prove it is an instant, silent,
+## reversible charge - which is the same bar the resolver's own output has to
+## clear. An effect with executions, cues or a duration is refused at grant
+## rather than at the first press, because a commit that cannot be undone
+## breaks the one promise this engine makes about paying for things.
+@export var cost_effect: GameplayEffect = null
+
+## Costs this engine cannot price: ammunition, an item, a stack on a tag.
+##
+## Each hands back an object that knows both what it took and how to put it
+## back, so they are part of the same all-or-nothing commit as everything
+## else rather than something a game does around it and hopes.
+@export var custom_costs: Array[GameplayAbilityCustomCost] = []
 @export var cooldown_effect: GameplayEffect
 @export var shared_cooldown_effects: Array[GameplayEffect] = []
 @export var shared_cooldown_tags: Array[StringName] = []
@@ -350,6 +367,28 @@ func check_cost() -> AbilityCommitPreflight:
 	if not AbilityCommitContract.is_reversible_charge(resolved.absolute_effect, 1.0):
 		preflight.status = AbilityCommitPreflight.Status.INVALID_COST
 		return preflight
+	# The authored effect answers the same question, and answers it before
+	# anything is charged: an effect with executions, cues or a duration
+	# cannot be taken back, and a commit that cannot be taken back is not
+	# the thing this engine promised.
+	var authored: GameplayEffect = current_spec.definition.cost_effect
+	if authored != null and not AbilityCommitContract.is_reversible_charge(
+		authored, current_spec.level
+	):
+		preflight.status = AbilityCommitPreflight.Status.INVALID_COST
+		return preflight
+	# And every custom cost is asked, without being taken.
+	for custom: GameplayAbilityCustomCost in current_spec.definition.custom_costs:
+		if custom == null:
+			preflight.status = AbilityCommitPreflight.Status.INVALID_COST
+			return preflight
+		var asked: GameplayAbilityCustomCostCheck = custom.check(
+			owner_asc, current_spec, current_spec.level
+		)
+		if asked == null or not asked.can_pay:
+			preflight.refused_custom_cost = asked
+			preflight.status = AbilityCommitPreflight.Status.INSUFFICIENT_RESOURCES
+			return preflight
 
 	if resolved.status == GameplayResolvedCost.Status.INSUFFICIENT_RESOURCES:
 		preflight.status = AbilityCommitPreflight.Status.INSUFFICIENT_RESOURCES
@@ -393,27 +432,71 @@ func apply_cooldown(
 			cooldown, owner_asc, current_spec.level
 		)
 		if started == null:
-			_roll_back(result)
-			result.status = AbilityCommitResult.Status.COOLDOWN_APPLICATION_FAILED
-			return false
+			return _fail_commit(
+				result, AbilityCommitResult.Status.COOLDOWN_APPLICATION_FAILED
+			)
 		result.applied_cooldowns.append(started)
+		result.transaction.applied_cooldowns.append(started)
 	return true
 
 
 ## Take the charge the preflight resolved, or undo the cooldowns already started.
 ## @composer
 func apply_cost(preflight: AbilityCommitPreflight, result: AbilityCommitResult) -> bool:
-	var charge: GameplayEffect = preflight.resolved_cost.absolute_effect
-	if charge == null:
-		return true
-
-	var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(charge, owner_asc, 1.0)
-	if charged == null:
-		_roll_back(result)
-		result.status = AbilityCommitResult.Status.COST_APPLICATION_FAILED
+	# Everything is prepared before anything is taken, so a refusal at any
+	# point below has nothing to put back but what this function itself already
+	# took - and the transaction is holding all of that.
+	if not _prepare_custom_costs(result):
 		return false
-	result.applied_cost = charged
+
+	var charge: GameplayEffect = preflight.resolved_cost.absolute_effect
+	if charge != null:
+		var charged: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
+			charge, owner_asc, 1.0
+		)
+		if charged == null:
+			return _fail_commit(result, AbilityCommitResult.Status.COST_APPLICATION_FAILED)
+		result.applied_cost = charged
+		result.transaction.charged(charge, 1.0)
+
+	var authored: GameplayEffect = current_spec.definition.cost_effect
+	if authored != null:
+		var applied: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
+			authored, owner_asc, current_spec.level
+		)
+		if applied == null:
+			return _fail_commit(result, AbilityCommitResult.Status.COST_APPLICATION_FAILED)
+		result.transaction.charged(authored, current_spec.level)
+
+	if not result.transaction.commit_custom_costs():
+		return _fail_commit(result, AbilityCommitResult.Status.COST_APPLICATION_FAILED)
 	return true
+
+
+## Ask every custom cost to work out what it would take, before any of them
+## takes it. One that cannot be prepared refuses while nothing has been
+## touched, which is the cheapest possible failure.
+func _prepare_custom_costs(result: AbilityCommitResult) -> bool:
+	for custom: GameplayAbilityCustomCost in current_spec.definition.custom_costs:
+		var prepared: GameplayAbilityPreparedCustomCost = custom.prepare(
+			owner_asc, current_spec, current_spec.level
+		)
+		if prepared == null:
+			return _fail_commit(result, AbilityCommitResult.Status.COST_APPLICATION_FAILED)
+		result.transaction.prepared(prepared)
+	return true
+
+
+## Undo everything this commit took and say why it stopped.
+##
+## One place, so no failure path can forget a half of it - which is exactly how
+## a commit ends up having charged for something it did not do.
+func _fail_commit(
+	result: AbilityCommitResult, why: AbilityCommitResult.Status
+) -> bool:
+	_roll_back(result)
+	result.status = why
+	return false
 
 
 ## The whole price, or none of it.
@@ -483,10 +566,16 @@ func _announce_commit(result: AbilityCommitResult) -> void:
 
 
 ## Undo cooldowns a failed commit already started; emptied too, so the result reports nothing applied.
+## Put back everything this commit took, in the order that makes putting it
+## back mean anything.
+##
+## Delegated to the transaction, which is the thing that knows what was taken:
+## a rollback written here would have to be kept in step with every route a
+## cost can arrive by, and there are three of those now.
 func _roll_back(result: AbilityCommitResult) -> void:
-	for started: ActiveGameplayEffect in result.applied_cooldowns:
-		owner_asc.remove_active_effect(started)
+	result.transaction.undo(owner_asc)
 	result.applied_cooldowns.clear()
+	result.applied_cost = null
 
 
 ## Override this. The default succeeds immediately.
