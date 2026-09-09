@@ -83,6 +83,52 @@ func set_attribute_sets(sets: Array[AttributeSet], isolate: bool) -> void:
 	initialize()
 
 
+## Adopt one more set, leaving every set already here alone.
+##
+## Not set_attribute_sets() with one appended: that re-initialises the whole
+## collection, and initialising seeds current from base on every attribute -
+## so putting a kit on would wipe whatever a character's buffs had made of
+## their health. Only what arrives is seeded.
+##
+## The instance adopted is returned rather than the one handed in, because an
+## isolating component duplicates what it is given and a caller holding the
+## original would be holding something this runtime has never seen.
+func adopt_attribute_set(authored: AttributeSet, isolate: bool) -> AttributeSet:
+	if authored == null:
+		return null
+	var taken: AttributeSet = (
+		authored.duplicate(true) as AttributeSet if isolate else authored
+	)
+	_sets.append(taken)
+	_seed_only(taken)
+	return taken
+
+
+## Let go of one set. False when this runtime is not holding it.
+##
+## Nothing else is touched, which is the contract: the attributes that stay
+## keep the values they had, contributions and all.
+func release_attribute_set(taken: AttributeSet) -> bool:
+	if taken == null or not _sets.has(taken):
+		return false
+	_sets.erase(taken)
+	return true
+
+
+## Seed the attributes one set declares, and no others.
+func _seed_only(taken: AttributeSet) -> void:
+	for name: StringName in taken.get_attribute_names():
+		var attribute: AttributeData = taken.get(String(name)) as AttributeData
+		if attribute == null:
+			continue
+		if not is_finite(attribute.base_value):
+			push_error(
+				"GAS_Engine: attribute '" + String(name) + "' has a non-finite base value."
+			)
+			attribute.base_value = 0.0
+		attribute.current_value = attribute.base_value
+
+
 ## The set that declares an attribute, or null.
 func find_set(attribute_name: StringName) -> AttributeSet:
 	var property_name: String = String(attribute_name)

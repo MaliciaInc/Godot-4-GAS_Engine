@@ -26,8 +26,13 @@ const RECEIPT: String = "res://artifacts/parity/AUTHORING_UX.md"
 const ATTACK: StringName = &"attack"
 const PROBE_TAG: StringName = &"Ability.Probe"
 
-## The column this run writes. F6.4.7 measures the same keys into the next one.
-const COLUMN: String = "before"
+## The column this test checks.
+##
+## `before` is history - taken once on the baseline and never re-measured - so
+## checking against it would make this test fail the moment the phase improved
+## anything, which is the phase's whole purpose. `now` is what the engine
+## measures today, and whoever closes a friction updates it in the same commit.
+const COLUMN: String = "now"
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null

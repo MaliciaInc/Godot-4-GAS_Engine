@@ -261,6 +261,28 @@ func uses_ue_5_7_contracts() -> bool:
 
 ## The single handover: both exports above route here, so the sets and the
 ## policy that copies them can never be applied one without the other.
+## Adopt one more attribute set, and hand back the receipt that retires it.
+##
+## Incremental on purpose: a loadout going on must not re-initialise the
+## attributes already here, because initialising re-seeds current from base
+## and a kit should not heal anybody.
+## @composer
+func register_attribute_set(authored: AttributeSet) -> RegisteredAttributeSetHandle:
+	var taken: AttributeSet = attributes.adopt_attribute_set(authored, not share_attributes)
+	if taken == null:
+		return null
+	return RegisteredAttributeSetHandle.of(taken, self)
+
+
+## Let go of a set this component adopted. False for a receipt from somebody
+## else's component, which is the case a shared loadout Resource makes real.
+## @composer
+func unregister_attribute_set(handle: RegisteredAttributeSetHandle) -> bool:
+	if handle == null or not handle.is_valid() or handle.owner_asc != self:
+		return false
+	return attributes.release_attribute_set(handle.adopted)
+
+
 func _adopt_attribute_sets() -> void:
 	attributes.set_attribute_sets(attribute_sets, not share_attributes)
 
