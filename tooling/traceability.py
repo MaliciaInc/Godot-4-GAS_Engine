@@ -42,8 +42,10 @@ import re
 import sys
 from pathlib import Path
 
+import _gatelib
+
 PHASE = Path("docs/Fases/FASE_6_MAESTRA_EJECUTABLE_CIERRE_PARIDAD_UE57_GAS_ENGINE.md")
-RECEIPTS = Path("artifacts/parity")
+RECEIPTS = _gatelib.RECEIPTS
 DEFAULT_RECEIPT = RECEIPTS / "TRACEABILITY_F6.md"
 
 ## The section the matrix lives in, and the one that ends it. Both spellings,
@@ -117,7 +119,7 @@ def claims() -> dict[str, tuple[str, str]]:
 	read in name order rather than in whatever order the filesystem gives.
 	"""
 	said: dict[str, tuple[str, str]] = {}
-	for receipt in sorted(RECEIPTS.glob("*.md")):
+	for receipt in sorted(RECEIPTS.glob(_gatelib.RECEIPT_GLOB)):
 		if receipt.name == DEFAULT_RECEIPT.name:
 			continue
 		for line in receipt.read_text(encoding="utf-8").splitlines():

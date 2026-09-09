@@ -18,4 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "gates"))
 
 from lib import gate_io  # noqa: E402,F401
 
-__all__ = ["gate_io"]
+## Where the parity and closure receipts live, and what they are.
+##
+## Two tools sweep this directory - the receipt checker and the traceability
+## check - and a directory spelled twice is a directory one of them goes on
+## reading after the other has been moved.
+RECEIPTS = Path("artifacts/parity")
+RECEIPT_GLOB = "*.md"
+
+__all__ = ["gate_io", "RECEIPTS", "RECEIPT_GLOB"]

@@ -517,6 +517,14 @@
       {
         "literal": "--automation",
         "reason": "The sample's own flag, named as SampleNetOptions.AUTOMATION in the GDScript that reads it and spelled again in the PowerShell that passes it. GDScript constants are not reachable from PowerShell; the alternative is the harness building its command line from a value it has no way to read, which is a longer way to write the same two spellings."
+      },
+      {
+        "literal": "--all",
+        "reason": "A flag the receipt checker reads and the PowerShell gate chain passes. A GDScript or Python constant is not reachable from PowerShell, so the two spellings are the two languages rather than a value nobody named - and the alternative is the chain building its command line from a value it has no way to read."
+      },
+      {
+        "literal": "--self-test",
+        "reason": "The same, for the checker's own self-test: named in the Python that reads it and spelled again in the PowerShell that runs it. Two languages, one flag."
       }
     ],
     "allow_globs": [],

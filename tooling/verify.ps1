@@ -251,7 +251,17 @@ function Invoke-Verification {
         @{ Stage = 'project-invariants'
            Arguments = @('tooling/project_invariants.py') },
         @{ Stage = 'product-identity'
-           Arguments = @('tooling/product_identity.py') }
+           Arguments = @('tooling/product_identity.py') },
+        # Every receipt's every reference, against the suite. Added because
+        # nothing ran it: a gate receipt from an earlier phase named a scenario
+        # that had since been folded into another test, and it went on saying so
+        # for as long as the only way to notice was to type the command by hand.
+        # A receipt is a claim, and a claim nobody re-reads is how a green gate
+        # comes to vouch for tests that are not there.
+        @{ Stage = 'parity-receipts'
+           Arguments = @('tooling/parity_receipt.py', '--all') },
+        @{ Stage = 'parity-receipt-self-test'
+           Arguments = @('tooling/parity_receipt.py', '--self-test') }
     ) + (Get-GateStages -ReceiptDirectory $ReceiptDirectory)
 
     foreach ($stage in $stages) {

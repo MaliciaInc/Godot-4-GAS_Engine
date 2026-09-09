@@ -23,6 +23,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+import _gatelib
+
 #: `some/file.gd::test_name`, which is the only shape a reference may take.
 REFERENCE = re.compile(r"`([^`\s]+\.gd)::(\w+)`")
 
@@ -91,26 +93,62 @@ def self_test() -> int:
     return 0
 
 
+## The receipts that have to name scenarios. A gate receipt with no evidence in
+## it is a gate receipt with no evidence, whatever else it says; the
+## measurement and listing receipts beside them - a benchmark table, a
+## distribution report, the traceability matrix - name none and are not
+## expected to.
+MUST_NAME = "GATE_"
+
+
+def one(receipt: Path, must_name: bool) -> int:
+    """Check a single receipt. Answers zero when there is nothing wrong."""
+    faults = [
+        fault for fault in unresolved(receipt)
+        if must_name or "names no scenario at all" not in fault
+    ]
+    if faults:
+        print("PARITY_RECEIPT_FAIL %s" % receipt)
+        for fault in faults:
+            print("  %s" % fault)
+        return 1
+    print("PARITY_RECEIPT_PASS %s" % receipt)
+    return 0
+
+
+def sweep() -> int:
+    """Every receipt, in one go.
+
+    Added because nothing ran this. A receipt is a claim, and the claim that
+    went stale was one nobody re-read: a gate from an earlier phase named a
+    scenario that had since been folded into another test, and the receipt went
+    on saying it for as long as the only way to notice was to type the command
+    by hand.
+    """
+    receipts = sorted(_gatelib.RECEIPTS.glob(_gatelib.RECEIPT_GLOB))
+    if not receipts:
+        print("parity_receipt: no receipts under %s" % _gatelib.RECEIPTS)
+        return 2
+    worst = 0
+    for receipt in receipts:
+        worst = max(worst, one(receipt, receipt.name.startswith(MUST_NAME)))
+    print("PARITY_RECEIPTS: %s %d receipts" % ("PASS" if worst == 0 else "FAIL", len(receipts)))
+    return worst
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(__doc__)
         return 2
     if argv[1] == "--self-test":
         return self_test()
+    if argv[1] == "--all":
+        return sweep()
     receipt = Path(argv[1])
     if not receipt.is_file():
         print("parity_receipt: no receipt at %s" % receipt)
         return 2
-
-    faults = unresolved(receipt)
-    if faults:
-        print("PARITY_RECEIPT_FAIL %s" % receipt)
-        for fault in faults:
-            print("  %s" % fault)
-        return 1
-
-    print("PARITY_RECEIPT_PASS %s" % receipt)
-    return 0
+    return one(receipt, True)
 
 
 if __name__ == "__main__":
