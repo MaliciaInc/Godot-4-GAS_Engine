@@ -796,6 +796,10 @@ func apply_effect_to_targets(
 	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect_res, context, get_ability_level())
 	var reached: Array[int] = []
 	var unreachable: Array[int] = []
+	# Only what the aim actually holds. An aim that is a place with nobody
+	# standing on it reaches nobody, and the engine does not go looking for
+	# somebody nearby on its own: an implicit overlap here would be an area
+	# effect nobody authored, with a radius nobody chose.
 	for target: Node in target_data.get_target_nodes():
 		if target == null:
 			continue
@@ -833,6 +837,8 @@ func apply_effect_to_targets(
 			continue
 		result.applied_targets.append(target_asc)
 		result.applied_effects.append(applied.active_effect)
+	if result.attempted_targets == 0:
+		result.refusal = GameplayTargetApplicationResult.Refusal.NO_ACTOR_TARGETS
 	return result
 
 

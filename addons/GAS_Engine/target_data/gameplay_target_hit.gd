@@ -23,8 +23,21 @@ const Hit = preload("res://addons/GAS_Engine/target_data/gameplay_target_hit.gd"
 
 enum SpaceKind { TWO_D, THREE_D }
 
+## What was hit, or null when the hit is a place rather than a thing.
+##
+## A ground-targeted spell lands somewhere whether or not anybody is
+## standing there, and the position is the whole of what it aimed at. Null
+## here rather than a stand-in Node: an invented collider would be found by
+## every query that walks targets, and every one of them would be wrong.
 var collider: Node = null
 var space_kind: Hit.SpaceKind = SpaceKind.THREE_D
+
+## Whether this hit knows where it happened.
+##
+## Not derivable from the position, because the origin is a real place: a
+## hit at (0, 0, 0) and a hit that has no position are different things, and
+## a target with no spatial node at all is the second.
+var has_position: bool = false
 
 var position_2d: Vector2 = Vector2.ZERO
 var normal_2d: Vector2 = Vector2.ZERO
@@ -45,6 +58,29 @@ var normal_3d: Vector3 = Vector3.ZERO
 const COLLIDER_KEY: StringName = &"collider"
 
 
+## A hit that is only a place: no collider, and a position that is the point
+## of it. Null when the two arguments do not agree about how many dimensions
+## they are in, which is the same rule a physics hit is held to.
+static func at_location(position: Variant, normal: Variant = null) -> GameplayTargetHit:
+	var result: GameplayTargetHit = Hit.new()
+	result.has_position = true
+	if position is Vector2:
+		if normal != null and not normal is Vector2:
+			return null
+		result.space_kind = SpaceKind.TWO_D
+		result.position_2d = position
+		result.normal_2d = normal if normal != null else Vector2.ZERO
+		return result
+	if position is Vector3:
+		if normal != null and not normal is Vector3:
+			return null
+		result.space_kind = SpaceKind.THREE_D
+		result.position_3d = position
+		result.normal_3d = normal if normal != null else Vector3.ZERO
+		return result
+	return null
+
+
 static func try_from_physics_hit(hit: Dictionary) -> GameplayTargetHit:
 	var raw_collider: Variant = hit.get(COLLIDER_KEY)
 	var raw_position: Variant = hit.get("position")
@@ -60,12 +96,14 @@ static func try_from_physics_hit(hit: Dictionary) -> GameplayTargetHit:
 		result.space_kind = SpaceKind.TWO_D
 		result.position_2d = raw_position
 		result.normal_2d = raw_normal
+		result.has_position = true
 		return result
 
 	if raw_position is Vector3 and raw_normal is Vector3:
 		result.space_kind = SpaceKind.THREE_D
 		result.position_3d = raw_position
 		result.normal_3d = raw_normal
+		result.has_position = true
 		return result
 
 	return null

@@ -65,6 +65,7 @@ func append_node(node: Node) -> bool:
 	if canvas_node != null:
 		hit.space_kind = TargetHit.SpaceKind.TWO_D
 		hit.position_2d = canvas_node.global_position
+		hit.has_position = true
 		_record(hit)
 		return true
 
@@ -72,6 +73,7 @@ func append_node(node: Node) -> bool:
 	if spatial_node != null:
 		hit.space_kind = TargetHit.SpaceKind.THREE_D
 		hit.position_3d = spatial_node.global_position
+		hit.has_position = true
 		_record(hit)
 		return true
 
@@ -91,6 +93,37 @@ func append_overlap(nodes: Array[Node]) -> int:
 		if append_node(node):
 			accepted += 1
 	return accepted
+
+
+## Append a place with nothing at it.
+##
+## What a ground-targeted spell aims at. It lands there whether or not
+## anybody is standing on the spot, and `get_target_nodes()` stays empty -
+## an invented Node would be found by every query that walks targets, and
+## every one of them would be wrong about what is there.
+##
+## A mismatched position and normal are refused rather than half-recorded,
+## the same way a physics hit is.
+## @composer
+func append_location(position: Variant, normal: Variant = null) -> bool:
+	var hit: TargetHit = TargetHit.at_location(position, normal)
+	if hit == null:
+		return false
+	_record(hit)
+	return true
+
+
+## Whether anything here is a place rather than a thing.
+##
+## Asked by whoever is about to apply an effect: aiming at a place and
+## aiming at nobody are different, and an ability that got no actors wants
+## to know which of the two happened.
+## @composer
+func has_locations() -> bool:
+	for hit: TargetHit in _hits:
+		if hit.collider == null and hit.has_position:
+			return true
+	return false
 
 
 func _record(hit: TargetHit) -> void:

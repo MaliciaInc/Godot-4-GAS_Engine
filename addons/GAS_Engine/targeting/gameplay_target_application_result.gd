@@ -11,6 +11,20 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayTargetApplicationResult extends RefCounted
 
+## Why an application reached nobody, when it did.
+enum Refusal {
+	## It reached somebody, or it was never going to - a null effect, a
+	## null aim. Nothing to explain.
+	NONE,
+	## The aim held no actors. A ground-targeted spell aimed at a place
+	## with nobody standing on it is the ordinary case of this, and it is
+	## not an error: the effect had nobody to apply to, and the engine
+	## does not go looking for somebody nearby on its own.
+	NO_ACTOR_TARGETS,
+}
+
+var refusal: GameplayTargetApplicationResult.Refusal = Refusal.NONE
+
 ## Every node the target data offered, before any of them were resolved or
 ## merged. The difference between this and `applied_count()` is the whole point.
 var attempted_targets: int = 0

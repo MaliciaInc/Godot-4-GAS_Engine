@@ -651,6 +651,11 @@
         "left": "addons/GAS_Engine/abilities/costs/gameplay_ability_cost.gd:<file>",
         "right": "addons/GAS_Engine/cues/gameplay_cue_binding.gd:<file>",
         "reason": "Two authoring Resources that describe unrelated things and happen to be the same shape: an enum, a handful of exported fields, a paragraph on each. One says what an ability charges and the other says which cue an effect plays and how loud; they share no field, no consumer and no concept, and the only way to make them stop looking alike would be to write one of them worse. Declared rather than suppressed so that a duplication between two Resources that DO share a concept still fails."
+      },
+      {
+        "left": "addons/GAS_Engine/**:_expected",
+        "right": "addons/GAS_Engine/**:_expected",
+        "reason": "A wire contract's type table: every key of a format mapped to the TYPE_* it must arrive as. It is data rather than logic - the whole content of one is the field names of one format - and two of them are alike in shape precisely because they are both exhaustive. Folding them would mean one table for two formats, which is how a field added to one silently becomes required by the other."
       }
     ]
   }
