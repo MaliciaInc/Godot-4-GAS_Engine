@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.2.7: three preload paths inside the cue autoload's parse-time closure
+# F6.2.8: two ceilings raised for the persistent-cue ledger and the component's door
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T02:55:15Z
-# commit-previo: 579524f0229f667eac746c9825607ebd6a918e5f
+# date-utc: 2026-09-09T03:02:45Z
+# commit-previo: a4f8a8bb85cc9e9cd0090c62439fbd3d68dd584f
 # files: 26
-48139a02fa336498e7792d263c5030cfd62491302b7e56a27a1e5b2813999261  tooling/.quality-gates.json
+fba2faa3566a79dba889531908a03cdaac3626495960d83ca531780d93b1cb91  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

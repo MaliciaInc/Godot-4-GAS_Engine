@@ -653,6 +653,10 @@ func end_ability(
 	# screen for an ability that is over, and whoever is waiting on it is waiting
 	# for an answer nobody will give.
 	_stop_aiming()
+	# And every cue this activation left running. An aura on a character
+	# whose stance ended is the same class of thing as a preview on screen
+	# for an ability that is over.
+	_stop_persistent_cues()
 	if current_spec != null:
 		current_spec.active_count = maxi(current_spec.active_count - 1, 0)
 		if current_spec.active_count == 0:
@@ -693,6 +697,70 @@ func execute_cue(tag: StringName) -> void:
 	params.instigator = owner_asc.get_effect_target()
 	params.target = owner_asc.get_effect_target()
 	owner_asc.execute_cue(params)
+
+
+## Start a cue that runs until this ability stops it, or until the ability
+## ends.
+##
+## The difference from `execute_cue` is the whole of it: a one-shot cue is
+## over when it is over, and this one is not - a channel's beam, an aura
+## while a stance is held. Which means it can be left behind, and the reason
+## an ability's persistent cues are its own ledger is that it must not be.
+##
+## The handle comes back, so an ability that wants to stop one early can.
+## Ignoring it is the ordinary case: everything still running is stopped when
+## the ability ends, however it ends.
+## @composer
+func activate_persistent_cue(
+	tag: StringName, params: GameplayCueParams = null
+) -> GameplayCueHandle:
+	if owner_asc == null:
+		return GameplayCueHandle.new()
+	var told: GameplayCueParams = params if params != null else GameplayCueParams.new()
+	told.cue_tag = tag
+	if told.instigator == null:
+		told.instigator = owner_asc.get_effect_target()
+	if told.target == null:
+		told.target = owner_asc.get_effect_target()
+	var handle: GameplayCueHandle = owner_asc.activate_persistent_cue(told)
+	if handle.is_valid():
+		_persistent_cues.append(handle)
+		_persistent_cue_params.append(told)
+	return handle
+
+
+## Stop one persistent cue this ability started. False for a handle it did
+## not start, which is the case a shared handle makes real: one activation
+## must never end another's cue.
+## @composer
+func deactivate_persistent_cue(handle: GameplayCueHandle) -> bool:
+	if handle == null or owner_asc == null:
+		return false
+	for index: int in _persistent_cues.size():
+		if _persistent_cues[index].id != handle.id:
+			continue
+		owner_asc.deactivate_persistent_cue(handle, _persistent_cue_params[index])
+		_persistent_cues.remove_at(index)
+		_persistent_cue_params.remove_at(index)
+		return true
+	return false
+
+
+## End every persistent cue this activation started, and nothing else.
+##
+## Called from the one place an ability stops, so a normal end, a cancel, an
+## abort and a grant being taken away all go through it. Paired by index with
+## the params each cue was started with, because a removal cue is played with
+## what the activation knew rather than with whatever the caller happens to
+## be holding.
+func _stop_persistent_cues() -> void:
+	if owner_asc != null:
+		for index: int in _persistent_cues.size():
+			owner_asc.deactivate_persistent_cue(
+				_persistent_cues[index], _persistent_cue_params[index]
+			)
+	_persistent_cues.clear()
+	_persistent_cue_params.clear()
 
 
 ## Reads the frozen snapshot's target_required/blocked_query, immune to edits.
@@ -897,6 +965,18 @@ func wait_target_data() -> AbilityTaskWaitTargetData:
 ## is aiming twice, and the second would silently replace the first if there
 ## were only room for one.
 var _aiming: Array[GameplayTargetProvider] = []
+
+## Persistent cues this activation started and has not stopped.
+##
+## Kept by the activation rather than by the component, because whose cue it
+## is is the question that matters: one activation ending must not take away
+## another's, and a component-wide list could not tell them apart.
+##
+## Two arrays paired by index rather than a dictionary, because a handle is a
+## RefCounted and a dictionary keyed by one is keyed by identity - a caller
+## holding an equal handle from the wire would not find its own entry.
+var _persistent_cues: Array[GameplayCueHandle] = []
+var _persistent_cue_params: Array[GameplayCueParams] = []
 
 
 func submit_target_data(data: GameplayAbilityTargetData) -> void:

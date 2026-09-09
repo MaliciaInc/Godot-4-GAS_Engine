@@ -596,6 +596,21 @@ func activate_persistent_cue(params: GameplayCueParams) -> GameplayCueHandle:
 
 
 ## End and pool a PERSISTENT cue started by `activate_persistent_cue`.
+## End every persistent cue running on this entity.
+##
+## For a character being despawned or reset: the effects and abilities that
+## started them are going away with it, so nothing else is ever going to hand
+## back their handles, and a cue nobody can end is a cue forever.
+##
+## Everything on this entity, including cues an ability started - which is the
+## point of it being on the component rather than on either of them.
+## @composer
+func remove_all_gameplay_cues() -> void:
+	var manager: CueManagerScript = _cue_manager()
+	if manager != null:
+		manager.remove_all_cues(get_effect_target())
+
+
 func deactivate_persistent_cue(handle: GameplayCueHandle, params: GameplayCueParams) -> void:
 	var manager: CueManagerScript = _cue_manager()
 	if manager != null:
