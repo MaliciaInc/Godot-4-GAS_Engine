@@ -158,6 +158,23 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		if is_node_ready():
 			_adopt_attribute_sets()
 
+@export_category("Suppression")
+## Do not play cues on this component.
+##
+## Locally. It is not the same statement as "do not tell anybody a cue
+## happened": a dedicated server plays nothing and still has to say what
+## occurred, and a switch that meant both would make that impossible to
+## express. F6.6 gives replication its own answer.
+@export var suppress_cues: bool = false
+
+## Refuse every ability grant on this component.
+##
+## For a component being torn down, or one a game has decided is a spectator.
+## A refusal, in whatever shape the operation already refuses in - an invalid
+## handle from a grant, false from a retirement - rather than a silent no,
+## which would look exactly like a grant that worked.
+@export var suppress_ability_grants: bool = false
+
 @export_category("Input")
 ## The slots that mean yes and no when nothing more specific is bound.
 ##
@@ -468,10 +485,49 @@ func _cue_manager() -> CueManagerScript:
 	return get_node_or_null(CueManagerScript.AUTOLOAD_NODE_PATH) as CueManagerScript
 
 
+## What the two suppressions are called in the ledger below. Constants because
+## a bare string here collides with unrelated words elsewhere in the addon, and
+## because a key spelled at two call sites is a key that drifts.
+const CUE_SUPPRESSION: StringName = &"suppression.cues"
+const GRANT_SUPPRESSION: StringName = &"suppression.grants"
+
+## Which suppressions have already been mentioned, so a switch that is on for
+## a whole match is diagnosed once rather than sixty times a second.
+var _suppressions_said: Dictionary[StringName, bool] = {}
+
+
+## Whether this is suppressed, saying so the first time it comes up.
+func _suppressed(what: StringName, switched_off: bool, why: String) -> bool:
+	if not switched_off:
+		return false
+	if not _suppressions_said.has(what):
+		_suppressions_said[what] = true
+		push_warning(why)
+	return true
+## Whether cues are switched off here, said the first time it matters.
+func _cues_are_off() -> bool:
+	return _suppressed(
+		CUE_SUPPRESSION,
+		suppress_cues,
+		"GAS_Engine: cues are suppressed on this component; none will play here."
+	)
+
+
+## Whether grants are switched off here, on the same terms.
+func _grants_are_off() -> bool:
+	return _suppressed(
+		GRANT_SUPPRESSION,
+		suppress_ability_grants,
+		"GAS_Engine: ability grants are suppressed on this component; each is refused."
+	)
+
+
+
+
 ## Play a one-shot cue on this entity through the global manager.
 ## @composer
 func execute_cue(params: GameplayCueParams) -> void:
-	if params == null:
+	if params == null or _cues_are_off():
 		return
 	if params.target == null:
 		params.target = get_effect_target()
@@ -484,6 +540,8 @@ func execute_cue(params: GameplayCueParams) -> void:
 ## Start a PERSISTENT cue's on_active/while_active. An invalid handle if
 ## there is no manager or no registry entry for the tag.
 func activate_persistent_cue(params: GameplayCueParams) -> GameplayCueHandle:
+	if _cues_are_off():
+		return GameplayCueHandle.new()
 	if params == null:
 		return GameplayCueHandle.new()
 	if params.target == null:
@@ -823,6 +881,8 @@ func give_ability(
 	input_id: int = -1,
 	source: GameplayAbilitySource = null
 ) -> GameplayAbilityHandle:
+	if _grants_are_off():
+		return GameplayAbilityHandle.new()
 	return ability_runtime.give_ability(ability_scene, level, input_id, source)
 
 

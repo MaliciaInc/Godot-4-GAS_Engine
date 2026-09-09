@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.1.8 (G-09) raises gameplay_ability.gd 900 -> 1050 for the four task factories, the named-task doors and the cancelability override.
+# F6.1.5 and F6.1.9 raise the component 1120 -> 1220: the generic confirm/cancel doors with their ordering contract, and the two suppression switches with the ledger that mentions each once.
 #
 # python: 3.14.6
-# date-utc: 2026-09-08T23:56:04Z
-# commit-previo: 89eb841679c0a82f26246e3a1f44fe4904341146
+# date-utc: 2026-09-09T00:07:02Z
+# commit-previo: c871d93a66a80c83aa8d23676d38b4d10d23a4e5
 # files: 26
-dbb4e0c83e5f9c3df2c68834483e287d4cbc82360020dad8cd37957d146541b8  tooling/.quality-gates.json
+1ecc46db4eff610005d78827c91c215105de33f13e89f348048d3f09115e1117  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

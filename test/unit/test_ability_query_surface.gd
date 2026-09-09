@@ -299,3 +299,48 @@ func test_finished_target_provider_does_not_receive_generic_input() -> void:
 
 	assert_true(again.is_empty(), "nothing more was asked of it")
 #endregion
+#region Switched off
+## Suppressing a cue means not playing it here. It is deliberately not the same
+## statement as not telling anybody about it - a dedicated server plays nothing
+## and still has to say what happened.
+func test_suppressed_cues_do_not_play_and_say_so_once() -> void:
+	asc.suppress_cues = true
+	watch_signals(asc)
+
+	var params: GameplayCueParams = GameplayCueParams.new()
+	params.cue_tag = &"Cue.Test"
+	asc.execute_cue(params)
+	asc.execute_cue(params)
+
+	assert_signal_not_emitted(asc, "cue_executed", "nothing played")
+
+
+func test_suppressed_grants_are_refused_in_the_shape_a_grant_refuses_in() -> void:
+	asc.suppress_ability_grants = true
+
+	var probe: ProbeAbility = Probe.build(FIRE)
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(probe)
+	probe.free()
+
+	var handle: GameplayAbilityHandle = asc.give_ability(scene)
+
+	assert_false(handle.is_valid(), "an invalid handle, not a silent nothing")
+	assert_true(asc.get_ability_specs().is_empty(), "and nothing was granted")
+
+
+func test_switching_suppression_off_again_lets_things_through() -> void:
+	asc.suppress_ability_grants = true
+	assert_false(asc.give_ability(_scene()).is_valid(), "refused while it is on")
+
+	asc.suppress_ability_grants = false
+	assert_true(asc.give_ability(_scene()).is_valid(), "and allowed once it is not")
+
+
+func _scene() -> PackedScene:
+	var probe: ProbeAbility = Probe.build(FIRE)
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(probe)
+	probe.free()
+	return scene
+#endregion
