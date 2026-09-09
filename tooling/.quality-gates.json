@@ -498,9 +498,9 @@
   "duplication": {
     "pair_allowlist": [
       {
-        "left": "addons/GAS_Engine/targeting/gameplay_*_*d.gd:*",
-        "right": "addons/GAS_Engine/targeting/gameplay_*_*d.gd:*",
-        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3. F6.3.2 adds the reticles to the same rule and for the same reason: a Node2D and a Node3D share no base, global_position is a different type on each, and a reticle written once would have to take positions as Variant."
+        "left": "addons/GAS_Engine/targeting/*gameplay_*_*d.gd:*",
+        "right": "addons/GAS_Engine/targeting/*gameplay_*_*d.gd:*",
+        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3. F6.3.2 adds the reticles to the same rule and for the same reason: a Node2D and a Node3D share no base, global_position is a different type on each, and a reticle written once would have to take positions as Variant. Widened again at F6.3.3 to reach the providers directory, where the radius pair lives: it is the same mirror one directory down."
       },
       {
         "left": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:raycast_2d",

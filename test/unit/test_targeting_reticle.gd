@@ -8,11 +8,11 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
-const Fixture = preload("res://test/fixtures/asc_fixture.gd")
-const Probe = preload("res://test/fixtures/probe_ability.gd")
+const Bench = preload("res://test/fixtures/aiming_bench.gd")
 
 const SPOT: Vector3 = Vector3(4.0, 0.0, -8.0)
 
+var bench: AimingBench = null
 var fixture: ASCFixture = null
 var body: Node3D = null
 var ability: GameplayAbility = null
@@ -33,18 +33,14 @@ class ScriptedProvider extends GameplayTargetProvider:
 
 
 func before_each() -> void:
-	fixture = Fixture.create("Aimer")
-	add_child_autofree(fixture.owner)
-	body = Node3D.new()
-	body.name = "Body"
-	add_child_autofree(body)
-	fixture.asc.init_ability_actor_info(fixture.owner, body)
-	ability = TestAbilityFactory.give(
-		fixture.asc, Probe.build(&"Ability.Aiming")
-	).per_actor_instance
+	bench = Bench.built(self)
+	fixture = bench.fixture
+	body = bench.body
+	ability = bench.ability
 
 
 func after_each() -> void:
+	bench = null
 	fixture = null
 	body = null
 	ability = null

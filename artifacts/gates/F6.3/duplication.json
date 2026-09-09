@@ -1,13 +1,13 @@
 {
-  "units": 2625,
-  "units_by_language": "gdscript 2583, powershell 4, python 38",
-  "elapsed_seconds": 10.868037800006277,
+  "units": 2639,
+  "units_by_language": "gdscript 2597, powershell 4, python 38",
+  "elapsed_seconds": 10.53290449999622,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24786
+    "behavioral": 24944
   },
   "blocking": 0,
   "findings": [
@@ -2577,6 +2577,13 @@
       "kind": "structural",
       "left": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:23-37:raycast_2d",
       "right": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:41-55:raycast_3d",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/GAS_Engine/targeting/providers/gameplay_radius_provider_2d.gd:42-61:validate_authoritative",
+      "right": "addons/GAS_Engine/targeting/providers/gameplay_radius_provider_3d.gd:41-60:validate_authoritative",
       "score": 1.0,
       "category": "executable"
     },

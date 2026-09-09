@@ -39,7 +39,38 @@ signal cancelled
 ## decides whether it still has a target coming.
 enum State { IDLE, PREVIEWING, CONFIRMED, CANCELLED }
 
+## What counts as somebody having decided.
+##
+## Four genuinely different answers, not four spellings of one. A cone that
+## fires the moment it has anybody in it and a ground marker somebody places
+## deliberately are aimed the same way and finish differently, and which of
+## those an aim is belongs to the aim rather than to whoever started it.
+enum Confirmation {
+	## The first preview with anything in it confirms, and the aim is over.
+	## For an aim nobody is meant to hold: a snap-to-nearest, an auto-aim.
+	INSTANT,
+	## A person says yes, through the component's own generic confirm. The
+	## default, because it is what a reticle on screen means.
+	USER_CONFIRMED,
+	## The provider decides, once, on its own terms - a charge that fires
+	## when it is full, a lock-on that completes.
+	CUSTOM,
+	## The provider decides repeatedly and keeps aiming: a chain lightning
+	## picking one target after another, still previewing until something
+	## cancels it or the ability ends.
+	CUSTOM_MULTI,
+}
+
 var state: GameplayTargetProvider.State = State.IDLE
+
+## Which of the four this aim is.
+##
+## A plain field and deliberately not `@export`: this class is RefCounted,
+## and an exported field on one is authored nowhere - there is no inspector
+## for something a scene cannot hold. A project that wants the policy
+## authored puts it on the Resource that builds the provider, which is where
+## every other authored decision about an aim already lives.
+var confirmation: GameplayTargetProvider.Confirmation = Confirmation.USER_CONFIRMED
 
 ## The ability this is choosing for, while it is choosing.
 ##
@@ -77,6 +108,14 @@ func update_preview() -> GameplayAbilityTargetData:
 
 	previewed = _aim()
 	preview_changed.emit(previewed)
+	# An instant aim is over the moment it has anything, and the caller gets
+	# back what it confirmed rather than a preview nobody is updating any
+	# more. Checked after the announcement, so whatever is drawing has seen
+	# the aim that was taken.
+	if confirmation == Confirmation.INSTANT and _is_worth_confirming(previewed):
+		var taken: GameplayAbilityTargetData = previewed
+		confirm()
+		return taken
 	return previewed
 
 
@@ -84,8 +123,16 @@ func update_preview() -> GameplayAbilityTargetData:
 func confirm() -> void:
 	if state != State.PREVIEWING:
 		return
-	state = State.CONFIRMED
 	var taken: GameplayAbilityTargetData = previewed
+	# A multi aim answers and keeps aiming: it is picking targets one after
+	# another, and the thing that ends it is a cancel or the ability. Every
+	# other kind is over on its first yes, which is what makes a handle to
+	# it safe to let go of.
+	if confirmation == Confirmation.CUSTOM_MULTI:
+		previewed = GameplayAbilityTargetData.new()
+		confirmed.emit(taken)
+		return
+	state = State.CONFIRMED
 	_release()
 	confirmed.emit(taken)
 
@@ -128,6 +175,15 @@ func validate_authoritative(
 		if node == null or not is_instance_valid(node):
 			return false
 	return true
+
+
+## Whether a preview is worth confirming on its own.
+##
+## Anything at all: an actor, or a place. A ground-targeted spell aimed at
+## empty ground has a real answer, and an instant aim that refused to
+## confirm one would never finish.
+func _is_worth_confirming(data: GameplayAbilityTargetData) -> bool:
+	return data != null and (data.has_targets() or data.has_locations())
 
 
 ## What this provider aims at. Overridden by every real one.

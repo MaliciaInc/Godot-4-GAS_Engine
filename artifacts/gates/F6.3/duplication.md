@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 575
+- Source files scanned: 582
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 2625
-- Units by language: gdscript 2583, powershell 4, python 38
-- Findings: 372
-- Elapsed: 10.868s
+- Units scanned: 2639
+- Units by language: gdscript 2597, powershell 4, python 38
+- Findings: 373
+- Elapsed: 10.533s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 41 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 24786 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 24944 (raise with --max-pairs)
 
 ## Structural
 
@@ -36,6 +36,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_raycast_request_2d.gd:1-24:<file>` <-> `addons/GAS_Engine/targeting/gameplay_raycast_request_3d.gd:1-24:<file>`
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_target_reticle_2d.gd:45-53:follow` <-> `addons/GAS_Engine/targeting/gameplay_target_reticle_3d.gd:44-52:follow`
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:23-37:raycast_2d` <-> `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:41-55:raycast_3d`
+- 1.000 [executable]: `addons/GAS_Engine/targeting/providers/gameplay_radius_provider_2d.gd:42-61:validate_authoritative` <-> `addons/GAS_Engine/targeting/providers/gameplay_radius_provider_3d.gd:41-60:validate_authoritative`
 - 1.000 [fixture_data]: `test/fixtures/test_effect_factory.gd:364-372:apply` <-> `test/fixtures/test_effect_factory.gd:377-385:apply_result`
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:110-117:_sweep` <-> `test/unit/test_targeting_3d.gd:109-116:_sweep`
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:151-159:test_a_trace_keeps_the_point_and_the_normal_physics_gave_it` <-> `test/unit/test_targeting_3d.gd:149-157:test_a_trace_keeps_the_point_and_the_normal_physics_gave_it`
