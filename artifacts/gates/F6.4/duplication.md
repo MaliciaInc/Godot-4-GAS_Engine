@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 636
+- Source files scanned: 637
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 2858
-- Units by language: gdscript 2816, powershell 4, python 38
+- Units scanned: 2866
+- Units by language: gdscript 2824, powershell 4, python 38
 - Findings: 379
-- Elapsed: 12.454s
+- Elapsed: 12.050s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 26715 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 26956 (raise with --max-pairs)
 
 ## Structural
 
