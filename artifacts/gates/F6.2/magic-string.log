@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      magic-string
 command:    python tooling\gates\run_gate.py magic-string artifacts\gates\F6.2
-started:    2026-09-09T01:43:41.9992669Z
-ended:      2026-09-09T01:43:50.6831903Z
-duration_s: 8.684
+started:    2026-09-09T01:57:35.6392698Z
+ended:      2026-09-09T01:57:44.1586878Z
+duration_s: 8.519
 exit_code:  0
 
 --- stdout ---

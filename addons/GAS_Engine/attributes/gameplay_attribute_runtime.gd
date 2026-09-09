@@ -307,6 +307,16 @@ func value_up_to_channel(attribute_name: StringName, through_channel: int) -> fl
 	)
 
 
+## How several contributions of one kind combine on this attribute, as the
+## set that declares it says. ALL for an attribute nobody declares, which is
+## what an empty aggregate composes to anyway.
+func policy_for(attribute_name: StringName) -> AttributeSet.AggregatorPolicy:
+	var declaring: AttributeSet = find_set(attribute_name)
+	if declaring == null:
+		return AttributeSet.AggregatorPolicy.ALL
+	return declaring.aggregator_policy(attribute_name)
+
+
 func _compose_from(
 	base: float,
 	attribute_name: StringName,
@@ -314,12 +324,18 @@ func _compose_from(
 	contributions: Array[AttributeModifierContribution],
 	through_channel: int = AttributeAggregateMath.CHANNELS - 1
 ) -> float:
+	# Asked of the set that declares the attribute, and handed in: the
+	# arithmetic knows nothing about sets, and an aggregate that went looking
+	# for one would answer differently depending on who called it.
+	var policy: AttributeSet.AggregatorPolicy = policy_for(attribute_name)
 	var folded: AttributeAggregateMath.Composed = (
 		AttributeAggregateMath.unreal(
-			base, attribute_name, contributions, through_channel
+			base, attribute_name, contributions, through_channel, policy
 		)
 		if _uses_unreal_algebra()
-		else AttributeAggregateMath.godot_native(base, attribute_name, contributions)
+		else AttributeAggregateMath.godot_native(
+			base, attribute_name, contributions, policy
+		)
 	)
 
 	if not folded.is_ok():
@@ -586,4 +602,19 @@ func notify_gameplay_effect_execute(data: GameplayEffectExecuteData) -> void:
 	if attribute_set == null:
 		return
 	attribute_set.post_gameplay_effect_execute(data)
+	_clear_meta(data.attribute_name)
+
+
+## Return a meta attribute to zero, now that the set has read it.
+##
+## Here rather than in each execution, and after the hook rather than before:
+## the hook is the one thing entitled to read the number, and an execution
+## that cleared up after itself would be one place per calculation to forget
+## to. An attribute that is not meta is left exactly as it was.
+func _clear_meta(attribute_name: StringName) -> void:
+	var attribute: AttributeData = find(attribute_name)
+	if attribute == null or not attribute.is_meta:
+		return
+	attribute.base_value = 0.0
+	attribute.current_value = 0.0
 #endregion

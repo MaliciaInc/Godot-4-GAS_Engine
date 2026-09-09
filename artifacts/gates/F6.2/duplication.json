@@ -1,13 +1,13 @@
 {
-  "units": 2546,
-  "units_by_language": "gdscript 2504, powershell 4, python 38",
-  "elapsed_seconds": 10.576161600001797,
+  "units": 2554,
+  "units_by_language": "gdscript 2512, powershell 4, python 38",
+  "elapsed_seconds": 10.605066099997202,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24319
+    "behavioral": 24492
   },
   "blocking": 0,
   "findings": [
@@ -182,7 +182,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
       "score": 1.0,
       "category": "executable"
     },
@@ -225,13 +225,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "test/fixtures/test_effect_factory.gd:96-104:turn_based",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
       "score": 1.0,
       "category": "executable"
     },
@@ -371,7 +364,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
-      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
       "score": 0.9090909090909091,
       "category": "executable"
     },
@@ -525,7 +518,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards",
-      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
       "score": 0.9,
       "category": "executable"
     },
@@ -972,6 +965,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:150-167:give_and_activate_once",
+      "right": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:320-347:_compose_from",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:58-65:blocked_externally",
       "right": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
       "score": 0.8333333333333334,
@@ -1078,7 +1078,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create",
-      "right": "test/unit/test_attribute_evaluation.gd:58-65:_request",
+      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
       "score": 0.8333333333333334,
       "category": "executable"
     },

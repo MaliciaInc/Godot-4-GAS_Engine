@@ -78,13 +78,94 @@ static func stack_scaled(
 	return magnitude * stacks
 
 
+#region Policy
+## The contributions that count, once the attribute's policy has had its say.
+##
+## Handed the policy rather than looking one up: this file does the
+## arithmetic and knows nothing about which set declares what, and an
+## aggregate that reached for an AttributeSet would be arithmetic that
+## answers differently depending on who is asking.
+##
+## Selection happens inside one operation on one channel and never across
+## two. "The strongest of these slows" is a sentence about the slows; the
+## same sentence spanning an ADD and a MULTIPLY would be comparing a number
+## of points against a factor, which is not a comparison.
+##
+## OVERRIDE is left alone: it already has a rule for which one wins, and two
+## rules for that would be two answers.
+static func surviving(
+	value: float,
+	attribute_name: StringName,
+	contributions: Array[AttributeModifierContribution],
+	policy: AttributeSet.AggregatorPolicy,
+	channel: int = -1
+) -> Array[AttributeModifierContribution]:
+	if policy == AttributeSet.AggregatorPolicy.ALL:
+		return contributions
+
+	var wants_lowest: bool = policy == AttributeSet.AggregatorPolicy.MOST_NEGATIVE
+	var chosen: Dictionary[int, AttributeModifierContribution] = {}
+	var kept: Array[AttributeModifierContribution] = []
+	for contribution: AttributeModifierContribution in contributions:
+		if contribution.attribute_name != attribute_name:
+			continue
+		if channel >= 0 and contribution.evaluation_channel != channel:
+			continue
+		if contribution.operation == GameplayEffectModifier.Operation.OVERRIDE:
+			kept.append(contribution)
+			continue
+		var bucket: int = int(contribution.operation)
+		var standing: AttributeModifierContribution = chosen.get(bucket)
+		if standing == null or _moves_further(value, contribution, standing, wants_lowest):
+			chosen[bucket] = contribution
+	for bucket: int in chosen:
+		kept.append(chosen[bucket])
+	return kept
+
+
+## Whether `candidate` takes the value further in the wanted direction than
+## `standing` does.
+##
+## Compared by what each one would do to the value on its own, rather than by
+## its magnitude. A magnitude comparison answers backwards for DIVIDE - the
+## bigger divisor is the harsher one - and would have needed a rule per
+## operation, which is a rule per operation to get wrong.
+static func _moves_further(
+	value: float,
+	candidate: AttributeModifierContribution,
+	standing: AttributeModifierContribution,
+	wants_lowest: bool
+) -> bool:
+	var theirs: float = _alone(value, standing)
+	var ours: float = _alone(value, candidate)
+	return ours < theirs if wants_lowest else ours > theirs
+
+
+## What one contribution would make of a value with nothing else applied.
+static func _alone(value: float, contribution: AttributeModifierContribution) -> float:
+	match contribution.operation:
+		GameplayEffectModifier.Operation.ADD, \
+		GameplayEffectModifier.Operation.ADD_FINAL:
+			return value + contribution.magnitude
+		GameplayEffectModifier.Operation.DIVIDE, \
+		GameplayEffectModifier.Operation.DIVIDE_ADDITIVE:
+			if is_zero_approx(contribution.magnitude):
+				return value
+			return value / contribution.magnitude
+	return value * contribution.magnitude
+#endregion
+
+
 #region Godot-native
 ## One pass, products multiplied, and the last override applied wins.
 ##
 ## What this engine has always done, kept exactly. Every project already built
 ## on it composes to the same numbers it did before there was a second way.
 static func godot_native(
-	base: float, attribute_name: StringName, contributions: Array[AttributeModifierContribution]
+	base: float,
+	attribute_name: StringName,
+	contributions: Array[AttributeModifierContribution],
+	policy: AttributeSet.AggregatorPolicy = AttributeSet.AggregatorPolicy.ALL
 ) -> Composed:
 	var made: Composed = Composed.new()
 	var total_add: float = 0.0
@@ -92,7 +173,10 @@ static func godot_native(
 	var product_divide: float = 1.0
 	var winner: AttributeModifierContribution = null
 
-	for contribution: AttributeModifierContribution in contributions:
+	# One pass, so one selection, against the base it starts from.
+	for contribution: AttributeModifierContribution in surviving(
+		base, attribute_name, contributions, policy
+	):
 		if contribution.attribute_name != attribute_name:
 			continue
 		match contribution.operation:
@@ -159,13 +243,20 @@ static func unreal(
 	base: float,
 	attribute_name: StringName,
 	contributions: Array[AttributeModifierContribution],
-	through_channel: int = CHANNELS - 1
+	through_channel: int = CHANNELS - 1,
+	policy: AttributeSet.AggregatorPolicy = AttributeSet.AggregatorPolicy.ALL
 ) -> Composed:
 	var made: Composed = Composed.new()
 	made.value = base
 
 	for channel: int in mini(through_channel + 1, CHANNELS):
-		var folded: Composed = _one_channel(made.value, attribute_name, contributions, channel)
+		# The policy is applied against the value this channel starts from,
+		# because which of two slows is the stronger one is a question about
+		# what they are being applied to.
+		var counted: Array[AttributeModifierContribution] = surviving(
+			made.value, attribute_name, contributions, policy, channel
+		)
+		var folded: Composed = _one_channel(made.value, attribute_name, counted, channel)
 		if not folded.is_ok():
 			return folded
 		made.value = folded.value

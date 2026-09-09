@@ -17,7 +17,12 @@ const AttributeSetScript = preload("res://test/fixtures/test_attribute_set.gd")
 
 var owner: Node = null
 var asc: AbilitySystemComponent = null
-var attributes: TestAttributeSet = null
+## The set this component was built with.
+##
+## Typed as the base class, because a suite may hand `create()` any subclass -
+## a recording one, one that declares a policy - and a field typed to the
+## default would refuse every other. A suite that needs the subclass casts.
+var attributes: AttributeSet = null
 
 
 ## Build an entity and its ASC. The caller adds `owner` to the tree.

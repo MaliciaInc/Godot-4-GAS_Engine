@@ -38,6 +38,10 @@ enum Status {
 	## evaluation's base mutations - the whole evaluation fails atomically,
 	## the same as any other refusal here.
 	GAMEPLAY_EFFECT_EXECUTE_REJECTED,
+	## A duration or infinite effect tried to contribute to a meta attribute.
+	## Meta attributes hold nothing between applications, so a contribution
+	## that persists on one is asking for state it is defined as not having.
+	META_ATTRIBUTE_CANNOT_PERSIST,
 }
 
 var status: AttributeEvaluationResult.Status = Status.OK

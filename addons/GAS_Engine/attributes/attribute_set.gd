@@ -69,6 +69,28 @@ func post_gameplay_effect_execute(_data: GameplayEffectExecuteData) -> void:
 ##
 ## The default reads the exported properties, so a set that simply declares
 ## `@export var health: AttributeData` needs no boilerplate.
+## How several contributions of one kind combine on one attribute.
+enum AggregatorPolicy {
+	## All of them, which is what stacking has always meant here.
+	ALL,
+	## Only the one that moves the value furthest down. Two slows and the
+	## stronger one applies, rather than a character who walked into four
+	## of them being unable to move at all.
+	MOST_NEGATIVE,
+	## Only the one that moves it furthest up.
+	MOST_POSITIVE,
+}
+
+
+## Which policy governs one of this set's attributes.
+##
+## Per attribute rather than per set: a set that owns both movement speed and
+## health is a perfectly ordinary set, and those two want different answers.
+## The default is ALL, which is what every set written before this did.
+func aggregator_policy(_attribute_name: StringName) -> AttributeSet.AggregatorPolicy:
+	return AggregatorPolicy.ALL
+
+
 func get_attribute_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	for property: Dictionary in get_property_list():

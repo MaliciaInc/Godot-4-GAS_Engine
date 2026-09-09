@@ -25,6 +25,21 @@ class_name AttributeData extends Resource
 ## write here; active modifiers never do.
 @export var base_value: float = 0.0
 
+## Whether this attribute is a message rather than a store.
+##
+## Damage is the example. Nothing is ever "at 30 damage": an effect writes
+## 30 into it so the set can read it, decide what it means - subtract armour,
+## take it off health, count the hit - and then it is finished with. Left
+## holding the number, the next effect that only wanted to read damage would
+## read the last hit's.
+##
+## Two rules follow, and both are enforced rather than documented. It is
+## returned to zero centrally, right after the set's own
+## post_gameplay_effect_execute has had its say; and a lasting effect may not
+## contribute to one at all, because a contribution that persists is exactly
+## the state a meta attribute is defined as not having.
+@export var is_meta: bool = false
+
 ## The effective value: the base plus every active contribution, clamped.
 ## Derived. Writing it directly bypasses the aggregator and the next
 ## recomposition will overwrite it.

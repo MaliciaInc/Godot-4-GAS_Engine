@@ -364,6 +364,15 @@ static func _build_contributions(
 			result.error_attribute_name = attribute_name
 			result.contributions.clear()
 			return
+		# A meta attribute holds nothing between applications, so a lasting
+		# contribution to one is a contradiction in the authoring. Refused here,
+		# while somebody can still be told which effect did it.
+		var declared: AttributeData = request.attributes.find(attribute_name)
+		if declared != null and declared.is_meta:
+			result.status = AttributeEvaluationResult.Status.META_ATTRIBUTE_CANNOT_PERSIST
+			result.error_attribute_name = attribute_name
+			result.contributions.clear()
+			return
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]

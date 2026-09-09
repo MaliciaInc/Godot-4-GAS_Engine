@@ -270,8 +270,9 @@ func test_a_stale_current_value_is_repaired_without_signals() -> void:
 	# An authored Resource with base 100 and a stale current of 0 must come up
 	# at 100/100, and the repair must not look like gameplay to a listener.
 	var stale: ASCFixture = Fixture.create("Stale")
-	stale.attributes.mana.base_value = 100.0
-	stale.attributes.mana.current_value = 0.0
+	var declared: TestAttributeSet = stale.attributes as TestAttributeSet
+	declared.mana.base_value = 100.0
+	declared.mana.current_value = 0.0
 
 	var component: AbilitySystemComponent = stale.asc
 	watch_signals(component)

@@ -10,6 +10,7 @@ extends GutTest
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
 const Evaluator = preload("res://addons/GAS_Engine/effects/gameplay_effect_evaluator.gd")
+const PolicySet = preload("res://test/fixtures/policy_attribute_set.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"
@@ -215,4 +216,96 @@ func test_a_failed_evaluation_carries_no_staged_work() -> void:
 	# nothing to commit.
 	assert_eq(result.contributions.size(), 0, "no contributions survive a failure")
 	assert_eq(result.base_mutations.size(), 0, "and no staged writes")
+#endregion
+
+#region Attributes that hold nothing
+## A calculation that writes into the meta attribute and nothing else.
+class WritesDamage extends GameplayExecutionCalculation:
+	static var amount: float = 30.0
+
+	func execute(
+		_spec: GameplayEffectSpec, _target_asc: AbilitySystemComponent
+	) -> Dictionary[StringName, float]:
+		var produced: Dictionary[StringName, float] = {}
+		produced[PolicyAttributeSet.DAMAGE] = amount
+		return produced
+
+
+## A component whose set declares one attribute as a message.
+func _carrying_a_meta_attribute() -> ASCFixture:
+	var built: ASCFixture = Fixture.create("Struck", PolicySet)
+	add_child_autofree(built.owner)
+	built.asc.set_process(false)
+	return built
+
+
+## An instant effect writes it, the set reads it, and it is empty again -
+## once, and then again for the hit after that.
+##
+## One test over both counts rather than two tests, because the second is the
+## first read for what it leaves behind. Left holding 30, a second hit of 30
+## would read 60 and take twice as much off, and every hit after that would be
+## worse than the last: the quiet failure, and the reason the clearing is
+## central rather than something each calculation does for itself.
+##
+##     [how many hits, what health is left]
+func _meta_hit_cases() -> Array:
+	return [["one hit", 1, 70.0], ["and the one after it", 2, 40.0]]
+
+
+func test_a_meta_attribute_is_read_and_then_returned_to_zero(
+	case: Array = use_parameters(_meta_hit_cases())
+) -> void:
+	var described: String = case[0]
+	var hits: int = case[1]
+	var remaining: float = case[2]
+
+	var struck: ASCFixture = _carrying_a_meta_attribute()
+	var declared: PolicyAttributeSet = struck.attributes as PolicyAttributeSet
+	var effect: GameplayEffect = Factory.instant([] as Array[GameplayEffectModifier])
+	effect.executions = [WritesDamage.new()] as Array[GameplayExecutionCalculation]
+
+	for _hit: int in hits:
+		Factory.apply(struck.asc, effect)
+
+	assert_almost_eq(
+		declared.absorbed, 30.0, TOLERANCE, "%s: the set was handed thirty" % described
+	)
+	assert_almost_eq(
+		struck.base_of(PolicyAttributeSet.HEALTH),
+		remaining,
+		TOLERANCE,
+		"%s: and did something with it" % described
+	)
+	assert_almost_eq(
+		struck.base_of(PolicyAttributeSet.DAMAGE),
+		0.0,
+		TOLERANCE,
+		"%s: and the attribute is holding nothing afterwards" % described
+	)
+
+
+## A lasting effect may not contribute to one at all.
+##
+## Refused at evaluation rather than allowed and then quietly cleared: a
+## contribution that persists on an attribute defined as holding nothing is a
+## contradiction in the authoring, and the moment to say so is while somebody
+## can still be told which effect did it.
+func test_a_lasting_contribution_to_a_meta_attribute_is_refused() -> void:
+	var struck: ASCFixture = _carrying_a_meta_attribute()
+	var lasting: GameplayEffect = Factory.infinite(
+		[Factory.add(PolicyAttributeSet.DAMAGE, 5.0)]
+	)
+
+	var applied: GameplayEffectApplicationResult = Factory.apply_result(struck.asc, lasting)
+
+	assert_false(applied.is_ok(), "it was refused")
+	assert_eq(
+		applied.evaluation_status,
+		AttributeEvaluationResult.Status.META_ATTRIBUTE_CANNOT_PERSIST,
+		"and said why"
+	)
+	assert_almost_eq(
+		struck.current_of(PolicyAttributeSet.DAMAGE), 0.0, TOLERANCE, "and nothing landed"
+	)
 #endregion
