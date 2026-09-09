@@ -5,13 +5,13 @@
 - Source files scanned: 671
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 3078
-- Units by language: gdscript 3024, powershell 6, python 48
+- Units scanned: 3081
+- Units by language: gdscript 3027, powershell 6, python 48
 - Findings: 380
-- Elapsed: 13.118s
+- Elapsed: 13.377s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27217 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27215 (raise with --max-pairs)
 
 ## Structural
 
@@ -388,7 +388,7 @@
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs` <-> `addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:50-62:_on_ended`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/editor/effects/gameplay_effect_document.gd:272-280:add_cue`
-- 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/editor/composer/composer_canvas.gd:340-347:picked`
+- 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/editor/composer/composer_canvas.gd:361-368:picked`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `examples/action_sample/abilities/sample_channel.gd:32-52:build`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set.gd:77-86:_may_publish` <-> `addons/GAS_Engine/editor/composer/composer_port_types.gd:128-139:color_for`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set.gd:77-86:_may_publish` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:202-209:_take_off_the_effect`

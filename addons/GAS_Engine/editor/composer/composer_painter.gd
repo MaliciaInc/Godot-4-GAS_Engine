@@ -17,6 +17,9 @@ class_name ComposerPainter extends RefCounted
 ## painter does not decide what happens to a file.
 signal value_edited(node_id: StringName, position: int, source_text: String)
 
+## A press one of the cards received, on its way to whoever reads pins.
+signal pressed_over(event: InputEventMouseButton, received_by: Control)
+
 var _cards: Dictionary[StringName, ComposerCard] = {}
 var _port_types: ComposerPortTypes = ComposerPortTypes.new()
 var _graph: ComposerGraph = null
@@ -73,6 +76,10 @@ func _add_card(edit: GraphEdit, node: ComposerNode, at: Vector2) -> void:
 	card.value_edited.connect(
 		func _typed(node_id: StringName, position: int, written: String) -> void:
 			value_edited.emit(node_id, position, written)
+	)
+	card.pressed_over.connect(
+		func _pressed(event: InputEventMouseButton, received_by: Control) -> void:
+			pressed_over.emit(event, received_by)
 	)
 	_cards[node.id] = card
 

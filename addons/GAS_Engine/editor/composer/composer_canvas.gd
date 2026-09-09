@@ -130,6 +130,7 @@ func _ready() -> void:
 		func _typed(node_id: StringName, position: int, written: String) -> void:
 			value_edited.emit(node_id, position, written)
 	)
+	_painter.pressed_over.connect(_on_pressed_over)
 	connection_to_empty.connect(_on_connection_to_empty)
 	connection_from_empty.connect(_on_connection_from_empty)
 	# The widget's own shortcuts, taken as the requests they are. Bound here
@@ -186,6 +187,26 @@ func _acted_on(meant: ComposerCanvasGestures.Reading) -> void:
 		move_connections_requested.emit(
 			meant.from.node_id, meant.from.port_id, meant.to.node_id, meant.to.port_id
 		)
+
+
+## A press that landed on a card, read as a pin gesture the same way.
+##
+## The same state machine, deliberately: a Ctrl-drag begun on a card and let
+## go over the canvas is one gesture, and two readers would make it two halves
+## of nothing. `read_pin` was written for this and had nothing calling it -
+## the door was built and never hung, which is what GAS-009 turned out to be.
+##
+## The point is carried through the transform of the control that received it
+## rather than worked out from the card's position: what a row hands over is
+## in the row's own space, the row is inside a card, the card is scaled by the
+## zoom, and arithmetic that took a short cut through any of those would find
+## the wrong pin at some zoom and the right one at 1.0.
+func _on_pressed_over(event: InputEventMouseButton, received_by: Control) -> void:
+	var at: Vector2 = (
+		get_global_transform().affine_inverse()
+		* (received_by.get_global_transform() * event.position)
+	)
+	_acted_on(_gestures.read_pin(event, ComposerPins.at(_painter.cards(), zoom, at)))
 
 
 ## Arrows nudge what is picked; Home brings the graph back into view.

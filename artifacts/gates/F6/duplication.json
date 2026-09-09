@@ -1,13 +1,13 @@
 {
-  "units": 3078,
-  "units_by_language": "gdscript 3024, powershell 6, python 48",
-  "elapsed_seconds": 13.117721700000402,
+  "units": 3081,
+  "units_by_language": "gdscript 3027, powershell 6, python 48",
+  "elapsed_seconds": 13.37668069999927,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27217
+    "behavioral": 27215
   },
   "blocking": 0,
   "findings": [
@@ -1673,7 +1673,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
-      "right": "addons/GAS_Engine/editor/composer/composer_canvas.gd:340-347:picked",
+      "right": "addons/GAS_Engine/editor/composer/composer_canvas.gd:361-368:picked",
       "score": 0.7857142857142857,
       "category": "executable"
     },

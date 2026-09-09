@@ -21,19 +21,38 @@ const OTHER: String = "apply_effect_to_target_data"
 
 
 #region Alt-click clears a pin
-## Every pin a person can clear, at every zoom they can be looking at.
+## Far enough to put a port dot inside a row rather than on the card's edge, and
+## no further: it is the mechanism that matters, not the number.
 ##
-## The data argument pin is the one GAS-009 was about, and the zooms are here
-## because the point pushed in is a viewport point: an arithmetic that forgot
-## the scale would land on the right pin at 1.0 and on nothing at all at 2.0.
+## `port_h_offset` is a GraphNode theme constant a host game is entitled to set,
+## and the game GAS-009 was found in sets one. What it does is move the dot off
+## the card's outer edge and onto one of the card's own rows - and a row is
+## `MOUSE_FILTER_STOP`, because a value editor has to get its clicks. So the
+## press stops there, and every modifier gesture on every pin of every card
+## silently does nothing.
+const INSIDE_THE_CARD: int = 24
+
+## Every pin a person can clear, at every zoom they can be looking at, wherever
+## the theme draws the dot.
+##
+## The zooms are here because the point pushed in is a viewport point: an
+## arithmetic that forgot the scale would land on the right pin at 1.0 and on
+## nothing at all at 2.0. The offset is here because where the dot is drawn is
+## the theme's decision and not the Composer's, and the whole family - the run
+## of control in, the way out, and a value's argument - went deaf under one.
+##
+##     [what it is called, the zoom, how far the dots are pushed in, the pin, out]
 const CLEARING: Array = [
-	["the run of control, at half zoom", 0.5, ComposerReader.EXEC_IN, false],
-	["a value's argument, at half zoom", 0.5, StringName(ComposerReader.ARGUMENT % 1), false],
-	["the run of control", 1.0, ComposerReader.EXEC_IN, false],
-	["a value's argument", 1.0, StringName(ComposerReader.ARGUMENT % 1), false],
-	["the way out", 1.0, ComposerReader.EXEC_OUT, true],
-	["the run of control, at double zoom", 2.0, ComposerReader.EXEC_IN, false],
-	["a value's argument, at double zoom", 2.0, StringName(ComposerReader.ARGUMENT % 1), false],
+	["the run of control, at half zoom", 0.5, 0, ComposerReader.EXEC_IN, false],
+	["a value's argument, at half zoom", 0.5, 0, StringName(ComposerReader.ARGUMENT % 1), false],
+	["the run of control", 1.0, 0, ComposerReader.EXEC_IN, false],
+	["a value's argument", 1.0, 0, StringName(ComposerReader.ARGUMENT % 1), false],
+	["the way out", 1.0, 0, ComposerReader.EXEC_OUT, true],
+	["the run of control, at double zoom", 2.0, 0, ComposerReader.EXEC_IN, false],
+	["a value's argument, at double zoom", 2.0, 0, StringName(ComposerReader.ARGUMENT % 1), false],
+	["the run of control, drawn inside the card", 1.0, INSIDE_THE_CARD, ComposerReader.EXEC_IN, false],
+	["a value's argument, drawn inside the card", 1.0, INSIDE_THE_CARD, StringName(ComposerReader.ARGUMENT % 1), false],
+	["the way out, drawn inside the card", 1.0, INSIDE_THE_CARD, ComposerReader.EXEC_OUT, true],
 ]
 
 
@@ -42,11 +61,14 @@ func test_alt_clicking_a_pin_through_the_viewport_asks_to_clear_it() -> void:
 	for row: Array in CLEARING:
 		var described: String = row[0]
 		var at_zoom: float = row[1]
-		var port_id: StringName = row[2]
-		var outgoing: bool = row[3]
+		var pushed_in: int = row[2]
+		var port_id: StringName = row[3]
+		var outgoing: bool = row[4]
 
 		await _draw(WIRED, at_zoom)
 		await _bring_into_view(CONSUMER)
+		if pushed_in > 0:
+			await _offset_ports(pushed_in)
 		_broken.clear()
 		var at: Vector2 = _pin_point(CONSUMER, port_id, outgoing)
 
@@ -56,11 +78,11 @@ func test_alt_clicking_a_pin_through_the_viewport_asks_to_clear_it() -> void:
 			_broken.size(), 1, "%s: one pin was asked about: %s" % [described, _broken]
 		)
 		assert_true(
-			_broken[0].ends_with(".%s" % port_id),
+			_broken.size() == 1 and _broken[0].ends_with(".%s" % port_id),
 			"%s: and it is the one under the pointer: %s" % [described, _broken]
 		)
 		checked += 1
-	assert_eq(checked, CLEARING.size(), "every pin and every zoom was clicked")
+	assert_eq(checked, CLEARING.size(), "every pin, zoom and theme was clicked")
 #endregion
 
 
@@ -252,6 +274,46 @@ func test_alt_clicking_a_structural_pin_asks_to_clear_it() -> void:
 		)
 		checked += 1
 	assert_eq(checked, STRUCTURAL_PINS.size(), "every structural pin was clicked")
+#endregion
+
+
+#region A pin the host's theme draws inside the card
+## And the drag between two of them, which is the other half of the family.
+func test_ctrl_dragging_between_pins_drawn_inside_the_cards_still_moves_them() -> void:
+	await _draw(WIRED)
+	await _bring_into_view(CONSUMER)
+	await _offset_ports(INSIDE_THE_CARD)
+	var from: Vector2 = _pin_point(CONSUMER, StringName(ComposerReader.ARGUMENT % 1), false)
+	var to: Vector2 = _pin_point(CONSUMER, StringName(ComposerReader.ARGUMENT % 2), false)
+
+	await _push(from, true, KEY_CTRL)
+	await _push_motion(from, to - from)
+	await _push(to, false)
+
+	assert_eq(_moved.size(), 1, "one move was asked for: %s" % [_moved])
+	assert_true(
+		_moved.size() == 1 and _moved[0].ends_with(".%s" % (ComposerReader.ARGUMENT % 2)),
+		"onto the pin it was let go over: %s" % [_moved]
+	)
+
+
+## An ordinary press on a row is still the row's.
+##
+## The half that stops the fix from being a different defect: a value editor
+## lives in one of these rows, and a Composer that swallowed plain clicks on the
+## way to fixing the modified ones would be unusable for typing a number.
+func test_an_ordinary_press_on_a_row_is_left_alone() -> void:
+	await _draw(WIRED)
+	await _bring_into_view(CONSUMER)
+	await _offset_ports(INSIDE_THE_CARD)
+	_broken.clear()
+	var at: Vector2 = _pin_point(CONSUMER, StringName(ComposerReader.ARGUMENT % 1), false)
+
+	await _push(at, true)
+	await _push(at, false)
+
+	assert_eq(_broken.size(), 0, "nothing was cleared: %s" % [_broken])
+	assert_eq(_moved.size(), 0, "and nothing was moved: %s" % [_moved])
 #endregion
 
 

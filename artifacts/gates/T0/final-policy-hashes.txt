@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# the two flags the gate chain passes to the receipt checker.
+# the Composer canvas, after GAS-009 gave it the second door a card's press arrives by.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T21:31:14Z
-# commit-previo: fd335546b6e9ad66ae81862ecf0ed92ee108af5d
+# date-utc: 2026-09-09T23:13:29Z
+# commit-previo: 277aefaf0703895370ce7f1cfe1efeb07ef604ef
 # files: 28
-f39257fea1a9a34fd3162490c5f6249395d3acd83cb07074054303585a5bdcda  tooling/.quality-gates.json
+4f3f17a854605517b1c8c8958b59b65205c5f1f840e907909300daa58926e3bc  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

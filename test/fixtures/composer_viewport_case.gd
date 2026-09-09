@@ -84,6 +84,23 @@ func _draw(statements: Array, at_zoom: float = 1.0) -> void:
 	await get_tree().process_frame
 
 
+## Draw the port dots further into the cards, the way a host theme can.
+##
+## `port_h_offset` is a GraphNode theme constant and a game is entitled to set
+## it. What it does here is put the dot on top of one of the card's own rows,
+## and a row is `MOUSE_FILTER_STOP` so that a value editor gets its clicks -
+## which means the press stops there and the canvas never hears it. That is
+## GAS-009, and it is a theme constant rather than anything contrived: the game
+## this was found in has a theme, and the dots are drawn inside the card in it.
+func _offset_ports(by: int) -> void:
+	for node: ComposerNode in _graph.nodes:
+		var card: ComposerCard = _canvas.card_for(node.id)
+		if card != null:
+			card.add_theme_constant_override("port_h_offset", by)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
 func _card(said: String) -> ComposerCard:
 	var node: ComposerNode = ComposerFlowProbe.at(_graph, said)
 	assert_not_null(node, "there is a statement saying `%s`" % said)

@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      git-diff-check
 command:    git diff --check
-started:    2026-09-09T21:31:59.3166173Z
-ended:      2026-09-09T21:31:59.3495337Z
-duration_s: 0.033
+started:    2026-09-09T23:16:39.7573440Z
+ended:      2026-09-09T23:16:39.8008710Z
+duration_s: 0.044
 exit_code:  0
 
 --- stdout ---
@@ -13,6 +13,8 @@ warning: in the working copy of 'artifacts/gates/F6/duplication.log', CRLF will 
 warning: in the working copy of 'artifacts/gates/F6/gate-self-tests.log', CRLF will be replaced by LF the next time Git touches it
 warning: in the working copy of 'artifacts/gates/F6/loc.log', CRLF will be replaced by LF the next time Git touches it
 warning: in the working copy of 'artifacts/gates/F6/magic-string.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/F6/parity-receipt-self-test.log', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'artifacts/gates/F6/parity-receipts.log', CRLF will be replaced by LF the next time Git touches it
 warning: in the working copy of 'artifacts/gates/F6/policy-seal.log', CRLF will be replaced by LF the next time Git touches it
 warning: in the working copy of 'artifacts/gates/F6/product-identity.log', CRLF will be replaced by LF the next time Git touches it
 warning: in the working copy of 'artifacts/gates/F6/project-invariants.log', CRLF will be replaced by LF the next time Git touches it

@@ -41,6 +41,22 @@ enum Detail { FULL, TITLE, BLOCK }
 ## business, because only the document can say whether the file may be written.
 signal value_edited(node_id: StringName, position: int, source_text: String)
 
+## A press that landed on this card and might have been meant for a pin.
+##
+## Where the pins are drawn is the theme's decision, not this card's.
+## `port_h_offset` is a GraphNode theme constant and a host game is entitled
+## to set one; when it does, the dot moves off the card's outer edge and onto
+## one of the rows - and a row is `MOUSE_FILTER_STOP`, because a value editor
+## has to get its clicks. So the press stops there and the canvas, which is
+## where a pin gesture is read, never hears it. Every modifier gesture on
+## every pin silently does nothing, and nothing says so.
+##
+## Rather than teach the card what a pin gesture is, it hands the event back
+## with the control that received it - which is what turns a point in that
+## control's space into a point on the canvas. The canvas decides; this only
+## stops the event being lost.
+signal pressed_over(event: InputEventMouseButton, received_by: Control)
+
 var node_id: StringName = &""
 
 ## What the pins on each side are, in slot order. A blank means that side of
@@ -58,6 +74,9 @@ var _state: ComposerNode.State = ComposerNode.State.CLEAN
 func build(node: ComposerNode, port_types: ComposerPortTypes) -> void:
 	node_id = node.id
 	name = String(node.id)
+	# The card's own, once per build. Its rows are watched as they go in and go
+	# out with them, so this is the only one a rebuild would double.
+	_watch(self)
 	title = node.title + (" " + AWAIT_LABEL if node.awaits else "")
 	_state = node.state
 	_own_the_title()
@@ -128,6 +147,7 @@ func _own_the_title() -> void:
 ## promising something GDScript will not keep.
 func _add_row(row: Control, left: StringName, right: StringName) -> void:
 	add_child(row)
+	_watch(row)
 	_rows.append(row)
 	_left_port_ids.append(left if _ports.has(left) else &"")
 	_right_port_ids.append(right if _ports.has(right) else &"")
@@ -156,6 +176,55 @@ func _apply_slots(port_types: ComposerPortTypes) -> void:
 				else ComposerTheme.TRANSPARENT
 			)
 		)
+
+
+## Offer what this control receives, so a pin gesture on it is not lost.
+##
+## The `gui_input` signal rather than an override, and for the reason the
+## canvas already uses it: a Control emits the signal before its own handler
+## runs and skips that handler if the event has been accepted meanwhile. So a
+## listener can take the two gestures that are the Composer's and leave the
+## rest - a click that picks the card up, a drag that moves it, a caret put
+## into a value editor - exactly where they were going.
+##
+## Only a left button, and only a press carrying Alt or Ctrl or a release of
+## any kind. The press is the gesture; the release is the end of a Ctrl-drag
+## that may have begun on another card, and somebody who lets go of Ctrl
+## before the mouse button has still made it. Everything else is not offered
+## at all, so a plain click on a row cannot be taken by mistake.
+## Everything under `control` as well as `control` itself.
+##
+## Recursive, and that is the whole of what was missing: a pin's dot sits in a
+## holder inside the row, a `Control` is `MOUSE_FILTER_STOP` by default, and the
+## press stopped at the holder rather than at the row that was being watched.
+## The execution pin on the left of a card is exactly that case, and it was the
+## last one still deaf after the rows were covered.
+##
+## A value editor is watched too, and safely: only a modified press and a
+## release are offered at all, and the canvas takes one only when it lands
+## within reach of a pin. A press over a LineEdit that is not near one is read
+## as nothing and goes on to the LineEdit.
+func _watch(control: Control) -> void:
+	# The bound callable, on both sides: `_on_gui_input` and
+	# `_on_gui_input.bind(control)` are different Callables, so a check against
+	# the unbound one never matches and the card would collect a connection per
+	# rebuild - and then report one press as several.
+	var listener: Callable = _on_gui_input.bind(control)
+	if not control.gui_input.is_connected(listener):
+		control.gui_input.connect(listener)
+	for child: Node in control.get_children():
+		var below: Control = child as Control
+		if below != null:
+			_watch(below)
+
+
+func _on_gui_input(event: InputEvent, received_by: Control) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if button.pressed and not (button.alt_pressed or button.ctrl_pressed):
+		return
+	pressed_over.emit(button, received_by)
 
 
 func _found(port_id: StringName) -> ComposerNode.Port:
