@@ -220,14 +220,23 @@ func _send(message: GameplayNetMessage) -> void:
 	var packet: PackedByteArray = GameplayNetCodec.encode(message)
 	if packet.is_empty():
 		return
-	for id: int in _recipients():
+	for id: int in _recipients(message):
 		transport.send(packet, id, _must_arrive(message))
 
 
-func _recipients() -> Array[int]:
-	if is_authority():
-		return transport.peers()
-	return [AUTHORITY_PEER] as Array[int]
+## Who this message goes to.
+##
+## A client says everything to the authority and to nobody else. An authority
+## says most things to everybody - and a state reading to the one peer it was
+## computed for, because what a peer may be told about an entity depends on
+## whether it owns it, and broadcasting the owner's reading is broadcasting the
+## owner's answer to everybody.
+func _recipients(message: GameplayNetMessage) -> Array[int]:
+	if not is_authority():
+		return [AUTHORITY_PEER] as Array[int]
+	if message.to_peer != GameplayNetMessage.EVERYBODY:
+		return [message.to_peer] as Array[int]
+	return transport.peers()
 
 
 ## Whether losing this message matters.

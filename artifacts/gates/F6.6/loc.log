@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      loc
 command:    python tooling\gates\run_gate.py loc artifacts\gates\F6.6
-started:    2026-09-09T20:51:30.4190045Z
-ended:      2026-09-09T20:51:31.7000082Z
-duration_s: 1.281
+started:    2026-09-09T21:09:10.4384704Z
+ended:      2026-09-09T21:09:11.7185119Z
+duration_s: 1.280
 exit_code:  0
 
 --- stdout ---
@@ -11,7 +11,7 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 691
+- Source files scanned: 693
 - Blocking findings: 0
 - Scan issues: 0
 

@@ -1,3 +1,3 @@
 RESULT: PASS
-SOURCE: b0dca56286e024e0a425ed6fa67701b793d7a576eea1814cbb8a56238fc5ecaf
-godot --headless --import: no script errors after F6.6.7's two process mains, the shared session, and the two wire fixes.
+SOURCE: a68f99412c73e562a149485172677d0c02fd6166d9293bceabd7a25401303de1
+godot --headless --import: no script errors after F6.6.8's README and the F6.6 gate's real-transport suite.

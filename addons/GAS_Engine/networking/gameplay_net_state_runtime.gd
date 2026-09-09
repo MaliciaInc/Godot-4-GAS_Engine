@@ -88,6 +88,7 @@ func _message(
 	var message: GameplayNetMessage = GameplayNetMessage.of(kind, id)
 	message.state = sending
 	message.sequence = _counted[id.value]
+	message.to_peer = to_peer
 	net.publish(message)
 	return message
 

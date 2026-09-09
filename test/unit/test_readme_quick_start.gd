@@ -131,26 +131,59 @@ func test_the_readme_still_prints_the_calls_that_were_run() -> void:
 #endregion
 ## What the networking section has to tell a reader, in its own words.
 ##
-## The repository contains authority, replication with three modes and a
-## prediction journal, and it contains no transport. A README that denies the
-## first is wrong to anybody who opens the folder; one that omits the second
-## lets a project discover the missing half after it has committed to the
-## framework. Both are checked, because a half-true section is the one that
-## costs somebody a sprint.
+## Every name here is a class or a value somebody can open, and the list is the
+## contract rather than a summary of it. A README that omits one of them leaves
+## a project to discover it after committing to the framework, and the two that
+## matter most are the ones nobody expects to be separate: NetExecutionPolicy
+## and NetSecurityPolicy are different questions with different answers, and a
+## document that named only one would be describing an engine this is not.
 const NETWORK_MUST_APPEAR: Array[String] = [
+	"GameplayNetTransport",
+	"GameplayNetTransportMultiplayer",
+	"SceneMultiplayer",
+	"send_bytes",
+	"peer_packet",
 	"Authority.",
 	"FULL",
 	"MIXED",
 	"MINIMAL",
+	"per-entity replication mode",
+	"NetExecutionPolicy",
+	"NetSecurityPolicy",
+	"ReplicationPolicy",
+	"replicate_input_directly",
+	"target data validation",
+	"batching",
 	"prediction",
-	"transport",
+	"Limitations",
 ]
 
-## The sentence that was there, and that the code contradicts.
+## What the section has to say cannot be predicted.
+##
+## Named rather than counted: a list of supported kinds with no list of refused
+## ones beside it reads as "and everything else too", which is the reading that
+## costs somebody a night finding out that a periodic tick does not roll back.
+const NETWORK_NOT_PREDICTED: Array[String] = [
+	"periodic tick",
+	"arbitrary execution",
+	"custom cost",
+	"server-side effect",
+]
+
+## Sentences that were true once and that the code now contradicts.
+##
+## Kept rather than deleted along with the prose they described. A claim that a
+## framework does not do something is the kind of sentence that outlives the
+## limitation by a year, because nothing fails when it goes stale - so
+## something fails here instead.
 const NETWORK_MUST_NOT_APPEAR: Array[String] = [
 	"does not** provide built-in network replication",
 	"does not provide built-in network replication",
 	"intentionally outside the scope",
+	"not contain yet is the transport",
+	"is not a claim this framework can make yet",
+	"are not implemented either",
+	"it is planned",
 ]
 
 
@@ -184,16 +217,35 @@ func test_the_readme_says_what_the_network_layer_actually_ships() -> void:
 	var section: String = _section("### Networking", "\n## ")
 	_assert_section_says(section, NETWORK_MUST_APPEAR, "networking")
 
+
+## The section reads as a final state rather than as a plan.
+##
+## Three things, and each of them is a way this same document goes wrong. It
+## names every piece that ships, so a reader is not left to find one by
+## reading the source. It names what cannot be predicted, because a list of
+## what can reads as "and everything else" without one. And it no longer
+## carries the sentences that were true before F6.6 shipped the transport -
+## those are the ones that outlive the limitation, because nothing fails when
+## a promise goes stale.
+func test_the_readme_describes_the_final_network_contract() -> void:
+	var section: String = _section("### Networking", "\n## ")
+	_assert_section_says(section, NETWORK_NOT_PREDICTED, "networking")
+
 	var lowered: String = section.to_lower()
 	for denied: String in NETWORK_MUST_NOT_APPEAR:
 		assert_false(
 			lowered.contains(denied.to_lower()), "the section no longer claims `%s`" % denied
 		)
 
-	# The half a reader has to act on: there is no wire yet, and it is coming.
+	# Limitations that are limitations. A section whose only caveat is that
+	# something is coming later has told a reader nothing to plan around.
 	assert_true(
-		section.contains("not") and section.contains("transport"),
-		"the section says the transport is not here yet"
+		lowered.contains("json") and lowered.contains("not compact"),
+		"the section says what the wire costs"
+	)
+	assert_true(
+		lowered.contains("interest management"),
+		"and what it does not do about how many entities there are"
 	)
 
 

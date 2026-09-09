@@ -38,6 +38,11 @@ var delivered: int = 0
 ## assuming it from the silence.
 var dropped: int = 0
 
+## How many would not encode at all, which is a sender's bug rather than a
+## wire's. Counted rather than hidden: a message that never became bytes and
+## was handed across anyway is a bug that only exists in this fixture.
+var unsendable: int = 0
+
 ## Who is being handed messages, and who is wired up at all. Two lists
 ## because a machine can be out of earshot without being disconnected -
 ## which is what a late joiner is, and the only way to produce one.
@@ -95,10 +100,28 @@ func flush() -> int:
 	return handed
 
 
+## Hand one message over, as bytes.
+##
+## Through the codec, always, because a link that handed the object across is a
+## link that proves the rules and nothing about the crossing. Everything a
+## message has to survive - being written as numbers and strings, and read back
+## by something that was not there when it was built - happens here, and what it
+## was hiding was two years of readers that refused every message which had in
+## fact crossed a wire.
+##
+## A message that will not encode is delivered to nobody and counted, rather
+## than handed over as the object it already was: a sender that put an
+## incomplete message on a wire has a bug, and the far side receiving one
+## anyway is that bug going unnoticed.
 func _hand(message: GameplayNetMessage) -> int:
+	var packet: PackedByteArray = GameplayNetCodec.encode(message)
+	if packet.is_empty():
+		unsendable += 1
+		return 0
+
 	var handed: int = 0
 	for machine: GameplayNetworkRuntime in _machines:
-		machine.receive(message)
+		machine.receive(GameplayNetCodec.decode(packet))
 		delivered += 1
 		handed += 1
 	return handed

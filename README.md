@@ -216,41 +216,113 @@ GAS_Engine is maintained centrally by **MaliciaInc**. Bug reports and feature re
 
 ### Networking
 
-Multiplayer is in scope, and this section says where the line currently falls
-rather than leaving a project to find it after committing.
+Multiplayer ships. What follows is the contract as it stands, not a roadmap:
+every name below is a class or a value you can open, and the limitations at the
+end are the real ones rather than the ones that sound modest.
 
-What the framework already contains:
+**The wire.** `GameplayNetTransport` is the seam - two methods, send and
+receive - and `GameplayNetTransportMultiplayer` is the implementation over
+Godot's own `SceneMultiplayer`, using `send_bytes` and `peer_packet` rather than
+RPCs. RPCs need a node path both peers agree on, and an ability system is a
+component that may live anywhere in anybody's scene; bytes need nobody to agree
+about a tree. Object decoding is never enabled: a peer that allowed it would be
+constructing whatever class the far side named. Bring your own transport by
+implementing the base class - Steam, WebRTC, a recording of yesterday's match -
+and the runtime does not change.
 
-- **Authority.** One runtime authors. A runtime that does not own a thing
-  refuses to author it rather than being trusted not to, and a client's request
-  is answered with one of four things: run it, predict it and ask, ask and
-  wait, or refused.
-- **State as readings.** Attributes, tag counts, granted abilities, and each
-  running effect with which definition, how many stacks, how long is left in
-  seconds and in turns, and whether it is inhibited. Effects are not re-applied
-  on the receiving machine: the values that arrive already have them in. The
-  authority is the one machine that simulates.
-- **Three replication modes.** `FULL` tells everybody everything. `MIXED`, the
-  default, sends the running effects to the owner alone and the attributes,
-  tags and cues to everyone. `MINIMAL` sends no effects at all. Snapshots and
-  deltas both respect it.
-- **Prediction for four things, and a refusal for the rest.** A cost, a
-  cooldown, an allowed attribute delta and a cue can each be undone from what
-  the operation itself remembers. A periodic tick, an arbitrary execution and a
-  server-only side effect cannot, and are not promised.
-- **A sync point** an ability can wait on.
+**Authority.** One runtime authors. A runtime that does not own a thing refuses
+to author it rather than being trusted not to, and every message is checked for
+direction, ownership and having been seen before. A client's request is answered
+with one of four things: run it, predict it and ask, ask and wait, or refused.
 
-What it does **not** contain yet is the transport. Messages leave through a
-signal and arrive through a call, and the identities inside them have a wire
-form while the message itself does not, so today a project carries them over
-its own connection. RPC batching, replicated target data and per-ability net
-security policies are not implemented either. End-to-end multiplayer is not a
-claim this framework can make yet; it is planned, and this section will read
-differently when it ships.
+**State as readings.** Attributes, tag counts, granted abilities, which of them
+are running, the cues in force, and each running effect with its definition,
+stacks, remaining seconds and turns, and whether it is inhibited. Effects are
+never re-applied on the receiving machine: the values that arrive already have
+them in. Snapshots are the whole truth and deltas are what changed, and a
+reading that arrives after a newer one is ignored rather than putting a
+character back where it was half a second ago.
 
-The suite drives three runtimes in one process over a link that can be told to
-repeat, reorder, lose and delay messages, which is how every adverse condition
-here is reachable and deterministic.
+**Three replication modes, per entity.** `FULL` tells everybody everything.
+`MIXED`, the default, sends the running effects to the owner alone and the
+attributes, tags and cues to everyone. `MINIMAL` sends no effects at all. The
+per-entity replication mode is what makes this usable at scale: a boss and a
+villager are two different amounts of network, and a runtime with one setting
+would make a game choose the expensive one for both.
+
+**Three ability policies, and they are three.** `NetExecutionPolicy` decides
+where and when an ability runs - `LOCAL_ONLY`, `LOCAL_PREDICTED`,
+`SERVER_INITIATED`, `SERVER_ONLY`. `NetSecurityPolicy` decides what the
+authority accepts from somebody else - `CLIENT_OR_SERVER`,
+`SERVER_ONLY_EXECUTION`, `SERVER_ONLY_TERMINATION`, `SERVER_ONLY`. Neither is
+derived from the other, and that is the point: an ability the server alone
+executes can still be one whose owner is entitled to ask for it, and one a
+client predicts can still be one a client may not call off.
+`server_respects_remote_cancellation` is the second gate on ending one, and it
+is false by default because a client that ends an ability after the authority
+has committed its cost has taken the cost and given nothing back.
+`ReplicationPolicy` decides whether the owning peer is told that an activation
+is running at all - `REPLICATE_NO` for almost everything, `REPLICATE_YES` for
+the ones whose middle a UI has to draw. Nothing ever serialises an ability
+instance; what crosses is the definition both machines already agree about.
+
+**`replicate_input_directly`.** For the abilities whose meaning is in the press
+and the release - a charge, a hold, anything where letting go is the interesting
+half. The press crosses instead of the activation it would cause, and the
+authority resolves it against the grant it made rather than against a handle the
+client invented.
+
+**Target data validation.** An aim crosses as identities and numbers and is
+checked on arrival: a claim that does not read as an aim, one naming an entity
+this machine has never registered, one no waiting provider could have produced,
+and one outside the range that provider enforces are four separate refusals. A
+collider no registry knows is left out rather than sent as its address.
+
+**Batching.** An activation is not one message - it is the activation, what it
+cost, what it put on cooldown and what it confirmed - and a peer that saw three
+of those four shows a character mid-cast with no cooldown. `begin_batch()` and
+`end_batch()` gather; a batch is read whole, judged whole and only then applied,
+so one member addressed to somebody who is not here applies none of it.
+
+**Prediction, for six things.** A cost, a cooldown, an allowed attribute delta,
+a cue, a tag with the counts either side of it, and an animation with the
+ownership claim taken on its surface. Each can be undone from what the operation
+itself remembers. `open_window()` and `close_window()` make the boundary a
+refusal unwinds explicit, and a refused guess comes off newest first, once,
+however many times the refusal arrives.
+
+**Not predicted, deliberately.** A periodic tick, whose count is a clock the two
+machines do not share. An arbitrary execution, because nothing wrote down the
+inverse of whatever it decided. A custom cost with no prediction kind - which is
+what `GameplayPredictionOperation.Kind.NONE` says out loud. A server-side effect
+nothing on the client can observe. None of these is promised, and the journal
+refuses them rather than guessing.
+
+**Limitations, actually.**
+
+- A cost and an attribute delta are guarded only by having been accepted. An
+  authoritative reading that moved the same attribute between the guess and the
+  refusal is undone along with the guess, and the next reading corrects it - a
+  tag and an animation can say more, and do; those two cannot.
+- The wire is JSON. It is readable, debuggable and portable across builds, and
+  it is not compact. A project counting bytes should implement
+  `GameplayNetTransport` over its own encoding.
+- One prediction window is open at a time. A second predicted activation while
+  the first is still in flight names its own key on each operation instead.
+- There is no interest management, no delta compression and no client-side
+  interpolation. Which entities a peer hears about is the game's decision, made
+  by choosing when to send.
+- Two processes are checked by one scenario, in `examples/action_sample/network`
+  and `tooling/run_multiplayer_sample.ps1`, not by a test matrix over
+  connection conditions. The in-process suite covers those: three runtimes over
+  a link that can be told to repeat, reorder, lose and delay messages, which is
+  how every adverse condition here is reachable and deterministic.
+
+Run the two-process sample to see all of it at once:
+
+```powershell
+pwsh -File tooling/run_multiplayer_sample.ps1
+```
 
 ## Proven in a real game
 

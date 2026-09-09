@@ -97,6 +97,39 @@ func _asc(machine: GameplayNetworkRuntime, id: GameplayNetEntityId) -> AbilitySy
 #endregion
 
 
+#region 0: what the wire actually carries
+## Everything below crosses as bytes, and this is the case that says so.
+##
+## Not a claim about the engine but about the fixture every other case here
+## stands on, which is worth one test because the whole walk is only as honest
+## as it. A link that handed the message object between runtimes would pass all
+## thirteen and prove nothing about a crossing - and that is not hypothetical:
+## two defects in this addon's wire readers survived a whole phase behind
+## exactly that, because JSON has one number type and no vectors and nothing
+## that never serialised could see it.
+##
+## A message that will not encode is handed to nobody. That is the observable
+## end of it: it is not delivered as the object it already was.
+func test_case_zero_the_wire_carries_bytes_and_nothing_else() -> void:
+	var id: GameplayNetEntityId = _everywhere(FIRST_ENTITY, FIRST_PEER)
+	var before: int = link.delivered
+
+	# A grant with no definition: complete enough to build, not enough to send.
+	server.publish(GameplayNetMessage.of(GameplayNetMessage.Kind.GRANT, id))
+	link.drain()
+
+	assert_eq(link.unsendable, 1, "it never became bytes")
+	assert_eq(link.delivered, before, "so nobody was handed it")
+
+	# And one that does encode still arrives, so the refusal above is about the
+	# message rather than about the link having stopped working.
+	server.grant(id, _ability(GameplayAbility.NetExecutionPolicy.LOCAL_PREDICTED))
+	link.drain()
+
+	assert_gt(link.delivered, before, "a message that encodes crosses")
+#endregion
+
+
 #region 1-2: who is at the table
 ## 1. A listen server is an authority that also owns a character.
 ##

@@ -104,6 +104,23 @@ var state: GameplayNetState = null
 ## it is, and a receiver ignores anything it has already moved past.
 var sequence: int = 0
 
+## What `to_peer` says when a message is for everybody, which is Godot's own
+## spelling of it and is why it is zero rather than something this addon chose.
+const EVERYBODY: int = 0
+
+## Which peer this is for, or EVERYBODY.
+##
+## Never written to the wire, and that is the whole of what it is: a routing
+## hint for the machine holding the message, not something a receiver is told.
+##
+## It exists because a state reading is computed for one recipient. What a peer
+## may be told depends on whether it owns the entity - under MIXED the owner
+## gets the running effects and nobody else does, and only the owner is told
+## which of its abilities are running - so a reading built for one peer and
+## broadcast to all of them hands everybody the owner's answer. The filtering
+## was there and the sending ignored it.
+var to_peer: int = EVERYBODY
+
 ## The game's own data. Never read by this addon.
 var payload: Dictionary = {}
 
