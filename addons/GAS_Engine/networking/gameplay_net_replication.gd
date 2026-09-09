@@ -50,6 +50,12 @@ static func snapshot_of(
 
 	for active: ActiveGameplayEffect in asc.get_active_effects():
 		for binding: GameplayCueBinding in active.get_effect_def().get_persistent_cue_bindings():
+			# A local-only cue never reaches a wire. It plays where it was
+			# decided and is nobody else's business - the crunch under your own
+			# footsteps is not something to spend a packet on - and this is the
+			# one place it could have leaked into somebody else's state.
+			if binding.replication == GameplayCueBinding.Replication.LOCAL_ONLY:
+				continue
 			if not state.cues.has(binding.cue_tag):
 				state.cues.append(binding.cue_tag)
 		if _tells_about_effects(mode, for_owner):

@@ -52,6 +52,56 @@ func is_valid() -> bool:
 	return id != NONE and definition != GameplayNetDefinitionId.NONE
 
 
+#region The wire
+## What each field is called on a wire.
+##
+## Prefixed, the way the target-data contract prefixes its own: a bare
+## `definition` or `turns` is a word half this addon uses for something else,
+## and two contracts spelling one key the same way look interchangeable when
+## they are not.
+const ID_KEY: String = "effect.id"
+const DEFINITION_KEY: String = "effect.definition"
+const STACKS_KEY: String = "effect.stacks"
+const SECONDS_KEY: String = "effect.seconds"
+const TURNS_KEY: String = "effect.turns"
+const INHIBITED_KEY: String = "effect.inhibited"
+
+
+## This reading as primitives, and nothing else.
+##
+## Six numbers and a flag. No object, no Variant that could arrive as one: a
+## receiver that decoded an object would be running whatever a sender named.
+func to_wire() -> Dictionary:
+	return {
+		ID_KEY: id,
+		DEFINITION_KEY: definition,
+		STACKS_KEY: stack_count,
+		SECONDS_KEY: time_remaining,
+		TURNS_KEY: remaining_turns,
+		INHIBITED_KEY: inhibited,
+	}
+
+
+## One reading back, or null when the shape is not one.
+##
+## Null rather than a half-built state: a caller handed something with an id and
+## nothing else would apply an effect with no definition behind it, and the
+## reader that noticed would be the furthest from where it went wrong.
+static func from_wire(wire: Variant) -> GameplayNetEffectState:
+	if not wire is Dictionary:
+		return null
+	var said: Dictionary = wire
+	var made: GameplayNetEffectState = GameplayNetEffectState.new()
+	made.id = int(said.get(ID_KEY, NONE))
+	made.definition = int(said.get(DEFINITION_KEY, GameplayNetDefinitionId.NONE))
+	made.stack_count = int(said.get(STACKS_KEY, 1))
+	made.time_remaining = float(said.get(SECONDS_KEY, 0.0))
+	made.remaining_turns = int(said.get(TURNS_KEY, 0))
+	made.inhibited = said.get(INHIBITED_KEY, false) == true
+	return made if made.is_valid() else null
+#endregion
+
+
 ## Whether two readings of this application say the same thing.
 ##
 ## What a delta is computed from. Identity is not enough - the same effect with

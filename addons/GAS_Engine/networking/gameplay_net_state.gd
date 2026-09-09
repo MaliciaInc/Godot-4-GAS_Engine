@@ -51,6 +51,114 @@ var ended_effects: Array[int] = []
 var ended_cues: Array[StringName] = []
 
 
+#region The wire
+## What each field is called on a wire, prefixed for the same reason the effect
+## state prefixes its own.
+const KIND_KEY: String = "state.kind"
+const ATTRIBUTES_KEY: String = "state.attributes"
+const TAGS_KEY: String = "state.tags"
+const ABILITIES_KEY: String = "state.abilities"
+const EFFECTS_KEY: String = "state.effects"
+const CUES_KEY: String = "state.cues"
+const REMOVED_TAGS_KEY: String = "state.removed_tags"
+const REVOKED_ABILITIES_KEY: String = "state.revoked_abilities"
+const ENDED_EFFECTS_KEY: String = "state.ended_effects"
+const ENDED_CUES_KEY: String = "state.ended_cues"
+
+
+## This reading as primitives, and nothing else.
+##
+## Every StringName written as a String, every id as a number, and nothing
+## nested that is not a Dictionary or an Array of them. What crosses a wire is
+## read by a process that may be a different build of the game, and an object is
+## the one thing a receiver must never be asked to construct from what it was
+## sent.
+func to_wire() -> Dictionary:
+	var running: Array = []
+	for effect: GameplayNetEffectState in effects:
+		running.append(effect.to_wire())
+	return {
+		KIND_KEY: int(kind),
+		ATTRIBUTES_KEY: _named_numbers(attributes),
+		TAGS_KEY: _named_numbers(tags),
+		ABILITIES_KEY: abilities.duplicate(),
+		EFFECTS_KEY: running,
+		CUES_KEY: GameplayWireReader.as_strings(cues),
+		REMOVED_TAGS_KEY: GameplayWireReader.as_strings(removed_tags),
+		REVOKED_ABILITIES_KEY: revoked_abilities.duplicate(),
+		ENDED_EFFECTS_KEY: ended_effects.duplicate(),
+		ENDED_CUES_KEY: GameplayWireReader.as_strings(ended_cues),
+	}
+
+
+## One reading back, or null when the shape is not one.
+##
+## An effect entry that does not read as one takes the whole state with it: a
+## state applied with one of its effects silently missing is a character the two
+## processes disagree about, and disagreeing quietly is the failure this codec
+## exists to prevent.
+static func from_wire(wire: Variant) -> GameplayNetState:
+	if not wire is Dictionary:
+		return null
+	var said: Dictionary = wire
+	var made: GameplayNetState = GameplayNetState.new()
+	made.kind = Kind.DELTA if int(said.get(KIND_KEY, 0)) == int(Kind.DELTA) else Kind.SNAPSHOT
+
+	made.attributes.assign(_named_from(said.get(ATTRIBUTES_KEY, {})))
+	made.tags.assign(_named_from(said.get(TAGS_KEY, {})))
+	made.abilities = _ints_from(said.get(ABILITIES_KEY, []))
+	made.cues = GameplayWireReader.tags_from(said.get(CUES_KEY, []))
+	made.removed_tags = GameplayWireReader.tags_from(said.get(REMOVED_TAGS_KEY, []))
+	made.revoked_abilities = _ints_from(said.get(REVOKED_ABILITIES_KEY, []))
+	made.ended_effects = _ints_from(said.get(ENDED_EFFECTS_KEY, []))
+	made.ended_cues = GameplayWireReader.tags_from(said.get(ENDED_CUES_KEY, []))
+
+	var running: Variant = said.get(EFFECTS_KEY, [])
+	if not running is Array:
+		return null
+	var listed: Array = running
+	for entry: Variant in listed:
+		var effect: GameplayNetEffectState = GameplayNetEffectState.from_wire(entry)
+		if effect == null:
+			return null
+		made.effects.append(effect)
+	return made
+
+
+## A name-to-number map as plain strings and numbers.
+static func _named_numbers(from: Dictionary) -> Dictionary:
+	var said: Dictionary = {}
+	for name: StringName in from:
+		said[String(name)] = from[name]
+	return said
+
+
+## A name-to-number map read back, with the names as names again.
+##
+## Untyped, and converted at the two call sites: the attributes are floats and
+## the tag counts are integers, and one helper per type would be the same walk
+## written twice for a difference the walk does not care about.
+static func _named_from(value: Variant) -> Dictionary:
+	var made: Dictionary = {}
+	if not value is Dictionary:
+		return made
+	var said: Dictionary = value
+	for name: Variant in said:
+		made[StringName(str(name))] = said[name]
+	return made
+
+
+static func _ints_from(value: Variant) -> Array[int]:
+	var made: Array[int] = []
+	if not value is Array:
+		return made
+	var listed: Array = value
+	for entry: Variant in listed:
+		made.append(int(entry))
+	return made
+#endregion
+
+
 static func snapshot() -> GameplayNetState:
 	return GameplayNetState.new()
 

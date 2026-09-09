@@ -18,6 +18,23 @@ enum Type {
 	PERSISTENT,
 }
 
+## Whether other machines hear about this cue at all.
+##
+## Two different questions that used to be one. A cue can be suppressed - a
+## dedicated server plays nothing - and still have to be told to everybody, and
+## a cue can be played here and be nobody else's business: the crunch under your
+## own footsteps is not something to spend a packet on.
+##
+## LOCAL_ONLY plays here if nothing is suppressing it and never reaches the
+## wire. REPLICATED may be silent on the machine that decided it, and still
+## goes out.
+enum Replication {
+	REPLICATED,
+	LOCAL_ONLY,
+}
+
+@export var replication: GameplayCueBinding.Replication = Replication.REPLICATED
+
 @export var cue_tag: StringName = &""
 @export var type: GameplayCueBinding.Type = Type.EXECUTED_ON_APPLICATION
 

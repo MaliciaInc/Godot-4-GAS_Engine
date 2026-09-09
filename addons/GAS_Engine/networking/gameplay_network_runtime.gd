@@ -51,7 +51,10 @@ signal activation_answered(
 signal state_applied(entity: GameplayNetEntityId, state: GameplayNetState)
 
 const REASON_WRONG_DIRECTION: StringName = &"wrong_direction"
-const REASON_INCOMPLETE: StringName = &"incomplete"
+## The codec already has a word for a message missing what its kind
+## requires, and one refusal deserves one word: a caller matching on the
+## reason should not have to know which layer noticed.
+const REASON_INCOMPLETE: StringName = GameplayNetCodec.REASON_INCOMPLETE
 const REASON_UNKNOWN_ENTITY: StringName = &"unknown_entity"
 const REASON_UNKNOWN_DEFINITION: StringName = &"unknown_definition"
 const REASON_NOT_OWNED: StringName = &"not_owned"
@@ -59,6 +62,18 @@ const REASON_POLICY: StringName = &"policy_refuses"
 const REASON_ALREADY_APPLIED: StringName = &"already_applied"
 const REASON_OUT_OF_ORDER: StringName = &"out_of_order"
 const REASON_NOTHING_TO_UPDATE: StringName = &"nothing_to_update"
+
+## Why an aim was not accepted. Three, because they are three different
+## things a client can be wrong about and a game reacting to a refusal
+## wants to know which: somebody who is not here, somebody who is here and
+## out of reach, and a claim no provider could have produced.
+const REASON_TARGET_UNKNOWN: StringName = &"target_unknown"
+const REASON_TARGET_UNREACHABLE: StringName = &"target_unreachable"
+const REASON_TARGET_INVALID: StringName = &"target_invalid"
+
+## Which peer a client talks to. Godot's own convention, and the only peer a
+## client is entitled to say anything to.
+const AUTHORITY_PEER: int = 1
 
 var role: GameplayNetAuthority.Role = GameplayNetAuthority.Role.CLIENT
 
@@ -78,15 +93,26 @@ var replication_mode: GameplayNetReplication.Mode = GameplayNetReplication.Mode.
 ## what changed. Keyed by entity and peer together: two peers are told
 ## different things under MIXED, so one record of "what was sent" would make
 ## the second peer's delta a diff against the first peer's news.
-var _told: Dictionary[String, GameplayNetState] = {}
-var _counted: Dictionary[int, int] = {}
 
 ## The last reading of each entity this machine has applied, so an older one
 ## arriving late is ignored rather than undoing a newer one.
-var _applied_sequence: Dictionary[int, int] = {}
 
 ## What this machine did before it was allowed to, and still owes an answer
 ## on. Empty on an authority, which never predicts because it never asks.
+## How packets leave and arrive, when anything is carrying them.
+##
+## Null in a single-player game and in every test that drives two runtimes
+## directly, and that is the baseline rather than a degraded mode: `message_ready`
+## still announces everything, and a caller carrying messages itself is what the
+## suite has always done.
+var transport: GameplayNetTransport = null
+
+## What each peer has been told about each entity.
+var state: GameplayNetStateRuntime = GameplayNetStateRuntime.new()
+
+## What a client may ask for beyond an activation, and what is done with it.
+var requests: GameplayNetRequestRuntime = GameplayNetRequestRuntime.new()
+
 var journal: GameplayPredictionJournal = GameplayPredictionJournal.new()
 
 ## The authority's count of runs per entity, which is what an activation id
@@ -101,6 +127,79 @@ var _runs: Dictionary[int, int] = {}
 ## client retried a request it had not heard back about. A counter would only
 ## catch the first of those.
 var _applied: Dictionary[String, bool] = {}
+
+
+## Start carrying messages over this transport, and stop using the last one.
+##
+## Disconnected before connected: binding twice used to leave two connections to
+## the same signal, and every packet then arrived twice - which for an
+## activation request is one ability activating twice.
+func set_transport(value: GameplayNetTransport) -> void:
+	if transport != null and transport.packet_received.is_connected(_on_packet_received):
+		transport.packet_received.disconnect(_on_packet_received)
+	transport = value
+	if transport != null:
+		transport.packet_received.connect(_on_packet_received)
+
+
+#region On and off the wire
+## Announce a message, and put it on the wire when there is one.
+##
+## One funnel rather than a send beside each emit: there are four places that
+## produce a message and a fifth would be written without the send.
+func publish(message: GameplayNetMessage) -> void:
+	message_ready.emit(message)
+	if transport == null:
+		return
+	_send(message)
+
+
+## One message to whoever should hear it.
+##
+## An authority tells everybody, because state is about an entity rather than
+## about a conversation. A client tells the authority, because there is nobody
+## else it is entitled to say anything to.
+func _send(message: GameplayNetMessage) -> void:
+	var packet: PackedByteArray = GameplayNetCodec.encode(message)
+	if packet.is_empty():
+		return
+	for id: int in _recipients():
+		transport.send(packet, id, _must_arrive(message))
+
+
+func _recipients() -> Array[int]:
+	if is_authority():
+		return transport.peers()
+	return [AUTHORITY_PEER] as Array[int]
+
+
+## Whether losing this message matters.
+##
+## A snapshot may be dropped: the next one says everything the lost one did. A
+## delta may not - it carries what changed, and what changed is gone once the
+## packet is. Everything else is an event, and an event that never arrives is an
+## ability that never ran.
+func _must_arrive(message: GameplayNetMessage) -> bool:
+	return message.kind != GameplayNetMessage.Kind.STATE_SNAPSHOT
+
+
+## A packet arrived. Whatever it decodes to goes through the one door.
+##
+## A packet that does not decode is refused with the codec's own reason rather
+## than dropped: a peer sending a version this build does not speak is a thing
+## somebody has to be able to find out.
+func _on_packet_received(packet: PackedByteArray, _from_peer: int) -> void:
+	var message: GameplayNetMessage = GameplayNetCodec.decode(packet)
+	if message == null:
+		message_refused.emit(null, GameplayNetCodec.last_refusal)
+		return
+	receive(message)
+#endregion
+
+
+func _init() -> void:
+	requests.net = self
+	state.net = self
 
 
 func is_authority() -> bool:
@@ -138,9 +237,7 @@ func detach(asc: AbilitySystemComponent) -> void:
 func dispose() -> void:
 	registry.clear()
 	_applied.clear()
-	_told.clear()
-	_counted.clear()
-	_applied_sequence.clear()
+	state.forget()
 	_runs.clear()
 	journal.clear()
 #endregion
@@ -171,7 +268,7 @@ func _author(
 
 	var message: GameplayNetMessage = GameplayNetMessage.of(kind, id)
 	message.definition = named
-	message_ready.emit(message)
+	publish(message)
 	return true
 #endregion
 
@@ -205,7 +302,7 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 	# answer has to name which ask it is answering, and a client with two in
 	# flight cannot tell them apart otherwise.
 	asking.prediction_key = journal.next_key(peer)
-	message_ready.emit(asking)
+	publish(asking)
 	return decided
 
 
@@ -226,50 +323,47 @@ func _policy_of(definition: Resource) -> GameplayAbility.NetExecutionPolicy:
 
 
 #region What the peers are told about state
-## Everything this peer may be told about an entity, as a message.
-##
-## A late joiner gets one of these and then deltas, and the two are the same
-## shape on purpose: a peer whose whole state is news and a peer whose news
-## is small are the same peer told different amounts.
+## Everything about an entity, as this peer may be told it.
 func snapshot_for(id: GameplayNetEntityId, to_peer: int) -> GameplayNetMessage:
-	return _state_message(GameplayNetMessage.Kind.STATE_SNAPSHOT, id, to_peer)
+	return state.snapshot_for(id, to_peer)
 
 
 ## What changed since that peer was last told, or null when nothing did.
-##
-## Null rather than an empty message, because a delta computed every frame is
-## mostly empty and sending one is bandwidth spent to say nothing happened.
 func delta_for(id: GameplayNetEntityId, to_peer: int) -> GameplayNetMessage:
-	return _state_message(GameplayNetMessage.Kind.STATE_DELTA, id, to_peer)
+	return state.delta_for(id, to_peer)
+#endregion
 
 
-func _state_message(
-	kind: GameplayNetMessage.Kind, id: GameplayNetEntityId, to_peer: int
+#region What a client sends beyond a request
+## The five of them live in GameplayNetRequestRuntime; these are the names a
+## caller already knows, kept so that moving the layer moved nothing else.
+func send_target_data(
+	id: GameplayNetEntityId,
+	data: GameplayAbilityTargetData,
+	activation: GameplayNetActivationId = null,
+	key: GameplayPredictionKey = null
 ) -> GameplayNetMessage:
-	var asc: AbilitySystemComponent = registry.asc_for(id)
-	if asc == null or not GameplayNetAuthority.may_author(role):
-		return null
+	return requests.target_data(id, data, activation, key)
 
-	var now: GameplayNetState = GameplayNetReplication.snapshot_of(
-		asc, registry, replication_mode, registry.is_owned_by(id, to_peer)
-	)
-	var remembered: String = "%d|%d" % [id.value, to_peer]
-	var sending: GameplayNetState = now
-	if kind == GameplayNetMessage.Kind.STATE_DELTA:
-		var before: GameplayNetState = _told.get(remembered)
-		if before == null:
-			return null
-		sending = GameplayNetReplication.delta_between(before, now)
-		if sending.is_empty():
-			return null
 
-	_told[remembered] = now.copied()
-	_counted[id.value] = _counted.get(id.value, 0) + 1
-	var message: GameplayNetMessage = GameplayNetMessage.of(kind, id)
-	message.state = sending
-	message.sequence = _counted[id.value]
-	message_ready.emit(message)
-	return message
+func send_generic_confirm(id: GameplayNetEntityId) -> GameplayNetMessage:
+	return requests.generic_confirm(id)
+
+
+func send_generic_cancel(id: GameplayNetEntityId) -> GameplayNetMessage:
+	return requests.generic_cancel(id)
+
+
+func send_gameplay_event(
+	id: GameplayNetEntityId, event: GameplayEventData
+) -> GameplayNetMessage:
+	return requests.gameplay_event(id, event)
+
+
+func send_input(
+	id: GameplayNetEntityId, definition: Resource, input_id: int, pressed: bool
+) -> GameplayNetMessage:
+	return requests.input(id, definition, input_id, pressed)
 #endregion
 
 
@@ -290,7 +384,7 @@ func receive(message: GameplayNetMessage) -> bool:
 		return false
 
 	if message.is_state():
-		return _apply_state(message)
+		return state.apply(message)
 
 	var seen: String = _fingerprint(message)
 	if _applied.has(seen):
@@ -314,24 +408,6 @@ func receive(message: GameplayNetMessage) -> bool:
 ## changed, and a peer with nothing for it to have changed from would apply
 ## half a character and believe it had all of one. That is the late joiner,
 ## and the answer is that it is sent a snapshot first.
-func _apply_state(message: GameplayNetMessage) -> bool:
-	var asc: AbilitySystemComponent = registry.asc_for(message.entity)
-	if asc == null:
-		_refuse(message, REASON_UNKNOWN_ENTITY)
-		return false
-	if message.sequence <= _applied_sequence.get(message.entity.value, 0):
-		_refuse(message, REASON_OUT_OF_ORDER)
-		return false
-	if message.state.is_delta() and not _applied_sequence.has(message.entity.value):
-		_refuse(message, REASON_NOTHING_TO_UPDATE)
-		return false
-
-	GameplayNetReplication.apply(message.state, asc)
-	_applied_sequence[message.entity.value] = message.sequence
-	state_applied.emit(message.entity, message.state)
-	return true
-
-
 func _act_on(message: GameplayNetMessage) -> bool:
 	var id: GameplayNetEntityId = message.entity
 	if registry.asc_for(id) == null:
@@ -351,6 +427,18 @@ func _act_on(message: GameplayNetMessage) -> bool:
 			journal.reject(message.prediction_key, registry.asc_for(message.entity))
 			activation_answered.emit(message.prediction_key, message.activation, false)
 			return true
+		GameplayNetMessage.Kind.TARGET_DATA:
+			return requests.honour_target_data(message)
+		GameplayNetMessage.Kind.GENERIC_CONFIRM:
+			registry.asc_for(id).input_confirm()
+			return true
+		GameplayNetMessage.Kind.GENERIC_CANCEL:
+			registry.asc_for(id).input_cancel()
+			return true
+		GameplayNetMessage.Kind.GAMEPLAY_EVENT:
+			return requests.honour_event(message)
+		GameplayNetMessage.Kind.INPUT_PRESSED, GameplayNetMessage.Kind.INPUT_RELEASED:
+			return requests.honour_input(message)
 		_:
 			return true
 
@@ -415,7 +503,7 @@ func _answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> void:
 	answer.activation = GameplayNetActivationId.of(id, _runs[id.value])
 	answer.definition = asked.definition
 	answer.prediction_key = asked.prediction_key
-	message_ready.emit(answer)
+	publish(answer)
 
 
 ## What makes two messages the same message.

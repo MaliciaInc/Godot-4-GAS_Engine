@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.5.1: the scan oracle is a deliberate copy of the walk the index replaced, declared as a pair.
+# F6.6.3: the network runtime keeps the conversation and hands the request and state layers to files of their own; 540 for what is left.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T18:15:09Z
-# commit-previo: a0bc379665a2605205ebfcc74255c3bbfe4af813
+# date-utc: 2026-09-09T19:15:11Z
+# commit-previo: 56ef183487bb07398922e8c038287cbed24f9e91
 # files: 27
-79e7bb4b460a739cfb2b566243a7eb651f91c6f55e398d3810e143500a21ec59  tooling/.quality-gates.json
+03ff1c7bea921ddc30300fed063d3428e85cb31b6f73428143f98ff83f037d00  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

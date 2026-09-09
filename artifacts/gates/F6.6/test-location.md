@@ -1,0 +1,16 @@
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 677
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 258
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None

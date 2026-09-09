@@ -34,7 +34,42 @@ enum Kind {
 	STATE_SNAPSHOT,
 	STATE_DELTA,
 	CUE,
+
+	## What a client aimed at, on its way to the authority to be checked.
+	TARGET_DATA,
+
+	## The generic yes and no: a player confirming or calling off whatever is
+	## currently waiting on them.
+	GENERIC_CONFIRM,
+	GENERIC_CANCEL,
+
+	## An event, in the one shape F6.1.3 already gave events on a wire.
+	GAMEPLAY_EVENT,
+
+	## An input, for the abilities whose policy says the input itself crosses
+	## rather than the activation it would cause.
+	INPUT_PRESSED,
+	INPUT_RELEASED,
+
+	## Several of the above, applied together or not at all.
+	BATCH,
 }
+
+## Where a target aim travels in the payload.
+##
+## A key rather than a field of its own: an aim is a shape the targeting layer
+## owns, and a message that had a typed field for it would be the networking
+## layer holding an opinion about what an aim is made of.
+const TARGET_DATA_KEY: String = "payload.target_data"
+
+## Which input slot an INPUT_PRESSED or INPUT_RELEASED is about.
+const INPUT_KEY: String = "payload.input"
+
+## The messages a BATCH carries, each in its own wire form.
+const BATCH_KEY: String = "payload.messages"
+
+## The event an GAMEPLAY_EVENT carries, in GameplayEventWire's own shape.
+const EVENT_KEY: String = "payload.event"
 
 var kind: GameplayNetMessage.Kind = Kind.STATE_DELTA
 
@@ -117,5 +152,18 @@ func is_complete() -> bool:
 			return activation != null and activation.is_valid()
 		Kind.STATE_SNAPSHOT, Kind.STATE_DELTA:
 			return state != null
+		Kind.TARGET_DATA:
+			# An aim with nothing in it is a caller that forgot to aim, and
+			# acting on it would be the authority validating an empty claim.
+			return payload.has(TARGET_DATA_KEY)
+		Kind.GAMEPLAY_EVENT:
+			return payload.has(EVENT_KEY)
+		Kind.INPUT_PRESSED, Kind.INPUT_RELEASED:
+			# By definition rather than by the client's own handle: a handle is
+			# a number one machine made up, and resolving a request by it is
+			# resolving it by something the authority never agreed to.
+			return definition != null and definition.is_valid() and payload.has(INPUT_KEY)
+		Kind.BATCH:
+			return payload.has(BATCH_KEY)
 		_:
 			return true

@@ -36,15 +36,12 @@ var entity: GameplayNetEntityId = null
 
 
 func before_each() -> void:
-	authority = GameplayNetworkRuntime.new()
-	authority.role = GameplayNetAuthority.Role.AUTHORITY
-	authority.replication_mode = GameplayNetReplication.Mode.FULL
-	fixture = Fixture.create("Replicated")
-	add_child_autofree(fixture.owner)
-	asc = fixture.asc
-	asc.set_process(false)
-	entity = GameplayNetEntityId.of(1)
-	authority.attach(asc, entity, OWNING_PEER)
+	var bench: NetBench = NetBench.built(self, "Replicated")
+	autofree(bench.fixture.owner)
+	authority = bench.runtime
+	fixture = bench.fixture
+	asc = bench.asc()
+	entity = bench.entity
 
 
 func after_each() -> void:
@@ -72,7 +69,10 @@ func _snapshot(
 
 func _no_modifiers() -> Array[GameplayEffectModifier]:
 	return [] as Array[GameplayEffectModifier]
+
 #endregion
+
+
 
 
 #region A snapshot is what is there

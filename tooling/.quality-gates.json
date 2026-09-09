@@ -76,6 +76,11 @@
         "glob": "addons/GAS_Engine/managers/gameplay_cue_manager.gd",
         "max_lines": 480,
         "reason": "F6.4.6 gives cue binding a public door. The manager is the pool, the catalogue and the playback ledger for every cue in a project, and loading a registry file was the only way a tag ever came to be bound - so a game that builds its cues rather than listing them, a mod, a sample, an editor tool previewing one, all had to reach into the pool this file keeps privately. Every test that needed a cue did exactly that, which is how six files came to know the shape of a dictionary that belongs to one. bind_cue() and unbind_cue() are what _load_registry() already did, said out loud: the bucket comes with the binding, because a bound tag with no bucket is a cue that resolves and then cannot be pooled, and unbinding frees what was pooled under it, because those instances are children of this manager and a bucket erased on its own leaves them parented to it forever, answering to a tag nothing resolves. Twenty-eight lines, of which two are the paragraphs above."
+      },
+      {
+        "glob": "addons/GAS_Engine/networking/gameplay_network_runtime.gd",
+        "max_lines": 540,
+        "reason": "The one door the ability system has to a network, and F6.6 gave a client five more things it may ask for. Two layers left this file rather than raising it further: GameplayNetRequestRuntime holds what a client asks for and what the authority does with each, and GameplayNetStateRuntime holds what each peer has been told and which reading it was - both composed back in the way the effect runtime composes stacking and inhibition, so there is still one door. What is left is the conversation itself: who may author, who may ask, which direction each kind travels, what arrives, what is refused and why. Splitting the arrival switch from the authoring would put the two halves of one conversation in two files, and the question a reader has here - can a client do this - is answered by seeing both halves at once."
       }
     ],
     "function_parameter_allowlist": [

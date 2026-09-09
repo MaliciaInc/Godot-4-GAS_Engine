@@ -23,6 +23,13 @@ class_name GameplayNetRegistry extends RefCounted
 
 const NO_PEER: int = -1
 
+## What an entity registered without an opinion is: whatever the runtime says.
+##
+## Its own value rather than one of the modes, because "no opinion" and "MIXED"
+## are different things - an entity that asked for MIXED keeps it when the
+## runtime's default changes, and one that asked for nothing follows.
+const RUNTIME_DEFAULT: int = -1
+
 const COLLISION: String = (
 	"GAS_Engine: net definition id %d is claimed by both %s and %s. "
 	+ "Rename one of them: two definitions answering one id is one of them "
@@ -38,6 +45,10 @@ var _asc_by_entity: Dictionary[int, AbilitySystemComponent] = {}
 ## a local key does not need one: the object is the key.
 var _entity_by_asc: Dictionary[AbilitySystemComponent, int] = {}
 var _owner_by_entity: Dictionary[int, int] = {}
+
+## How much is said about one entity, for the ones that asked for something
+## other than the runtime's default. Absent means no opinion.
+var _mode_by_entity: Dictionary[int, int] = {}
 var _definition_by_id: Dictionary[int, Resource] = {}
 
 ## What a local effect handle is called on the wire.
@@ -59,7 +70,10 @@ var _effects_named: int = 0
 ## is an ordinary thing on a network, and treating it as an error would make
 ## every retransmission an error.
 func register_entity(
-	id: GameplayNetEntityId, asc: AbilitySystemComponent, owner_peer: int = NO_PEER
+	id: GameplayNetEntityId,
+	asc: AbilitySystemComponent,
+	owner_peer: int = NO_PEER,
+	replication_mode: int = RUNTIME_DEFAULT
 ) -> bool:
 	if id == null or not id.is_valid() or asc == null:
 		return false
@@ -70,7 +84,48 @@ func register_entity(
 	_asc_by_entity[id.value] = asc
 	_entity_by_asc[asc] = id.value
 	_owner_by_entity[id.value] = owner_peer
+	if replication_mode != RUNTIME_DEFAULT:
+		_mode_by_entity[id.value] = replication_mode
 	return true
+
+
+#region How much is said about one entity
+## Say how much to replicate about this entity, whatever the runtime's default.
+##
+## A boss whose every attribute matters and a crowd of villagers whose health
+## bar is the whole of what anybody sees are two different amounts of network,
+## and a runtime with one setting makes a game choose the expensive one for
+## everybody. False for an entity nobody registered: setting a mode on an id
+## that names nothing is a mistake worth learning about.
+func set_replication_mode(
+	id: GameplayNetEntityId, mode: GameplayNetReplication.Mode
+) -> bool:
+	if id == null or not _asc_by_entity.has(id.value):
+		return false
+	_mode_by_entity[id.value] = int(mode)
+	return true
+
+
+## How much is said about this entity, or `fallback` when it has no say of its
+## own.
+##
+## The fallback is handed in rather than read from a runtime: this registry
+## knows what each entity asked for and nothing about whose default it is.
+func replication_mode_for(
+	id: GameplayNetEntityId, fallback: GameplayNetReplication.Mode
+) -> GameplayNetReplication.Mode:
+	if id == null or not _mode_by_entity.has(id.value):
+		return fallback
+	return _mode_by_entity[id.value] as GameplayNetReplication.Mode
+
+
+## Forget what this entity asked for, so it follows the runtime again.
+func clear_replication_mode(id: GameplayNetEntityId) -> bool:
+	if id == null or not _mode_by_entity.has(id.value):
+		return false
+	_mode_by_entity.erase(id.value)
+	return true
+#endregion
 
 
 func forget_entity(id: GameplayNetEntityId) -> void:

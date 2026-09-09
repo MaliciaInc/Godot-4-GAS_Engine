@@ -21,6 +21,36 @@ class_name GameplayNetAuthority extends RefCounted
 ## what the machine is allowed to do.
 enum Role { AUTHORITY, CLIENT }
 
+## The kinds that travel from a client towards the authority, and never back.
+##
+## A list rather than one name, because F6.6 gave a client five more things it
+## may ask for and a rule written as "everything except the request" would have
+## let each of them travel in both directions - which for a confirm is one
+## machine cancelling another's ability.
+##
+## A batch is in neither: it is a wrapper, and what may travel is decided for
+## each message inside it.
+const ASKED_OF_THE_AUTHORITY: Array[GameplayNetMessage.Kind] = [
+	GameplayNetMessage.Kind.ACTIVATION_REQUEST,
+	GameplayNetMessage.Kind.TARGET_DATA,
+	GameplayNetMessage.Kind.GENERIC_CONFIRM,
+	GameplayNetMessage.Kind.GENERIC_CANCEL,
+	GameplayNetMessage.Kind.INPUT_PRESSED,
+	GameplayNetMessage.Kind.INPUT_RELEASED,
+]
+
+## The kinds that travel in either direction.
+##
+## An event is a notification rather than a request: an authority telling
+## clients that something happened and a client telling the authority that
+## something did are both ordinary, and a rule that picked one would make the
+## other impossible to express. A batch is a wrapper, and what may travel is
+## decided for each message inside it.
+const EITHER_WAY: Array[GameplayNetMessage.Kind] = [
+	GameplayNetMessage.Kind.GAMEPLAY_EVENT,
+	GameplayNetMessage.Kind.BATCH,
+]
+
 ## How a machine may start an ability, given the policy on its grant.
 ##
 ## RUN_NOW: run it here and tell nobody, because nobody else is involved.
@@ -67,9 +97,11 @@ static func authority_start(_policy: GameplayAbility.NetExecutionPolicy) -> Game
 static func accepts(role: GameplayNetAuthority.Role, message: GameplayNetMessage) -> bool:
 	if message == null or not message.is_complete():
 		return false
+	if EITHER_WAY.has(message.kind):
+		return true
 	if role == Role.AUTHORITY:
-		return message.kind == GameplayNetMessage.Kind.ACTIVATION_REQUEST
-	return message.kind != GameplayNetMessage.Kind.ACTIVATION_REQUEST
+		return ASKED_OF_THE_AUTHORITY.has(message.kind)
+	return not ASKED_OF_THE_AUTHORITY.has(message.kind)
 
 
 ## Whether the authority should act on a request that arrived from a peer.
