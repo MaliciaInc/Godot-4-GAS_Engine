@@ -1,13 +1,13 @@
 {
-  "units": 2657,
-  "units_by_language": "gdscript 2615, powershell 4, python 38",
-  "elapsed_seconds": 11.1696101,
+  "units": 2661,
+  "units_by_language": "gdscript 2619, powershell 4, python 38",
+  "elapsed_seconds": 11.28807729999994,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 25203
+    "behavioral": 25240
   },
   "blocking": 0,
   "findings": [
