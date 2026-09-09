@@ -1,13 +1,13 @@
 {
-  "units": 2639,
-  "units_by_language": "gdscript 2597, powershell 4, python 38",
-  "elapsed_seconds": 10.53290449999622,
+  "units": 2657,
+  "units_by_language": "gdscript 2615, powershell 4, python 38",
+  "elapsed_seconds": 11.1696101,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24944
+    "behavioral": 25203
   },
   "blocking": 0,
   "findings": [
@@ -230,13 +230,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:96-104:turn_based",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:768-777:accepts_target",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error",
       "score": 0.967741935483871,
@@ -288,6 +281,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
       "right": "test/unit/test_composer_layout.gd:45-53:_data_only",
+      "score": 0.9166666666666666,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "test/unit/test_targeting_presets.gd:113-121:_enemies_only",
       "score": 0.9166666666666666,
       "category": "executable"
     },
@@ -615,20 +615,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:445-454:wire",
-      "score": 0.9,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of",
-      "score": 0.9,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status",
       "right": "addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:235-244:_translate",
       "score": 0.8888888888888888,
@@ -930,6 +916,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create",
+      "right": "test/unit/test_targeting_presets.gd:113-121:_enemies_only",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:89-97:unbind",
       "right": "addons/GAS_Engine/components/ability_system_component.gd:574-582:execute_cue",
       "score": 0.8421052631578947,
@@ -951,6 +944,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:736-746:deactivate_persistent_cue",
+      "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_tag_query.gd:17-25:execute",
+      "score": 0.8421052631578947,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:89-97:unbind",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_event.gd:91-99:handle_gameplay_event",
       "score": 0.8333333333333334,
@@ -967,6 +967,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:58-65:blocked_externally",
       "right": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
+      "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_tag_query.gd:17-25:execute",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1140,22 +1147,15 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
+      "right": "test/unit/test_targeting_presets.gd:113-121:_enemies_only",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create",
-      "score": 0.8333333333333334,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "addons/GAS_Engine/editor/composer/ir/composer_ir.gd:170-180:_statement_event",
-      "score": 0.8333333333333334,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "addons/GAS_Engine/effects/gameplay_effect_application_result.gd:51-62:failure",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1226,6 +1226,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:97-106:_on_answered",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_gameplay_event.gd:91-99:handle_gameplay_event",
+      "score": 0.8235294117647058,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:97-106:_on_answered",
+      "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_select_source.gd:13-22:execute",
       "score": 0.8235294117647058,
       "category": "executable"
     },
@@ -1476,6 +1483,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:514-522:_prepare_custom_costs",
+      "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_class.gd:18-26:execute",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:692-699:execute_cue",
       "right": "addons/GAS_Engine/editor/composer/ir/composer_ir.gd:236-245:_note_async_exit",
       "score": 0.8,
@@ -1583,20 +1597,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:433-440:port",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:61-68:duration",
       "score": 0.8,
       "category": "executable"
     },
