@@ -37,18 +37,38 @@ static func region_of(nodes: Array[ComposerNode]) -> ComposerSpan:
 	return ComposerSpan.new(first, last)
 
 
-## Whether those nodes are the whole of that run of lines and nothing else.
+## Whether wrapping that run of lines would take something still running with
+## it.
 ##
-## A gap means the wrapper would swallow a statement that is still supposed to
-## run, so the transformation is refused rather than approximated.
-static func is_contiguous(nodes: Array[ComposerNode], region: ComposerSpan) -> bool:
+## The reason a cut is ever refused rather than approximated. What goes round
+## the region is a wrapper, and a wrapper takes LINES - so the question is what
+## else is inside it, and the answer has to be about statements that still run.
+##
+## This counted lines against drawn statements instead, which reads like the
+## same question and is not. A `match` arm is a header nobody is shown, so a
+## region holding one never added up: every cut that would have set a match
+## aside was refused as outside the subset, and the subset had nothing to do
+## with it. Measured on `if ready: / fire() / match state: / State.A: / one()`,
+## where the arm is the one line of five that no card covers.
+##
+## A statement already inside an island does not count. It was not running
+## before and is not running after, and wrapping it again leaves it exactly as
+## readable as it was.
+static func swallows_something_live(
+	graph: ComposerGraph, stranded: Array[ComposerNode], region: ComposerSpan
+) -> bool:
 	if not region.is_valid():
-		return false
-	var covered: int = 0
-	for node: ComposerNode in nodes:
-		if node.span.is_valid():
-			covered += node.span.last_line - node.span.first_line + 1
-	return covered == region.last_line - region.first_line + 1
+		return true
+	for node: ComposerNode in graph.nodes:
+		if not node.source_backed or not node.visible_in_graph:
+			continue
+		if node.id == ComposerFlow.ENTRY_ID or stranded.has(node):
+			continue
+		if not node.span.is_valid() or not region.contains(node.span.first_line):
+			continue
+		if graph.is_reachable_from_entry(node.id):
+			return true
+	return false
 
 
 ## Put `if false:` around a run of lines, one indent deeper, marked as ours.
@@ -144,6 +164,11 @@ static func spent_stops_removed(source: String, path: String) -> String:
 			continue
 		if read.is_reachable_from_entry(node.id):
 			continue
+		if _holds_a_block_open(source.split(NEWLINE), node.span.first_line):
+			# It is the only thing inside a header, so taking it out would leave
+			# a block with nothing in it - which is not a file. The path still
+			# ends there; the stop is what says so.
+			continue
 		for line: int in range(node.span.first_line, node.span.last_line + 1):
 			spent[line] = true
 	if spent.is_empty():
@@ -155,6 +180,23 @@ static func spent_stops_removed(source: String, path: String) -> String:
 		if not spent.has(number + 1):
 			kept.append(lines[number])
 	return NEWLINE.join(kept)
+
+
+## Whether the statement at `at` is the only thing inside the header above it.
+static func _holds_a_block_open(lines: PackedStringArray, at: int) -> bool:
+	var depth: int = ComposerSubset.indent_of(lines[at - 1])
+	var above: int = at - 2
+	while above >= 0 and lines[above].strip_edges().is_empty():
+		above -= 1
+	if above < 0 or ComposerSubset.indent_of(lines[above]) != depth - 1:
+		return false
+	if not ComposerLine.code_of(lines[above]).strip_edges().ends_with(":"):
+		return false
+	for below: int in range(at, lines.size()):
+		if lines[below].strip_edges().is_empty():
+			continue
+		return ComposerSubset.indent_of(lines[below]) < depth
+	return true
 
 
 ## Give the live path somewhere to end, when unplugging took its return away.
@@ -171,7 +213,15 @@ static func ended(source: String, wrapped_at: int) -> String:
 		if ComposerSubset.indent_of(line) == 0:
 			break
 		var verdict: ComposerSubset.Verdict = ComposerSubset.classify(line)
-		if verdict.kind == ComposerSubset.Kind.RETURN and verdict.indent == 1:
+		if verdict.indent != 1:
+			continue
+		# A stop this tool wrote ends the path as surely as a return somebody
+		# else did. Read as an ordinary return it would be, but it is classified
+		# by its mark first - so a second cut used to leave two of them.
+		if (
+			verdict.kind == ComposerSubset.Kind.RETURN
+			or verdict.kind == ComposerSubset.Kind.FLOW_STOP
+		):
 			return source
 
 	var written: String = ComposerTypes.default_expression(

@@ -31,31 +31,23 @@ class_name ComposerValueEditor extends HBoxContainer
 signal committed(source_text: String)
 
 const RESOURCE_PICKER: String = "EditorResourcePicker"
-const RANGE_PARTS: int = 3
-const OR_GREATER: String = "or_greater"
-const OR_LESS: String = "or_less"
-const INT_STEP: float = 1.0
-const FLOAT_STEP: float = 0.01
 
-## As far as a step is allowed to shrink. A float carries about seven decimal
-## digits, so a step below this is precision the number never had.
-const MOST_DECIMALS: int = 6
 const COMPONENT_WIDTH: float = 58.0
 
-## The vector types written with whole components.
-const INTEGER_VECTORS: Array[StringName] = [
-	ComposerTypes.VECTOR2I, ComposerTypes.VECTOR3I, ComposerTypes.VECTOR4I,
-]
 
 ## The order a vector's components are written in, which is also the order they
 ## are read back in. One list rather than two, so a four-component vector cannot
 ## be built one way and read the other.
 const COMPONENTS: Array[String] = ["x", "y", "z", "w"]
 
-var _type_name: StringName = &""
-var _variant_type: int = TYPE_NIL
-var _hint: int = PROPERTY_HINT_NONE
-var _hint_string: String = ""
+## The field this row was configured for, copied rather than held.
+##
+## A copy because the live one belongs to a graph that is redrawn under this
+## row, and because Escape has to rebuild the control from the whole contract:
+## remembering four of its ten parts is how pressing Escape on a resource or a
+## dropdown used to hand back a plain text box.
+var _field: ComposerNode.Field = ComposerNode.Field.new()
+var _editable: bool = true
 var _shape: ComposerValueShape.Kind = ComposerValueShape.Kind.RAW
 var _original: String = ""
 var _control: Control = null
@@ -75,13 +67,39 @@ func configure(field: ComposerNode.Field, editable: bool = true) -> void:
 	_components.clear()
 	_control = null
 
-	_type_name = field.type_name
-	_variant_type = field.variant_type
-	_hint = field.hint
-	_hint_string = field.hint_string
-	_original = field.display
-	_shape = ComposerValueShape.of(field) if editable else ComposerValueShape.Kind.WIRED
-	_build(field)
+	_field = _copy_of(field)
+	_editable = editable
+	# A required value the file never passed has no text to show, and a row
+	# holding nothing is a row nobody can fill in. It is offered as what it would
+	# have been created holding, so the control is the one that argument deserves
+	# and committing it repairs the call. The field this was handed is not
+	# touched: it belongs to a graph, and changing it to draw it would make the
+	# card disagree with the panel about what the file says.
+	if not _field.is_satisfied():
+		_field.display = ComposerWriter.declared_default(_field)
+		_field.source = ComposerNode.ValueSource.LITERAL
+	_original = _field.display
+	_shape = (
+		ComposerValueShape.of(_field) if editable else ComposerValueShape.Kind.WIRED
+	)
+	_build(_field)
+
+
+## Everything the engine said about an argument, on a field of this row's own.
+##
+## Every part of it, because every part decides something: the hint picks the
+## control, the class narrows a picker, the default is what an absent value is
+## offered as. A copy that dropped one of them would work until somebody
+## pressed Escape.
+static func _copy_of(field: ComposerNode.Field) -> ComposerNode.Field:
+	var made: ComposerNode.Field = ComposerNode.Field.new()
+	made.label = field.label
+	made.type_name = field.type_name
+	made.display = field.display
+	made.source = field.source
+	made.editable = field.editable
+	ComposerNodeFields.declare(made, field)
+	return made
 
 
 func _build(field: ComposerNode.Field) -> void:
@@ -90,6 +108,8 @@ func _build(field: ComposerNode.Field) -> void:
 			_control = _shown(field.display)
 		ComposerValueShape.Kind.BOOL:
 			_control = _tick(field.display)
+		ComposerValueShape.Kind.ENUM:
+			_control = _choices(field)
 		ComposerValueShape.Kind.NUMBER:
 			_control = _number(field.display)
 		ComposerValueShape.Kind.VECTOR:
@@ -112,7 +132,7 @@ func _build(field: ComposerNode.Field) -> void:
 ## codec, so the one place that knows how a StringName is spelled is the one
 ## place that spells it.
 func _human(written: String) -> String:
-	var read: Dictionary = ComposerValueCodec.read_as(_type_name, written)
+	var read: Dictionary = ComposerValueCodec.read_as(_field.type_name, written)
 	if not read[ComposerValueCodec.OK]:
 		return written
 
@@ -140,41 +160,57 @@ func source_text() -> String:
 	match _shape:
 		ComposerValueShape.Kind.BOOL:
 			var tick: CheckBox = _control as CheckBox
-			return ComposerValueCodec.encode_variant(tick.button_pressed, _type_name)
+			return ComposerValueCodec.encode_variant(tick.button_pressed, _field.type_name)
+		ComposerValueShape.Kind.ENUM:
+			return _enum_text()
 		ComposerValueShape.Kind.NUMBER:
 			return _number_text()
 		ComposerValueShape.Kind.VECTOR:
 			return _vector_text()
 		ComposerValueShape.Kind.COLOUR:
 			var swatch: ColorPickerButton = _control as ColorPickerButton
-			return ComposerValueCodec.encode_variant(swatch.color, _type_name)
+			return ComposerValueCodec.encode_variant(swatch.color, _field.type_name)
 		ComposerValueShape.Kind.RESOURCE:
 			return _resource_text()
 		ComposerValueShape.Kind.TEXT:
 			var typed: LineEdit = _control as LineEdit
-			return ComposerValueCodec.encode_variant(typed.text, _type_name)
+			return ComposerValueCodec.encode_variant(typed.text, _field.type_name)
 		ComposerValueShape.Kind.RAW:
 			var raw: LineEdit = _control as LineEdit
 			return raw.text
 	return _original
 
 
+## The number the chosen option stands for, written out.
+##
+## Never the name. Reflection does not say which enum a hint came from, so a
+## symbol written back here would name an owner nobody said - and the file has
+## to keep compiling for people who never open this tool.
+func _enum_text() -> String:
+	var chosen: OptionButton = _control as OptionButton
+	if chosen == null or chosen.selected < 0:
+		return _original
+	var held: Variant = chosen.get_item_metadata(chosen.selected)
+	return str(held if held is int else 0)
+
+
 func _number_text() -> String:
 	var spin: SpinBox = _control as SpinBox
-	if _type_name == ComposerTypes.INT:
-		return ComposerValueCodec.encode_variant(int(spin.value), _type_name)
-	return ComposerValueCodec.encode_variant(spin.value, _type_name)
+	if _field.type_name == ComposerTypes.INT:
+		return ComposerValueCodec.encode_variant(int(spin.value), _field.type_name)
+	return ComposerValueCodec.encode_variant(spin.value, _field.type_name)
 
 
 func _vector_text() -> String:
 	var written: PackedStringArray = PackedStringArray()
 	for box: SpinBox in _components:
 		written.append(
-			str(int(box.value)) if _integer() else ComposerValueCodec.encode_variant(
+			str(int(box.value)) if ComposerNumberBox.holds_integers(_field.type_name)
+			else ComposerValueCodec.encode_variant(
 				box.value, ComposerTypes.FLOAT
 			)
 		)
-	return "%s(%s)" % [_type_name, ", ".join(written)]
+	return "%s(%s)" % [_field.type_name, ", ".join(written)]
 
 
 func _resource_text() -> String:
@@ -184,19 +220,18 @@ func _resource_text() -> String:
 	# A resource nobody saved cannot be named, so it cannot be written. Rejected
 	# rather than serialised inline: an ability that carried a copy of an effect
 	# would stop tracking the effect the moment somebody edited the original.
-	var written: String = ComposerValueCodec.encode_variant(chosen, _type_name)
+	var written: String = ComposerValueCodec.encode_variant(chosen, _field.type_name)
 	return written if not written.is_empty() else _original
 
 
 ## Put the text back the way it was configured. Escape, and nothing else.
+##
+## Rebuilt from the snapshot, so what comes back is the control that was
+## there: a picker stays a picker and a dropdown stays a dropdown.
 func reset_to(source_text: String) -> void:
-	var field: ComposerNode.Field = ComposerNode.Field.new()
-	field.type_name = _type_name
-	field.variant_type = _variant_type
-	field.hint = _hint
-	field.hint_string = _hint_string
+	var field: ComposerNode.Field = _copy_of(_field)
 	field.display = source_text
-	configure(field)
+	configure(field, _editable)
 #endregion
 
 
@@ -265,20 +300,36 @@ func _tick(written: String) -> Control:
 	return _sized(box)
 
 
+## Every name the hint offers, with the number each one means behind it.
+func _choices(field: ComposerNode.Field) -> Control:
+	var options: Array[ComposerEnumHint.Option] = ComposerEnumHint.parse(
+		field.hint_string
+	)
+	var chosen: OptionButton = OptionButton.new()
+	for option: ComposerEnumHint.Option in options:
+		chosen.add_item(option.label)
+		chosen.set_item_metadata(chosen.item_count - 1, option.value)
+	chosen.selected = ComposerEnumHint.value_index(
+		options, field.display.strip_edges().to_int()
+	)
+	chosen.item_selected.connect(func _picked(_index: int) -> void: _finished())
+	return _sized(chosen)
+
+
 func _number(written: String) -> Control:
 	var spin: SpinBox = _spin(written)
-	var read: Dictionary = ComposerValueCodec.read_as(_type_name, written)
+	var read: Dictionary = ComposerValueCodec.read_as(_field.type_name, written)
 	if read[ComposerValueCodec.OK]:
 		spin.value = read[ComposerValueCodec.VALUE]
-	_ranged(spin)
+	ComposerNumberBox.ranged(spin, _field)
 	return spin
 
 
 ## One box per component, in the order they are written.
 func _vector(written: String) -> Control:
 	var row: HBoxContainer = HBoxContainer.new()
-	var read: Dictionary = ComposerValueCodec.read_as(_type_name, written)
-	var wanted: int = ComposerValueShape.SIZES[_type_name]
+	var read: Dictionary = ComposerValueCodec.read_as(_field.type_name, written)
+	var wanted: int = ComposerValueShape.SIZES[_field.type_name]
 	for position: int in wanted:
 		var box: SpinBox = _spin(written)
 		box.custom_minimum_size = Vector2(COMPONENT_WIDTH, 0.0)
@@ -319,7 +370,7 @@ func _picker(written: String) -> Control:
 		_shape = ComposerValueShape.Kind.RAW
 		return _line(written)
 	var picker: Control = ClassDB.instantiate(RESOURCE_PICKER)
-	picker.set(&"base_type", String(_type_name))
+	picker.set(&"base_type", String(_field.type_name))
 	picker.set(&"edited_resource", _loaded(written))
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	picker.connect(&"resource_changed", func _chosen(_resource: Resource) -> void: _finished())
@@ -342,24 +393,13 @@ static func _loaded(written: String) -> Resource:
 	return load(path)
 
 
-## The smallest step that can still hold `written` exactly.
-##
-## Godot rounds a Range's value to a multiple of its step on every assignment, so
-## a box stepping by 0.01 turns the literal 0.7071 into 0.71 the instant it is
-## loaded - a normalised direction quietly destroyed by opening the card that
-## holds it. The step follows the number the file actually contains; a range the
-## method declared still overrides it afterwards.
-static func _step_for(written: String) -> float:
-	var fraction: String = written.strip_edges().get_slice(".", 1)
-	if fraction.is_empty():
-		return FLOAT_STEP
-	return minf(FLOAT_STEP, pow(0.1, mini(fraction.length(), MOST_DECIMALS)))
-
-
 func _spin(written: String) -> SpinBox:
 	var spin: SpinBox = SpinBox.new()
-	spin.rounded = _integer()
-	spin.step = INT_STEP if _integer() else _step_for(written)
+	var whole: bool = ComposerNumberBox.holds_integers(_field.type_name)
+	spin.rounded = whole
+	spin.step = (
+		ComposerNumberBox.WHOLE_STEP if whole else ComposerNumberBox.step_for(written)
+	)
 	spin.allow_greater = true
 	spin.allow_lesser = true
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -398,35 +438,4 @@ func _let_escape_undo(control: Control) -> void:
 	)
 
 
-## Apply the range the engine declared, when it declared one.
-##
-## `or_greater` and `or_less` are what the declaring method said about its own
-## bounds, so they are obeyed rather than assumed: a range without them means
-## the author meant the limits.
-func _ranged(spin: SpinBox) -> void:
-	if _hint != PROPERTY_HINT_RANGE:
-		return
-	var parts: PackedStringArray = _hint_string.split(",")
-	if parts.size() < RANGE_PARTS - 1:
-		return
-	if not parts[0].is_valid_float() or not parts[1].is_valid_float():
-		return
-	spin.min_value = parts[0].to_float()
-	spin.max_value = parts[1].to_float()
-	if parts.size() >= RANGE_PARTS and parts[2].is_valid_float():
-		spin.step = parts[2].to_float()
-	spin.allow_greater = _hint_string.contains(OR_GREATER)
-	spin.allow_lesser = _hint_string.contains(OR_LESS)
-
-
-## Whether this argument holds whole numbers.
-##
-## Named against the actual integer vector types rather than tested for a
-## trailing "i". A game is free to declare a class called `Yuki` or `Ashi`, and
-## a spinner that rounded its value because of how the name ends is a control
-## that quietly deletes the fraction of somebody's number.
-func _integer() -> bool:
-	if _type_name == ComposerTypes.INT:
-		return true
-	return INTEGER_VECTORS.has(_type_name)
 #endregion

@@ -64,13 +64,7 @@ static func render(node: ComposerNode) -> String:
 		# printing `()` for one would replace a person's line with nothing.
 		return "\n".join(node.source_text)
 
-	var rebuilt: String = TAB.repeat(maxi(node.indent, 1)) + node.prefix
-	if node.awaits:
-		rebuilt += AWAIT_MARK
-	var written: String = String(node.type_id)
-	if not node.receiver.is_empty():
-		written = "%s.%s" % [node.receiver, written]
-	rebuilt += "%s(%s)" % [written, _arguments(node)]
+	var rebuilt: String = render_with_field_overrides(node, {})
 
 	# A statement that came wrapped across lines and still says exactly what it
 	# said keeps the wrapping the person chose. Only one the Composer actually
@@ -98,10 +92,61 @@ static func _flattened(text: String) -> String:
 	return flat.replace("( ", "(").replace(" )", ")")
 
 
-static func _arguments(node: ComposerNode) -> String:
+## One statement, rebuilt with some of its arguments replaced.
+##
+## Pure on purpose: nothing here marks the node dirty and nothing here touches
+## its fields. A field edit has to be able to ask "what would this statement
+## look like" and then refuse, and a renderer that changed the node on the way
+## would leave the refusal drawn on the canvas.
+##
+## Keyed by field index rather than by label: two arguments of one call can be
+## called the same thing, and position is what the language goes by.
+static func render_with_field_overrides(
+	node: ComposerNode, overrides: Dictionary[int, String]
+) -> String:
+	var rebuilt: String = TAB.repeat(maxi(node.indent, 1)) + node.prefix
+	if node.awaits:
+		rebuilt += AWAIT_MARK
+	var called: String = String(node.type_id)
+	if not node.receiver.is_empty():
+		called = "%s.%s" % [node.receiver, called]
+	return rebuilt + "%s(%s)" % [called, _arguments(node, overrides)]
+
+
+## What one field is written as.
+##
+## A field the file passes is written as what it passes. A required one the
+## file left out is written as its declared default, or as the zero of its
+## type - because rebuilding a call around an empty string produces
+## `apply(, 2.0)`, which is not a statement, and the reread that follows would
+## refuse the whole edit rather than the one argument.
+static func field_source(field: ComposerNode.Field) -> String:
+	if field.is_satisfied():
+		return field.display
+	return declared_default(field)
+
+
+## What that slot holds when nothing is plugged into it: what the method
+## declares for it, or the zero of its type.
+##
+## Asked when a cable comes off as well as when a call is rebuilt, because
+## those are the same question - a slot with no cable holds a value, and which
+## value it is cannot depend on which of the two asked.
+static func declared_default(field: ComposerNode.Field) -> String:
+	if not field.default_expression.is_empty():
+		return field.default_expression
+	return ComposerTypes.default_expression(field.type_name, field.variant_type)
+
+
+static func _arguments(
+	node: ComposerNode, overrides: Dictionary[int, String] = {}
+) -> String:
 	var written: PackedStringArray = PackedStringArray()
-	for field: ComposerNode.Field in node.fields:
-		written.append(field.display)
+	for position: int in node.fields.size():
+		written.append(
+			overrides[position] if overrides.has(position)
+			else field_source(node.fields[position])
+		)
 	return ", ".join(written)
 
 
@@ -147,23 +192,29 @@ static func apply(graph: ComposerGraph, source: String, verify: bool = true) -> 
 		result.refusal = refuse("no %s() to write into" % ComposerSubset.ENTRY_POINT)
 		return result
 
-	var spliced: String = _splice(lines, span, print_body(graph))
+	var rebuilt: String = spliced(lines, span, print_body(graph))
 	if not verify:
-		result.text = spliced
+		result.text = rebuilt
 		return result
 
-	var verdict: ComposerGraph.Diagnostic = _verify(graph, spliced, graph.source_path)
+	var verdict: ComposerGraph.Diagnostic = _verify(
+		graph, rebuilt, graph.source_path, source
+	)
 	if verdict != null:
 		result.refusal = verdict
 		return result
 
-	result.text = spliced
+	result.text = rebuilt
 	return result
 
 
 ## Everything before the body, the new body, everything after. The two ends are
 ## copied, never rewritten, which is the whole promise about the rest of the file.
-static func _splice(
+##
+## Public because a field edit replaces the lines of one statement the same way
+## a save replaces the lines of a body, and two functions that cut a file into
+## three pieces are two chances to be off by one at the seam.
+static func spliced(
 	lines: PackedStringArray, span: ComposerSpan, body: PackedStringArray
 ) -> String:
 	var out: PackedStringArray = PackedStringArray()
@@ -180,7 +231,7 @@ static func _splice(
 ## what the graph said - which is exactly the failure nobody notices until the
 ## ability misbehaves in a game.
 static func _verify(
-	graph: ComposerGraph, text: String, path: String
+	graph: ComposerGraph, text: String, path: String, source: String
 ) -> ComposerGraph.Diagnostic:
 	var reread: ComposerGraph = ComposerReader.read(text, path)
 	if not reread.is_editable():
@@ -190,6 +241,35 @@ static func _verify(
 	var got: String = signature(reread)
 	if wanted != got:
 		return refuse("what this produced is not what it was given")
+	return _kept_regions_survived(source, text, path)
+
+
+## Every region the reader kept has to come out of a save exactly as it went in.
+##
+## The signature above cannot say this. It compares structure, and a region the
+## tool did not read has no structure to compare - so a save that reindented a
+## loop, dropped a line out of its body or reflowed it would pass every other
+## check here and change somebody's code without anything noticing.
+##
+## Read off the source that went IN and looked for in the text that came out.
+## Asking the output where its own regions are and then finding them there is a
+## question that answers itself.
+static func _kept_regions_survived(
+	source: String, text: String, path: String
+) -> ComposerGraph.Diagnostic:
+	var before: ComposerIRFunction = ComposerIR.of(source, path).entry()
+	if before == null:
+		return null
+
+	var lines: PackedStringArray = source.split("
+")
+	for event: ComposerIREvent in before.opaque_events():
+		var region: String = "
+".join(
+			lines.slice(event.statement_line - 1, event.span.last_line)
+		)
+		if not text.contains(region):
+			return refuse("a region this tool does not read came out changed")
 	return null
 
 
@@ -210,11 +290,7 @@ static func signature(graph: ComposerGraph) -> String:
 		if not node.source_backed:
 			continue
 		position[node.id] = index
-		parts.append(
-			"%s(%s)%s" % [
-				String(node.type_id), _arguments(node), "!" if node.awaits else ""
-			]
-		)
+		parts.append(node_signature(node))
 
 	# By position, never by id. A node's id is derived from the line it was read
 	# from, so wiring the signature to ids would smuggle line numbers back in
@@ -231,6 +307,44 @@ static func signature(graph: ComposerGraph) -> String:
 	wires.sort()
 
 	return "|".join(parts) + "#" + "|".join(wires)
+
+
+## What one statement is, as a comparable string.
+##
+## Everything that decides what the ability does, and nothing that decides how it
+## looks. It reduced a node to `type_id(arguments)` before, which is nothing at
+## all for a branch, a match or an end: those have no `type_id` and their
+## arguments are not arguments, so a rewritten condition, a changed match value
+## and a different return all came out as the same empty signature - and the
+## check that exists to catch a printer dropping something looked straight past
+## the three statements this phase taught it to write.
+##
+## Support headers are in it too, by kind and by the text they carry. An `else`
+## or a `_:` vanishing from a rewrite is a path that stopped existing, and a
+## signature that ignored them would call that a clean round trip.
+##
+## Line numbers, layout positions and anything a control is currently doing are
+## left out on purpose: an edit legitimately moves statements, and a signature
+## that changed when a card did would refuse every real edit while catching none.
+static func node_signature(node: ComposerNode) -> String:
+	var said: PackedStringArray = PackedStringArray()
+	said.append("%d%s" % [node.projection_kind, "!" if node.terminal else ""])
+	if node.projection_kind == ComposerNode.ProjectionKind.SUPPORT:
+		said.append(node.text.strip_edges())
+		return "<%s>" % "|".join(said)
+
+	said.append(String(node.type_id))
+	said.append(node.receiver)
+	said.append("await" if node.awaits else "")
+	for field: ComposerNode.Field in node.fields:
+		said.append("%s:%s=%s@%d" % [
+			field.label, String(field.type_name), field.display, field.source
+		])
+	for pin: ComposerNode.Port in node.ports:
+		said.append("%s:%d.%d#%d" % [
+			String(pin.id), pin.kind, pin.direction, pin.field_index
+		])
+	return "<%s>" % "|".join(said)
 
 
 ## Say no, in the one shape everything that reads a refusal already knows.

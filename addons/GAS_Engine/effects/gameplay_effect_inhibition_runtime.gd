@@ -37,7 +37,7 @@ func begin_state_mutation() -> void:
 func end_state_mutation() -> void:
 	_mutation_depth = maxi(_mutation_depth - 1, 0)
 	if _mutation_depth == 0 and _dirty:
-		_reevaluate()
+		_reevaluate(effects.active_effects())
 #endregion
 
 
@@ -48,13 +48,30 @@ func on_owner_tags_changed() -> void:
 	if _mutation_depth > 0:
 		_dirty = true
 		return
-	_reevaluate()
+	_reevaluate(effects.active_effects())
+
+
+## One tag moved, and only what is about it can have changed its answer.
+##
+## The first pass walks the effects whose ongoing or removal query names that
+## tag or an ancestor of it. Any pass after the first walks everything: a
+## transition grants and removes tags of its own, and what those changed is no
+## longer only about the tag that started this.
+##
+## Deferred the same way as the unscoped call, and deferred as a full one: a
+## mutation in flight can change any of it, so the tag that arrived here is no
+## longer the whole story by the time the guard unwinds.
+func on_owner_tag_changed(tag: StringName) -> void:
+	if _mutation_depth > 0:
+		_dirty = true
+		return
+	_reevaluate(effects.index.requirement_dependents(tag))
 
 
 ## 1. reentrant call while already reevaluating -> mark dirty, return.
 ## 2. snapshot active handles, evaluate, apply transitions.
 ## 3. repeat while dirty, until stable or the pass cap is hit.
-func _reevaluate() -> void:
+func _reevaluate(first_pass: Array[ActiveGameplayEffect]) -> void:
 	if _reevaluating:
 		_dirty = true
 		return
@@ -64,13 +81,17 @@ func _reevaluate() -> void:
 	var passes: int = 0
 	var converged: bool = false
 	var last_pass_changed: Array[ActiveGameplayEffect] = []
+	var over: Array[ActiveGameplayEffect] = first_pass
 	while passes < MAX_REQUIREMENT_REEVALUATION_PASSES:
 		_dirty = false
 		passes += 1
-		last_pass_changed = _reevaluate_one_pass()
+		last_pass_changed = _reevaluate_one_pass(over)
 		if last_pass_changed.is_empty() and not _dirty:
 			converged = true
 			break
+		# Everything, from here on. The first pass could be narrowed to what the
+		# tag was about; a pass after something transitioned cannot.
+		over = effects.active_effects()
 
 	if not converged:
 		_freeze_as_inhibited_and_diagnose(last_pass_changed)
@@ -87,9 +108,13 @@ func _reevaluate() -> void:
 ## One pass over a snapshot of active effects. Returns every effect that
 ## transitioned, so the caller knows whether another pass could be needed -
 ## and, if the cycle never stabilizes, exactly which ones were oscillating.
-func _reevaluate_one_pass() -> Array[ActiveGameplayEffect]:
+func _reevaluate_one_pass(over: Array[ActiveGameplayEffect]) -> Array[ActiveGameplayEffect]:
 	var changed: Array[ActiveGameplayEffect] = []
-	for active: ActiveGameplayEffect in effects.active_effects():
+	for active: ActiveGameplayEffect in over:
+		# The list was taken before any of this ran, and a transition can remove
+		# an effect further down it.
+		if not effects.contains_active(active):
+			continue
 		if _apply_removal_if_due(active):
 			changed.append(active)
 			continue
@@ -166,6 +191,17 @@ func initialize(active: ActiveGameplayEffect) -> void:
 		set_attached(active, true)
 
 
+## Finish runtime-only receipts of an effect already provisionally extracted by
+## GameplayEffectPurgeTransaction. Tags/contributions were removed there and
+## must not be removed a second time here.
+func finalize_purged(active: ActiveGameplayEffect) -> void:
+	if active == null:
+		return
+	effects.live_magnitudes.disconnect_bindings_for(active)
+	_deactivate_persistent_cues(active)
+	active.state_attached = false
+
+
 ## attached -> false drops the receipt from the aggregator/tag runtime
 ## without clearing it; false -> true re-adds the same receipt unchanged.
 ## Idempotent either direction.
@@ -186,7 +222,7 @@ func _attach(active: ActiveGameplayEffect) -> void:
 	for tag: StringName in active.granted_tags:
 		var change: GameplayTagRuntime.Change = effects.tags.add(tag)
 		if effects.owner_asc != null:
-			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count(tag))
+			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count_exact(tag))
 	effects.attributes.add_contributions(active.contributed_modifiers)
 	if GameplayEffectRuntime._mode_for(active.spec) == GameplayEffectEvaluator.Mode.CONTRIBUTION:
 		effects.live_magnitudes.create_bindings_for(active)
@@ -198,7 +234,7 @@ func _detach(active: ActiveGameplayEffect) -> void:
 	for tag: StringName in active.granted_tags:
 		var change: GameplayTagRuntime.Change = effects.tags.remove(tag)
 		if effects.owner_asc != null:
-			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count(tag))
+			effects.owner_asc.emit_tag_change(tag, change, effects.tags.count_exact(tag))
 	effects.live_magnitudes.disconnect_bindings_for(active)
 	effects.attributes.remove_contributions_of(active.application_order)
 	_deactivate_persistent_cues(active)
@@ -212,7 +248,9 @@ func _activate_persistent_cues(active: ActiveGameplayEffect) -> void:
 	if effects.owner_asc == null:
 		return
 	for binding: GameplayCueBinding in active.get_effect_def().get_persistent_cue_bindings():
-		var params: GameplayCueParams = effects.cue_params_for(binding.cue_tag, active.spec, active.handle)
+		var params: GameplayCueParams = effects.cue_params_for(
+			binding.cue_tag, active.spec, active.handle, binding
+		)
 		active.persistent_cue_handles.append(effects.owner_asc.activate_persistent_cue(params))
 
 
@@ -224,8 +262,11 @@ func _deactivate_persistent_cues(active: ActiveGameplayEffect) -> void:
 	if effects.owner_asc != null:
 		var bindings: Array[GameplayCueBinding] = active.get_effect_def().get_persistent_cue_bindings()
 		for i: int in active.persistent_cue_handles.size():
-			var tag: StringName = bindings[i].cue_tag if i < bindings.size() else &""
-			var params: GameplayCueParams = effects.cue_params_for(tag, active.spec, active.handle)
+			var ending: GameplayCueBinding = bindings[i] if i < bindings.size() else null
+			var tag: StringName = ending.cue_tag if ending != null else &""
+			var params: GameplayCueParams = effects.cue_params_for(
+				tag, active.spec, active.handle, ending
+			)
 			effects.owner_asc.deactivate_persistent_cue(active.persistent_cue_handles[i], params)
 	active.persistent_cue_handles.clear()
 
@@ -242,8 +283,12 @@ func _resume_periodic_clock(active: ActiveGameplayEffect) -> void:
 		return
 	match active.get_effect_def().period_inhibition_policy:
 		GameplayEffect.PeriodInhibitionPolicy.EXECUTE_IMMEDIATELY_ON_UNINHIBIT:
-			if active.missed_tick_while_inhibited:
-				effects.run_periodic_tick(active)
+			# Unconditionally, which is what the name says and what the
+			# reference does. It used to fire only when a whole period had
+			# gone by under inhibition, so an effect inhibited for a fifth of
+			# its period executed there and did nothing here - a difference
+			# neither reading looked wrong for.
+			effects.run_periodic_tick(active)
 			active.restart_period_clock()
 		GameplayEffect.PeriodInhibitionPolicy.RESET_PERIOD_ON_UNINHIBIT:
 			active.restart_period_clock()

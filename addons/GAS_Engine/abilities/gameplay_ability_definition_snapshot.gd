@@ -16,7 +16,40 @@ class_name GameplayAbilityDefinitionSnapshot extends RefCounted
 var ability_scene: PackedScene = null
 var ability_name: String = ""
 var instancing_policy: GameplayAbility.InstancingPolicy = GameplayAbility.InstancingPolicy.PER_ACTOR
+
+## Whether returning from `_activate_ability()` ends the ability, and
+## whether activating it again while it runs replaces the activation in
+## flight. Frozen with everything else the runtime decides by: an author
+## who changed either of these after the grant would be changing what a
+## running ability does, from outside it.
+var auto_end_on_activate_return: bool = true
+var retrigger_while_active: bool = false
 var activation_policy: GameplayAbility.ActivationPolicy = GameplayAbility.ActivationPolicy.MANUAL
+## The action this grant answers, frozen with everything else it is decided by.
+var input_action: StringName = &""
+
+## Where this grant is allowed to run. Frozen with the rest, so what a client
+## may ask for is decided at grant time rather than by whatever the scene on
+## disk says while a match is in progress.
+## What the authority accepts from a remote machine, frozen with the rest.
+var net_security_policy: GameplayAbility.NetSecurityPolicy = (
+	GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER
+)
+
+## Whether this activation's own state reaches the peer that owns it.
+var replication_policy: GameplayAbility.ReplicationPolicy = (
+	GameplayAbility.ReplicationPolicy.REPLICATE_NO
+)
+
+## Whether a remote request to call it off is honoured.
+var server_respects_remote_cancellation: bool = false
+
+## Whether the input crosses rather than the activation it would cause.
+var replicate_input_directly: bool = false
+
+var net_execution_policy: GameplayAbility.NetExecutionPolicy = (
+	GameplayAbility.NetExecutionPolicy.LOCAL_ONLY
+)
 
 ## Task 15's complete tag semantics - see GameplayAbility for what each means.
 var ability_tags: Array[StringName] = []
@@ -26,6 +59,10 @@ var activation_owned_tags: Array[StringName] = []
 var cancel_abilities_query: GameplayTagQuery = null
 var allow_self_cancel: bool = false
 var block_abilities_query: GameplayTagQuery = null
+## Frozen with the rest: an author who edited these after the grant would be
+## changing who is allowed to trigger a running grant, from outside it.
+var source_required_query: GameplayTagQuery = null
+var source_blocked_query: GameplayTagQuery = null
 var target_required_query: GameplayTagQuery = null
 var target_blocked_query: GameplayTagQuery = null
 
@@ -33,6 +70,11 @@ var target_blocked_query: GameplayTagQuery = null
 var gameplay_event_triggers: Array[GameplayAbilityEventTrigger] = []
 
 var costs: Array[GameplayAbilityCost] = []
+## The two other ways a price can be written. Frozen with everything else:
+## an author who swapped the cost effect after the grant would be changing
+## what a running ability charges, from outside it.
+var cost_effect: GameplayEffect = null
+var custom_costs: Array[GameplayAbilityCustomCost] = []
 var cooldown_effect: GameplayEffect = null
 var shared_cooldown_effects: Array[GameplayEffect] = []
 var shared_cooldown_tags: Array[StringName] = []
@@ -40,25 +82,118 @@ var shared_cooldown_tags: Array[StringName] = []
 
 ## Read a snapshot from a validated probe instance. The probe is only read,
 ## never mutated or freed by this.
+static func _duplicate_resource(value: Resource) -> Resource:
+	return value.duplicate(true) if value != null else null
+
+
+## Every Resource in an untyped array, copied; everything else passed through.
+##
+## The `as` the strict typing pass will not take is written as an assignment
+## after the `is` instead: a cast from Variant is unchecked, and this file is
+## depended on by most of the addon, so one unsafe cast here fails to compile a
+## hundred other scripts.
+static func _duplicate_resource_array(values: Array) -> Array:
+	var result: Array = []
+	for value: Variant in values:
+		if value is Resource:
+			var resource: Resource = value
+			result.append(resource.duplicate(true))
+		else:
+			result.append(value)
+	return result
+
+
+## Whether a remote machine ending this activation is honoured.
+##
+## Asked of the frozen reading rather than of the running instance: a policy
+## an activation could rewrite on itself mid-run is not one an authority can
+## rely on, which is the whole reason this snapshot exists.
+func accepts_remote_termination() -> bool:
+	return GameplayNetAuthority.accepts_remote_end(
+		net_security_policy, server_respects_remote_cancellation
+	)
+
+
 static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAbilityDefinitionSnapshot:
 	var snapshot: GameplayAbilityDefinitionSnapshot = GameplayAbilityDefinitionSnapshot.new()
 	snapshot.ability_scene = scene
 	snapshot.ability_name = probe.ability_name
 	snapshot.instancing_policy = probe.instancing_policy
+	snapshot.auto_end_on_activate_return = probe.auto_end_on_activate_return
+	snapshot.retrigger_while_active = probe.retrigger_while_active
 	snapshot.activation_policy = probe.activation_policy
+	snapshot.input_action = probe.input_action
+	snapshot.net_execution_policy = probe.net_execution_policy
+	snapshot.net_security_policy = probe.net_security_policy
+	snapshot.replication_policy = probe.replication_policy
+	snapshot.server_respects_remote_cancellation = (
+		probe.server_respects_remote_cancellation
+	)
+	snapshot.replicate_input_directly = probe.replicate_input_directly
 	snapshot.ability_tags = probe.ability_tags.duplicate()
-	snapshot.activation_required_query = probe.activation_required_query
-	snapshot.activation_blocked_query = probe.activation_blocked_query
+	snapshot.activation_required_query = (
+		_duplicate_resource(probe.activation_required_query) as GameplayTagQuery
+	)
+	snapshot.activation_blocked_query = (
+		_duplicate_resource(probe.activation_blocked_query) as GameplayTagQuery
+	)
 	snapshot.activation_owned_tags = probe.activation_owned_tags.duplicate()
-	snapshot.cancel_abilities_query = probe.cancel_abilities_query
+	snapshot.cancel_abilities_query = (
+		_duplicate_resource(probe.cancel_abilities_query) as GameplayTagQuery
+	)
 	snapshot.allow_self_cancel = probe.allow_self_cancel
-	snapshot.block_abilities_query = probe.block_abilities_query
-	snapshot.target_required_query = probe.target_required_query
-	snapshot.target_blocked_query = probe.target_blocked_query
-	snapshot.gameplay_event_triggers = probe.gameplay_event_triggers.duplicate()
-	snapshot.costs = probe.costs.duplicate()
-	snapshot.cooldown_effect = probe.cooldown_effect
-	snapshot.shared_cooldown_effects = probe.shared_cooldown_effects.duplicate()
+	snapshot.block_abilities_query = (
+		_duplicate_resource(probe.block_abilities_query) as GameplayTagQuery
+	)
+	snapshot.source_required_query = (
+		_duplicate_resource(probe.source_required_query) as GameplayTagQuery
+	)
+	snapshot.source_blocked_query = (
+		_duplicate_resource(probe.source_blocked_query) as GameplayTagQuery
+	)
+	snapshot.target_required_query = (
+		_duplicate_resource(probe.target_required_query) as GameplayTagQuery
+	)
+	snapshot.target_blocked_query = (
+		_duplicate_resource(probe.target_blocked_query) as GameplayTagQuery
+	)
+
+	snapshot.gameplay_event_triggers.clear()
+	for trigger: GameplayAbilityEventTrigger in probe.gameplay_event_triggers:
+		snapshot.gameplay_event_triggers.append(
+			_duplicate_resource(trigger) as GameplayAbilityEventTrigger
+		)
+
+	snapshot.costs.clear()
+	for cost: GameplayAbilityCost in probe.costs:
+		snapshot.costs.append(_duplicate_resource(cost) as GameplayAbilityCost)
+
+	snapshot.cost_effect = _duplicate_resource(probe.cost_effect) as GameplayEffect
+	snapshot.custom_costs.clear()
+	for custom: GameplayAbilityCustomCost in probe.custom_costs:
+		snapshot.custom_costs.append(
+			_duplicate_resource(custom) as GameplayAbilityCustomCost
+		)
+	snapshot.cooldown_effect = _duplicate_resource(probe.cooldown_effect) as GameplayEffect
+
+	# One source Resource becomes one duplicate, even when the author listed it
+	# twice. "A cooldown listed twice is applied once" is decided by comparing
+	# the objects, so two separate copies of one authored effect would start the
+	# same cooldown twice - the snapshot has to keep the aliasing it was given,
+	# not merely the values.
+	var copied_cooldowns: Dictionary[GameplayEffect, GameplayEffect] = {}
+	if probe.cooldown_effect != null:
+		copied_cooldowns[probe.cooldown_effect] = snapshot.cooldown_effect
+
+	snapshot.shared_cooldown_effects.clear()
+	for effect: GameplayEffect in probe.shared_cooldown_effects:
+		if effect != null and copied_cooldowns.has(effect):
+			snapshot.shared_cooldown_effects.append(copied_cooldowns[effect])
+			continue
+		var copy: GameplayEffect = _duplicate_resource(effect) as GameplayEffect
+		if effect != null:
+			copied_cooldowns[effect] = copy
+		snapshot.shared_cooldown_effects.append(copy)
 	snapshot.shared_cooldown_tags = probe.shared_cooldown_tags.duplicate()
 	return snapshot
 
@@ -71,7 +206,15 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 const CAPTURED_FIELDS: Array[StringName] = [
 	&"ability_name",
 	&"instancing_policy",
+	&"auto_end_on_activate_return",
+	&"retrigger_while_active",
 	&"activation_policy",
+	&"input_action",
+	GameplayAbility.NET_EXECUTION_POLICY_FIELD,
+	GameplayAbility.NET_SECURITY_POLICY_FIELD,
+	GameplayAbility.REPLICATION_POLICY_FIELD,
+	GameplayAbility.REMOTE_CANCELLATION_FIELD,
+	GameplayAbility.REPLICATE_INPUT_FIELD,
 	&"ability_tags",
 	&"activation_required_query",
 	&"activation_blocked_query",
@@ -79,10 +222,14 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"cancel_abilities_query",
 	&"allow_self_cancel",
 	&"block_abilities_query",
+	&"source_required_query",
+	&"source_blocked_query",
 	&"target_required_query",
 	&"target_blocked_query",
 	&"gameplay_event_triggers",
 	&"costs",
+	&"cost_effect",
+	&"custom_costs",
 	&"cooldown_effect",
 	&"shared_cooldown_effects",
 	&"shared_cooldown_tags",
@@ -146,13 +293,54 @@ static func report_drift(
 ## that happen to hold equal numbers are still two authorings, and the engine
 ## reads only one of them.
 static func _same(mine: Variant, theirs: Variant) -> bool:
+	if mine == null or theirs == null:
+		return mine == theirs
+
 	if mine is Array and theirs is Array:
 		var a: Array = mine
 		var b: Array = theirs
 		if a.size() != b.size():
 			return false
 		for index: int in a.size():
-			if a[index] != b[index]:
+			if not _same(a[index], b[index]):
 				return false
 		return true
+
+	if mine is Dictionary and theirs is Dictionary:
+		var a_dict: Dictionary = mine
+		var b_dict: Dictionary = theirs
+		if a_dict.size() != b_dict.size():
+			return false
+		for key: Variant in a_dict:
+			if not b_dict.has(key) or not _same(a_dict[key], b_dict[key]):
+				return false
+		return true
+
+	if mine is Resource and theirs is Resource:
+		var a_resource: Resource = mine
+		var b_resource: Resource = theirs
+		if a_resource.get_script() != b_resource.get_script():
+			return false
+		for property: Dictionary in a_resource.get_property_list():
+			var usage: int = property.get("usage", 0)
+			if (usage & PROPERTY_USAGE_STORAGE) == 0:
+				continue
+			var name: StringName = property.get("name", &"")
+			if name == &"resource_path" or name == &"resource_name":
+				continue
+			if not _same(a_resource.get(name), b_resource.get(name)):
+				return false
+		return true
+
+	if mine is float and theirs is float:
+		var a_float: float = mine
+		var b_float: float = theirs
+		# NaN is not equal to itself, and a copy of a NaN is still the value the
+		# author wrote. Without this, an ability whose cost is deliberately NaN -
+		# there are tests for exactly that, because the engine has to refuse it -
+		# is reported as having drifted from a definition nobody touched.
+		if is_nan(a_float) and is_nan(b_float):
+			return true
+		return a_float == b_float
+
 	return mine == theirs

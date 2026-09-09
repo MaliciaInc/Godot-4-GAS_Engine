@@ -15,6 +15,13 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerScreen extends Control
 
+## Where in the file a finding is, for whoever can put a caret there.
+##
+## Emitted rather than acted on: this screen draws a canvas and does not own the
+## script editor, and a Control that reached for one would be a Control that
+## cannot be built in a test. The plugin listens and takes the editor there.
+signal go_to_line(line: int)
+
 const SAVE_REFUSED: String = "GAS_Engine: the Composer did not save - %s"
 
 const TOP_BAR: float = 54.0
@@ -105,7 +112,7 @@ func _ready() -> void:
 	_canvas.paste_requested.connect(paste)
 	_canvas.duplicate_requested.connect(repeat_picked)
 	# A call dragged in from the palette is inserted exactly as a clicked one is.
-	_canvas.node_requested.connect(_on_node_picked)
+	_canvas.node_requested.connect(_on_call_released)
 	# The routes hear the canvas themselves. A gesture added there is connected
 	# beside the others rather than in a list here that has to be remembered.
 	_routes.bind(_doc)
@@ -116,6 +123,8 @@ func _ready() -> void:
 	_menus.bind(_doc)
 	_menus.listen_to(_canvas)
 	_menus.chose.connect(_on_menu_chosen)
+	_menus.break_link_requested.connect(_routes.disconnect_edge)
+	_menus.break_all_requested.connect(_routes.break_pin)
 	_menus.entry_chosen.connect(_on_entry_chosen)
 	_statements.bind(_doc)
 	_output.row_picked.connect(_on_row_picked)
@@ -160,9 +169,15 @@ func _on_selection_changed(picked: Array[StringName]) -> void:
 	)
 
 
-## A row in the Output panel is a place in the graph, not just a message.
-func _on_row_picked(node_id: StringName, _line: int) -> void:
+## A row in the Output panel is a place, and a place has two halves.
+##
+## The card is where somebody is looking; the line is where the mistake is
+## written. Only the card was answered before and the line was taken and
+## dropped - so a finding about a region with no card, or about the file rather
+## than anything in it, went nowhere at all when it was clicked.
+func _on_row_picked(node_id: StringName, line: int) -> void:
 	_canvas.reveal(node_id)
+	go_to_line.emit(line)
 
 
 ## Nothing could be opened, and here is why.
@@ -225,6 +240,19 @@ func graph() -> ComposerGraph:
 	return _doc.graph()
 
 
+func has_unsaved_changes() -> bool:
+	return _doc.is_dirty()
+
+
+func open_path() -> String:
+	return _doc.path()
+
+
+func discard_unsaved_changes() -> void:
+	_doc.discard_unsaved_changes()
+	await _redraw()
+
+
 #region Statements, as things you can move about
 ## Each of these hands the selection to the one place that knows what the
 ## operation means, and redraws if the document accepted it.
@@ -269,14 +297,20 @@ func paste_text(written: String) -> bool:
 	return await _did(_statements.paste(_canvas.picked(), written))
 
 
-## A call somebody chose, from the palette, the finder or a drag onto the canvas.
+## A call somebody chose: clicked in the palette or the finder, where the layout
+## places it, or let go of on the canvas, where they let go of it.
 ##
-## One handler for all three. Where it was dropped is carried and not yet
-## honoured - placing the new card there needs the id of a statement that does
-## not exist until after the insert and the reread, which is the placement
-## transaction TASK 13 builds.
-func _on_node_picked(key: StringName, _at: Vector2 = Vector2.ZERO) -> void:
+## Two handlers rather than one with a default position, because `(0, 0)` is a
+## real place on a canvas: a sentinel somebody can drop a card exactly on will
+## one day be read as "they did not say". The second is named for the call and
+## not for a card - a card let go somewhere is the widget's own business, and it
+## reports that as a placement.
+func _on_node_picked(key: StringName) -> void:
 	await _did(_statements.insert_call(_canvas.picked(), key))
+
+
+func _on_call_released(key: StringName, at: Vector2) -> void:
+	await _did(_statements.insert_call_at(_canvas.picked(), key, at))
 
 
 ## Dragging cards changes only where they are drawn.
@@ -303,12 +337,10 @@ func _on_entry_chosen(
 	_routes.create_and_connect(ComposerCatalog.find(entry_key), context)
 
 
-## One place where a menu item becomes an operation, whichever menu offered it.
-##
-## Matched on the name it was offered under, not on an index two lists have to
-## keep agreeing about.
+## One place where a menu item becomes an operation, whichever menu offered it,
+## matched on the name it was offered under rather than on an index.
 func _on_menu_chosen(
-	chosen: String, node_id: StringName, port_id: StringName
+	chosen: String, _node_id: StringName, _port_id: StringName
 ) -> void:
 	match chosen:
 		ComposerMenus.REMOVE:
@@ -317,8 +349,6 @@ func _on_menu_chosen(
 			await repeat_picked()
 		ComposerMenus.COPY:
 			copy_picked()
-		ComposerMenus.BREAK_ALL:
-			_routes.break_pin(node_id, port_id)
 #endregion
 
 
@@ -402,12 +432,16 @@ func _save_now() -> void:
 		push_error(SAVE_REFUSED % result.refusal.message)
 
 
+## Null once the child is gone, rather than the freed instance itself: handing
+## one back through a typed return raises at whatever asked, frames away from
+## the teardown that caused it.
 func canvas() -> ComposerCanvas:
-	return _canvas
+	return _canvas if is_instance_valid(_canvas) else null
 
 
+## Null once the child is gone, for the reason canvas() gives.
 func inspector() -> ComposerInspector:
-	return _inspector
+	return _inspector if is_instance_valid(_inspector) else null
 
 
 ## Which keys this screen answers for itself, so the rule that no key has two

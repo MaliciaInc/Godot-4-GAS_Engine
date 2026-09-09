@@ -17,6 +17,13 @@ var operation: GameplayEffectModifier.Operation = GameplayEffectModifier.Operati
 ## The runtime magnitude, already resolved from curve and level.
 var magnitude: float = 0.0
 
+## Which pass of the aggregate this joins.
+##
+## Carried rather than looked up: the modifier that produced this may be
+## gone by the time the aggregate is composed, and the channel decides
+## which fold it lands in.
+var evaluation_channel: int = 0
+
 ## Position of the source modifier inside its effect's `modifiers` array.
 ## Two modifiers of one effect writing the same attribute are distinguished by
 ## this, never by their magnitude.

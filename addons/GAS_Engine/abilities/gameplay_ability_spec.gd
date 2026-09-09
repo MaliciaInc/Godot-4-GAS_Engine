@@ -19,6 +19,14 @@ var handle: GameplayAbilityHandle = null
 var definition: GameplayAbilityDefinitionSnapshot = null
 var level: float = 1.0
 var input_id: int = -1
+
+## The InputMap action this grant answers, when a game routes by name.
+##
+## Beside the slot rather than instead of it. A project that already routes by
+## number keeps working, one that routes by action never has to invent numbers,
+## and a grant may carry both - which is two ways of reaching it, not two
+## grants, so one logical press activates it once.
+var input_action: StringName = &""
 var source: GameplayAbilitySource = null
 var dynamic_tags: Array[StringName] = []
 

@@ -10,10 +10,16 @@
 ##     standard active modifier  -> contribution to the aggregator
 ##     execution calculation     -> instant mutation of the underlying base
 ##
-## and an attribute that would receive both in one evaluation fails the whole
-## application with AMBIGUOUS_ATTRIBUTE_WRITE. There is no correct order for
-## "add 5 flat" and "multiply by 2" arriving from two different mechanisms, so
-## the engine refuses rather than picking one and being quietly wrong.
+## and an attribute that receives both in one evaluation is written once, in a
+## defined order: the execution decides the base, and the standard modifiers
+## compose over what it decided. That is the order this file has always run in,
+## and it is the order the aggregate already works by - a base, and passes over
+## it - so there is one rule rather than one per mechanism.
+##
+## What is still refused is a write whose target is ambiguous: an attribute two
+## of this entity's sets declare. Not for want of an order, but because the
+## write itself has two possible destinations and picking the set that happens
+## to be listed first is an answer that changes when somebody reorders a list.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -77,24 +83,45 @@ static func _evaluate_inner(request: Request) -> GameplayEffectEvaluationResult:
 	if not _resolve_authored_magnitudes(request, result):
 		return result
 
-	var execution_deltas: Dictionary[StringName, float] = _run_executions(request)
+	var produced: GameplayExecutionOutput = GameplayExecutionPipeline.run(spec, request.owner_asc)
+	result.execution_output = produced
 	if spec.had_invalid_magnitude_access():
 		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.INVALID_MODIFIER_INDEX, &"")
 
+	var unresolved: GameplayAttributeRef = GameplayExecutionPipeline.first_unresolved(
+		produced, request.attributes
+	)
+	if unresolved != null:
+		return GameplayEffectEvaluationResult.failure(
+			AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND, unresolved.attribute_name
+		)
+
+	var writes: Array[AttributeModifierContribution] = GameplayExecutionPipeline.writes_of(
+		produced, request.application_order, spec.stack_count, _unreal_profile(request)
+	)
 	var modifier_targets: Array[StringName] = _modifier_attribute_names(spec)
 
-	var ambiguous: StringName = _first_ambiguous_attribute(execution_deltas, modifier_targets)
+	# An attribute two of this entity's sets declare - a driver and the vehicle
+	# both having `health` - is two attributes with one name, and every write
+	# below is addressed by that name. Refused rather than sent to whichever set
+	# was listed first, which is an answer that changes when somebody reorders
+	# the list and reports nothing when it does.
+	var ambiguous: StringName = request.attributes.first_ambiguous(
+		GameplayExecutionPipeline.attributes_of(writes)
+	)
+	if ambiguous == &"":
+		ambiguous = request.attributes.first_ambiguous(modifier_targets)
 	if ambiguous != &"":
 		return GameplayEffectEvaluationResult.failure(AttributeEvaluationResult.Status.AMBIGUOUS_ATTRIBUTE_WRITE, ambiguous)
 
-	_stage_execution_deltas(request, execution_deltas, result)
+	_stage_execution_writes(request, writes, modifier_targets, result)
 	if not result.is_ok():
 		return result
 
 	if request.mode == Mode.CONTRIBUTION:
 		_build_contributions(request, modifier_targets, result)
 	else:
-		_stage_modifier_base_mutations(request, modifier_targets, result)
+		_stage_modifier_base_mutations(request, modifier_targets, writes, result)
 
 	return result
 
@@ -108,11 +135,9 @@ static func _resolve_authored_magnitudes(
 	request: Request, result: GameplayEffectEvaluationResult
 ) -> bool:
 	var spec: GameplayEffectSpec = request.spec
-	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
-	context.spec = spec
-	context.source_asc = request.source_asc
-	context.target_asc = request.owner_asc
-	context.level = spec.level
+	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.of(
+		spec, request.source_asc, request.owner_asc
+	)
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
@@ -171,45 +196,53 @@ static func _translate_magnitude_status(
 
 
 #region Execution calculations
-## Run every execution calculation and merge their flat deltas.
+## Turn what the executions decided into staged base writes. Always routed
+## through the execute-hook - an ExecCalc output triggers pre/post regardless of
+## the containing effect's duration policy, unlike a standard modifier.
 ##
-## The Dictionary is an extension boundary, not a domain contract: it is typed,
-## it is produced by user scripts outside this addon, and it is converted into
-## staged AttributeBaseMutations before it leaves this file.
-static func _run_executions(request: Request) -> Dictionary[StringName, float]:
-	var merged: Dictionary[StringName, float] = {}
-	for execution: GameplayExecutionCalculation in request.spec.effect_def.executions:
-		if execution == null:
-			continue
-		var produced: Dictionary[StringName, float] = execution.execute(request.spec, request.owner_asc)
-		for attribute_name: StringName in produced:
-			merged[attribute_name] = merged.get(attribute_name, 0.0) + produced[attribute_name]
-	return merged
-
-
-## Turn execution deltas into staged base writes. Always routed through the
-## execute-hook - an ExecCalc output triggers pre/post regardless of the
-## containing effect's duration policy, unlike a standard modifier.
-static func _stage_execution_deltas(
+## An attribute the effect's own modifiers also write is skipped here when they
+## write the base too, because then both belong in one write: staging it twice
+## would move the base twice and fire the execute hook twice for one
+## application. Under CONTRIBUTION they never collide - the modifiers become
+## contributions and compose over whatever base this leaves behind.
+static func _stage_execution_writes(
 	request: Request,
-	execution_deltas: Dictionary[StringName, float],
+	writes: Array[AttributeModifierContribution],
+	modifier_targets: Array[StringName],
 	result: GameplayEffectEvaluationResult
 ) -> void:
-	for attribute_name: StringName in execution_deltas:
-		if not request.attributes.has(attribute_name):
-			result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
-			result.error_attribute_name = attribute_name
+	var modifiers_write_the_base: bool = request.mode == Mode.BASE_MUTATION
+	for attribute_name: StringName in GameplayExecutionPipeline.attributes_of(writes):
+		if modifiers_write_the_base and modifier_targets.has(attribute_name):
+			continue
+
+		var composed: float = _composed_execution_base(request, attribute_name, writes, result)
+		if not result.is_ok():
+			return
+		if not _stage_effect_mutation(request, attribute_name, composed, result):
 			return
 
-		var delta: float = execution_deltas[attribute_name]
-		if not is_finite(delta):
-			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
-			result.error_attribute_name = attribute_name
-			return
 
-		var requested: float = request.attributes.get_base_value(attribute_name) + delta
-		if not _stage_effect_mutation(request, attribute_name, requested, result):
-			return
+## What one attribute is worth once this evaluation's executions have had their
+## say - the base itself when none of them named it.
+static func _composed_execution_base(
+	request: Request,
+	attribute_name: StringName,
+	writes: Array[AttributeModifierContribution],
+	result: GameplayEffectEvaluationResult
+) -> float:
+	# Which arithmetic this entity composes by is asked of the component every
+	# time rather than cached, for the reason GameplayAttributeRuntime gives:
+	# the profile is data somebody can change.
+	var unreal: bool = _unreal_profile(request)
+	var folded: AttributeAggregateMath.Composed = GameplayExecutionPipeline.compose(
+		request.attributes, attribute_name, writes, unreal
+	)
+	if not folded.is_ok():
+		result.status = folded.status
+		result.error_attribute_name = attribute_name
+		return 0.0
+	return folded.value
 
 
 ## Stage one attribute's effect-driven base write through
@@ -248,11 +281,41 @@ static func _stage_effect_mutation(
 ## A standard modifier's resolved magnitude, scaled by the stack it belongs
 ## to when the effect asks for it. Never applies to an execution
 ## calculation's own math - that reads spec.stack_count itself and decides.
-static func _stack_scaled_magnitude(spec: GameplayEffectSpec, index: int) -> float:
-	var magnitude: float = spec.get_magnitude(index)
-	if spec.effect_def.factor_in_stack_count:
-		return magnitude * float(spec.stack_count)
-	return magnitude
+static func stack_scaled_value(
+	spec: GameplayEffectSpec, magnitude: float, unreal: bool = false
+) -> float:
+	return stack_scaled_for(
+		spec, magnitude, GameplayEffectModifier.Operation.ADD, unreal
+	)
+
+
+## What one modifier of a stack is worth, by what its operation means.
+static func stack_scaled_for(
+	spec: GameplayEffectSpec,
+	magnitude: float,
+	operation: GameplayEffectModifier.Operation,
+	unreal: bool = false
+) -> float:
+	if spec == null or spec.effect_def == null or not spec.effect_def.factor_in_stack_count:
+		return magnitude
+	return AttributeAggregateMath.stack_scaled(
+		magnitude, float(spec.stack_count), operation, unreal
+	)
+
+
+static func _stack_scaled_magnitude(
+	spec: GameplayEffectSpec, index: int, unreal: bool
+) -> float:
+	var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
+	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation, unreal)
+
+
+## Which arithmetic this request's entity composes by.
+##
+## Asked of the component every time rather than cached, for the reason
+## GameplayAttributeRuntime gives: the profile is data somebody can change.
+static func _unreal_profile(request: Request) -> bool:
+	return request.owner_asc != null and request.owner_asc.uses_ue_5_7_contracts()
 
 
 ## Every attribute a standard modifier writes to, without duplicates.
@@ -266,17 +329,31 @@ static func _modifier_attribute_names(spec: GameplayEffectSpec) -> Array[StringN
 	return names
 
 
-## The first attribute written by both mechanisms, or empty when there is none.
-static func _first_ambiguous_attribute(
-	execution_deltas: Dictionary[StringName, float], modifier_targets: Array[StringName]
-) -> StringName:
-	for attribute_name: StringName in modifier_targets:
-		if execution_deltas.has(attribute_name):
-			return attribute_name
-	return &""
-
-
 ## Build one contribution per modifier, for an effect that stays active.
+## Whether this one modifier applies to this pairing at all.
+##
+## A condition on the modifier rather than on the effect, which is what lets one
+## effect hit harder against the undead and normally against everything else
+## without being authored twice. Unmet is not a refusal: the modifier simply is
+## not part of this application, and the rest of the effect goes on as written.
+##
+## The source is judged by the tags it had when the application was made, not by
+## whatever it carries now - it is the same snapshot every other capture reads,
+## for the same reason.
+static func _qualifies(request: Request, modifier: GameplayEffectModifier) -> bool:
+	if modifier.source_requirements != null:
+		if not modifier.source_requirements.matches_tags(request.spec.source_tags_snapshot):
+			return false
+	if modifier.target_requirements != null:
+		var target: AbilitySystemComponent = request.owner_asc
+		var carried: Array[StringName] = (
+			target.tags.active_tags() if target != null else [] as Array[StringName]
+		)
+		if not modifier.target_requirements.matches_tags(carried):
+			return false
+	return true
+
+
 static func _build_contributions(
 	request: Request, modifier_targets: Array[StringName], result: GameplayEffectEvaluationResult
 ) -> void:
@@ -287,13 +364,24 @@ static func _build_contributions(
 			result.error_attribute_name = attribute_name
 			result.contributions.clear()
 			return
+		# A meta attribute holds nothing between applications, so a lasting
+		# contribution to one is a contradiction in the authoring. Refused here,
+		# while somebody can still be told which effect did it.
+		var declared: AttributeData = request.attributes.find(attribute_name)
+		if declared != null and declared.is_meta:
+			result.status = AttributeEvaluationResult.Status.META_ATTRIBUTE_CANNOT_PERSIST
+			result.error_attribute_name = attribute_name
+			result.contributions.clear()
+			return
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
 		if modifier == null or modifier.attribute_name.is_empty():
 			continue
+		if not _qualifies(request, modifier):
+			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = modifier.attribute_name
@@ -321,17 +409,30 @@ static func _build_contributions(
 		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
 		contribution.attribute_name = modifier.attribute_name
 		contribution.operation = modifier.operation
+		contribution.evaluation_channel = modifier.evaluation_channel
 		contribution.magnitude = magnitude
 		contribution.modifier_index = index
 		contribution.application_order = request.application_order
 		result.contributions.append(contribution)
+
+	if not result.contributions.is_empty():
+		var aggregate_check: AttributeAggregateValidationResult = (
+			request.attributes.validate_additional_contributions(result.contributions)
+		)
+		if not aggregate_check.is_ok():
+			result.status = aggregate_check.status
+			result.error_attribute_name = aggregate_check.attribute_name
+			result.contributions.clear()
 
 
 ## Apply the canonical formula to each affected attribute's BASE and stage the
 ## outcome. This is the instant and periodic path: the transformation happens
 ## once and nothing is registered with the aggregator.
 static func _stage_modifier_base_mutations(
-	request: Request, modifier_targets: Array[StringName], result: GameplayEffectEvaluationResult
+	request: Request,
+	modifier_targets: Array[StringName],
+	writes: Array[AttributeModifierContribution],
+	result: GameplayEffectEvaluationResult
 ) -> void:
 	for attribute_name: StringName in modifier_targets:
 		if not request.attributes.has(attribute_name):
@@ -340,7 +441,14 @@ static func _stage_modifier_base_mutations(
 			result.base_mutations.clear()
 			return
 
-		var composed: float = _compose_for_attribute(request, attribute_name, result)
+		# Starting from what the executions made of it, which is the defined
+		# order: the calculation decides the base and these compose over it.
+		var starting: float = _composed_execution_base(request, attribute_name, writes, result)
+		if not result.is_ok():
+			result.base_mutations.clear()
+			return
+
+		var composed: float = _compose_for_attribute(request, attribute_name, starting, result)
 		if not result.is_ok():
 			result.base_mutations.clear()
 			return
@@ -357,7 +465,10 @@ static func _stage_modifier_base_mutations(
 ## but the arithmetic is written once in each and verified against the same
 ## table of cases: base 10, +10, x2 is 40 in both.
 static func _compose_for_attribute(
-	request: Request, attribute_name: StringName, result: GameplayEffectEvaluationResult
+	request: Request,
+	attribute_name: StringName,
+	base: float,
+	result: GameplayEffectEvaluationResult
 ) -> float:
 	var spec: GameplayEffectSpec = request.spec
 	var total_add: float = 0.0
@@ -371,7 +482,7 @@ static func _compose_for_attribute(
 		if modifier == null or modifier.attribute_name != attribute_name:
 			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index)
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
@@ -398,7 +509,6 @@ static func _compose_for_attribute(
 				result.error_attribute_name = attribute_name
 				return 0.0
 
-	var base: float = request.attributes.get_base_value(attribute_name)
 	var composed: float = ((base + total_add) * product_multiply) / product_divide
 	if winning_index >= 0:
 		composed = winning_magnitude
@@ -443,8 +553,38 @@ static func can_afford(
 	if not evaluation.is_ok():
 		return false
 
+	var against_current: bool = asc.uses_ue_5_7_contracts()
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
+		if against_current:
+			# Unreal's question, and the whole question: does it fit in what the
+			# attribute is worth right now. The durable base is not what funds a
+			# cost there, so its sign says nothing about affordability.
+			if not _affordable_from_current(asc, staged):
+				return false
+			continue
+
+		# A cost cannot create debt merely because an AttributeSet chose not to
+		# clamp below zero. This check is independent of clamp behavior.
+		if staged.requested_base_value < 0.0:
+			return false
 		if not is_equal_approx(staged.committed_base_value, staged.requested_base_value):
 			return false
 	return true
+
+
+## Whether the charge fits in what the attribute is worth right now.
+##
+## Unreal prices against the current value, this engine has always priced
+## against the durable base, and on a buffed attribute those are different
+## numbers: a shield that adds 50 mana is mana you can spend under one contract
+## and cannot under the other. Neither is wrong, and a project that changed
+## answer without asking would have every cost in it silently repriced - so the
+## profile decides, and the default keeps what a project already had.
+static func _affordable_from_current(
+	asc: AbilitySystemComponent, staged: AttributeBaseMutation
+) -> bool:
+	var spent: float = staged.old_base_value - staged.requested_base_value
+	if spent <= 0.0:
+		return true
+	return asc.get_attribute_current(staged.attribute_name) >= spent
 #endregion

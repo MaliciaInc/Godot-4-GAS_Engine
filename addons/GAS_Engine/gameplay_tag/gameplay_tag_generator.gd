@@ -48,6 +48,32 @@ const HEADER_LINES: Array[String] = [
 	"",
 ]
 
+## The three declarations that are about tags rather than a list of them.
+##
+## Their own dictionaries rather than columns on a constant, because a
+## constant's value is the tag and its type says so. A tag appears in one of
+## these only when there is something to say about it, which for most tags in
+## most projects is never.
+const REDIRECTS_NAME: String = "const REDIRECTS"
+const REDIRECTS_DECLARATION: String = (
+	REDIRECTS_NAME + ": Dictionary[StringName, StringName] = {"
+)
+
+const RESTRICTED_NAME: String = "const RESTRICTED"
+const RESTRICTED_DECLARATION: String = (
+	RESTRICTED_NAME + ": Dictionary[StringName, StringName] = {"
+)
+
+const COMMENTS_NAME: String = "const COMMENTS"
+const COMMENTS_DECLARATION: String = (
+	COMMENTS_NAME + ": Dictionary[StringName, String] = {"
+)
+
+## One entry of any of the three: a tag, then what is said about it.
+const ENTRY_LINE: String = '	&"%s": &"%s",'
+const COMMENT_LINE: String = '	&"%s": "%s",'
+const CLOSING_LINE: String = "}"
+
 
 #region Code Generation
 ## The whole generated file as text, from these tags and nothing else.
@@ -56,12 +82,39 @@ const HEADER_LINES: Array[String] = [
 ## lets a test compare the tracked file against this without an editor, and it
 ## is why the writer below produces nothing of its own - two places building
 ## the same text would eventually build it differently.
-static func render_tags_source(tags: Array[StringName]) -> String:
+static func render_tags_source(
+	tags: Array[StringName],
+	redirects: Dictionary[StringName, StringName] = {},
+	restricted: Dictionary[StringName, StringName] = {},
+	comments: Dictionary[StringName, String] = {}
+) -> String:
 	var lines: Array[String] = []
 	lines.assign(HEADER_LINES)
 	for tag: StringName in tags:
 		lines.append(constant_line(tag))
+	_render_block(lines, REDIRECTS_DECLARATION, redirects, ENTRY_LINE)
+	_render_block(lines, RESTRICTED_DECLARATION, restricted, ENTRY_LINE)
+	_render_block(lines, COMMENTS_DECLARATION, comments, COMMENT_LINE)
 	return LINE_BREAK.join(lines) + LINE_BREAK
+
+
+## One declaration and its entries, or an empty one when there are none.
+##
+## Written even when empty, so the file always has somewhere to put the
+## first redirect a project needs - and so the round trip that reads this
+## file back and re-renders it produces the same bytes either way.
+static func _render_block(
+	lines: Array[String],
+	declaration: String,
+	entries: Dictionary,
+	entry_line: String
+) -> void:
+	lines.append("")
+	lines.append("")
+	lines.append(declaration)
+	for tag: StringName in entries:
+		lines.append(entry_line % [String(tag), String(entries[tag])])
+	lines.append(CLOSING_LINE)
 
 
 ## Write the constants file for these tags.
@@ -116,9 +169,104 @@ static func _tag_named_in(line: String) -> String:
 	return line.substr(from, closed - from)
 
 
+## Everything one of the three declarations says, read out of the file.
+##
+## Read as text for the reason the tags are: the file declares a global
+## `class_name`, so loading a second copy of it collides with the one Godot
+## has already registered.
+##
+## An entry is a line inside the declared body that starts where an entry
+## starts. Everything else in the file - a commented-out entry, an example in
+## a doc comment, a second dictionary further down - is somebody else's
+## business, which is the same rule the cue registry's reader learned.
+static func redirects_in_file() -> Dictionary[StringName, StringName]:
+	return _named_entries_in(REDIRECTS_NAME)
+
+
+static func restricted_in_file() -> Dictionary[StringName, StringName]:
+	return _named_entries_in(RESTRICTED_NAME)
+
+
+## The comments, whose values are plain strings rather than tag names.
+static func comments_in_file() -> Dictionary[StringName, String]:
+	var found: Dictionary[StringName, String] = {}
+	for line: String in _body_of(COMMENTS_NAME):
+		var tag: String = _between(line, TAG_OPEN, TAG_CLOSE)
+		var said: String = _after_the_colon(line)
+		if not tag.is_empty():
+			found[StringName(tag)] = said
+	return found
+
+
+static func _named_entries_in(
+	declaration_name: String
+) -> Dictionary[StringName, StringName]:
+	var found: Dictionary[StringName, StringName] = {}
+	for line: String in _body_of(declaration_name):
+		var tag: String = _between(line, TAG_OPEN, TAG_CLOSE)
+		var said: String = _between(_after_the_colon_raw(line), TAG_OPEN, TAG_CLOSE)
+		if not tag.is_empty() and not said.is_empty():
+			found[StringName(tag)] = StringName(said)
+	return found
+
+
+## The lines inside one declared body, and nothing else in the file.
+static func _body_of(declaration_name: String) -> Array[String]:
+	var body: Array[String] = []
+	var path: String = GASEngineProjectSettings.get_generated_tag_script_path()
+	if not FileAccess.file_exists(path):
+		return body
+
+	var inside: bool = false
+	for line: String in FileAccess.get_file_as_string(path).split(NEWLINE):
+		var trimmed: String = line.strip_edges()
+		if not inside:
+			inside = trimmed.begins_with(declaration_name)
+			continue
+		if trimmed.begins_with(CLOSING_LINE):
+			break
+		if trimmed.begins_with(TAG_OPEN):
+			body.append(trimmed)
+	return body
+
+
+## What one entry line holds between two markers, or nothing.
+static func _between(line: String, opens: String, closes: String) -> String:
+	var from: int = line.find(opens)
+	if from < 0:
+		return ""
+	from += opens.length()
+	var to: int = line.find(closes, from)
+	if to <= from:
+		return ""
+	return line.substr(from, to - from)
+
+
+## Everything past the tag, which is where the value of an entry begins.
+static func _after_the_colon_raw(line: String) -> String:
+	var closed: int = line.find(TAG_CLOSE, line.find(TAG_OPEN) + TAG_OPEN.length())
+	if closed < 0:
+		return ""
+	return line.substr(closed + TAG_CLOSE.length())
+
+
+## A comment's own text, which is an ordinary quoted string rather than a tag.
+static func _after_the_colon(line: String) -> String:
+	return _between(_after_the_colon_raw(line), TAG_CLOSE, TAG_CLOSE)
+
+
+## Write the tags file, keeping everything else it already declared.
+##
+## The redirects, the restricted prefixes and the comments are read back and
+## written again. Rendering with the defaults would delete every one of them the
+## first time anybody added a tag - authored work removed by an unrelated
+## action, in a file nobody thinks of as theirs to check.
 static func generate_tags_file(tags: Array[StringName]) -> bool:
 	var path: String = GASEngineProjectSettings.get_generated_tag_script_path()
-	if not GDScriptSource.write(path, render_tags_source(tags)):
+	var source: String = render_tags_source(
+		tags, redirects_in_file(), restricted_in_file(), comments_in_file()
+	)
+	if not GDScriptSource.write(path, source):
 		return false
 	print(GENERATED_REPORT % [path, tags.size()])
 	return true

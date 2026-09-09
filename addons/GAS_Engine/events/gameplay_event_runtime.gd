@@ -37,22 +37,64 @@ func dispatch(event: GameplayEventData, specs: Array[GameplayAbilitySpec]) -> vo
 	if event == null or event.event_tag == &"":
 		return
 
+	_snapshot_tags(event)
+
 	var listeners: Array[GameplayAbilitySpec] = eligible_listeners(event.event_tag, specs)
 
 	if owner_asc != null:
 		owner_asc.gameplay_event_received.emit(event)
 
 	for spec: GameplayAbilitySpec in listeners:
-		_activate(spec, event.context)
+		if not _wanted_by(spec, event):
+			continue
+		_activate(spec, event)
 
 
 ## By handle through the canonical AbilityRuntime.try_activate(), the same
 ## path input routing and passives use - it already resolves/creates the
 ## right instance for either instancing policy, so a PER_EXECUTION listener
 ## wakes without a per-actor template ever existing, with no branch here.
-func _activate(spec: GameplayAbilitySpec, context: GameplayEffectContext) -> void:
+## Freeze what the two parties had on them, at the one moment that answers it.
+##
+## Taken here rather than in each listener for the reason the fields exist:
+## every listener recomputing them would be several answers to one question,
+## each about whenever that listener happened to run. A sender that filled
+## them in itself is left alone - it knew something this does not.
+static func _snapshot_tags(event: GameplayEventData) -> void:
+	if event.instigator_tags.is_empty():
+		event.instigator_tags = _tags_of(event.instigator)
+	if event.target_tags.is_empty():
+		event.target_tags = _tags_of(event.target)
+
+
+## What a node's ability system currently holds, or nothing at all.
+##
+## Nothing at all stays empty: an absence is not a tag that matches nothing,
+## and a query asked about the two gets different answers.
+static func _tags_of(node: Node) -> Array[StringName]:
+	if node == null or not is_instance_valid(node):
+		return [] as Array[StringName]
+	var asc: AbilitySystemComponent = AbilitySystemLocator.find_for_node(node)
+	if asc == null:
+		return [] as Array[StringName]
+	return asc.tags.active_tags()
+
+
+## Whether the ability behind this spec wants the event right now.
+##
+## Asked of the running instance when there is one and of nothing otherwise:
+## a spec with no instance yet has no state to answer from, and instantiating
+## one to ask would be starting the ability to find out whether to start it.
+static func _wanted_by(spec: GameplayAbilitySpec, event: GameplayEventData) -> bool:
+	var instance: GameplayAbility = spec.per_actor_instance
+	if instance == null or not is_instance_valid(instance):
+		return true
+	return instance.should_respond_to_event(event)
+
+
+func _activate(spec: GameplayAbilitySpec, event: GameplayEventData) -> void:
 	if ability_runtime != null:
-		ability_runtime.try_activate(spec.handle, context)
+		ability_runtime.try_activate_from_event(spec.handle, event)
 
 
 ## Every ON_GAMEPLAY_EVENT spec with a trigger covering this event, as a
@@ -80,7 +122,14 @@ static func _any_trigger_matches(
 	triggers: Array[GameplayAbilityEventTrigger], event_tag: StringName
 ) -> bool:
 	for trigger: GameplayAbilityEventTrigger in triggers:
-		if trigger != null and trigger.event_query != null and trigger.event_query.matches_tags([event_tag]):
+		if trigger == null or trigger.event_query == null:
+			continue
+		# A trigger declared against a tag transition is not an event listener,
+		# even when the tag it names would match an event's own tag. The two
+		# sources ask different questions of the same query.
+		if trigger.source != GameplayAbilityEventTrigger.Source.GAMEPLAY_EVENT:
+			continue
+		if trigger.event_query.matches_tags([event_tag]):
 			return true
 	return false
 

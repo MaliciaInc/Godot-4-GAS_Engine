@@ -56,6 +56,22 @@ enum PeriodInhibitionPolicy {
 ## Note: For Turn-Based effects, set this to 1.0 to tell the system it is a DoT, not a Buff.
 @export_range(0.0, 999.0, 0.1, "or_greater") var period: float = 0.0
 ## What ticks owed while this effect is inhibited do to the periodic clock.
+## How long this lasts and how often it ticks, when either is not a constant.
+##
+## A poison whose duration is the caster's intellect, a burn whose period is the
+## target's fire resistance: both are magnitudes, resolved the same way every
+## other magnitude is. Null leaves the plain `duration` and `period` above in
+## charge, which is what every effect authored before this has.
+@export var duration_magnitude: GameplayMagnitude = null
+@export var period_magnitude: GameplayMagnitude = null
+
+## Whether a periodic effect ticks the moment it is applied.
+##
+## Off by default, which is what this engine has always done: the first tick
+## comes one period later. Unreal ticks on application, and an effect that means
+## to says so.
+@export var execute_periodic_on_application: bool = false
+
 @export var period_inhibition_policy: GameplayEffect.PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS
 
 @export_category("Turn Based Settings")
@@ -98,6 +114,24 @@ enum PeriodInhibitionPolicy {
 ## get_periodic_cue_tags()/get_persistent_cue_bindings().
 @export var cues: Array[GameplayCueBinding] = []
 
+## Play nothing when the application changed no number.
+##
+## An effect that was refused by an immunity or whose executions all declined
+## still counts as applied - its tags land, its events fire - and firing the
+## impact cue for it is a hit sound with no hit. Off by default: an effect
+## that only grants a tag is a real application whose cue should play, and a
+## default that decided otherwise would silence effects authored before this
+## existed.
+@export var require_modifier_success_to_trigger_cues: bool = false
+
+## Only the first of a stack fires the application cue.
+##
+## Ten arrows landing on one target in a second is ten reapplications and ten
+## impact sounds on top of each other. This is the switch for the effects
+## where that is wrong; it is off by default because for most of them - each
+## arrow, each hit - it is exactly right.
+@export var suppress_stacking_cues: bool = false
+
 @export_category("Attribute Modifiers")
 ## Custom mathematical scripts that run complex logic (e.g., Damage = Attack - Defense).
 @export var executions: Array[GameplayExecutionCalculation] = []
@@ -139,32 +173,32 @@ func get_granted_tags() -> Array[StringName]:
 	return tags
 
 
-## Every tag this effect's EXECUTED_ON_APPLICATION cue bindings name.
-func get_application_cue_tags() -> Array[StringName]:
-	return _cue_tags_of_type(GameplayCueBinding.Type.EXECUTED_ON_APPLICATION)
+## Every EXECUTED_ON_APPLICATION cue binding this effect declares.
+##
+## The binding rather than its tag: a cue reads its own loudness off a
+## binding now, and a caller holding only the tag would have thrown away the
+## half of the authoring that says how loud.
+func get_application_cue_bindings() -> Array[GameplayCueBinding]:
+	return _cue_bindings_of_type(GameplayCueBinding.Type.EXECUTED_ON_APPLICATION)
 
 
-## Every tag this effect's EXECUTED_ON_PERIODIC cue bindings name.
-func get_periodic_cue_tags() -> Array[StringName]:
-	return _cue_tags_of_type(GameplayCueBinding.Type.EXECUTED_ON_PERIODIC)
+## Every EXECUTED_ON_PERIODIC cue binding this effect declares.
+func get_periodic_cue_bindings() -> Array[GameplayCueBinding]:
+	return _cue_bindings_of_type(GameplayCueBinding.Type.EXECUTED_ON_PERIODIC)
 
 
 ## Every PERSISTENT cue binding this effect declares - one running instance
 ## per active effect per binding, never once per stack join.
 func get_persistent_cue_bindings() -> Array[GameplayCueBinding]:
+	return _cue_bindings_of_type(GameplayCueBinding.Type.PERSISTENT)
+
+
+func _cue_bindings_of_type(type: GameplayCueBinding.Type) -> Array[GameplayCueBinding]:
 	var bindings: Array[GameplayCueBinding] = []
 	for binding: GameplayCueBinding in cues:
-		if binding != null and binding.type == GameplayCueBinding.Type.PERSISTENT:
+		if binding != null and binding.type == type:
 			bindings.append(binding)
 	return bindings
-
-
-func _cue_tags_of_type(type: GameplayCueBinding.Type) -> Array[StringName]:
-	var tags: Array[StringName] = []
-	for binding: GameplayCueBinding in cues:
-		if binding != null and binding.type == type:
-			tags.append(binding.cue_tag)
-	return tags
 
 
 ## This effect's GameplayEffectAdditionalEffectsComponent, or null if it has

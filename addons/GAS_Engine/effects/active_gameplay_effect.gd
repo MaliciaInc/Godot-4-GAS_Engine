@@ -109,10 +109,6 @@ var completed_ticks: int = 0
 ## duration/turn clock, unaffected by inhibition.
 var period_origin_elapsed: float = 0.0
 
-## True once a due tick has been skipped while inhibited, for
-## EXECUTE_IMMEDIATELY_ON_UNINHIBIT to know a catch-up tick is owed.
-var missed_tick_while_inhibited: bool = false
-
 ## Tolerance used when deciding whether a tick is due. See advance_clock.
 const TICK_EPSILON_SECONDS: float = 1e-9
 
@@ -176,7 +172,6 @@ func consume_ticks(count: int) -> void:
 func restart_period_clock() -> void:
 	period_origin_elapsed = elapsed_time
 	completed_ticks = 0
-	missed_tick_while_inhibited = false
 
 
 ## The instant in time the Nth tick (since the current period origin) was

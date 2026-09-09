@@ -100,9 +100,8 @@ signal duplicate_requested()
 ## painter owns the cards on it.
 var _painter: ComposerPainter = ComposerPainter.new()
 
-## Where the selected cards were when a move began. Held only between
-## `begin_node_move` and `end_node_move`, so there is nothing to keep in step.
-var _moving_from: Dictionary[StringName, Vector2] = {}
+## What moved during a drag, worked out from where everything was when it began.
+var _drag: ComposerCardDrag = ComposerCardDrag.new()
 
 ## The detail level the cards were last drawn at.
 var _detail: ComposerCard.Detail = ComposerCard.Detail.FULL
@@ -146,7 +145,6 @@ func _ready() -> void:
 #region Showing a graph
 ## Draw `graph`. What that means is the painter's; this owns the surface.
 func show_graph(graph: ComposerGraph) -> void:
-	_moving_from.clear()
 	await _painter.paint(self, graph)
 	_apply_detail()
 #endregion
@@ -168,7 +166,16 @@ func _on_gui_input(event: InputEvent) -> void:
 		_on_key(key)
 		return
 
-	var meant: ComposerCanvasGestures.Reading = _gestures.read(event, _painter.cards(), zoom)
+	_acted_on(_gestures.read(event, _painter.cards(), zoom))
+
+
+## Say what the gesture asked for, and keep the event from the widget when it
+## was one of ours.
+##
+## Only when it was one of ours: an ordinary click has to go on to GraphEdit, to
+## pick a card up or to start a wire, and accepting it here would leave the
+## canvas unusable.
+func _acted_on(meant: ComposerCanvasGestures.Reading) -> void:
 	if not meant.is_consumed():
 		return
 	accept_event()
@@ -289,28 +296,13 @@ func _on_node_selected(_node: Object) -> void:
 	selection_changed.emit(picked())
 
 
-## Remember where everything selected started out.
 func _on_move_begun() -> void:
-	_moving_from.clear()
-	for id: StringName in _painter.cards():
-		if _painter.cards()[id].selected:
-			_moving_from[id] = _painter.cards()[id].position_offset
+	_drag.begun(_painter.cards())
 
 
 ## Say what actually moved, once.
-##
-## Only the cards whose position changed, and nothing at all when none did: a
-## click that happens to be a one-pixel drag is not somebody rearranging their
-## graph, and recording it would put an undo in front of the edit they meant.
 func _on_move_ended() -> void:
-	var moved: Dictionary[StringName, Vector2] = {}
-	for id: StringName in _moving_from:
-		if not _painter.cards().has(id):
-			continue
-		var now: Vector2 = _painter.cards()[id].position_offset
-		if now != _moving_from[id]:
-			moved[id] = now
-	_moving_from.clear()
+	var moved: Dictionary[StringName, Vector2] = _drag.ended(_painter.cards())
 	if not moved.is_empty():
 		nodes_positioned.emit(moved)
 

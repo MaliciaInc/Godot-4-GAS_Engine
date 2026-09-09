@@ -19,6 +19,20 @@
 class_name GameplayEffectComponent extends Resource
 
 
+## Whether two of this component may sit on one effect.
+##
+## True for most of them, because most are lists the runtime reads all of:
+## two asset-tag components are two sets of tags and both count. False for
+## the ones whose runtime accessor takes the first it finds - a second of
+## those is not a second rule, it is a rule nobody reads, and an author who
+## added one would be waiting for behaviour that never arrives.
+##
+## Asked of the component rather than listed by whoever is asking, so the
+## editor and the runtime cannot disagree about which kind this is.
+func allows_duplicates() -> bool:
+	return true
+
+
 ## Whether this component's own authored fields are a legal definition.
 ## Called once per effect asset, never per application.
 func validate_definition(

@@ -30,7 +30,9 @@ run again.
 
 ## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **OPEN**
 
-**Status:** `OPEN` — reproduced here, no regression test on main yet
+**Status:** `OPEN` — reproduced here, no regression test on main yet.
+Not re-measured against `277aefa`: the smoke covers the direction that is
+implemented, and the refused one has no check to fall.
 **Severity:** low - one direction of one gesture, and it refuses rather than damages
 **Where:** `addons/GAS_Engine/editor/composer/composer_connection_controller.gd:move_connections()`
 
@@ -194,7 +196,9 @@ and the editor's own theme hides it.
 
 ## GAS-009 — Alt over a data argument's pin does nothing · **OPEN**
 
-**Status:** `OPEN` — reproduced here, no regression test on main yet
+**Status:** `OPEN` — reproduced here, no regression test on main yet.
+Still reproduces against `main` at `277aefa`, which is the FASE 6 deploy: the
+same two checks of case 7 fall and the other 78 hold.
 **Severity:** medium - one of the four documented pin gestures, on one family of pins
 **Where:** `addons/GAS_Engine/editor/composer/composer_card.gd` (a `GraphNode`)
 
@@ -537,6 +541,78 @@ Known consequence: a target downed mid-round is dropped inside
 accuracy, so nothing is shown for it. Left that way on purpose - filtering in
 `_land()` as well would put the same rule in two places, and the engine's gate
 is the one that cannot be forgotten.
+
+## SBX-005 — the GAS probe is not reproducible, and says it is · **FIXED**
+
+`test/gas_probe.gd` opens by promising a record: *"Plays a fixed hand rather
+than a random one - same ability, same target, every run. Random play makes a
+failure unreproducible, and the point of this is a record that can be re-run and
+disagreed with."* The hand is fixed. The fight is not.
+
+### Repro
+
+The unchanged engine, the same seed, three runs:
+
+```text
+--seed=8  arena1: ended=true victory=false rounds=3 reason=combat_finished
+--seed=8  arena1: ended=true victory=false rounds=2 reason=combat_finished
+--seed=8  arena1: ended=true victory=false rounds=4 reason=combat_finished
+```
+
+### Why
+
+Accuracy is rolled with `randf()` - `src/combat/abilities/battler_ability.gd`
+`_connects_with()` - which draws from the process-wide stream the probe seeds.
+That would be reproducible if the draws happened in a fixed order, and they do
+not: the probe drives the fight on a wall clock (`HASTE`, `TICK`, `SETTLE`, and a
+`STALL` deadline), so which battler acts inside which frame moves with the
+machine, and the order of the draws moves with it. Same seed, different
+sequence, different fight.
+
+### Why it matters more than it looks
+
+It is a trap for exactly the person doing the right thing. A re-deploy of the
+addon is supposed to be checked by re-running this probe, and the natural check
+is to compare the run against the last one - which produces a different fight
+every time and reads as a regression in the engine. That happened: a deploy of
+FASE 6 showed arena1 finishing in 3 rounds where the previous run took 5, and it
+took six runs across both engines to establish that the unchanged engine does
+the same thing.
+
+### What was done
+
+The promise was removed and replaced with what the probe actually guarantees,
+which is the thing its pass condition has always been: **both arenas reach
+`combat_finished`**. Round counts, who falls and in what order are not
+comparable between runs and are not to be read as evidence of anything.
+
+Making it genuinely reproducible would mean taking the wall clock out of the
+fight - the combat loop's own timing, not the probe's - and that is a change to
+the game rather than to the harness. Left undone deliberately, and written down
+here so the next person does not rediscover it by mistaking noise for a defect.
+
+## SBX-006 — the Composer smoke swept half of what it made · **FIXED**
+
+`ComposerAbilityTemplate.create()` writes a pair - the script and the scene
+beside it, because `give_ability()` takes a PackedScene and an ability is a Node
+with authored state on it. `test/composer_smoke.gd` removed the script and left
+the scene, both before the run and after it.
+
+The engine is right to refuse the second run: `create()` stops if **either**
+file exists, so the next run failed at `2 · New Ability writes a file` and every
+check standing on it fell with it - six failures where there were two. The
+teardown's own check, `13 · and the ability this run made is cleared away`,
+asserted only that the script was gone and passed over the litter beside it.
+
+Found on a re-deploy: the run before had left
+`src/combat/abilities/_smoke_new_ability.tscn` in the tree, untracked.
+`src/combat/new_ability.gd` and its `.uid` were the same litter from an editor
+session on 2026-09-04.
+
+Fixed here, in the harness: one place says what a run makes - the script, its
+`.uid` and the scene path the engine itself computes - the setup and the
+teardown both clear all of it, and the final check names what is left rather
+than asserting about one file.
 
 # Milestones
 

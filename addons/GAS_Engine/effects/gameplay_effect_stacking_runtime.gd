@@ -20,7 +20,11 @@ func find_candidate(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	var effect: GameplayEffect = spec.effect_def
 	if effect.stacking_type == GameplayEffect.StackingType.NONE:
 		return null
-	for active: ActiveGameplayEffect in effects.active_effects():
+	# The bucket rather than the whole list: everything in it already shares the
+	# definition and, where the rule says so, the source. The checks below stay
+	# because the bucket is an index over what an effect says it is, and an
+	# effect whose spec was swapped since is answered from what it says now.
+	for active: ActiveGameplayEffect in effects.index.stack_candidates(spec):
 		if active.get_effect_def() != effect:
 			continue
 		if effect.stacking_type == GameplayEffect.StackingType.AGGREGATE_BY_SOURCE:
@@ -303,8 +307,31 @@ func _finish_reapplication(
 	if spec.period <= 0.0:
 		effects.notify_execute_hooks(evaluation.base_mutations)
 	effects.components.notify_applied(spec, existing, effects.owner_asc)
-	effects.play_cues(spec.effect_def.get_application_cue_tags(), spec, existing.handle)
+	if _reapplication_plays_cues(spec, evaluation):
+		effects.play_cues(
+			spec.effect_def.get_application_cue_bindings(), spec, existing.handle
+		)
 	effects.dispatch_events(spec)
 	effects.notify_received(spec)
 	effects.chain.fire_on_application(spec)
+
+
+## Whether the cues of a stack join play.
+##
+## The same two rules an application answers, and one more that only exists
+## here: ten arrows landing on one target in a second is ten reapplications,
+## and an effect that said so gets one impact sound rather than ten on top of
+## each other. The first of the stack is not a reapplication and is never
+## silenced by it, because the first never comes through here at all - it is
+## an application, and applications go through GameplayEffectRuntime._commit.
+##
+## Asked at all because this path used to play them unconditionally - so an
+## execution that had already declined the cues was overruled by the stack
+## join, which is the one place the decision was not being read.
+func _reapplication_plays_cues(
+	spec: GameplayEffectSpec, evaluation: GameplayEffectEvaluationResult
+) -> bool:
+	if not evaluation.plays_cues_for(spec.effect_def):
+		return false
+	return not spec.effect_def.suppress_stacking_cues
 #endregion

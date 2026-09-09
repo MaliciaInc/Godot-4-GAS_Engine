@@ -78,7 +78,7 @@ static func _on_side(
 			card.get_output_port_position(index) if outgoing
 			else card.get_input_port_position(index)
 		)
-		var reach: float = point.distance_to(card.position + local * zoom)
+		var reach: float = point.distance_to(_drawn_at(card, local, zoom))
 		if reach >= nearest:
 			continue
 		nearest = reach
@@ -105,6 +105,15 @@ static func _place_of(
 		card.get_output_port_position(index) if pin.is_output
 		else card.get_input_port_position(index)
 	)
+	return _drawn_at(card, local, zoom)
+
+
+## Where a pin drawn at `local` on that card is, in the coordinates the
+## caller is asking in.
+##
+## The card's own position is included at canvas scale and left out at card
+## scale, which is the whole difference between the two questions.
+static func _drawn_at(card: ComposerCard, local: Vector2, zoom: float) -> Vector2:
 	return card.position + local * zoom
 
 

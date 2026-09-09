@@ -26,9 +26,13 @@ static func resolve(
 	if asc == null or not is_finite(level):
 		resolved.status = GameplayResolvedCost.Status.INVALID_DEFINITION
 		return resolved
-	if costs.is_empty():
+	if costs.is_empty() or GasDebugOptions.costs_ignored():
 		# No costs declared is the same as F2's null cost_effect: the ability
-		# is free, and there is nothing left to build or afford.
+		# is free, and there is nothing left to build or afford. A debug build
+		# ignoring costs is the same answer arrived at differently - said here,
+		# where every preflight already asks, rather than by topping anybody up.
+		# Nothing is added to the entity, so turning the switch off leaves it
+		# exactly where it was.
 		return resolved
 
 	# Summed per attribute so "Mana 30 absolute" and "Mana 50% current" become

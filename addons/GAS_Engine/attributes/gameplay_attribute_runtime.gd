@@ -34,6 +34,24 @@ var _sets: Array[AttributeSet] = []
 ## erase from the middle cannot change the result.
 var _contributions: Array[AttributeModifierContribution] = []
 
+## The same contributions, kept by the attribute they are about.
+##
+## Composing one attribute used to walk every contribution on the entity,
+## once per channel, skipping the ones about something else - so recomposing
+## a set of five attributes walked the whole list twenty times. Measured at
+## a thousand effects on one character that is six seconds, and the shape of
+## it is why: the work per application grows with how much is already there,
+## and every attribute pays for every other attribute's modifiers.
+##
+## An index rather than a sort, because the order within one attribute is
+## the application order the algebra reads and must not move. `_contributions`
+## stays the ordered truth; this is a second way in to the same objects.
+## The value type is a bare `Array` because GDScript will not nest typed
+## collections. What is stored in it is always a typed one, made below and
+## read back into a typed local - so the type survives even though the
+## dictionary cannot declare it.
+var _by_attribute: Dictionary[StringName, Array] = {}
+
 
 #region Sets and lookup
 ## Take a set of authored attribute sets and make them this runtime's.
@@ -65,6 +83,52 @@ func set_attribute_sets(sets: Array[AttributeSet], isolate: bool) -> void:
 	initialize()
 
 
+## Adopt one more set, leaving every set already here alone.
+##
+## Not set_attribute_sets() with one appended: that re-initialises the whole
+## collection, and initialising seeds current from base on every attribute -
+## so putting a kit on would wipe whatever a character's buffs had made of
+## their health. Only what arrives is seeded.
+##
+## The instance adopted is returned rather than the one handed in, because an
+## isolating component duplicates what it is given and a caller holding the
+## original would be holding something this runtime has never seen.
+func adopt_attribute_set(authored: AttributeSet, isolate: bool) -> AttributeSet:
+	if authored == null:
+		return null
+	var taken: AttributeSet = (
+		authored.duplicate(true) as AttributeSet if isolate else authored
+	)
+	_sets.append(taken)
+	_seed_only(taken)
+	return taken
+
+
+## Let go of one set. False when this runtime is not holding it.
+##
+## Nothing else is touched, which is the contract: the attributes that stay
+## keep the values they had, contributions and all.
+func release_attribute_set(taken: AttributeSet) -> bool:
+	if taken == null or not _sets.has(taken):
+		return false
+	_sets.erase(taken)
+	return true
+
+
+## Seed the attributes one set declares, and no others.
+func _seed_only(taken: AttributeSet) -> void:
+	for name: StringName in taken.get_attribute_names():
+		var attribute: AttributeData = taken.get(String(name)) as AttributeData
+		if attribute == null:
+			continue
+		if not is_finite(attribute.base_value):
+			push_error(
+				"GAS_Engine: attribute '" + String(name) + "' has a non-finite base value."
+			)
+			attribute.base_value = 0.0
+		attribute.current_value = attribute.base_value
+
+
 ## The set that declares an attribute, or null.
 func find_set(attribute_name: StringName) -> AttributeSet:
 	var property_name: String = String(attribute_name)
@@ -74,6 +138,36 @@ func find_set(attribute_name: StringName) -> AttributeSet:
 		if attribute_set.get(property_name) is AttributeData:
 			return attribute_set
 	return null
+
+
+## Whether more than one set on this entity declares that attribute.
+##
+## The question a bare name cannot survive: two sets that both declare `health`
+## make `health` mean two different values, and picking whichever was walked
+## into first is an answer that changes with the order somebody listed them in.
+func is_ambiguous(attribute_name: StringName) -> bool:
+	return GameplayAttributeLookup.is_ambiguous(_sets, attribute_name)
+
+
+## The first of these names this entity cannot uniquely address.
+##
+## Empty when every one of them means exactly one attribute, which is every
+## entity carrying one set and most carrying two.
+func first_ambiguous(names: Array[StringName]) -> StringName:
+	for attribute_name: StringName in names:
+		if is_ambiguous(attribute_name):
+			return attribute_name
+	return &""
+
+
+## The set a reference names, or null when nothing answers to it.
+func find_set_by_ref(reference: GameplayAttributeRef) -> AttributeSet:
+	return GameplayAttributeLookup.set_for(_sets, reference)
+
+
+## The attribute a reference names, or null.
+func find_by_ref(reference: GameplayAttributeRef) -> AttributeData:
+	return GameplayAttributeLookup.attribute_for(_sets, reference)
 
 
 ## The attribute itself, or null when no set declares it.
@@ -116,6 +210,7 @@ func add_contributions(new_contributions: Array[AttributeModifierContribution]) 
 	for contribution: AttributeModifierContribution in new_contributions:
 		if contribution != null:
 			_contributions.append(contribution)
+			_bucket(contribution.attribute_name).append(contribution)
 
 
 ## Drop every contribution belonging to one application. Removal is by
@@ -123,12 +218,15 @@ func add_contributions(new_contributions: Array[AttributeModifierContribution]) 
 ## stale contribution behind by holding a different array.
 func remove_contributions_of(application_order: int) -> void:
 	for index: int in range(_contributions.size() - 1, -1, -1):
-		if _contributions[index].application_order == application_order:
+		var leaving: AttributeModifierContribution = _contributions[index]
+		if leaving.application_order == application_order:
 			_contributions.remove_at(index)
+			_bucket(leaving.attribute_name).erase(leaving)
 
 
 func clear_contributions() -> void:
 	_contributions.clear()
+	_by_attribute.clear()
 
 
 func contribution_count() -> int:
@@ -136,10 +234,17 @@ func contribution_count() -> int:
 
 
 func contributions_for(attribute_name: StringName) -> Array[AttributeModifierContribution]:
-	var found: Array[AttributeModifierContribution] = []
-	for contribution: AttributeModifierContribution in _contributions:
-		if contribution.attribute_name == attribute_name:
-			found.append(contribution)
+	return _bucket(attribute_name).duplicate()
+
+
+## The live list for one attribute, created empty the first time it is asked
+## for. Private, because handing the stored array out is how a caller appends
+## past the validation every contribution goes through on the way in.
+func _bucket(attribute_name: StringName) -> Array[AttributeModifierContribution]:
+	if not _by_attribute.has(attribute_name):
+		var started: Array[AttributeModifierContribution] = []
+		_by_attribute[attribute_name] = started
+	var found: Array[AttributeModifierContribution] = _by_attribute[attribute_name]
 	return found
 #endregion
 
@@ -172,63 +277,132 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 
 
 ## Apply the canonical order to one attribute. Writes failure into `result`.
+## Composed from this attribute's own contributions rather than from every
+## contribution on the entity. The algebra skips the ones about something
+## else either way, so the answer is the same one - it is arrived at without
+## walking a thousand modifiers about mana to work out a health value.
 func _compose(
 	base: float, attribute_name: StringName, result: AttributeEvaluationResult
 ) -> float:
-	var total_add: float = 0.0
-	var product_multiply: float = 1.0
-	var product_divide: float = 1.0
-	var winner: AttributeModifierContribution = null
+	return _compose_from(base, attribute_name, result, _bucket(attribute_name))
 
-	for contribution: AttributeModifierContribution in _contributions:
-		if contribution.attribute_name != attribute_name:
-			continue
-		match contribution.operation:
-			GameplayEffectModifier.Operation.ADD:
-				total_add += contribution.magnitude
-			GameplayEffectModifier.Operation.MULTIPLY:
-				product_multiply *= contribution.magnitude
-			GameplayEffectModifier.Operation.DIVIDE:
-				# A zero divisor is an invalid configuration, never a no-op.
-				# Ignoring it silently is how a designer ships a stat that is
-				# quietly wrong instead of loudly broken.
-				if is_zero_approx(contribution.magnitude):
-					result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
-					return 0.0
-				product_divide *= contribution.magnitude
-			GameplayEffectModifier.Operation.OVERRIDE:
-				if _override_beats(contribution, winner):
-					winner = contribution
-			_:
-				result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
-				return 0.0
 
-	var composed: float = ((base + total_add) * product_multiply) / product_divide
+## What this attribute would read if only the first channels had run.
+##
+## Only the UE profile has channels at all: the native one is a single pass,
+## so every channel ceiling answers the whole composition there. That is the
+## honest answer rather than a refusal - a project on the native profile
+## asking this is asking what the attribute is, and that is what it gets.
+func value_up_to_channel(attribute_name: StringName, through_channel: int) -> float:
+	var attribute: AttributeData = find(attribute_name)
+	if attribute == null:
+		return 0.0
+	var reading: AttributeEvaluationResult = AttributeEvaluationResult.new()
+	return _compose_from(
+		attribute.base_value,
+		attribute_name,
+		reading,
+		_bucket(attribute_name),
+		through_channel
+	)
 
-	if winner != null:
-		composed = winner.magnitude
-		result.winning_override_application_order = winner.application_order
-		result.winning_override_modifier_index = winner.modifier_index
 
-	if not is_finite(composed):
-		result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+## How several contributions of one kind combine on this attribute, as the
+## set that declares it says. ALL for an attribute nobody declares, which is
+## what an empty aggregate composes to anyway.
+func policy_for(attribute_name: StringName) -> AttributeSet.AggregatorPolicy:
+	var declaring: AttributeSet = find_set(attribute_name)
+	if declaring == null:
+		return AttributeSet.AggregatorPolicy.ALL
+	return declaring.aggregator_policy(attribute_name)
+
+
+func _compose_from(
+	base: float,
+	attribute_name: StringName,
+	result: AttributeEvaluationResult,
+	contributions: Array[AttributeModifierContribution],
+	through_channel: int = AttributeAggregateMath.CHANNELS - 1
+) -> float:
+	# Asked of the set that declares the attribute, and handed in: the
+	# arithmetic knows nothing about sets, and an aggregate that went looking
+	# for one would answer differently depending on who called it.
+	var policy: AttributeSet.AggregatorPolicy = policy_for(attribute_name)
+	var folded: AttributeAggregateMath.Composed = (
+		AttributeAggregateMath.unreal(
+			base, attribute_name, contributions, through_channel, policy
+		)
+		if _uses_unreal_algebra()
+		else AttributeAggregateMath.godot_native(
+			base, attribute_name, contributions, policy
+		)
+	)
+
+	if not folded.is_ok():
+		result.status = folded.status
 		return 0.0
 
-	return composed
+	result.winning_override_application_order = folded.winning_override_application_order
+	result.winning_override_modifier_index = folded.winning_override_modifier_index
+	return folded.value
 
 
-## Last applied override wins: later application first, then higher modifier
-## index within the same application. Both axes are compared, so two overrides
-## from one effect are never resolved by array order.
-func _override_beats(
-	candidate: AttributeModifierContribution, incumbent: AttributeModifierContribution
-) -> bool:
-	if incumbent == null:
-		return true
-	if candidate.application_order != incumbent.application_order:
-		return candidate.application_order > incumbent.application_order
-	return candidate.modifier_index > incumbent.modifier_index
-#endregion
+## Which arithmetic this entity's attributes are composed by.
+##
+## Asked of the component rather than decided here, and asked every time rather
+## than cached: the profile is data somebody can change, and an aggregate that
+## remembered the answer would keep composing by the old rules until something
+## else happened to invalidate it.
+func _uses_unreal_algebra() -> bool:
+	var component: AbilitySystemComponent = owner_node as AbilitySystemComponent
+	return component != null and component.uses_ue_5_7_contracts()
+## Pure aggregate preflight. It never publishes or temporarily installs the
+## candidate contributions in the live runtime.
+func validate_additional_contributions(
+	additional: Array[AttributeModifierContribution]
+) -> AttributeAggregateValidationResult:
+	var validation: AttributeAggregateValidationResult = (
+		AttributeAggregateValidationResult.new()
+	)
+	if additional.is_empty():
+		return validation
+
+	var combined: Array[AttributeModifierContribution] = _contributions.duplicate()
+	combined.append_array(additional)
+
+	var affected: Array[StringName] = []
+	for contribution: AttributeModifierContribution in additional:
+		if (
+			contribution != null
+			and contribution.attribute_name != &""
+			and not affected.has(contribution.attribute_name)
+		):
+			affected.append(contribution.attribute_name)
+
+	for attribute_name: StringName in affected:
+		var attribute_set: AttributeSet = find_set(attribute_name)
+		if attribute_set == null:
+			validation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
+			validation.attribute_name = attribute_name
+			return validation
+
+		var attribute: AttributeData = attribute_set.get(String(attribute_name))
+		var evaluated: AttributeEvaluationResult = AttributeEvaluationResult.new()
+		var raw: float = _compose_from(
+			attribute.base_value, attribute_name, evaluated, combined
+		)
+		if not evaluated.is_ok():
+			validation.status = evaluated.status
+			validation.attribute_name = attribute_name
+			return validation
+
+		var clamped: float = attribute_set.pre_attribute_change(attribute_name, raw)
+		if not is_finite(clamped):
+			validation.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+			validation.attribute_name = attribute_name
+			return validation
+
+	return validation
 
 
 #region Recomposition
@@ -428,4 +602,19 @@ func notify_gameplay_effect_execute(data: GameplayEffectExecuteData) -> void:
 	if attribute_set == null:
 		return
 	attribute_set.post_gameplay_effect_execute(data)
+	_clear_meta(data.attribute_name)
+
+
+## Return a meta attribute to zero, now that the set has read it.
+##
+## Here rather than in each execution, and after the hook rather than before:
+## the hook is the one thing entitled to read the number, and an execution
+## that cleared up after itself would be one place per calculation to forget
+## to. An attribute that is not meta is left exactly as it was.
+func _clear_meta(attribute_name: StringName) -> void:
+	var attribute: AttributeData = find(attribute_name)
+	if attribute == null or not attribute.is_meta:
+		return
+	attribute.base_value = 0.0
+	attribute.current_value = 0.0
 #endregion

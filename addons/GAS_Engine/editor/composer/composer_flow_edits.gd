@@ -50,12 +50,16 @@ static func _accept(source: String) -> Result:
 #endregion
 
 
+
+
 #region Connecting
 ## Join one statement's execution output to another's input.
 ##
-## Only ever by putting the target back into the live path: a detached island is
-## unwrapped and moved to run after its new predecessor. There is no way to
-## write "runs after" other than "is written after", so that is what happens.
+## Only ever by putting the target back into the live path: a block somebody set
+## aside is unwrapped and written where the pin it is being joined to requires.
+## There is no way to write "runs after" other than "is written after", so that
+## is what happens. Which pin was used decides where that is, and deciding that
+## is `ComposerFlowPaths`.
 static func connect_flow(
 	source: String, graph: ComposerGraph, edge: ComposerGraph.Connection
 ) -> Result:
@@ -68,29 +72,27 @@ static func connect_flow(
 	if _would_loop(graph, edge):
 		return _refuse(WOULD_LOOP)
 
-	var island: String = _island_of(graph, to)
+	var island: String = ComposerFlowPlaces.island_of(graph, to)
 	if island.is_empty():
 		return _refuse(NOT_REPRESENTABLE)
 
-	var changed: String = ComposerFlowText.spent_stops_removed(
-		ComposerFlowText.released(source, graph, island, from), graph.source_path
-	)
-	var read: ComposerGraph = _read_back(source, changed, graph)
+	var changed: String = ComposerFlowPaths.connect_once(source, graph, edge)
+	if changed.is_empty():
+		return _refuse(NOT_REPRESENTABLE)
+	var read: ComposerGraph = ComposerFlowChecks.read_back(source, changed, graph)
 	if read == null:
 		return _refuse(NOT_REPRESENTABLE)
-	if _islands_in(changed).has(island):
+	if ComposerFlowChecks.islands_in(changed).has(island):
 		return _refuse(NOT_REPRESENTABLE)
-	if _live_count(read) <= _live_count(graph):
+	if ComposerFlowChecks.live_count(read) <= ComposerFlowChecks.live_count(graph):
 		return _refuse(NOT_REPRESENTABLE)
-	if _strands_anything(read):
+	if ComposerFlowChecks.strands_anything(read):
 		return _refuse(WOULD_STRAND)
 	return _accept(changed)
 
 
 ## Whether following execution from `to` gets back to `from`.
-static func _would_loop(
-	graph: ComposerGraph, edge: ComposerGraph.Connection
-) -> bool:
+static func _would_loop(graph: ComposerGraph, edge: ComposerGraph.Connection) -> bool:
 	var seen: Dictionary[StringName, bool] = {}
 	var pending: Array[StringName] = [edge.to_node]
 	while not pending.is_empty():
@@ -110,165 +112,85 @@ static func _would_loop(
 #region Disconnecting
 ## Break one execution link, and keep the file compiling.
 ##
-## What gets wrapped is decided by reachability, not by the edge: taking a link
-## out can strand a whole run of statements, and leaving half of them live would
-## be a lie about which ones happen.
+## What that means depends on the pin it left, which is why there is a handler
+## per pin rather than one rule: taking the link off an ordinary statement's way
+## out sets aside the run below it, while taking it off a branch's True leaves
+## that path leading nowhere and the false side exactly as it was.
 static func disconnect_flow(
 	source: String, graph: ComposerGraph, edge: ComposerGraph.Connection
 ) -> Result:
-	if not _has_edge(graph, edge):
+	if not ComposerFlowChecks.has_edge(graph, edge):
 		return _refuse(NOT_CONNECTED)
 
-	var stranded: Array[ComposerNode] = _stranded_by(graph, edge)
-	if stranded.is_empty():
+	var changed: String = ComposerFlowPaths.disconnect_once(source, graph, edge)
+	if changed.is_empty():
 		return _refuse(NOT_REPRESENTABLE)
-
-	var lines: PackedStringArray = source.split(ComposerFlowText.NEWLINE)
-	var region: ComposerSpan = ComposerFlowText.region_of(stranded)
-	if not ComposerFlowText.is_contiguous(stranded, region):
-		return _refuse(NOT_REPRESENTABLE)
-
-	var wrapped: PackedStringArray = ComposerFlowText.detached(lines, region)
-	var changed: String = ComposerFlowText.ended(
-		ComposerFlowText.NEWLINE.join(wrapped), region.first_line
-	)
-	var read: ComposerGraph = _read_back(source, changed, graph)
+	var read: ComposerGraph = ComposerFlowChecks.read_back(source, changed, graph)
 	if read == null:
 		return _refuse(NOT_REPRESENTABLE)
-	if _live_count(read) >= _live_count(graph):
+	if ComposerFlowChecks.has_edge(read, edge):
+		# The same link, still there. Asked by endpoint rather than by counting
+		# live statements: cutting a branch's false path takes a path away and no
+		# statements at all - the continuation is still reached from the true
+		# side - so a count that had to fall would refuse a cut that worked.
 		return _refuse(NOT_REPRESENTABLE)
-	if _strands_anything(read):
+	if ComposerFlowChecks.strands_anything(read):
 		return _refuse(WOULD_STRAND)
 	return _accept(changed)
-
-
-## The visible nodes that could be reached before and cannot be after.
-static func _stranded_by(
-	graph: ComposerGraph, edge: ComposerGraph.Connection
-) -> Array[ComposerNode]:
-	var reachable_now: Dictionary[StringName, bool] = _reachable(graph, edge)
-	var stranded: Array[ComposerNode] = []
-	for node: ComposerNode in graph.nodes:
-		if not node.source_backed or not node.visible_in_graph:
-			continue
-		if node.id == ComposerFlow.ENTRY_ID:
-			continue
-		if not reachable_now.has(node.id):
-			stranded.append(node)
-	return stranded
-
-
-## Everything execution still arrives at once `without` is gone.
-static func _reachable(
-	graph: ComposerGraph, without: ComposerGraph.Connection
-) -> Dictionary[StringName, bool]:
-	var seen: Dictionary[StringName, bool] = {}
-	var pending: Array[StringName] = [ComposerFlow.ENTRY_ID]
-	while not pending.is_empty():
-		var at: StringName = pending.pop_back()
-		if seen.has(at):
-			continue
-		seen[at] = true
-		for wire: ComposerGraph.Connection in graph.execution_connections():
-			if wire.from_node != at:
-				continue
-			if wire.from_node == without.from_node and wire.to_node == without.to_node:
-				continue
-			pending.append(wire.to_node)
-	return seen
 #endregion
 
 
-#region Verifying
-## Read the changed text back, or nothing when it is not readable.
+#region Breaking a whole pin
+## Break every execution link on one pin, as one change.
 ##
-## The whole point of the module. A transformation that produced text nobody
-## read is a guess, and a guess that reaches disk is how a person loses a file
-## they could see a moment ago.
+## One link still goes through the pin's own handler, because what a cut means
+## depends on which pin it left: taking the false path off a branch writes the
+## `else` that stops it, and no amount of setting statements aside says that.
 ##
-## What is checked afterwards is never an id. A node is named after the line it
-## was read from, so every id moves when the source does - comparing them across
-## a transformation would compare two different files' numbering and call the
-## answer a verification.
-static func _read_back(
-	original: String, changed: String, graph: ComposerGraph
-) -> ComposerGraph:
-	if changed == original:
-		return null
-	var read: ComposerGraph = ComposerReader.read(changed, graph.source_path)
-	return read if read.is_editable() else null
+## Several is a different question and gets a different answer. Several links
+## on one pin only happens where control converges, and each of them keeps the
+## target reached on its own - so there is no first cut to make. Measured:
+## with a branch body and the path around it arriving together, one of the two
+## single cuts is refused; with the two arms of an `if`/`else`, both are. The
+## whole set comes out at once or nothing does.
+static func disconnect_all(
+	source: String, graph: ComposerGraph, edges: Array[ComposerGraph.Connection]
+) -> Result:
+	if edges.is_empty():
+		return _refuse(NOT_CONNECTED)
+	if edges.size() == 1:
+		return disconnect_flow(source, graph, edges[0])
+
+	var tried: ComposerFlowReplace.Attempt = ComposerFlowReplace.cut_together(
+		source, graph, edges
+	)
+	if not tried.message.is_empty():
+		return _refuse(tried.message)
+	return _accept(tried.source)
+#endregion
 
 
-## How many drawn statements execution still arrives at.
-static func _live_count(graph: ComposerGraph) -> int:
-	var seen: Dictionary[StringName, bool] = {}
-	var pending: Array[StringName] = [ComposerFlow.ENTRY_ID]
-	while not pending.is_empty():
-		var at: StringName = pending.pop_back()
-		if seen.has(at):
-			continue
-		seen[at] = true
-		for wire: ComposerGraph.Connection in graph.execution_connections():
-			if wire.from_node == at:
-				pending.append(wire.to_node)
-
-	var live: int = 0
-	for node: ComposerNode in graph.nodes:
-		if node.visible_in_graph and node.source_backed and seen.has(node.id):
-			live += 1
-	return live
-
-
-## Whether the result leaves a statement nothing reaches and nothing marks.
+#region Replacing
+## Move a set of execution links to other pins, or change nothing at all.
 ##
-## The invariant the island machinery exists for. A statement that stops running
-## must be *shown* to have stopped - wrapped, drawn apart, still editable. One
-## that merely ends up written after a `return` is worse than a deleted one: it
-## is still on the canvas, still in the file, and no longer does anything.
+## This is what a Ctrl-drag on an execution pin means, and what the original 3.2
+## left out. The two edge lists are the whole contract: `old_edges` are the links
+## that have to be gone afterwards - the ones being moved, and the ones displaced
+## from a destination that can only hold one - and `new_edges` are the links that
+## have to be there instead.
 ##
-## Found by putting an island back in front of a live statement, which pushed
-## that statement past the island's own `return`. The counts either side agreed,
-## the reader read it back happily, and the person's cue silently stopped
-## firing.
-static func _strands_anything(graph: ComposerGraph) -> bool:
-	for node: ComposerNode in graph.nodes:
-		if not node.source_backed or not node.visible_in_graph:
-			continue
-		if node.id == ComposerFlow.ENTRY_ID:
-			continue
-		if graph.is_reachable_from_entry(node.id):
-			continue
-		if _island_of(graph, node).is_empty():
-			return true
-	return false
-
-
-## The islands a text holds.
-static func _islands_in(source: String) -> Dictionary[String, bool]:
-	var found: Dictionary[String, bool] = {}
-	for line: String in source.split(ComposerFlowText.NEWLINE):
-		var island: String = ComposerFlow.island_name(line)
-		if not island.is_empty():
-			found[island] = true
-	return found
-
-
-static func _has_edge(graph: ComposerGraph, edge: ComposerGraph.Connection) -> bool:
-	for wire: ComposerGraph.Connection in graph.execution_connections():
-		if wire.from_node == edge.from_node and wire.to_node == edge.to_node:
-			return true
-	return false
-
-
-## Which island a node is inside, or "" when it is in the live path.
-static func _island_of(graph: ComposerGraph, node: ComposerNode) -> String:
-	for other: ComposerNode in graph.nodes:
-		if other.projection_kind != ComposerNode.ProjectionKind.SUPPORT:
-			continue
-		var island: String = ComposerFlow.island_name(other.text)
-		if island.is_empty():
-			continue
-		if other.span.first_line < node.span.first_line and other.indent < node.indent:
-			return island
-	return ""
+## The transaction itself is `ComposerFlowReplace`. This is the door, and a door
+## is where the shape of an answer is decided.
+static func replace(
+	source: String,
+	graph: ComposerGraph,
+	old_edges: Array[ComposerGraph.Connection],
+	new_edges: Array[ComposerGraph.Connection]
+) -> Result:
+	var tried: ComposerFlowReplace.Attempt = ComposerFlowReplace.run(
+		source, graph, old_edges, new_edges
+	)
+	if not tried.message.is_empty():
+		return _refuse(tried.message)
+	return _accept(tried.source)
 #endregion

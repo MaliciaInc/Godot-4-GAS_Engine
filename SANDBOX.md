@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `66ceb1c` |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `277aefa` (FASE 6) |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -70,8 +70,15 @@ Three things, all from the command line, none of them needing the editor:
 GODOT="/c/Program Files (x86)/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe"
 "$GODOT" --headless --path . res://test/gas_probe.tscn      # two arenas, to combat_finished
 "$GODOT" --headless --path . res://test/composer_probe.tscn # this game's abilities, read and printed back
+"$GODOT" --path . res://test/composer_harness.tscn          # the Composer, 58 checks, needs a window
 "$GODOT" --path . res://test/composer_smoke.tscn            # the Composer, with a hand on the mouse
 ```
+
+The first one says one thing and one thing only: **both arenas reach
+`combat_finished`**. It is not reproducible round for round - accuracy is rolled
+off a stream whose draw order moves with the wall clock - so comparing a run
+against the last one reads as a regression when nothing has changed. SBX-005 in
+`FINDINGS.md` has the measurements; do not use round counts as evidence.
 
 The last one is the Composer 3.2 smoke, and it is the reason this branch exists.
 The phase document expects a person to do it because `GraphEdit` reads picking,

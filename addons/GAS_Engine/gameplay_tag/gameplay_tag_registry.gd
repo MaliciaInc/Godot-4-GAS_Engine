@@ -50,7 +50,14 @@ static var _shared_validator: RegEx = null
 ## Returns the formatted tag on success, or a message beginning with "Error: "
 ## on failure. The string protocol is upstream's and is preserved deliberately:
 ## this fork changed the typing, not the behaviour a caller depends on.
-func add_tag(tag_string: String) -> String:
+## The restricted branches are a parameter with the project's own as its
+## default, the same way a redirect chain is: a caller asking "would this be
+## refused, and by whom" must be able to ask about a set of owners without
+## first writing them into the project's file.
+func add_tag(
+	tag_string: String,
+	restricted: Dictionary[StringName, StringName] = GameplayTagRestrictions.declared()
+) -> String:
 	var clean_tag: String = tag_string.strip_edges()
 	if clean_tag.is_empty():
 		return ERROR_PREFIX + "Cannot add an empty tag."
@@ -65,6 +72,12 @@ func add_tag(tag_string: String) -> String:
 	var new_tag: StringName = StringName(formatted_tag)
 	if has_tag(new_tag):
 		return ERROR_PREFIX + "Tag '" + formatted_tag + "' already exists."
+
+	# A branch somebody else owns is refused with their name, rather than added
+	# and then redefined out from under this project at their next update.
+	var prefix_owner: StringName = GameplayTagRestrictions.owner_of(new_tag, restricted)
+	if prefix_owner != GameplayTagRestrictions.NOBODY:
+		return ERROR_PREFIX + GameplayTagRestrictions.refusal(prefix_owner, new_tag)
 
 	var previous_tags: Array[StringName] = tags.duplicate()
 	tags.append(new_tag)
@@ -142,6 +155,10 @@ func _persist(previous_tags: Array[StringName]) -> bool:
 	if not speaks_for_project:
 		return true
 	if GameplayTagGenerator.generate_tags_file(tags):
+		# The file that was just written is the one the redirects were read from.
+		# Without this a rename saved in the editor is not in force until the
+		# project is reopened, which is exactly when somebody tests it.
+		GameplayTagRedirects.forget()
 		return true
 
 	tags.assign(previous_tags)

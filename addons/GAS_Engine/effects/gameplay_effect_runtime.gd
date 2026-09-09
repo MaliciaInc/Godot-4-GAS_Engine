@@ -34,12 +34,21 @@ var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntim
 var stacking: GameplayEffectStackingRuntime = GameplayEffectStackingRuntime.new()
 ## Fires GameplayEffectAdditionalEffectsComponent's application/removal chains.
 var chain: GameplayEffectChainRuntime = GameplayEffectChainRuntime.new()
+## Assembles what a cue is told: its number, the range it is read against,
+## the two levels behind it and the snapshots of both sides.
+var cue_params: GameplayCueParamsRuntime = GameplayCueParamsRuntime.new()
 ## Bounded history of recent refusals, for the runtime debugger alone.
 var refusal_log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
 
 ## Overflow_effects and Additional Effects are refused past this depth, so a
 ## cycle cannot recurse forever.
 const MAX_EFFECT_CHAIN_DEPTH: int = 32
+
+## What is active, arranged for the two questions asked most often.
+##
+## Fed by the five statements below that change `_active` and by nothing else,
+## so there is one maintenance list rather than one per question.
+var index: GameplayEffectActiveIndex = GameplayEffectActiveIndex.new()
 
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
@@ -60,13 +69,30 @@ func live_active_effects() -> Array[ActiveGameplayEffect]:
 	return _active
 
 
+## Whether this exact application is still registered.
+## Scheduler/callback code uses identity, never an index captured before a
+## reentrant removal.
+func contains_active(active: ActiveGameplayEffect) -> bool:
+	return active != null and _active.has(active)
+
+
 func active_count() -> int:
 	return _active.size()
 
 
 ## AbilitySystemComponent.emit_tag_change() calls this after its own public
-## F2 signals, for every tag change - the entry point for ongoing/removal
-## reevaluation. See GameplayEffectInhibitionRuntime.
+## F2 signals, for one tag change, saying which tag it was.
+##
+## The scoped door: only effects whose requirements are about that tag - or
+## about an ancestor of it - can have changed their answer, which on a character
+## carrying a thousand effects is almost none of them. See
+## GameplayEffectInhibitionRuntime.
+func on_owner_tag_changed(tag: StringName) -> void:
+	inhibition.on_owner_tag_changed(tag)
+
+
+## The same reevaluation for a caller that cannot say which tag moved, or that
+## changed several at once. Every active effect is asked.
 func on_owner_tags_changed() -> void:
 	inhibition.on_owner_tags_changed()
 
@@ -75,16 +101,18 @@ func on_owner_tags_changed() -> void:
 ## GameplayEffectPurgeTransaction alone, reversible until the incoming
 ## effect's own outcome is known.
 func extract_active(active: ActiveGameplayEffect) -> int:
-	var index: int = _active.find(active)
-	if index >= 0:
-		_active.remove_at(index)
-	return index
+	var at: int = _active.find(active)
+	if at >= 0:
+		_active.remove_at(at)
+		index.drop(active)
+	return at
 
 
 ## Undo extract_active: reinsert at `at_index`, clamped so a stale index
 ## from a since-shrunk registry still lands somewhere.
 func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
 	_active.insert(clampi(at_index, 0, _active.size()), active)
+	index.add(active)
 
 
 ## The longest remaining duration among effects granting a tag, in seconds,
@@ -208,7 +236,9 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 ## query matches `spec` - an inhibited immunity's owner is not currently in
 ## force, so it does not block.
 func _is_immune_to(spec: GameplayEffectSpec) -> bool:
-	for active: ActiveGameplayEffect in _active:
+	# The effects that grant immunity, rather than every effect there is. Almost
+	# none of them do, and every application was asking all of them.
+	for active: ActiveGameplayEffect in index.immunities():
 		if active.inhibited:
 			continue
 		var query: GameplayEffectQuery = active.get_effect_def().get_immunity_query()
@@ -290,6 +320,7 @@ func _commit(
 		handles.register(active)
 		active.component_states = spec.prepared_component_states()
 		_active.append(active)
+		index.add(active)
 		# Decides the starting inhibited/attached state - an ongoing_query
 		# already unsatisfied registers inhibited from the start.
 		inhibition.initialize(active)
@@ -302,10 +333,26 @@ func _commit(
 		owner_asc.active_effect_added.emit(active)
 
 	components.notify_applied(spec, active, owner_asc)
-	play_cues(spec.effect_def.get_application_cue_tags(), spec, active.handle)
+	if evaluation.plays_cues_for(spec.effect_def):
+		play_cues(spec.effect_def.get_application_cue_bindings(), spec, active.handle)
 	dispatch_events(spec)
 	notify_received(spec)
 	chain.fire_on_application(spec)
+	# An execution's own children follow its numbers, so a periodic effect fires
+	# none here - nothing of its was committed - and fires them per tick instead.
+	if commits_base:
+		chain.fire_from_execution(evaluation, spec)
+
+	# A periodic effect that says so ticks the moment it lands, rather than one
+	# period later. Last, so that first tick sees an application that has
+	# entirely happened - its tags granted, its cues played, its listeners told.
+	if (
+		not is_instant
+		and active.is_periodic()
+		and spec.effect_def.execute_periodic_on_application
+	):
+		run_periodic_tick(active)
+
 	return active
 #endregion
 
@@ -330,6 +377,7 @@ func remove(
 		return
 	_detach(active)
 	_active.erase(active)
+	index.drop(active)
 	recompose_and_emit(null)
 	chain.fire_on_removal(active, reason)
 	if owner_asc != null:
@@ -401,6 +449,7 @@ func cleanup() -> void:
 	for active: ActiveGameplayEffect in removed:
 		_detach(active)
 	_active.clear()
+	index.clear()
 
 	recompose_and_emit(null)
 	if owner_asc != null:
@@ -417,6 +466,27 @@ func cleanup() -> void:
 #region Recomposition and notification
 ## Recompose every attribute once and emit one signal per attribute that
 ## moved. `source_spec` lets a listener tell what caused it; null for removal.
+## Terminal teardown. cleanup() is a reusable reset; dispose() deliberately
+## severs every strong back-reference so RefCounted collaborators can die.
+func dispose() -> void:
+	cleanup()
+
+	live_magnitudes.owner_asc = null
+	live_magnitudes.effects = null
+
+	handles.owner_asc = null
+	handles.runtime = null
+
+	inhibition.effects = null
+	stacking.effects = null
+	chain.effects = null
+	cue_params.effects = null
+
+	owner_asc = null
+	attributes = null
+	tags = null
+
+
 func recompose_and_emit(source_spec: GameplayEffectSpec) -> void:
 	for mutation: AttributeMutationResult in attributes.recompose_all():
 		if not mutation.current_changed:
@@ -444,24 +514,27 @@ func notify_execute_hooks(mutations: Array[AttributeBaseMutation]) -> void:
 ## `effect_handle` is null for INSTANT (no handle exists) or when there is no
 ## active effect behind this call yet.
 func play_cues(
-	cue_tags: Array[StringName], spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+	bindings: Array[GameplayCueBinding],
+	spec: GameplayEffectSpec,
+	effect_handle: GameplayEffectHandle = null
 ) -> void:
 	if owner_asc == null:
 		return
-	for cue_tag: StringName in cue_tags:
-		owner_asc.execute_cue(cue_params_for(cue_tag, spec, effect_handle))
+	for binding: GameplayCueBinding in bindings:
+		owner_asc.execute_cue(cue_params_for(binding.cue_tag, spec, effect_handle, binding))
 
 
+## The parameters one cue of this application receives.
+##
+## Delegated: what a cue is told is its own question, and it grew three
+## decisions the moment a binding could name an attribute to read.
 func cue_params_for(
-	cue_tag: StringName, spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+	cue_tag: StringName,
+	spec: GameplayEffectSpec,
+	effect_handle: GameplayEffectHandle = null,
+	binding: GameplayCueBinding = null
 ) -> GameplayCueParams:
-	var params: GameplayCueParams = GameplayCueParams.new()
-	params.cue_tag = cue_tag
-	params.instigator = spec.context.instigator if spec.context != null else null
-	params.target = owner_asc.get_effect_target()
-	params.context = spec.context
-	params.effect_handle = effect_handle
-	return params
+	return cue_params.params_for(cue_tag, spec, effect_handle, binding)
 
 
 func dispatch_events(spec: GameplayEffectSpec) -> void:
@@ -479,8 +552,13 @@ func notify_received(spec: GameplayEffectSpec) -> void:
 ## Play the cues and fire the events of one periodic tick. Called by the
 ## scheduler, which owns when a tick is due.
 func run_periodic_tick(active: ActiveGameplayEffect) -> void:
+	if active == null or not contains_active(active) or active.inhibited:
+		return
+
 	var spec: GameplayEffectSpec = active.spec
-	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(spec, active.application_order, active.handle)
+	var evaluation: GameplayEffectEvaluationResult = evaluate_spec(
+		spec, active.application_order, active.handle
+	)
 	if not evaluation.is_ok():
 		report_refusal(evaluation)
 		return
@@ -490,9 +568,24 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 
 	recompose_and_emit(spec)
 	notify_execute_hooks(evaluation.base_mutations)
+
+	if not contains_active(active) or active.inhibited:
+		return
+
 	components.notify_executed(spec, active, owner_asc)
+	if not contains_active(active) or active.inhibited:
+		return
+
 	if owner_asc != null:
 		owner_asc.gameplay_effect_executed.emit(spec, active)
-	play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
+	if not contains_active(active) or active.inhibited:
+		return
+
+	if evaluation.plays_cues_for(spec.effect_def):
+		play_cues(spec.effect_def.get_periodic_cue_bindings(), spec, active.handle)
+	if not contains_active(active) or active.inhibited:
+		return
+
 	dispatch_events(spec)
+	chain.fire_from_execution(evaluation, spec)
 #endregion

@@ -55,6 +55,11 @@ func _on_disconnection_requested(edge: ComposerGraph.Connection) -> void:
 	_announce(_wires.disconnect_edge(edge))
 
 
+## One exact cable comes off, named rather than found by pointing at a curve.
+func disconnect_edge(edge: ComposerGraph.Connection) -> bool:
+	return _announce(_wires.disconnect_edge(edge))
+
+
 ## Alt-click on a pin, or Break all from its menu: everything on it comes off as
 ## one step, so one undo puts all of it back.
 func break_pin(node_id: StringName, port_id: StringName) -> bool:
@@ -125,15 +130,21 @@ func rewrite_field(node_id: StringName, position: int, written: String) -> bool:
 	return _announce(_wires.rewrite_field(node_id, position, written))
 
 
-## The Inspector asked for the cable on one argument to come off.
+## The Inspector asked for the cable on one value to come off.
 ##
-## An argument takes one cable, so there is one to find. Named by position
-## because that is what a panel showing a list of arguments knows.
+## A data field takes one cable, so there is one to find. Named by position
+## because that is what a panel showing a list of values knows - and the pin is
+## asked for rather than spelled, because a condition's pin is not called
+## `argument_0` and spelling it here would unplug nothing and say it did.
 func unplug_argument(node_id: StringName, position: int) -> bool:
 	if _document == null or not _document.is_open():
 		return false
+	var node: ComposerNode = _document.graph().find_node(node_id)
+	var pin: ComposerNode.Port = node.pin_for_field(position) if node != null else null
+	if pin == null:
+		return false
 	var wires: Array[ComposerGraph.Connection] = _document.graph().connections_to(
-		node_id, StringName(ComposerReader.ARGUMENT % position)
+		node_id, pin.id
 	)
 	if wires.is_empty():
 		return false

@@ -23,6 +23,37 @@ var contributions: Array[AttributeModifierContribution] = []
 ## Which attribute the failure was about, when the status names one. Empty on OK.
 var error_attribute_name: StringName = &""
 
+## What this spec's executions decided beyond their numbers.
+##
+## Carried rather than re-derived: the calculations have already run, and asking
+## them again what else they wanted would be a second run with a second answer.
+## Null only when the evaluation failed before they ran.
+var execution_output: GameplayExecutionOutput = null
+
+
+## Whether this effect's cues play for this application.
+##
+## Two rules, asked in one place because a caller consulting only one of them
+## would be a second opinion about the same question. An execution can decide
+## the cues should not play - a hundred hits landing in one frame should be a
+## hundred numbers and one sound - and an effect can say it wants no cue for an
+## application that changed no number.
+func plays_cues_for(effect: GameplayEffect) -> bool:
+	if execution_output != null and not execution_output.trigger_cues:
+		return false
+	if effect != null and effect.require_modifier_success_to_trigger_cues:
+		return changed_a_number()
+	return true
+
+
+## Whether this evaluation actually moved anything.
+##
+## Staged writes or contributions: an INSTANT effect stages base mutations and
+## a lasting one registers contributions, so asking about only one of them
+## would answer no for half the effects that did something.
+func changed_a_number() -> bool:
+	return not base_mutations.is_empty() or not contributions.is_empty()
+
 
 func is_ok() -> bool:
 	return status == AttributeEvaluationResult.Status.OK

@@ -24,10 +24,16 @@ enum Mode {
 @export var mode: GameplayAbilityCost.Mode = Mode.ABSOLUTE
 
 ## The attribute this entry actually spends.
+## Which attribute is charged, said so it cannot mean two of them.
+@export var target: GameplayAttributeRef = null
+
 @export var target_attribute: StringName = &""
 
 ## For a percent mode, the attribute the percentage is computed against. Must
 ## stay empty for ABSOLUTE: nothing is referenced when nothing is a fraction.
+## Which attribute a percentage is priced against, the same way.
+@export var reference: GameplayAttributeRef = null
+
 @export var reference_attribute: StringName = &""
 
 ## ABSOLUTE: the amount itself. Percent modes: the fraction - `0.10` for 10%,

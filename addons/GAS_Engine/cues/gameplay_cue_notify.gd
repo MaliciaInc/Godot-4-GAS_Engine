@@ -17,6 +17,22 @@ const CueParams = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 ## Emitted when the effect is complete so the manager can pool it again.
 signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)
 
+## Which moment of a cue's life this is.
+##
+## Named because something outside the cue system now hears about them: a
+## target implementing `handle_gameplay_cue` is told which of the four
+## happened, and an int would leave every project writing the same table.
+enum Event {
+	## A one-shot cue, or one periodic tick of one.
+	EXECUTED,
+	## A persistent cue started.
+	ON_ACTIVE,
+	## And is still running.
+	WHILE_ACTIVE,
+	## And has ended.
+	REMOVED,
+}
+
 @export_category("Lifecycle")
 ## Whether this node pools itself after playing. False for looping effects such
 ## as a persistent aura, which are ended explicitly instead.
@@ -25,6 +41,34 @@ signal cue_finished(cue_node: GameplayCueNotify, tag: StringName)
 ## How long to wait before pooling. Set slightly longer than the longest
 ## particle or audio duration in the scene.
 @export_range(0.0, 600.0, 0.05, "or_greater") var destroy_delay: float = 2.0
+
+@export_category("Uniqueness")
+## At most one of this cue per instigator, on one target.
+##
+## Two archers shooting one character should be two burning arrows; two
+## ticks of one archer's poison should not be two poisons. Which of those a
+## cue is depends on the cue, so it says.
+@export var unique_per_instigator: bool = false
+
+## The same question about the thing behind the cue rather than the person:
+## one aura per weapon, however many times it is swung.
+@export var unique_per_source_object: bool = false
+
+## Whether a second activation that resolves to a running instance runs
+## on_active again.
+##
+## True keeps what every cue has always done: each activation is announced.
+## False is for a cue whose start is expensive or visible - a flash, a
+## sound - and which should not re-flash because a second stack landed.
+@export var allow_multiple_on_active: bool = true
+
+## How many of this cue to make before anybody asks for one.
+##
+## Zero means make them on demand, which is right for almost everything. A
+## cue that is going to be needed forty times in the first second of a fight
+## is the case this exists for: instantiating a scene is the expensive part,
+## and doing forty of them during the fight is the frame nobody wants.
+@export_range(0, 64, 1, "or_greater") var preallocate: int = 0
 
 ## The cue tag this instance was spawned for, assigned by the manager.
 var gameplay_cue_tag: StringName = &""
@@ -77,6 +121,11 @@ func _on_auto_destroy_elapsed(scheduled_id: int) -> void:
 
 ## Call this from an inherited script when the effect is genuinely done, e.g.
 ## from an AudioStreamPlayer `finished` signal.
+## Letting go of the params is what keeps a pooled cue from holding the
+## target node, the effect context and the handle of an effect that is over -
+## state the next activation out of the pool would read, and references the
+## scene could not free. Every road into the pool comes through here, since
+## `cue_finished` is emitted nowhere else.
 func finish_cue() -> void:
 	current_params = null
 	cue_finished.emit(self, gameplay_cue_tag)

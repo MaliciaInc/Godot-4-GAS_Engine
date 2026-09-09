@@ -147,6 +147,13 @@ class Entry extends RefCounted:
 	## a warning on every correct statement in a file.
 	var required: int = 0
 
+	## Everything the Composer knows about this as an operation, said explicitly:
+	## which it is, where it belongs, what it is called, what it is for, what it
+	## takes and hands back, what it falls back to, and whether it should still be
+	## reached for. See ComposerOperation for why any of that is stated rather
+	## than inferred from the method being public.
+	var operation: ComposerOperation = null
+
 	func parameter(position: int) -> ComposerNode.Field:
 		if position < 0 or position >= parameters.size():
 			return null
@@ -175,24 +182,44 @@ static func script_for(declared: StringName) -> String:
 	return ComposerTypes.script_of(declared)
 
 
-## Offer everything a script declares in public.
+## Offer every call a script declares to be one.
 ##
-## Nothing is left out by opinion. A method the engine exposes is a statement
-## somebody can write in an ability, and a palette that quietly omitted it would
-## be answering a question - "is this worth drawing?" - that belongs to the
-## person writing the ability, not to this file.
+## This used to offer everything public, and argued for it: leaving one out
+## would be answering a question - "is this worth drawing?" - that belongs to
+## the person writing the ability. The argument was right about the question and
+## wrong about who had already answered it. `dispose()`, `cleanup()` and
+## `emit_tag_change()` are public, and nobody writes those in an ability: they
+## are how the runtime talks to itself. Public in GDScript means "another part
+## of the engine calls this", which is a different fact from "somebody authors
+## this", and the palette was reading the first as the second.
+##
+## So a method says so, in its own doc comment, beside the code. What it takes
+## is still read from the engine - that is a fact about the method, and
+## restating it is how a catalog names a parameter the API stopped having.
 static func _admit_every_call_on(path: String) -> void:
 	var script: GDScript = load(path) as GDScript
 	if script == null:
 		push_error(REFUSED % (NO_SCRIPT % path))
 		return
+
+	var documented: Dictionary[StringName, PackedStringArray] = (
+		ComposerDeclarations.doc_comments_in(path)
+	)
 	for described: Dictionary in script.get_script_method_list():
 		var method: String = described["name"]
 		# Leading marks are Godot's, not a person's: `_` is private and `@` is a
 		# property setter wearing a method's shape.
 		if method.begins_with("_") or method.begins_with("@"):
 			continue
-		var refused: String = _admit(method, group_of(method), path, _suspends(described))
+		var doc: PackedStringArray = documented.get(
+			StringName(method), PackedStringArray()
+		)
+		if not ComposerOperation.is_declared_in(doc):
+			continue
+
+		var declared: StringName = ComposerOperation.category_in(doc)
+		var group: StringName = declared if declared != &"" else group_of(method)
+		var refused: String = _admit(method, group, path, _suspends(described), doc)
 		if not refused.is_empty():
 			push_error(REFUSED % refused)
 
@@ -368,7 +395,13 @@ static func forget(key: StringName) -> void:
 ##
 ## The single admission. What the engine offers itself comes through here on the
 ## same terms a game does.
-static func _admit(method: String, group: StringName, path: String, suspends: bool) -> String:
+static func _admit(
+	method: String,
+	group: StringName,
+	path: String,
+	suspends: bool,
+	doc: PackedStringArray = PackedStringArray()
+) -> String:
 	var key: StringName = key_for(path, StringName(method))
 	# The same call offered twice is not a conflict, and neither is one name on
 	# two scripts - the engine itself declares `execute_cue` on the ability and
@@ -387,9 +420,12 @@ static func _admit(method: String, group: StringName, path: String, suspends: bo
 	if script == null:
 		return NOT_A_SCRIPT % path
 
-	var entry: Entry = _entry(method, group, script, suspends)
+	var entry: Entry = _entry(method, group, script, suspends, doc)
 	if entry == null:
 		return NOT_THERE % [method, path.get_file()]
+	# The id is the key: one name on two scripts is two operations, and an id
+	# that was only the method would make them one.
+	entry.operation.id = key
 
 	entry.source = path
 	entry.key = key
@@ -407,7 +443,11 @@ static func _admit(method: String, group: StringName, path: String, suspends: bo
 ## says so out loud - but it keeps a stale name from crashing an editor that is
 ## only trying to draw a palette.
 static func _entry(
-	method: String, group: StringName, script: GDScript, suspends: bool
+	method: String,
+	group: StringName,
+	script: GDScript,
+	suspends: bool,
+	doc: PackedStringArray
 ) -> Entry:
 	for described: Dictionary in script.get_script_method_list():
 		var name: String = described["name"]
@@ -425,8 +465,44 @@ static func _entry(
 		# left at the front. Read off the method rather than decided here.
 		var defaults: Array = described["default_args"]
 		entry.required = maxi(entry.parameters.size() - defaults.size(), 0)
+		entry.operation = _operation_for(entry, script.resource_path, defaults, doc)
+		entry.title = entry.operation.display_name
 		return entry
 	return null
+
+
+## Everything the Composer knows about an entry as an operation.
+##
+## The names it is asked by come from the method - what it takes, what it hands
+## back, what it falls back to - and the words a person reads come from the doc
+## comment above it. Neither is restated here: a second copy of a signature and
+## a second copy of a sentence are the two things that go quietly out of date.
+static func _operation_for(
+	entry: Entry, path: String, defaults: Array, doc: PackedStringArray
+) -> ComposerOperation:
+	var made: ComposerOperation = ComposerOperation.new()
+	made.id = entry.key
+	made.category = entry.group
+	var named: String = ComposerOperation.name_in(doc)
+	made.display_name = named if not named.is_empty() else entry.type_id.capitalize()
+	made.description = ComposerOperation.description_in(doc)
+	made.deprecated = ComposerOperation.deprecation_in(doc)
+	made.defaults = defaults.duplicate()
+
+	for field: ComposerNode.Field in entry.parameters:
+		made.input_types.append(field.type_name)
+	# Reflection reports a method that returns nothing as returning `Nil`, which
+	# is not empty - so asking `!= &""` says every void call hands something back,
+	# and the palette offers `var x: Nil = end_ability()` as a way to fill an
+	# argument. ComposerTypes already knows the difference.
+	if ComposerTypes.is_a_value(entry.result_type):
+		made.output_types.append(entry.result_type)
+		# A call that hands back a task hands back something with a `finished` on
+		# it, and what comes out of that is not available on the line the call was
+		# written on. Naming it apart is what lets a palette say so.
+		if entry.awaits:
+			made.async_outputs.append(entry.result_type)
+	return made
 
 
 static func _parameters(described: Dictionary) -> Array[ComposerNode.Field]:

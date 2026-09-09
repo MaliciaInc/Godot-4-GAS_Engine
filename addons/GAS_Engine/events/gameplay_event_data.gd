@@ -23,3 +23,27 @@ var magnitude: float = 0.0
 
 ## The originating effect context, when the event came from an effect.
 var context: GameplayEffectContext = null
+
+## Two slots for whatever an ability needs to hand its listeners that is not
+## one of the fields above - a weapon, a card, a definition.
+##
+## Objects rather than a typed field because the engine cannot know what a
+## game means by them, and two rather than one because the reference has two
+## and a game porting from it should not have to pack a pair into a context.
+## Neither crosses a network: GameplayEventWire carries what the registry can
+## name and omits the rest.
+var optional_object: Object = null
+var optional_object2: Object = null
+
+## What the instigator and the target had on them when this was dispatched.
+##
+## Snapshots, not views. A listener woken three frames later is about the
+## moment the event happened, and reading the world at that point would answer
+## a different question - one the sender never asked. An absence stays an
+## empty array rather than becoming a tag that matches nothing, because those
+## are different answers to a query.
+var instigator_tags: Array[StringName] = []
+var target_tags: Array[StringName] = []
+
+## What the event was aimed at, when it came from something aimed.
+var target_data: GameplayAbilityTargetData = null

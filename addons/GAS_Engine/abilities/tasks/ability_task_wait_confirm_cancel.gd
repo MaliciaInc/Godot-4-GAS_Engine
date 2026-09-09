@@ -22,7 +22,7 @@ var decision: AbilityTaskWaitConfirmCancel.Decision = Decision.CONFIRMED
 
 
 static func create(
-	ability: GameplayAbility, confirm_id: int, cancel_id: int
+	ability: GameplayAbility, confirm_id: int = -1, cancel_id: int = -1
 ) -> AbilityTaskWaitConfirmCancel:
 	var task: AbilityTaskWaitConfirmCancel = AbilityTaskWaitConfirmCancel.new()
 	task.owner_ability = ability
@@ -33,8 +33,23 @@ static func create(
 
 func handle_input_pressed(input_id: int) -> void:
 	if input_id == confirm_input_id:
-		decision = Decision.CONFIRMED
-		succeed()
+		handle_confirm()
 	elif input_id == cancel_input_id:
-		decision = Decision.CANCELLED
-		succeed()
+		handle_cancel()
+
+
+## The generic yes.
+##
+## A task created without slots waits on this alone, which is the ordinary
+## case: an ability that asks "confirm or cancel?" usually means whatever the
+## game decided those are, not two particular keys. One created with slots
+## still answers them, and answers this too - both are somebody saying yes.
+func handle_confirm() -> void:
+	decision = Decision.CONFIRMED
+	succeed()
+
+
+## And the generic no.
+func handle_cancel() -> void:
+	decision = Decision.CANCELLED
+	succeed()

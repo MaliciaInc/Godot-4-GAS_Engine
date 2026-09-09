@@ -49,6 +49,10 @@ func instance_for_activation(spec: GameplayAbilitySpec) -> GameplayAbility:
 	if spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_ACTOR:
 		return spec.per_actor_instance
 
+	# PER_EXECUTION and NON_INSTANCED both get a Node of their own, and neither
+	# is ever adopted as the spec's instance. That is what stops two concurrent
+	# activations of a NON_INSTANCED ability from seeing each other's state:
+	# there is no shared Node for them to see it on.
 	var instance: GameplayAbility = instantiate_ability(spec)
 	if instance == null:
 		return null
@@ -63,11 +67,15 @@ func instance_for_activation(spec: GameplayAbilitySpec) -> GameplayAbility:
 ## to `ability_ended`, so this always runs after `end_ability()` has already
 ## cancelled its tasks, forgotten its commit, and decremented `active_count`.
 func release_execution_instance(spec: GameplayAbilitySpec, ability: GameplayAbility) -> void:
+	# No validity guard. The only caller is this ability's own `ability_ended`,
+	# which cannot be emitted by a freed object, and a freed one could not be
+	# bound to a typed parameter to be asked about here either - the call would
+	# fail before the body ran. A guard no test can turn red is a guard that is
+	# not there, and one that reads as if some path needs it.
 	spec.active_instances.erase(ability)
-	if is_instance_valid(ability):
-		ability.owner_asc = null
-		ability.current_spec = null
-		ability.queue_free()
+	ability.owner_asc = null
+	ability.current_spec = null
+	ability.queue_free()
 
 
 ## Start a spec running through whatever its instancing policy means by that -

@@ -98,6 +98,30 @@ func input_released(input_id: int) -> void:
 	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_input_released(input_id))
 
 
+## Somebody said yes, without naming a slot.
+##
+## Its own door rather than an input id, because the generic confirm is not a
+## key: it is whatever the game decided means yes, and a task waiting for it
+## should not have to know which key that was today.
+func input_confirm() -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_confirm())
+
+
+## And somebody said no.
+##
+## `deaf` is the instances that do not hear this one - empty for a local no,
+## and for one that arrived over a wire the abilities whose grant reserves
+## termination to the authority. A list rather than a flag, because deciding
+## that is reading a network policy and this runtime has no business doing
+## it: it is told who, not asked why.
+func input_cancel(deaf: Array[GameplayAbility] = []) -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void:
+		if deaf.has(task.owner_ability):
+			return
+		task.handle_cancel()
+	)
+
+
 func gameplay_event(event: GameplayEventData) -> void:
 	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_gameplay_event(event))
 

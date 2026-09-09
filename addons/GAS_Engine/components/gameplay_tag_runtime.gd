@@ -21,9 +21,22 @@ class_name GameplayTagRuntime extends RefCounted
 ## re-deriving it by comparing counts.
 enum Change { NONE, ADDED, INCREMENTED, DECREMENTED, REMOVED }
 
-const SEPARATOR: String = "."
+const SEPARATOR: String = GameplayTagFamily.SEPARATOR
 
 var _counts: Dictionary[StringName, int] = {}
+
+
+## The name a tag goes by now.
+##
+## Every door of this class, in and out, so a project that renamed a tag holds
+## and answers about one name rather than two. An asset naming the old one still
+## grants the tag the project has, and a query naming the old one still finds it
+## - which is the whole point of a rename that does not rewrite anybody's files.
+##
+## Costs one lookup in an empty Dictionary for a project that has renamed
+## nothing, which is almost all of them.
+static func _current(tag: StringName) -> StringName:
+	return GameplayTagRedirects.resolve(tag)
 
 
 #region Mutation
@@ -31,29 +44,32 @@ var _counts: Dictionary[StringName, int] = {}
 func add(tag: StringName) -> GameplayTagRuntime.Change:
 	if tag == &"":
 		return Change.NONE
-	if _counts.has(tag):
-		_counts[tag] += 1
+	var current: StringName = _current(tag)
+	if _counts.has(current):
+		_counts[current] += 1
 		return Change.INCREMENTED
-	_counts[tag] = 1
+	_counts[current] = 1
 	return Change.ADDED
 
 
 ## Decrement a tag's reference count, removing it at zero.
 func remove(tag: StringName) -> GameplayTagRuntime.Change:
-	if not _counts.has(tag):
+	var current: StringName = _current(tag)
+	if not _counts.has(current):
 		return Change.NONE
-	_counts[tag] -= 1
-	if _counts[tag] > 0:
+	_counts[current] -= 1
+	if _counts[current] > 0:
 		return Change.DECREMENTED
-	_counts.erase(tag)
+	_counts.erase(current)
 	return Change.REMOVED
 
 
 ## Drop a tag whatever its count. Used by a cleanse, not by normal removal.
 func clear(tag: StringName) -> GameplayTagRuntime.Change:
-	if not _counts.has(tag):
+	var current: StringName = _current(tag)
+	if not _counts.has(current):
 		return Change.NONE
-	_counts.erase(tag)
+	_counts.erase(current)
 	return Change.REMOVED
 
 
@@ -61,8 +77,40 @@ func clear_all() -> void:
 	_counts.clear()
 
 
+## How many times this exact tag is held.
+##
+## What every reference count in this engine is asking: a tag granted by two
+## effects is held twice, and dropping one of them leaves it held once.
+## `State` is not `State.Stunned` here, however many stunned things there are.
+func count_exact(tag: StringName) -> int:
+	return _counts.get(_current(tag), 0)
+
+
+## How many times this tag or anything under it is held.
+##
+## The question a listener on `State` is actually asking. Two effects, one
+## stunning and one rooting, are two things under `State` - so `State` is held
+## twice, and losing one of them does not mean the character can move.
 func count(tag: StringName) -> int:
-	return _counts.get(tag, 0)
+	var total: int = 0
+	var current: StringName = _current(tag)
+	for active: StringName in _counts:
+		if is_descendant_of(active, current):
+			total += _counts[active]
+	return total
+
+
+## Every tag whose hierarchical count this one contributes to: itself, then
+## each ancestor, nearest first.
+##
+## `State.Debuff.Stunned` is held by `State.Debuff` and by `State`, and by
+## nothing else - a prefix that does not end at a separator is a different tag,
+## for the reason `is_descendant_of` gives.
+## Answered by GameplayTagFamily, which the cue manager also needs and
+## cannot reach through this file: an autoload parses before the global
+## class cache exists, so what it reaches must preload what it names.
+static func ancestors_of(tag: StringName) -> Array[StringName]:
+	return GameplayTagFamily.ancestors_of(tag)
 
 
 func active_tags() -> Array[StringName]:
@@ -76,14 +124,15 @@ func active_tags() -> Array[StringName]:
 #region Queries
 ## True only for this exact tag. `Status` does not answer for `Status.Stunned`.
 func has_exact(tag: StringName) -> bool:
-	return _counts.has(tag)
+	return _counts.has(_current(tag))
 
 
 ## True for this tag or any descendant of it.
 func has(tag: StringName) -> bool:
-	if _counts.has(tag):
+	var current: StringName = _current(tag)
+	if _counts.has(current):
 		return true
-	return tag_set_has(_counts.keys(), tag)
+	return tag_set_has(_counts.keys(), current)
 
 
 ## Whether any tag in `active_tags` is `requested_tag` or a descendant of it.
@@ -94,8 +143,9 @@ func has(tag: StringName) -> bool:
 static func tag_set_has(
 	active_tags: Array[StringName], requested_tag: StringName
 ) -> bool:
+	var current: StringName = _current(requested_tag)
 	for active: StringName in active_tags:
-		if is_descendant_of(active, requested_tag):
+		if is_descendant_of(active, current):
 			return true
 	return false
 

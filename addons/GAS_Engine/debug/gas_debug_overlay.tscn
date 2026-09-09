@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/GAS_Engine/debug/gas_debug_overlay.gd" id="1_overlay"]
+
+[node name="GasDebugOverlay" type="CanvasLayer"]
+script = ExtResource("1_overlay")
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchor_right = 0.5
+anchor_bottom = 0.75
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 1
+grow_vertical = 1
+
+[node name="Body" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Panel/Body"]
+layout_mode = 2
+text = "GAS_Engine — nothing watched"
+
+[node name="Tabs" type="HBoxContainer" parent="Panel/Body"]
+layout_mode = 2
+
+[node name="Table" type="Tree" parent="Panel/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 4
+column_titles_visible = true
+hide_root = true

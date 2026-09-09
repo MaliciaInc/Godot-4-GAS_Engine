@@ -17,6 +17,12 @@ class_name GameplayTagTree extends RefCounted
 
 const SEPARATOR: String = "."
 const UNAVAILABLE_TOOLTIP: String = "Tag already mapped to a Cue"
+
+## What the box above one of these trees invites somebody to do.
+##
+## Here because the tree is what the box filters, and two pickers over one
+## hierarchy that word the same invitation differently read as two features.
+const SEARCH_PLACEHOLDER: String = "Search tags..."
 const REGISTRY_MISSING: String = "GAS_Engine: no gameplay tags file at "
 
 
@@ -62,6 +68,10 @@ static func build(
 	run.unavailable = unavailable
 	run.style = style
 	run.needle = filter.to_lower()
+	# What each tag is for, as the project wrote it down. Read once per build
+	# rather than once per leaf: it is a file, and a picker over a few hundred
+	# tags would open it a few hundred times.
+	run.comments = GameplayTagGenerator.comments_in_file()
 
 	for tag: StringName in registry.tags:
 		var full: String = String(tag)
@@ -78,6 +88,9 @@ class Run extends RefCounted:
 	var unavailable: Array[StringName] = []
 	var style: Style = null
 	var needle: String = ""
+
+	## What each tag is for, for the tags whose author said.
+	var comments: Dictionary[StringName, String] = {}
 
 	## Every row placed so far, keyed by the dotted path it stands for.
 	##
@@ -136,17 +149,26 @@ static func _place(run: Run, tag: StringName, full: String) -> void:
 		if run.is_searching():
 			current.collapsed = false
 
-	_decorate_leaf(current, tag, run.unavailable, run.style)
+	_decorate_leaf(run, current, tag)
 
 
-static func _decorate_leaf(
-	leaf: TreeItem, tag: StringName, unavailable: Array[StringName], style: Style
-) -> void:
-	if unavailable.has(tag):
+## Everything a leaf says about itself beyond its name.
+##
+## Takes the whole run rather than the three things it reads out of it: what a
+## leaf is drawn from grew from two to four, and each was another parameter
+## threaded through one call from one caller.
+static func _decorate_leaf(run: Run, leaf: TreeItem, tag: StringName) -> void:
+	var style: Style = run.style
+	if run.unavailable.has(tag):
 		leaf.set_selectable(0, false)
 		leaf.set_custom_color(0, style.unavailable_color)
 		leaf.set_tooltip_text(0, UNAVAILABLE_TOOLTIP)
 		return
+
+	# What the tag is for, where the author wrote it down. Not on an
+	# unavailable leaf, which has something more urgent to say about itself.
+	if run.comments.has(tag):
+		leaf.set_tooltip_text(0, run.comments[tag])
 
 	# Before the text is written: switching cell mode afterwards is what makes
 	# a checkable row come up blank.

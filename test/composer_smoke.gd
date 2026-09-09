@@ -99,12 +99,59 @@ func _run() -> void:
 		"13 · the game's own file was never written to",
 		FileAccess.get_file_as_string(ABILITY) == original
 	)
-	if FileAccess.file_exists(MADE):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(MADE))
+	_clear_what_was_made()
 	check(
 		"13 · and the ability this run made is cleared away",
-		not FileAccess.file_exists(MADE)
+		not _anything_was_made(),
+		", ".join(_what_is_left())
 	)
+
+
+#region What this run makes, and takes away again
+## Everything creating an ability puts on disk.
+##
+## Both files, because that is what an ability is here: a script and the scene
+## that carries it, and `ComposerAbilityTemplate` writes the pair or neither.
+## The scene path comes from the engine rather than from a suffix swapped here,
+## so the two cannot disagree about where the second file goes.
+##
+## The `.uid` is in the list because an editor session that opened this project
+## after a run would have written one beside the script, and a stale id left
+## pointing at a file nobody made is the same litter one step removed.
+func _made_files() -> PackedStringArray:
+	return PackedStringArray([
+		MADE,
+		MADE + ".uid",
+		ComposerAbilityTemplate.scene_path_for(MADE),
+	])
+
+
+## What is still there, for the check that says nothing should be.
+func _what_is_left() -> PackedStringArray:
+	var left: PackedStringArray = PackedStringArray()
+	for path: String in _made_files():
+		if FileAccess.file_exists(path):
+			left.append(path)
+	return left
+
+
+func _anything_was_made() -> bool:
+	return not _what_is_left().is_empty()
+
+
+## Take all of it away.
+##
+## Run before the ability is created as well as after, and the first is the one
+## that matters: `create()` refuses when either file already exists, so a run
+## that swept only the script left the scene behind, and the next run refused at
+## its second check and every check that stood on it. The teardown had been
+## asserting the script was gone and saying nothing about the scene - a green
+## line over a directory with litter in it.
+func _clear_what_was_made() -> void:
+	for path: String in _made_files():
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+#endregion
 
 
 #region Saying what happened
@@ -247,8 +294,7 @@ func case_1_startup() -> void:
 ## of them moves them - it does not resize them, unhook a cable, or change what
 ## the ability does.
 func case_2_new_ability() -> void:
-	if FileAccess.file_exists(MADE):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(MADE))
+	_clear_what_was_made()
 	var refusal: String = ComposerAbilityTemplate.create(MADE)
 	check("2 · New Ability writes a file", refusal.is_empty(), refusal)
 	await screen.open(FileAccess.get_file_as_string(MADE), MADE)

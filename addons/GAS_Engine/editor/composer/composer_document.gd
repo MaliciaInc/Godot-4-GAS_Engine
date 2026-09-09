@@ -23,16 +23,23 @@ class_name ComposerDocument extends RefCounted
 const NOTHING_OPEN: String = "no ability is open"
 const BROKE_IT: String = "that would leave a file the Composer cannot read"
 const NOT_WRITABLE: String = "%s cannot be written to"
+const EXTERNAL_CHANGE: String = "%s changed on disk after it was opened"
+const ATOMIC_WRITE_FAILED: String = "%s could not be replaced safely"
 
 var _source: String = ""
 var _path: String = ""
 var _graph: ComposerGraph = null
 var _history: ComposerHistory = ComposerHistory.new()
 
+var _baseline_source: String = ""
+var _dirty: bool = false
+
 
 #region What is open
 func open(source: String, path: String) -> void:
 	_source = source
+	_baseline_source = source
+	_dirty = false
 	_path = path
 	_graph = ComposerReader.read(source, path)
 	_history.forget()
@@ -83,7 +90,31 @@ func commit(next: String) -> ComposerGraph.Diagnostic:
 	_history.record(_source)
 	_source = next
 	_graph = read
+	_dirty = _source != _baseline_source
 	return null
+
+
+## Whether what is open differs from what is on disk.
+##
+## Compared against the text the file was opened with rather than tracked as
+## a flag each edit sets: an undo back to where it started is not a change,
+## and a flag would have said it was.
+func is_dirty() -> bool:
+	return _dirty
+
+
+## Throw away everything since the file was opened.
+##
+## The history goes with it. What it held were steps back through edits that
+## no longer exist, and an undo into them would put back text nobody can
+## reach from here any more.
+func discard_unsaved_changes() -> void:
+	if not is_open():
+		return
+	_source = _baseline_source
+	_graph = ComposerReader.read(_source, _path)
+	_dirty = false
+	_history.forget()
 
 
 ## Back one step, and forward again.
@@ -105,6 +136,7 @@ func redo() -> void:
 func _replace(next: String) -> void:
 	_source = next
 	_graph = ComposerReader.read(next, _path)
+	_dirty = _source != _baseline_source
 #endregion
 
 
@@ -215,10 +247,19 @@ func save() -> ComposerGraph.Diagnostic:
 	if not FileAccess.file_exists(_path):
 		return ComposerWriter.refuse(ComposerCatalog.NO_SCRIPT % _path)
 
-	var out: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-	if out == null:
+	var current: FileAccess = FileAccess.open(_path, FileAccess.READ)
+	if current == null:
 		return ComposerWriter.refuse(NOT_WRITABLE % _path)
-	out.store_string(_source)
-	out.close()
+	var disk_source: String = current.get_as_text()
+	current.close()
+
+	if disk_source != _baseline_source:
+		return ComposerWriter.refuse(EXTERNAL_CHANGE % _path)
+
+	if not ComposerAtomicFile.replace(_path, _source):
+		return ComposerWriter.refuse(ATOMIC_WRITE_FAILED % _path)
+
+	_baseline_source = _source
+	_dirty = false
 	return null
 #endregion

@@ -24,6 +24,14 @@ const NOTHING_TO_MAKE: String = "there is no such call to make"
 const NO_ROOM: String = "there is nowhere in this ability to put that"
 const NOT_A_VALUE: String = "that call hands nothing back to hold"
 
+## Why a statement cannot be put on an execution input that several paths
+## arrive at. Said in full because the way out of it is not obvious: the
+## person has to start the drag from the path they meant.
+const AMBIGUOUS_MERGE: String = (
+	"This execution input has more than one source path; insert from the path "
+	+ "output instead."
+)
+
 
 ## What was made, or why nothing was.
 class Result extends RefCounted:
@@ -63,9 +71,18 @@ static func made(
 ) -> ComposerCreation.Result:
 	if entry == null:
 		return _refuse(NOTHING_TO_MAKE)
-	if context.mode == ComposerActionMenu.Context.Mode.ALL or context.is_execution():
+	if context.mode == ComposerActionMenu.Context.Mode.ALL:
 		return _plain(source, graph, entry)
-	if context.mode == ComposerActionMenu.Context.Mode.FROM_PIN:
+	var from_pin: bool = context.mode == ComposerActionMenu.Context.Mode.FROM_PIN
+	if context.is_execution():
+		# A run of control asked for this, so the statement goes on that run -
+		# not at the end of the ability, which is where every execution drag used
+		# to put it, whichever pin it started from.
+		return (
+			_execution_from(source, graph, entry, context) if from_pin
+			else _execution_to(source, graph, entry, context)
+		)
+	if from_pin:
 		return _consuming(source, graph, entry, context)
 	return _producing(source, graph, entry, context)
 
@@ -85,6 +102,115 @@ static func _plain(
 	if at < 0:
 		return _refuse(NO_ROOM)
 	return _accept(ComposerEdits.insert_after(source, at, written), at + 1)
+
+
+## Dragged out of an execution pin: the new statement runs on that path.
+##
+## Where that is depends on the pin, and the projection already answers it -
+## the same answer that says where a moved statement has to be written. The two
+## paths that do not exist yet are written out here: a branch with no `else` and
+## a match with no catch-all get a real one, holding the new statement, with no
+## mark on it. A path somebody asked for is theirs, not machinery.
+static func _execution_from(
+	source: String,
+	graph: ComposerGraph,
+	entry: ComposerCatalog.Entry,
+	context: ComposerActionMenu.Context
+) -> ComposerCreation.Result:
+	var node: ComposerNode = graph.find_node(context.node_id)
+	var written: String = ComposerStatementFactory.call_statement(entry, graph.source_path)
+	if node == null:
+		return _refuse(NO_ROOM)
+	if written.is_empty():
+		return _refuse(NOTHING_TO_MAKE)
+
+	var opened: String = _opened_path(source, graph, node, context.port_id, written)
+	if not opened.is_empty():
+		return _accept(opened, _line_holding(opened, graph.source_path, written))
+
+	var anchor: ComposerFlowPlaces.Anchor = ComposerFlowPlaces.anchor_for(
+		graph, node, context.port_id
+	)
+	if not anchor.is_ok():
+		return _refuse(anchor.refusal if not anchor.refusal.is_empty() else NO_ROOM)
+	return _accept(
+		ComposerEdits.insert_after(
+			source,
+			anchor.line - 1,
+			ComposerEdits.TAB.repeat(anchor.indent) + written.strip_edges()
+		),
+		anchor.line
+	)
+
+
+## The text with a path written that was not there before, or nothing when the
+## pin already has one.
+static func _opened_path(
+	source: String,
+	graph: ComposerGraph,
+	node: ComposerNode,
+	port_id: StringName,
+	written: String
+) -> String:
+	if port_id == ComposerReader.FALSE_OUT:
+		if ComposerFlowPlaces.else_of(graph, node) != null:
+			return ""
+		if ComposerFlowPlaces.chains_on(graph, node):
+			return ComposerFlowTransforms.with_nested_else(source, graph, node, written)
+		return ComposerFlowTransforms.with_else(source, graph, node, written)
+	if port_id == ComposerReader.UNMATCHED_OUT and not ComposerFlowPlaces.has_wildcard(
+		graph, node
+	):
+		return ComposerFlowTransforms.with_case(source, graph, node, written)
+	return ""
+
+
+## Which line of `changed` the new statement ended up on.
+##
+## Asked of the text rather than counted, because the transformations that
+## open a path write two lines and not one, and a caller that guessed would
+## put the card's position on the `else` instead of on the statement.
+static func _line_holding(changed: String, path: String, written: String) -> int:
+	var wanted: String = written.strip_edges()
+	var read: ComposerGraph = ComposerReader.read(changed, path)
+	for node: ComposerNode in read.nodes:
+		if node.source_backed and node.text.strip_edges() == wanted:
+			return node.span.last_line
+	return ComposerSpan.NO_LINE
+
+
+## Dragged into an execution input: the new statement runs before that one.
+##
+## Only when one path arrives there. A statement several paths reach - the one
+## after an `if`, say - has no single place "before it" that means what the
+## drag meant, and picking one of them would quietly put the new call on one
+## branch of two.
+static func _execution_to(
+	source: String,
+	graph: ComposerGraph,
+	entry: ComposerCatalog.Entry,
+	context: ComposerActionMenu.Context
+) -> ComposerCreation.Result:
+	var node: ComposerNode = graph.find_node(context.node_id)
+	var written: String = ComposerStatementFactory.call_statement(entry, graph.source_path)
+	if node == null:
+		return _refuse(NO_ROOM)
+	if written.is_empty():
+		return _refuse(NOTHING_TO_MAKE)
+	if ComposerFlow.predecessors_of(graph, node.id).size() > 1:
+		return _refuse(AMBIGUOUS_MERGE)
+
+	var anchor: ComposerFlowPlaces.Anchor = ComposerFlowPlaces.anchor_for(
+		graph, node, ComposerReader.EXEC_IN
+	)
+	return _accept(
+		ComposerEdits.insert_after(
+			source,
+			anchor.line - 1,
+			ComposerEdits.TAB.repeat(anchor.indent) + written.strip_edges()
+		),
+		anchor.line
+	)
 
 
 ## Dragged out of a value: the new call goes after the one producing it, with

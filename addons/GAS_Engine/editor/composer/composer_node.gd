@@ -78,6 +78,16 @@ class Field extends RefCounted:
 	## compiles instead of being born with an argument missing.
 	var default_expression: String = ""
 
+	## Whether the writer knows how to put a new value here.
+	##
+	## Decided where the field is built, because that is the one place that knows
+	## what kind of statement it came from: an argument of a call the writer can
+	## rebuild, the condition of a branch, the value a match switches on, what a
+	## return hands back - all true. A field read out of a shape the writer has
+	## no way to print again is false, whatever its type, and asking the node's
+	## type instead was how a branch's condition could never be touched.
+	var editable: bool = false
+
 	func is_satisfied() -> bool:
 		return source != ComposerNode.ValueSource.MISSING
 
@@ -93,6 +103,14 @@ class Port extends RefCounted:
 	var multiplicity: ComposerNode.PortMultiplicity = (
 		ComposerNode.PortMultiplicity.SINGLE
 	)
+
+	## Which of the node's fields a data input stands for, or -1 for a pin that
+	## stands for none.
+	##
+	## Carried on the pin rather than parsed out of its id. `arg_2` happens to end
+	## in a number; `condition_in` does not, and a controller that read the index
+	## off the name could reach a call's arguments and nothing else.
+	var field_index: int = -1
 
 	func is_execution() -> bool:
 		return kind == ComposerNode.PortKind.EXECUTION
@@ -147,17 +165,19 @@ var entry: ComposerCatalog.Entry = null
 
 ## Whether a person may change `field` at all.
 ##
-## One condition, and it is about the statement rather than the value: a branch,
-## a return, a wait on a signal cannot be printed back from the model, so the
-## writer would have to rebuild them out of something that never held them.
+## The field says so itself. It used to be decided from the statement - only a
+## call had a type, so only a call's fields could be touched - which made the
+## condition of a branch and the value a return hands back things a person could
+## see and never change. Each field is now built knowing whether the writer can
+## print it, and that is the whole answer.
 ##
-## A value that arrives on a cable is **not** one of the exceptions, though it
-## was for a while. The reasoning was that a cable cannot be typed over - but
-## the text is the truth here and the cable is read out of it, so naming a
-## different local is rewiring and writing a literal is disconnecting. What
-## changes for a wired value is what it is offered as, not whether it may move.
+## A value that arrives on a cable is **not** an exception, though it was for a
+## while. The reasoning was that a cable cannot be typed over - but the text is
+## the truth here and the cable is read out of it, so naming a different local
+## is rewiring and writing a literal is disconnecting. What changes for a wired
+## value is what it is offered as, not whether it may move.
 func may_edit(field: Field) -> bool:
-	return not type_id.is_empty() and field != null
+	return field != null and field.editable
 
 
 ## Whether arbitrary text belongs in it, or a choice of what feeds it.
@@ -215,6 +235,16 @@ var has_layout_position: bool = false
 var layout_position: Vector2 = Vector2.ZERO
 
 
+## Whether this stands for a region the tool does not understand.
+##
+## Read, placed and drawn - and left exactly as it was written. An opaque node
+## is never rebuilt from this model, because there is no model of it: what is
+## held is its lines. A card that offered to rewrite what the tool could not
+## read is a card that would eventually rewrite it wrong, and the file it
+## damaged would be somebody else's.
+var opaque: bool = false
+
+
 ## Whether this node has been edited since it was read.
 ##
 ## Only a dirty node is rebuilt from the model. A clean one goes back exactly as
@@ -242,6 +272,42 @@ func find_port(port_id: StringName) -> Port:
 	for port: Port in ports:
 		if port.id == port_id:
 			return port
+	return null
+
+
+## Which field a pin stands for, or -1 when it stands for none.
+##
+## The pin was given this when it was read, so asking it is one lookup and it
+## works for every pin there is. Parsing a number off the end of the id was the
+## older way, and it can only ever answer for an argument - a condition, a match
+## value and a return value are all named rather than numbered.
+func field_for(port_id: StringName) -> int:
+	var pin: Port = find_port(port_id)
+	return pin.field_index if pin != null else -1
+
+
+## The pin that stands for the field at `index`, or nothing.
+##
+## The other direction of `field_for()`. A panel that lists arguments knows a
+## position and needs the pin; a canvas that was dragged knows the pin and
+## needs the position. Both are answered from what the reader wrote on the pin,
+## so neither has to know that an argument's id carries a number and a
+## condition's does not.
+## Whether this statement is written above `other`, and so whether the local
+## it declares is in scope where `other` runs.
+##
+## A value wire is a name written into a slot, and a name written above its
+## own `var` is a file that parses and does not compile. The reader will not
+## draw such a wire, so nothing downstream would notice: the canvas would show
+## the drag failing while the file quietly stopped building.
+func runs_before(other: ComposerNode) -> bool:
+	return span.last_line < other.span.first_line
+
+
+func pin_for_field(index: int) -> Port:
+	for pin: Port in ports:
+		if pin.field_index == index and not pin.is_execution():
+			return pin
 	return null
 
 

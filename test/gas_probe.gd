@@ -11,8 +11,20 @@
 ## straight at an ability would test a path nobody takes.
 ##
 ## Plays a fixed hand rather than a random one - same ability, same target, every
-## run. Random play makes a failure unreproducible, and the point of this is a
-## record that can be re-run and disagreed with.
+## run - so what the party does is never the reason a run differs from the one
+## before it.
+##
+## **What is not reproducible, and do not read it as if it were.** Accuracy is
+## rolled with `randf()`, off the stream this seeds, and the order of the draws
+## is not fixed: the fight runs on a wall clock and which battler acts inside
+## which frame moves with the machine. The unchanged engine, at one seed, has
+## finished arena1 in two, three and four rounds on three consecutive runs.
+##
+## So the only thing this probe says is the thing it has always been run for:
+## **both arenas reach `combat_finished`**. Round counts, who falls, and in what
+## order are noise between runs and are evidence of nothing - least of all of a
+## regression in an addon that was just re-deployed, which is exactly the way it
+## is easiest to misread. SBX-005 in `FINDINGS.md` has the measurements.
 ##
 ## @meta_license: MIT
 extends Node

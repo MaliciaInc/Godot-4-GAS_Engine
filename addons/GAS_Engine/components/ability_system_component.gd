@@ -24,6 +24,12 @@ signal tag_count_changed(tag: StringName, new_count: int)
 ## A tag's count reached zero and it was dropped.
 signal tag_removed(tag: StringName)
 
+## A tag, or anything under it, changed count. Unreal's AnyCountChange.
+signal tag_or_child_count_changed(tag: StringName, new_count: int)
+
+## A tag, or anything under it, appeared or went away. Unreal's NewOrRemoved.
+signal tag_or_child_presence_changed(tag: StringName, present: bool)
+
 ## An attribute's effective value actually moved. Never emitted for a write that
 ## resolved to the same value.
 signal attribute_changed(
@@ -63,9 +69,46 @@ signal active_effect_refreshed(active_effect: ActiveGameplayEffect)
 ## An activation attempt was refused, with the closed reason why.
 signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntime.ActivationError)
 
+## The same refusal, said in a vocabulary a UI can act on.
+##
+## The enum is what code switches on and it stays. A tag is what a game maps to
+## a message, an icon or a sound, and mapping an enum value to those means every
+## project writing the same switch. The existing signal is not removed: this is
+## a second way to hear one thing.
+signal ability_activation_failed_with_tag(
+	handle: GameplayAbilityHandle,
+	error: AbilityRuntime.ActivationError,
+	failure_tag: StringName
+)
+
 ## AbilityRuntime.try_activate() started this instance - accepted, not
 ## finished. See ability_runtime_ended for the outcome.
+## An ability was granted. The moment a handle starts naming something.
+signal ability_granted(handle: GameplayAbilityHandle)
+
+## An ability paid for itself and started its cooldowns, or did not.
+##
+## The moment an activation becomes irreversible, and the one somebody debugging
+## a cost asks about: it is where the resources went and where the cooldown
+## began, and a listener could see neither before.
+signal ability_committed(handle: GameplayAbilityHandle, result: AbilityCommitResult)
+
+## A one-shot cue was played on this entity.
+signal cue_executed(cue_tag: StringName)
+
+## Somebody said yes, or no, without naming a slot. Announced as well as
+## routed, so a UI can dismiss itself on the same press that confirmed a cast.
+signal generic_confirmed
+signal generic_cancelled
+
 signal ability_activated(handle: GameplayAbilityHandle, instance: GameplayAbility)
+
+## The body an ability happens to has been swapped for another one.
+##
+## Announced rather than discovered: an ability holding a reference to the
+## old avatar has to be told, and polling for it would mean every ability
+## checking every frame whether the world moved under it.
+signal ability_actor_info_changed(old_avatar: Node, new_avatar: Node)
 
 ## The canonical, handle-addressed superset of the instance's own
 ## `ability_ended` - fires for every activation this ASC started.
@@ -90,6 +133,15 @@ signal effect_requirement_cycle_aborted(handle: GameplayEffectHandle)
 
 ## A stack's count actually changed - never for a non-growing overflow, nor
 ## an expiration policy re-set at the same count.
+## How long an active effect has left, when something changed it - a refresh,
+## a stack, a caller setting it. Emitted where the value moves rather than
+## polled, so a UI bar can follow it without asking every frame.
+signal active_effect_time_changed(handle: GameplayEffectHandle, remaining: float)
+
+## A grant's own state changed: its level, its input binding, its dynamic
+## tags. What a list of abilities redraws on.
+signal ability_spec_changed(handle: GameplayAbilityHandle)
+
 signal active_effect_stack_changed(handle: GameplayEffectHandle, old_count: int, new_count: int)
 
 ## A stack was already at its limit when another application arrived.
@@ -117,6 +169,51 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		share_attributes = value
 		if is_node_ready():
 			_adopt_attribute_sets()
+
+@export_category("Tag relationships")
+## One place that says which kinds of ability block, cancel and require which,
+## instead of the same rule written on every ability it happens to be about.
+##
+## Optional, and additive only: nothing in it can make an ability activatable
+## that its own declaration refused. A central table quietly overruling what an
+## ability says about itself is a rule nobody reading the ability could account
+## for.
+@export var ability_tag_relationships: GameplayAbilityTagRelationships = null
+
+@export_category("Suppression")
+## Do not play cues on this component.
+##
+## Locally. It is not the same statement as "do not tell anybody a cue
+## happened": a dedicated server plays nothing and still has to say what
+## occurred, and a switch that meant both would make that impossible to
+## express. F6.6 gives replication its own answer.
+@export var suppress_cues: bool = false
+
+## Refuse every ability grant on this component.
+##
+## For a component being torn down, or one a game has decided is a spectator.
+## A refusal, in whatever shape the operation already refuses in - an invalid
+## handle from a grant, false from a retirement - rather than a silent no,
+## which would look exactly like a grant that worked.
+@export var suppress_ability_grants: bool = false
+
+@export_category("Input")
+## The slots that mean yes and no when nothing more specific is bound.
+##
+## Two ids rather than a convention, because which key confirms is the game's
+## decision and an engine that picked one would be picking it for every game.
+## Left at -1, the generic doors are still callable directly - a touch UI has
+## a confirm button and no key at all.
+@export var generic_confirm_input_id: int = -1
+@export var generic_cancel_input_id: int = -1
+
+@export_category("Compatibility")
+## Which set of contracts this component answers by.
+##
+## The default stays GODOT_NATIVE, and has to: a phase cannot change what an
+## existing project already does by being installed. A component only follows
+## Unreal's contract where they differ once somebody asks for it here.
+@export var compatibility_profile: GameplayCompatibilityProfile = GameplayCompatibilityProfile.new()
 #endregion
 
 
@@ -131,14 +228,83 @@ var scheduler: GameplayEffectScheduler = GameplayEffectScheduler.new()
 var ability_runtime: AbilityRuntime = AbilityRuntime.new()
 var events: GameplayEventRuntime = GameplayEventRuntime.new()
 
+## Who these abilities belong to, and who they happen to.
+var actor_info: GameplayAbilityActorInfo = GameplayAbilityActorInfo.new()
+
+## The one way this component talks to another machine, or null.
+##
+## Exactly one, and it is a reference rather than something looked up: two
+## would be a component two authorities disagree about, and a lookup would be
+## a component whose network can be changed without it knowing. Null is the
+## ordinary case and always will be - a single-player game has no authority
+## to ask, and nothing in this component behaves differently for the absence.
+##
+## Set by GameplayNetworkRuntime.attach() rather than by hand: a component
+## pointing at a runtime that has not registered it is one whose messages
+## name an entity nobody can resolve.
+var network: GameplayNetworkRuntime = null
+
+## Set once, by dispose(). A second teardown must not run: the first one
+## already severed the references the second would walk.
+var _disposed: bool = false
+
 #region Lifecycle
+## Says what happens here to whoever is debugging, and nothing at all when
+## nobody is. See GasDebugChannel: it listens to this component's own signals
+## rather than being reported to from inside the runtimes, so there is one
+## description of what happened rather than two that can disagree.
+var debug_channel: GasDebugChannel = GasDebugChannel.new()
+
+
 func _ready() -> void:
 	_wire_runtimes()
+	# The entity this component hangs under, unless somebody said otherwise
+	# before it entered the tree. Owner and avatar both, which is what every
+	# project that never thinks about avatars gets and always got.
+	if actor_info.owner == null:
+		actor_info.initialize(get_parent(), get_parent())
 	_adopt_attribute_sets()
+	# Every entity is inspectable while something is listening, and none of them
+	# has to be wired up for it: a debugger somebody has to remember to attach is
+	# a debugger that is not attached the one time it was needed. `watch()`
+	# answers false and connects nothing when nothing is listening, which is
+	# every exported build.
+	debug_channel.watch(self)
+
+
+## Whether this component answers by Unreal's contracts where they differ.
+##
+## Asked by the runtimes rather than decided by them: two runtimes reading the
+## same profile agree, and two runtimes each deciding what "compatible" means
+## do not.
+func uses_ue_5_7_contracts() -> bool:
+	return compatibility_profile != null and compatibility_profile.is_ue_5_7()
 
 
 ## The single handover: both exports above route here, so the sets and the
 ## policy that copies them can never be applied one without the other.
+## Adopt one more attribute set, and hand back the receipt that retires it.
+##
+## Incremental on purpose: a loadout going on must not re-initialise the
+## attributes already here, because initialising re-seeds current from base
+## and a kit should not heal anybody.
+## @composer
+func register_attribute_set(authored: AttributeSet) -> RegisteredAttributeSetHandle:
+	var taken: AttributeSet = attributes.adopt_attribute_set(authored, not share_attributes)
+	if taken == null:
+		return null
+	return RegisteredAttributeSetHandle.of(taken, self)
+
+
+## Let go of a set this component adopted. False for a receipt from somebody
+## else's component, which is the case a shared loadout Resource makes real.
+## @composer
+func unregister_attribute_set(handle: RegisteredAttributeSetHandle) -> bool:
+	if handle == null or not handle.is_valid() or handle.owner_asc != self:
+		return false
+	return attributes.release_attribute_set(handle.adopted)
+
+
 func _adopt_attribute_sets() -> void:
 	attributes.set_attribute_sets(attribute_sets, not share_attributes)
 
@@ -156,6 +322,7 @@ func _wire_runtimes() -> void:
 	effects.inhibition.effects = effects
 	effects.stacking.effects = effects
 	effects.chain.effects = effects
+	effects.cue_params.effects = effects
 
 	scheduler.effects = effects
 
@@ -167,8 +334,10 @@ func _wire_runtimes() -> void:
 	ability_runtime.tag_semantics.owner_asc = self
 	ability_runtime.tag_semantics.ability_runtime = ability_runtime
 	ability_runtime.policies.ability_runtime = ability_runtime
+	ability_runtime.policies.bind_to(self)
 	ability_runtime.lifecycle.ability_runtime = ability_runtime
 	ability_runtime.cooldowns.ability_runtime = ability_runtime
+	ability_runtime.queries.ability_runtime = ability_runtime
 
 	events.owner_asc = self
 	events.ability_runtime = ability_runtime
@@ -181,6 +350,7 @@ func _process(delta: float) -> void:
 
 ## Advance turn-based effects. Called by an external turn manager; the frame
 ## loop never consumes turns.
+## @composer
 func advance_turn(turns: int = 1) -> void:
 	scheduler.advance_turn(turns)
 
@@ -202,9 +372,31 @@ func cleanup() -> void:
 	attributes.clear_contributions()
 
 
+## Terminal teardown. cleanup() remains a reusable reset for a live ASC.
+func dispose() -> void:
+	if _disposed:
+		return
+
+	cleanup()
+	debug_channel.stop()
+
+	scheduler.effects = null
+
+	events.owner_asc = null
+	events.ability_runtime = null
+
+	ability_runtime.dispose()
+	effects.dispose()
+
+	attributes.owner_node = null
+	actor_info.clear()
+	network = null
+	_disposed = true
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		cleanup()
+		dispose()
 #endregion
 
 
@@ -221,8 +413,39 @@ func emit_tag_change(tag: StringName, change: GameplayTagRuntime.Change, new_cou
 			tag_removed.emit(tag)
 		_:
 			pass
-	effects.on_owner_tags_changed()
+	_emit_hierarchical_tag_change(tag, change)
+	# Which tag moved is known here, and saying so is what lets the effect
+	# runtime ask only the effects whose requirements are about it.
+	effects.on_owner_tag_changed(tag)
 	ability_runtime.request_passive_reevaluation()
+
+
+## The parent-aware half of a tag change: a listener watching `State` hears
+## about `State.Stunned`, which is what a hierarchy is for.
+##
+## Presence is announced only where the hierarchical count actually crossed
+## zero. Adding `State.Rooted` beside an existing `State.Stunned` takes `State`
+## from one to two, and a listener treating every count change as "it is held
+## now" would fire twice for one condition and act on the second one.
+##
+## The crossing is read off the change rather than off a before-and-after
+## snapshot: only ADDED can take an ancestor to one, and only REMOVED can take
+## it to zero, because every other change moves the count by one from at
+## least one.
+func _emit_hierarchical_tag_change(
+	tag: StringName, change: GameplayTagRuntime.Change
+) -> void:
+	if change == GameplayTagRuntime.Change.NONE:
+		return
+	var added: bool = change == GameplayTagRuntime.Change.ADDED
+	var removed: bool = change == GameplayTagRuntime.Change.REMOVED
+	for ancestor: StringName in GameplayTagRuntime.ancestors_of(tag):
+		var total: int = tags.count(ancestor)
+		tag_or_child_count_changed.emit(ancestor, total)
+		if added and total == 1:
+			tag_or_child_presence_changed.emit(ancestor, true)
+		elif removed and total == 0:
+			tag_or_child_presence_changed.emit(ancestor, false)
 
 
 ## Emit an attribute change and run the set's dependency hook, in that order.
@@ -241,8 +464,39 @@ func emit_attribute_changed(
 	ability_runtime.request_passive_reevaluation()
 
 
-## The node cues and effects act on: the entity, not this component.
+## Who these abilities belong to, and who they happen to.
+##
+## The component stays where the grants are; the avatar is what effects and
+## cues act on, and it may be swapped for another body at any time. Whoever
+## held the old one is told, because an ability polling for it would be every
+## ability asking every frame whether the world moved.
+func init_ability_actor_info(owner: Node, avatar: Node = null, controller: Node = null) -> void:
+	var old_avatar: Node = actor_info.avatar
+	actor_info.initialize(owner, avatar, controller)
+	if old_avatar == actor_info.avatar:
+		return
+
+	# Every granted ability is told directly as well as through the signal. An
+	# ability holding the old body is the thing most likely to act on a corpse,
+	# and asking it to subscribe to its own component to find out would be a
+	# subscription every ability has to remember to make.
+	for spec: GameplayAbilitySpec in ability_runtime.specs():
+		if spec.per_actor_instance != null:
+			spec.per_actor_instance.on_avatar_changed(old_avatar, actor_info.avatar)
+	ability_actor_info_changed.emit(old_avatar, actor_info.avatar)
+
+
+## The node cues and effects act on.
+##
+## The avatar when there is one, the owner when the avatar has been freed,
+## and the parent when nobody set either - which is every project that never
+## thinks about avatars, and is what this answered before there were any.
+## @composer
 func get_effect_target() -> Node:
+	if actor_info != null and is_instance_valid(actor_info.avatar):
+		return actor_info.avatar
+	if actor_info != null and is_instance_valid(actor_info.owner):
+		return actor_info.owner
 	var parent: Node = get_parent()
 	return parent if parent != null else self
 
@@ -278,20 +532,63 @@ func _cue_manager() -> CueManagerScript:
 	return get_node_or_null(CueManagerScript.AUTOLOAD_NODE_PATH) as CueManagerScript
 
 
+## What the two suppressions are called in the ledger below. Constants because
+## a bare string here collides with unrelated words elsewhere in the addon, and
+## because a key spelled at two call sites is a key that drifts.
+const CUE_SUPPRESSION: StringName = &"suppression.cues"
+const GRANT_SUPPRESSION: StringName = &"suppression.grants"
+
+## Which suppressions have already been mentioned, so a switch that is on for
+## a whole match is diagnosed once rather than sixty times a second.
+var _suppressions_said: Dictionary[StringName, bool] = {}
+
+
+## Whether this is suppressed, saying so the first time it comes up.
+func _suppressed(what: StringName, switched_off: bool, why: String) -> bool:
+	if not switched_off:
+		return false
+	if not _suppressions_said.has(what):
+		_suppressions_said[what] = true
+		push_warning(why)
+	return true
+## Whether cues are switched off here, said the first time it matters.
+func _cues_are_off() -> bool:
+	return _suppressed(
+		CUE_SUPPRESSION,
+		suppress_cues or GasDebugOptions.cues_suppressed(),
+		"GAS_Engine: cues are suppressed on this component; none will play here."
+	)
+
+
+## Whether grants are switched off here, on the same terms.
+func _grants_are_off() -> bool:
+	return _suppressed(
+		GRANT_SUPPRESSION,
+		suppress_ability_grants or GasDebugOptions.ability_grants_suppressed(),
+		"GAS_Engine: ability grants are suppressed on this component; each is refused."
+	)
+
+
+
+
 ## Play a one-shot cue on this entity through the global manager.
+## @composer
 func execute_cue(params: GameplayCueParams) -> void:
-	if params == null:
+	if params == null or _cues_are_off():
 		return
 	if params.target == null:
 		params.target = get_effect_target()
 	var manager: CueManagerScript = _cue_manager()
 	if manager != null:
 		manager.execute_cue(params)
+	cue_executed.emit(params.cue_tag)
 
 
 ## Start a PERSISTENT cue's on_active/while_active. An invalid handle if
 ## there is no manager or no registry entry for the tag.
 func activate_persistent_cue(params: GameplayCueParams) -> GameplayCueHandle:
+	if _cues_are_off():
+		return GameplayCueHandle.new()
 	if params == null:
 		return GameplayCueHandle.new()
 	if params.target == null:
@@ -301,6 +598,21 @@ func activate_persistent_cue(params: GameplayCueParams) -> GameplayCueHandle:
 
 
 ## End and pool a PERSISTENT cue started by `activate_persistent_cue`.
+## End every persistent cue running on this entity.
+##
+## For a character being despawned or reset: the effects and abilities that
+## started them are going away with it, so nothing else is ever going to hand
+## back their handles, and a cue nobody can end is a cue forever.
+##
+## Everything on this entity, including cues an ability started - which is the
+## point of it being on the component rather than on either of them.
+## @composer
+func remove_all_gameplay_cues() -> void:
+	var manager: CueManagerScript = _cue_manager()
+	if manager != null:
+		manager.remove_all_cues(get_effect_target())
+
+
 func deactivate_persistent_cue(handle: GameplayCueHandle, params: GameplayCueParams) -> void:
 	var manager: CueManagerScript = _cue_manager()
 	if manager != null:
@@ -309,23 +621,38 @@ func deactivate_persistent_cue(handle: GameplayCueHandle, params: GameplayCuePar
 
 
 #region Attributes
+## @composer
 func get_attribute(attribute_name: StringName) -> AttributeData:
 	return attributes.find(attribute_name)
 
 
+## @composer
 func has_attribute(attribute_name: StringName) -> bool:
 	return attributes.has(attribute_name)
 
 
+## @composer
 func get_attribute_base(attribute_name: StringName) -> float:
 	return attributes.get_base_value(attribute_name)
 
 
+## @composer
 func get_attribute_current(attribute_name: StringName) -> float:
 	return attributes.get_current_value(attribute_name)
 
 
+## What this attribute would read if only channels 0..`through_channel` had
+## run - the reading a magnitude wants when it is meant to see an attribute
+## before the last stages of its own composition are applied.
+## @composer
+func get_attribute_up_to_channel(
+	attribute_name: StringName, through_channel: int
+) -> float:
+	return attributes.value_up_to_channel(attribute_name, through_channel)
+
+
 ## The one durable-mutation path. No gameplay code writes `current_value`.
+## @composer
 func set_attribute_base(
 	attribute_name: StringName, new_base_value: float, source_spec: GameplayEffectSpec = null
 ) -> AttributeMutationResult:
@@ -341,6 +668,7 @@ func set_attribute_base(
 	return result
 
 
+## @composer
 func apply_attribute_base_delta(
 	attribute_name: StringName, amount: float, source_spec: GameplayEffectSpec = null
 ) -> AttributeMutationResult:
@@ -362,6 +690,7 @@ func initialize_attribute_overrides(overrides: Dictionary[StringName, float]) ->
 ## The one entry point every application reaches, self-application included.
 ## `self` is always the target, so an unresolved SOURCE gets one last chance
 ## - `context.instigator` - before a required capture refuses.
+## @composer
 func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 	var result: GameplayEffectApplicationResult
 	if spec == null:
@@ -374,6 +703,7 @@ func apply_effect_spec_result(spec: GameplayEffectSpec) -> GameplayEffectApplica
 	return result
 
 ## F2 wrapper: the active effect a successful application produced, or null.
+## @composer
 func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	return apply_effect_spec_result(spec).active_effect
 
@@ -381,25 +711,33 @@ func apply_effect_spec(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 ## Captures are prepared here, on the shared spec, before it is copied - taken
 ## later, inside the copy's own apply, a SOURCE+SNAPSHOT would be one target's
 ## read, not the shared one every target needs.
+## @composer
+## @composer_name: Apply Spec To Target, With Result
 func apply_effect_spec_to_target_result(
-	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
+	spec: GameplayEffectSpec,
+	target_asc: AbilitySystemComponent,
+	aimed_at: GameplayAbilityTargetData = null
 ) -> GameplayEffectApplicationResult:
 	if target_asc == null or spec == null:
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.INVALID_SPEC, spec)
 	if not spec.prepare_captures(self):
 		return GameplayEffectApplicationResult.failure(GameplayEffectApplicationResult.Status.EVALUATION_FAILED, spec)
+	# `aimed_at` is this victim's share of the aim, and null for an effect that
+	# was not aimed at anything - which is most of them.
 	var result: GameplayEffectApplicationResult = target_asc.apply_effect_spec_result(
-		spec.create_application_copy()
+		spec.create_application_copy_for(aimed_at)
 	)
 	if result.is_ok():
 		effect_applied_to_target.emit(target_asc, spec)
 	return result
 
+## @composer
 func apply_effect_spec_to_target(
 	spec: GameplayEffectSpec, target_asc: AbilitySystemComponent
 ) -> ActiveGameplayEffect:
 	return apply_effect_spec_to_target_result(spec, target_asc).active_effect
 
+## @composer
 func apply_gameplay_effect_result(
 	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
 ) -> GameplayEffectApplicationResult:
@@ -411,45 +749,118 @@ func apply_gameplay_effect_result(
 	spec.source_asc = source_asc
 	return apply_effect_spec_result(spec)
 
+## @composer
 func apply_gameplay_effect(
 	effect: GameplayEffect, source_asc: AbilitySystemComponent = null, effect_level: float = 1.0
 ) -> ActiveGameplayEffect:
 	return apply_gameplay_effect_result(effect, source_asc, effect_level).active_effect
 
 
+## @composer
 func remove_active_effect(active_effect: ActiveGameplayEffect) -> void:
 	effects.remove(active_effect)
 
+## @composer
 func get_active_effect(handle: GameplayEffectHandle) -> ActiveGameplayEffect:
 	return effects.handles.resolve(handle)
 
+## @composer
 func find_active_effects(query: GameplayEffectQuery) -> Array[ActiveGameplayEffect]:
 	return effects.handles.find(query)
 
+## @composer
 func find_active_effect_handles(query: GameplayEffectQuery) -> Array[GameplayEffectHandle]:
 	return effects.handles.find_handles(query)
 
+## @composer
 func count_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.count(query)
 
+## Change what a running effect is worth, by handle.
+##
+## The five doors the phase names. What each of them means is
+## `GameplayEffectMutations`: this is the surface, and a surface with the work
+## in it is a component that grows every time anything new can be done.
+## @composer
+func set_active_effect_level(
+	handle: GameplayEffectHandle, level: float
+) -> GameplayEffectMutationResult:
+	# Announced: a level can move a duration authored as a magnitude of it.
+	return _timed(handle, GameplayEffectMutations.set_level(effects, handle, level))
+
+
+## @composer
+func set_active_effect_stack_count(
+	handle: GameplayEffectHandle, count: int
+) -> GameplayEffectMutationResult:
+	# Announced: a stack can refresh the clock.
+	return _timed(handle, GameplayEffectMutations.set_stack_count(effects, handle, count))
+
+
+## @composer
+func remove_active_effect_stacks(
+	handle: GameplayEffectHandle, count: int
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.remove_stacks(effects, handle, count)
+
+
+## @composer
+## @composer_name: Set A Caller-Supplied Value
+func update_active_effect_set_by_caller(
+	handle: GameplayEffectHandle, tag: StringName, value: float
+) -> GameplayEffectMutationResult:
+	return GameplayEffectMutations.update_set_by_caller(effects, handle, tag, value)
+
+
+## @composer
+func set_active_effect_duration(
+	handle: GameplayEffectHandle, seconds: float
+) -> GameplayEffectMutationResult:
+	return _timed(handle, GameplayEffectMutations.set_duration(effects, handle, seconds))
+
+
+## Announce how long is left when a mutation actually changed it, and hand the
+## result straight back so a door stays one line.
+##
+## Only on success, and reading what the effect now says rather than what the
+## caller asked for: a duration that was clamped or refused would otherwise be
+## announced as the number nobody got.
+func _timed(
+	handle: GameplayEffectHandle, done: GameplayEffectMutationResult
+) -> GameplayEffectMutationResult:
+	if done == null or not done.is_ok():
+		return done
+	var active: ActiveGameplayEffect = get_active_effect(handle)
+	if active != null:
+		active_effect_time_changed.emit(handle, active.time_remaining)
+	return done
+
+
+## @composer
 func remove_active_effects(query: GameplayEffectQuery) -> int:
 	return effects.handles.remove_matching(query)
 
+## @composer
 func remove_active_effect_by_handle(handle: GameplayEffectHandle) -> bool:
 	return effects.handles.remove_by_handle(handle)
 
+## @composer
 func get_effect_duration_remaining(handle: GameplayEffectHandle) -> float:
 	return effects.handles.duration_remaining(handle)
 
+## @composer
 func get_effect_turns_remaining(handle: GameplayEffectHandle) -> int:
 	return effects.handles.turns_remaining(handle)
 
+## @composer
 func remove_effects_with_tag(tag: StringName) -> void:
 	effects.remove_effects_with_tag(tag)
 
+## @composer
 func remove_effects_from_source(source_node: Node) -> void:
 	effects.remove_effects_from_source(source_node)
 
+## @composer
 func get_active_effects() -> Array[ActiveGameplayEffect]:
 	return effects.active_effects()
 
@@ -457,47 +868,75 @@ func get_active_effects() -> Array[ActiveGameplayEffect]:
 ## Whether every attribute this cost touches can pay it in full from its
 ## durable base. `GameplayEffectEvaluator.can_afford()` carries the why, and
 ## runs the very request a commit runs, so a preview cannot disagree with it.
+## @composer
 func can_afford_cost(effect: GameplayEffect, effect_level: float = 1.0) -> bool:
 	return GameplayEffectEvaluator.can_afford(effect, effect_level, self)
 #endregion
 
 
 #region Tags
+## @composer
 func add_tag(tag: StringName) -> void:
-	emit_tag_change(tag, tags.add(tag), tags.count(tag))
+	emit_tag_change(tag, tags.add(tag), tags.count_exact(tag))
 
 
+## @composer
 func remove_tag(tag: StringName) -> void:
-	emit_tag_change(tag, tags.remove(tag), tags.count(tag))
+	emit_tag_change(tag, tags.remove(tag), tags.count_exact(tag))
 
 
+## Hold this tag exactly `count` times, whatever it is held now.
+##
+## By adding and removing rather than by writing the number: the count is a
+## reference count, and everything watching it - a passive's requirement, an
+## immunity, a trigger - is watching the signals those emit. Writing the
+## field would move the number without telling anybody.
+## @composer
+func set_tag_count(tag: StringName, count: int) -> void:
+	var wanted: int = maxi(count, 0)
+	var held: int = tags.count_exact(tag)
+	while held < wanted:
+		add_tag(tag)
+		held += 1
+	while held > wanted:
+		remove_tag(tag)
+		held -= 1
+
+
+## @composer
 func clear_tag(tag: StringName) -> void:
 	emit_tag_change(tag, tags.clear(tag), 0)
 
 
+## @composer
 func has_tag_exact(tag: StringName) -> bool:
 	return tags.has_exact(tag)
 
 
+## @composer
 func has_tag(tag: StringName) -> bool:
 	return tags.has(tag)
 
 
+## @composer
 func has_any_tags(query: Array[StringName]) -> bool:
 	return tags.has_any(query)
 
 
+## @composer
 func has_all_tags(query: Array[StringName]) -> bool:
 	return tags.has_all(query)
 
 
 ## Seconds left on a tag, or INF when something grants it with no end.
+## @composer
 func get_tag_duration_remaining(tag: StringName) -> float:
 	return effects.tag_duration_remaining(tag)
 
 
 ## Turns left on a tag. Seconds and turns are different units and get different
 ## questions, so a UI cannot count a turn-based debuff down in seconds.
+## @composer
 func get_tag_turns_remaining(tag: StringName) -> int:
 	return effects.tag_turns_remaining(tag)
 #endregion
@@ -507,70 +946,342 @@ func get_tag_turns_remaining(tag: StringName) -> int:
 ## Grant an ability from its scene - the one way an ability is ever granted.
 ## prepare -> commit under the hood; a failed prepare frees whatever it
 ## instantiated rather than leaving a Node nobody owns.
+## @composer
 func give_ability(
 	ability_scene: PackedScene,
 	level: float = 1.0,
 	input_id: int = -1,
 	source: GameplayAbilitySource = null
 ) -> GameplayAbilityHandle:
+	if _grants_are_off():
+		return GameplayAbilityHandle.new()
 	return ability_runtime.give_ability(ability_scene, level, input_id, source)
 
 
-## Convenience for a caller holding the running instance rather than its
-## handle. A caller that only has the handle - GLoot's receipt, mainly -
-## uses ability_runtime.remove_ability(handle) directly; get_ability_spec
-## and get_ability_cooldown_state live there too, for the same reason.
-func remove_ability(ability: GameplayAbility) -> void:
-	ability_runtime.remove(ability)
+## The same grant, with everything a grant can be told.
+##
+## The three-argument call above is what most grants are and it is unchanged.
+## This is for the ones that also name an InputMap action.
+## @composer
+func give_ability_with_options(
+	ability_scene: PackedScene, options: GameplayAbilityGrantOptions
+) -> GameplayAbilityHandle:
+	if _grants_are_off():
+		return GameplayAbilityHandle.new()
+	return ability_runtime.give_ability_with_options(ability_scene, options)
 
 
-func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
-	if ability == null or ability.current_spec == null:
-		return false
-	var reason: AbilityRuntime.ActivationError = ability_runtime.activation_error(
-		ability.current_spec
+## What a handle was granted, or null when it names nothing here.
+##
+## The receipt is the identity. A running instance is a thing that exists for as
+## long as one activation lasts; the grant outlives every one of them, and a
+## caller holding an instance to remember which ability it meant is holding the
+## shorter-lived of the two.
+## @composer
+func get_ability_spec(handle: GameplayAbilityHandle) -> GameplayAbilitySpec:
+	return ability_runtime.get_spec(handle)
+
+
+## Take a grant back. False when the handle names nothing here.
+## @composer
+func remove_ability_handle(
+	handle: GameplayAbilityHandle,
+	policy: AbilityRuntime.AbilityRemovalPolicy = AbilityRuntime.AbilityRemovalPolicy.CANCEL_IMMEDIATELY
+) -> bool:
+	return ability_runtime.remove_ability(handle, policy)
+
+
+## Start what a handle names, and say what happened.
+##
+## The result object, not a bool: "it did not start" has half a dozen reasons
+## and a caller that has to guess which will guess wrong on the one that
+## matters. A null context is an activation with nothing to say about itself,
+## which is most of them.
+## @composer
+func try_activate_ability_handle(
+	handle: GameplayAbilityHandle, context: GameplayAbilityActivationContext = null
+) -> GameplayAbilityActivationResult:
+	return ability_runtime.try_activate_with(handle, context)
+
+
+## Whether what a handle names could start right now.
+## @composer
+func can_activate_ability_handle(
+	handle: GameplayAbilityHandle, emit_failure: bool = false
+) -> bool:
+	return ability_runtime.can_activate_spec(
+		ability_runtime.get_spec(handle), null, emit_failure
 	)
-	if reason == AbilityRuntime.ActivationError.NONE:
-		return true
-	if emit_failure:
-		ability_activation_failed.emit(ability, reason)
-	return false
 
 
+## Route an input slot to a grant. False when it was never granted here.
+## @composer
+func bind_ability_handle_to_input(
+	handle: GameplayAbilityHandle, input_id: int, unbind_others: bool = true
+) -> bool:
+	var bound: bool = ability_runtime.bind_spec_to_input(
+		ability_runtime.get_spec(handle), input_id, unbind_others
+	)
+	if bound:
+		ability_spec_changed.emit(handle)
+	return bound
+
+
+## Deprecated: use remove_ability_handle(). Kept for a caller holding the
+## running instance, and holding nothing of its own - every one of these three
+## resolves the grant behind the instance and asks the door above.
+## @composer
+## @composer_deprecated: use remove_ability_handle(): a grant outlives its instance
+func remove_ability(ability: GameplayAbility) -> void:
+	remove_ability_handle(ability.get_ability_handle() if ability != null else null)
+
+
+## Deprecated: use can_activate_ability_handle(). The instance it was handed is
+## the one a refusal names, because that is the one the caller is waiting to
+## hear about.
+## @composer
+## @composer_deprecated: use can_activate_ability_handle() for the same reason
+func can_activate_ability(ability: GameplayAbility, emit_failure: bool = false) -> bool:
+	return ability_runtime.can_activate_spec(
+		ability.current_spec if ability != null else null, ability, emit_failure
+	)
+
+
+## @composer
 func cancel_abilities_with_tags(cancel_tags: Array[StringName]) -> void:
 	ability_runtime.cancel_with_tags(cancel_tags)
 
 
-## Route an input slot to a granted ability. False when it was never granted.
+## Grant and run once, retiring the grant when that run ends.
+##
+## The activation result, not a handle: the grant is gone either way, and
+## what a caller needs to know is why it did not start.
+## @composer
+func give_ability_and_activate_once(
+	scene: PackedScene,
+	level: float = 1.0,
+	source: GameplayAbilitySource = null,
+	context: GameplayEffectContext = null
+) -> GameplayAbilityActivationResult:
+	return ability_runtime.give_and_activate_once(scene, level, source, context)
+
+
+## Retire this grant once nothing is still running it. False when the handle
+## names nothing here.
+## @composer
+func set_remove_ability_on_end(handle: GameplayAbilityHandle) -> bool:
+	return ability_runtime.remove_ability_on_end(handle)
+
+
+## Every grant on this component.
+## @composer
+func get_ability_specs() -> Array[GameplayAbilitySpec]:
+	return ability_runtime.specs()
+
+
+## What this grant's cooldown is doing right now.
+## @composer
+func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldownState:
+	return ability_runtime.get_ability_cooldown_state(handle)
+
+
+## Which input slots are held down, as this component understands it.
+## @composer
+func get_held_inputs() -> Array[int]:
+	return ability_runtime.held_inputs()
+
+
+## Cancel every activation whose ability matches, leaving `excluding` alone.
+## @composer
+func cancel_abilities_matching(
+	query: GameplayTagQuery, excluding: GameplayAbilitySpec = null
+) -> void:
+	ability_runtime.cancel_matching_query(query, excluding)
+
+
+## Cancel every activation in flight, for whatever reason is given.
+## @composer
+func cancel_all_abilities(
+	reason: GameplayAbilityTask.CancelReason = GameplayAbilityTask.CancelReason.ABILITY_ABORTED
+) -> void:
+	ability_runtime.abort_all(reason)
+
+
+## Retire every grant. Activations in flight are cancelled first.
+## @composer
+func clear_all_abilities() -> void:
+	ability_runtime.clear()
+
+## Start every grant whose effective tags match, and answer which started.
+##
+## Over a snapshot of the grants: an activation can grant or retire another
+## ability, and a loop reading the live list while that happens is reading a
+## list that moved under it.
+## @composer
+func try_activate_abilities_by_query(
+	query: GameplayTagQuery
+) -> Array[GameplayAbilityHandle]:
+	var started: Array[GameplayAbilityHandle] = []
+	for spec: GameplayAbilitySpec in ability_runtime.queries.specs_matching(query):
+		if ability_runtime.try_activate(spec.handle).is_ok():
+			started.append(spec.handle)
+	return started
+
+
+## Every grant whose effective tags match, in the order they were granted.
+## @composer
+func find_ability_specs(query: GameplayTagQuery) -> Array[GameplayAbilitySpec]:
+	return ability_runtime.queries.specs_matching(query)
+
+
+## The first grant bound to this input slot.
+## @composer
+func find_ability_spec_by_input(input_id: int) -> GameplayAbilitySpec:
+	return ability_runtime.queries.spec_for_input(input_id)
+
+
+## The first grant of this ability script, which is what "by class" means in
+## a language where a class is a script.
+## @composer
+func find_ability_spec_by_script(script: Script) -> GameplayAbilitySpec:
+	return ability_runtime.queries.spec_for_script(script)
+
+
+## Retire every grant bound to this slot, and say how many went.
+## @composer
+func clear_abilities_with_input(input_id: int) -> int:
+	return ability_runtime.queries.clear_specs_with_input(input_id)
+
+
+## Block every ability whose effective tags match, until this is taken back.
+##
+## Counted: a cutscene and a stun that both block, and one that ends, leave
+## the other's block standing. A flag would have ended both.
+## @composer
+func block_abilities_with_query(query: GameplayTagQuery) -> void:
+	ability_runtime.queries.block_with_query(query)
+
+
+## Take one block back.
+## @composer
+func unblock_abilities_with_query(query: GameplayTagQuery) -> void:
+	ability_runtime.queries.unblock_with_query(query)
+
+
+## Whether an outstanding external block covers this grant. Not the same
+## question as whether another ability is blocking it.
+## @composer
+func is_ability_blocked(spec: GameplayAbilitySpec) -> bool:
+	return ability_runtime.queries.blocked_externally(spec)
+
+
+## Which effect granted this ability, when one did.
+## @composer
+func find_effect_handle_that_granted(
+	handle: GameplayAbilityHandle
+) -> GameplayEffectHandle:
+	return ability_runtime.queries.effect_that_granted(handle)
+
+
+## Deprecated: use bind_ability_handle_to_input().
 ##
 ## The runtime refuses and says so; the facade used to drop the answer, so a
 ## caller binding an ungranted ability found out only when the press reached no one.
+## @composer
+## @composer_deprecated: use bind_ability_handle_to_input(): a binding is on the grant
 func bind_ability_to_input(
 	ability: GameplayAbility, input_id: int, unbind_others: bool = true
 ) -> bool:
 	return ability_runtime.bind_to_input(ability, input_id, unbind_others)
 
 
+## @composer
+## @composer_name: Input Pressed
 func ability_local_input_pressed(input_id: int) -> void:
 	ability_runtime.input_pressed(input_id)
 
 
+## The same press, said by the name of an InputMap action.
+##
+## Beside the slot, not instead of it. A grant that carries both is reachable
+## two ways and is still one grant, so a project migrating from slots to
+## actions can do it one ability at a time.
+## @composer
+func ability_local_input_action_pressed(action: StringName) -> void:
+	ability_runtime.input_action_pressed(action)
+
+
+## @composer
+func ability_local_input_action_released(action: StringName) -> void:
+	ability_runtime.input_action_released(action)
+
+
+## @composer
+## @composer_name: Input Released
 func ability_local_input_released(input_id: int) -> void:
 	ability_runtime.input_released(input_id)
+	if input_id == generic_confirm_input_id and input_id != -1:
+		input_confirm()
+	elif input_id == generic_cancel_input_id and input_id != -1:
+		input_cancel()
+
+
+## Yes, from whatever said it.
+##
+## Tasks first and providers second, and that order is the contract: a task
+## that ends the ability on confirm has to be able to, and a provider that
+## confirmed first would have handed target data to an ability about to stop.
+## A provider that already finished hears nothing - it is not waiting.
+## @composer
+func input_confirm() -> void:
+	generic_confirmed.emit()
+	ability_runtime.tasks.input_confirm()
+	for provider: GameplayTargetProvider in ability_runtime.queries.previewing_providers():
+		provider.confirm()
+
+
+## And no, on the same terms.
+##
+## `from_remote` is what a network runtime passes when the no arrived from
+## another machine, and it is the only thing that makes this door refuse
+## anybody: an ability whose grant reserves termination to the authority, or
+## which never said it honours a remote cancellation, does not hear it.
+##
+## The signal is emitted either way. A no arrived and a game listening for
+## one is entitled to know; what this addon owns - the tasks and the aiming
+## providers - is what the policy actually governs.
+## @composer
+func input_cancel(from_remote: bool = false) -> void:
+	generic_cancelled.emit()
+	var deaf: Array[GameplayAbility] = (
+		ability_runtime.queries.deaf_to_remote_cancellation() if from_remote
+		else ([] as Array[GameplayAbility])
+	)
+	ability_runtime.tasks.input_cancel(deaf)
+	for provider: GameplayTargetProvider in (
+		ability_runtime.queries.previewing_providers(deaf)
+	):
+		provider.cancel()
 
 
 func register_ability_task(task: GameplayAbilityTask) -> GameplayAbilityTask:
 	return ability_runtime.register_task(task)
 
 
+## These two stay addressed by instance, and are not deprecated for it: a task
+## belongs to one activation and target data is delivered into one, so there is
+## no grant-shaped question either of them could be asked instead.
+## @composer
 func cancel_ability_tasks(ability: GameplayAbility, reason: GameplayAbilityTask.CancelReason) -> void:
 	ability_runtime.cancel_tasks_for_ability(ability, reason)
 
 
+## @composer
 func submit_ability_target_data(ability: GameplayAbility, data: GameplayAbilityTargetData) -> void:
 	ability_runtime.submit_target_data(ability, data)
 
 
+## @composer
 func send_gameplay_event(event: GameplayEventData) -> void:
 	# A task already waiting for this event hears it before it can wake a
 	# sleeping ability that would then wait for the same one.

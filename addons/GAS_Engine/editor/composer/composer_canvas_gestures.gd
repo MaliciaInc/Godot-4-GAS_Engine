@@ -41,20 +41,39 @@ var _moving: ComposerPins.Pin = ComposerPins.Pin.new()
 
 
 ## What this event means, given where the cards are.
+##
+## For an event the canvas itself received, which is one that landed on empty
+## space. The pin is looked up and the answer is the same one a card's own
+## event gets, from the same state machine: a Ctrl-drag begun on a card and
+## let go over the canvas is one gesture, and two state machines would make it
+## two halves of nothing.
 func read(
 	event: InputEvent, cards: Dictionary[StringName, ComposerCard], zoom: float
 ) -> ComposerCanvasGestures.Reading:
-	var made: ComposerCanvasGestures.Reading = ComposerCanvasGestures.Reading.new()
 	var button: InputEventMouseButton = event as InputEventMouseButton
-	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
+	if button == null:
+		return ComposerCanvasGestures.Reading.new()
+	return read_pin(button, ComposerPins.at(cards, zoom, button.position))
+
+
+## What this event means, on a pin that has already been found.
+##
+## For an event a card received. The release is not asked to carry the
+## modifier: somebody who lets go of Ctrl before the mouse button has still
+## made the gesture, and the drag being in progress is what says so.
+func read_pin(
+	event: InputEventMouseButton, pin: ComposerPins.Pin
+) -> ComposerCanvasGestures.Reading:
+	var made: ComposerCanvasGestures.Reading = ComposerCanvasGestures.Reading.new()
+	if event == null or event.button_index != MOUSE_BUTTON_LEFT:
 		return made
 
-	if button.pressed and button.alt_pressed:
-		return _breaking(made, ComposerPins.at(cards, zoom, button.position))
-	if button.pressed and button.ctrl_pressed:
-		return _starting(made, ComposerPins.at(cards, zoom, button.position))
-	if not button.pressed and _moving.is_found():
-		return _finishing(made, ComposerPins.at(cards, zoom, button.position))
+	if event.pressed and event.alt_pressed:
+		return _breaking(made, pin)
+	if event.pressed and event.ctrl_pressed:
+		return _starting(made, pin)
+	if not event.pressed and _moving.is_found():
+		return _finishing(made, pin)
 	return made
 
 

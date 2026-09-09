@@ -54,6 +54,14 @@ static func inspect(graph: ComposerGraph) -> Array[ComposerGraph.Diagnostic]:
 	var found: Array[ComposerGraph.Diagnostic] = []
 	if graph == null:
 		return found
+	# A region the reader kept is one nobody looked inside, and nothing here
+	# judges it - not by a guard, but because there is nothing on it to judge. It
+	# carries no fields, no catalog entry and no data ports, so the argument check
+	# and the unread-value check have nothing to look at. A guard would have been
+	# a line that reads as load-bearing and is not, which is worse than the fact
+	# it was standing in for. What IS still checked is where it sits in the flow:
+	# a region nothing reaches is worth saying out loud whether or not the tool
+	# can read what is inside it.
 	for node: ComposerNode in graph.nodes:
 		_check_arguments(node, found)
 		_check_wires(graph, node, found)
@@ -85,6 +93,7 @@ static func _check_arguments(
 		found.append(
 			_at(
 				ComposerGraph.Severity.ERROR,
+				GameplayCompileDiagnostic.MISSING_ARGUMENT,
 				MISSING_ARGUMENT % [node.title, declared.label],
 				node
 			)
@@ -113,6 +122,7 @@ static func _check_wires(
 		found.append(
 			_at(
 				ComposerGraph.Severity.ERROR,
+				GameplayCompileDiagnostic.WRONG_TYPE,
 				WRONG_TYPE % [
 					target.title, ComposerTypes.refusal(lands.type_name, leaves.type_name)
 				],
@@ -139,7 +149,12 @@ static func _check_unread(
 		return
 	if _named_after(graph, node, value.label):
 		return
-	found.append(_at(ComposerGraph.Severity.WARNING, UNREAD_VALUE % value.label, node))
+	found.append(_at(
+		ComposerGraph.Severity.WARNING,
+		GameplayCompileDiagnostic.UNREAD_VALUE,
+		UNREAD_VALUE % value.label,
+		node
+	))
 #endregion
 
 
@@ -185,7 +200,16 @@ static func _gap(declared: ComposerNode.Field) -> ComposerNode.Field:
 	var absent: ComposerNode.Field = ComposerNode.Field.new()
 	absent.label = declared.label
 	absent.type_name = declared.type_name
+	# Everything else the engine said about the argument, too. A gap used to
+	# carry a label and a type and nothing more, so the one field somebody most
+	# needs to fill in was the one field with no default to offer, no hint to
+	# pick a control from, and nothing safe for the writer to print in its
+	# place when some other argument of the same call is edited.
+	ComposerNodeFields.declare(absent, declared)
 	absent.source = ComposerNode.ValueSource.MISSING
+	# The display stays empty on purpose: that is how a gap says it was never
+	# in the source, rather than being there and holding the default.
+	absent.editable = true
 	return absent
 
 
@@ -200,10 +224,14 @@ static func _forget_gaps(node: ComposerNode) -> void:
 
 
 static func _at(
-	severity: ComposerGraph.Severity, message: String, node: ComposerNode
+	severity: ComposerGraph.Severity,
+	code: StringName,
+	message: String,
+	node: ComposerNode
 ) -> ComposerGraph.Diagnostic:
 	var found: ComposerGraph.Diagnostic = ComposerGraph.Diagnostic.new()
 	found.severity = severity
+	found.code = code
 	found.message = message
 	found.node_id = node.id
 	found.span = node.span

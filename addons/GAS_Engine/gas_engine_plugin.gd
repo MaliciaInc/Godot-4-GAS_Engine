@@ -36,11 +36,17 @@ const SCRIPT_SCREEN: String = "Script"
 const FILES_MOVED: StringName = &"filesystem_changed"
 const MENU_SIZE: Vector2i = Vector2i(520, 420)
 const SCRIPT_FILTER: String = "*.gd"
+const EFFECT_FILTER: String = "*.tres"
+const EFFECT_FILTER_NAME: String = "GameplayEffect"
+const EFFECT_MENU: String = "Create Gameplay Effect"
+const NEW_EFFECT_NAME: String = "new_effect.tres"
+const CREATE_EFFECT_TITLE: String = "Create Gameplay Effect asset"
+const EFFECT_REFUSED: String = "GAS_Engine: no effect asset was created - %s"
 const RESOURCE_PREFIX: String = "res://"
 const BROWSE_INSTEAD: String = "Browse…"
 const LOOK_AGAIN: String = "Re-scan abilities"
 const NEW_ABILITY_NAME: String = "new_ability.gd"
-const CREATE_ABILITY_TITLE: String = "Create Gameplay Ability"
+const CREATE_ABILITY_TITLE: String = "Create Gameplay Ability (script and scene)"
 const NONE_FOUND: String = (
 	"This project has no abilities yet. A script that extends GameplayAbility "
 	+ "is one; there are six to copy from in addons/GAS_Engine/reference/."
@@ -56,7 +62,21 @@ const COMPOSER_REFUSED: String = (
 	"GAS_Engine: the Ability Composer has nothing to draw - %s. Open an ability "
 	+ "in the Script editor, then choose Ability Composer again."
 )
+## Hears what a running game says about its entities.
+##
+## An EditorDebuggerPlugin is the only thing that can: what is happening in a
+## game is in another process, and the alternative - reading an ASC out of the
+## scene being edited - answers a different question. See
+## GasRuntimeDebuggerPlugin.
+var _runtime_debugger: GasRuntimeDebuggerPlugin = null
+
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
+const GameplayAttributeInspectorPlugin = preload(
+	"res://addons/GAS_Engine/attributes/gameplay_attribute_inspector_plugin.gd"
+)
+const GameplayTagQueryInspectorPlugin = preload(
+	"res://addons/GAS_Engine/gameplay_tag/gameplay_tag_query_inspector_plugin.gd"
+)
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
 const AUTOLOAD_SETTING_PREFIX: String = "autoload/"
@@ -151,11 +171,15 @@ const EXAMPLE_TAGS: Array[String] = [
 var _owns_cue_manager_autoload: bool = false
 
 var _composer_instance: ComposerScreen = null
+var _composer_unsaved_dialog: ComposerUnsavedDialog = null
+var _pending_composer_open_path: String = ""
 
 ## What the open-ability menu is currently offering, in the order it offers
 ## it, so an id coming back means the same file it named.
 var _choices: PackedStringArray = PackedStringArray()
 var _tag_inspector: EditorInspectorPlugin = null
+var _attribute_inspector: EditorInspectorPlugin = null
+var _query_inspector: EditorInspectorPlugin = null
 
 #region Plugin Lifecycle
 ## Whether enabling this plugin would have to add the autoload.
@@ -189,19 +213,40 @@ func _enter_tree() -> void:
 	_tag_inspector = GameplayTagInspectorPlugin.new()
 	add_inspector_plugin(_tag_inspector)
 
+	_attribute_inspector = GameplayAttributeInspectorPlugin.new()
+	add_inspector_plugin(_attribute_inspector)
+
+	_query_inspector = GameplayTagQueryInspectorPlugin.new()
+	add_inspector_plugin(_query_inspector)
+
+	var main_screen: Control = EditorInterface.get_editor_main_screen()
+
 	_composer_instance = ComposerScreen.new()
 	_composer_instance.visible = false
 	_composer_instance.code_requested.connect(_on_code_requested)
+	_composer_instance.go_to_line.connect(_on_go_to_line)
 	_composer_instance.open_requested.connect(_offer_abilities.bind(""))
 	_composer_instance.create_requested.connect(_ask_for_new_ability)
-	EditorInterface.get_editor_main_screen().add_child(_composer_instance)
+	main_screen.add_child(_composer_instance)
+
+	_composer_unsaved_dialog = ComposerUnsavedDialog.new()
+	main_screen.add_child(_composer_unsaved_dialog)
+	_composer_unsaved_dialog.save_chosen.connect(_accept_pending_after_save)
+	_composer_unsaved_dialog.discard_chosen.connect(_accept_pending_after_discard)
+	_composer_unsaved_dialog.cancel_chosen.connect(_cancel_pending_open)
 
 	# The editor already knows when a file appeared, moved or was deleted, so
 	# the remembered list is dropped on its word rather than on a guess about
 	# how long an answer stays true.
 	ComposerLibrary.listen_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
+	GameplayAttributeCatalog.listen_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
+	add_tool_menu_item(EFFECT_MENU, _ask_for_new_effect)
+	_runtime_debugger = GasRuntimeDebuggerPlugin.new()
+	add_debugger_plugin(_runtime_debugger)
 	_make_visible(false)
 
 
@@ -220,12 +265,45 @@ func _disable_plugin() -> void:
 
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
-	ComposerLibrary.stop_listening_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
+	remove_tool_menu_item(EFFECT_MENU)
+	if _runtime_debugger != null:
+		remove_debugger_plugin(_runtime_debugger)
+		_runtime_debugger = null
+	ComposerLibrary.stop_listening_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
+	GameplayAttributeCatalog.stop_listening_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
+	if _attribute_inspector != null:
+		remove_inspector_plugin(_attribute_inspector)
+	if _query_inspector != null:
+		remove_inspector_plugin(_query_inspector)
+
+	if _composer_instance != null and _composer_instance.has_unsaved_changes():
+		var recovery_path: String = ComposerRecovery.write(
+			_composer_instance.open_path(), _composer_instance.printed()
+		)
+		if recovery_path.is_empty():
+			push_error(
+				"GAS_Engine: Composer had unsaved changes and could not write a recovery copy."
+			)
+		else:
+			push_warning(
+				"GAS_Engine: Composer preserved unsaved changes at " + recovery_path
+			)
+
+	if _composer_unsaved_dialog != null:
+		_composer_unsaved_dialog.queue_free()
+		_composer_unsaved_dialog = null
+
 	if _composer_instance != null:
 		_composer_instance.queue_free()
 		_composer_instance = null
+
+	_pending_composer_open_path = ""
 #endregion
 
 
@@ -243,7 +321,7 @@ func _open_composer() -> void:
 	)
 	if opened.is_ok():
 		_show_composer()
-		_composer_instance.open(opened.source, opened.graph.source_path)
+		_draw_ability_at(opened.graph.source_path)
 		return
 
 	# Whatever was open is not an ability, which is not a reason to refuse.
@@ -336,6 +414,33 @@ func _ask_for_an_ability() -> void:
 	)
 
 
+## Choose where a new GameplayEffect asset will live.
+##
+## Nothing follows the save but a filesystem scan: the inspector edits the very
+## Resource this wrote, so there is no second screen for it and no second way to
+## spell what an effect is.
+func _ask_for_new_effect() -> void:
+	var picker: EditorFileDialog = EditorFileDialog.new()
+	picker.file_mode = EditorFileDialog.FILE_MODE_SAVE_FILE
+	picker.access = EditorFileDialog.ACCESS_RESOURCES
+	picker.add_filter(EFFECT_FILTER, EFFECT_FILTER_NAME)
+	picker.file_selected.connect(_create_effect_at)
+	picker.canceled.connect(picker.queue_free)
+	picker.title = CREATE_EFFECT_TITLE
+	picker.current_file = NEW_EFFECT_NAME
+	_show_picker(picker)
+
+
+func _create_effect_at(asset_path: String) -> void:
+	var refusal: String = GameplayEffectAsset.create(asset_path)
+	if not refusal.is_empty():
+		push_warning(EFFECT_REFUSED % refusal)
+		return
+
+	EditorInterface.get_resource_filesystem().scan()
+	EditorInterface.edit_resource(load(asset_path))
+
+
 ## Choose where a new GameplayAbility script will live.
 func _ask_for_new_ability() -> void:
 	var picker: EditorFileDialog = _ability_picker(
@@ -346,7 +451,12 @@ func _ask_for_new_ability() -> void:
 	_show_picker(picker)
 
 
-## Create exactly one normal GDScript and open it in Composer.
+## Create the script and the scene beside it, and open the script in Composer.
+##
+## The title says both, because the picker only ever shows one filename and only
+## warns about overwriting that one - so the second output is a file the person
+## never chose. Either of them already existing refuses the whole thing and says
+## which, on the screen they are already looking at.
 func _create_ability_at(source_path: String) -> void:
 	var refusal: String = ComposerAbilityTemplate.create(source_path)
 	if not refusal.is_empty():
@@ -362,6 +472,18 @@ func _create_ability_at(source_path: String) -> void:
 ## Draw the file that was chosen, or say why it cannot be drawn - on the screen
 ## the person is already looking at, which is the Composer.
 func _draw_ability_at(source_path: String) -> void:
+	if (
+		_composer_instance != null
+		and _composer_instance.has_unsaved_changes()
+	):
+		_pending_composer_open_path = source_path
+		_show_unsaved_composer_dialog()
+		return
+
+	_open_composer_path_now(source_path)
+
+
+func _open_composer_path_now(source_path: String) -> void:
 	var opened: ComposerHost.Opened = ComposerHost.open(source_path)
 	if not opened.is_ok():
 		push_warning(COMPOSER_REFUSED % opened.refusal)
@@ -370,11 +492,57 @@ func _draw_ability_at(source_path: String) -> void:
 	_composer_instance.open(opened.source, opened.graph.source_path)
 
 
+func _show_unsaved_composer_dialog() -> void:
+	if _composer_unsaved_dialog == null:
+		return
+	_composer_unsaved_dialog.popup_centered()
+
+
+func _accept_pending_after_save() -> void:
+	if _composer_instance == null:
+		return
+	var result: ComposerWriter.Result = await _composer_instance.save()
+	if not result.is_ok():
+		push_warning(COMPOSER_REFUSED % result.refusal.message)
+		return
+	var next_path: String = _pending_composer_open_path
+	_pending_composer_open_path = ""
+	_open_composer_path_now(next_path)
+
+
+func _accept_pending_after_discard() -> void:
+	if _composer_instance == null:
+		return
+	await _composer_instance.discard_unsaved_changes()
+	var next_path: String = _pending_composer_open_path
+	_pending_composer_open_path = ""
+	_open_composer_path_now(next_path)
+
+
+func _cancel_pending_open() -> void:
+	_pending_composer_open_path = ""
+
+
 ## The Code chip: the same ability, in the editor that shows it as text.
 ##
 ## The ability stays loaded here, so coming back to this screen shows what the
 ## person left rather than starting them over. They are two views of one file,
 ## and neither is a copy of the other.
+## A finding in the Output panel is a place in the file, so go there.
+##
+## The card is revealed by the screen; the line is this plugin's half, because
+## the script editor is something only a plugin can reach. A finding with no
+## line - one about the file rather than about anything in it - takes nobody
+## anywhere, which is right: there is no line to be at.
+func _on_go_to_line(line: int) -> void:
+	if line <= 0 or _composer_instance == null:
+		return
+	var script: Script = load(_composer_instance.open_path()) as Script
+	if script == null:
+		return
+	EditorInterface.edit_script(script, line - 1)
+
+
 func _on_code_requested(source_path: String) -> void:
 	if not source_path.is_empty():
 		var script: Script = load(source_path) as Script
