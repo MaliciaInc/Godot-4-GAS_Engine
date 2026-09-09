@@ -97,7 +97,7 @@ static func _evaluate_inner(request: Request) -> GameplayEffectEvaluationResult:
 		)
 
 	var writes: Array[AttributeModifierContribution] = GameplayExecutionPipeline.writes_of(
-		produced, request.application_order
+		produced, request.application_order, spec.stack_count, _unreal_profile(request)
 	)
 	var modifier_targets: Array[StringName] = _modifier_attribute_names(spec)
 

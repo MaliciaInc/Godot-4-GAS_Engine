@@ -1,13 +1,13 @@
 {
-  "units": 2535,
-  "units_by_language": "gdscript 2493, powershell 4, python 38",
-  "elapsed_seconds": 10.438914500002284,
+  "units": 2546,
+  "units_by_language": "gdscript 2504, powershell 4, python 38",
+  "elapsed_seconds": 10.576161600001797,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24202
+    "behavioral": 24319
   },
   "blocking": 0,
   "findings": [
@@ -259,7 +259,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:688-695:execute_cue",
-      "right": "addons/GAS_Engine/effects/gameplay_effect_spec.gd:552-563:resolve_authored_timing",
+      "right": "addons/GAS_Engine/effects/gameplay_effect_spec.gd:565-576:resolve_authored_timing",
       "score": 0.9230769230769231,
       "category": "executable"
     },
@@ -757,6 +757,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/costs/gameplay_resolved_cost_entry.gd:1-24:<file>",
       "right": "addons/GAS_Engine/cooldowns/ability_cooldown_state.gd:1-42:<file>",
+      "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/costs/gameplay_resolved_cost_entry.gd:1-24:<file>",
+      "right": "addons/GAS_Engine/effects/executions/gameplay_execution_scoped_modifier.gd:1-33:<file>",
       "score": 0.875,
       "category": "executable"
     },
@@ -1590,13 +1597,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "test/fixtures/test_effect_factory.gd:61-68:duration",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/unit/test_composer_action_menu.gd:19-28:_context",
       "score": 0.8,
       "category": "executable"
     },

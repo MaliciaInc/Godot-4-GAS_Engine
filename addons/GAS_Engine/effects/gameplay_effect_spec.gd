@@ -37,6 +37,15 @@ var application_time: float = 0.0
 ## Tags injected at runtime by an execution calculation or an ability.
 var dynamic_tags: Array[StringName] = []
 
+## Tags whoever built this application handed it, for its executions to
+## read.
+##
+## Not dynamic_tags: those are granted, queried and matched against by the
+## whole runtime. These are an argument - the ability saying this one was a
+## critical, the weapon saying which element it arrived as - and nothing but
+## an execution ever looks at them.
+var passed_in_tags: Array[StringName] = []
+
 ## The source's tags when source_asc was resolved, for
 ## GameplayEffectQuery.source_tags - "what did the caster have when cast"
 ## must not drift as the caster changes afterward.
@@ -313,6 +322,10 @@ func create_application_copy() -> GameplayEffectSpec:
 	copy.chain_depth = chain_depth
 	copy.context = context_copy
 	copy.dynamic_tags = dynamic_tags.duplicate()
+	# Duplicated rather than shared: an AoE hands every target the same
+	# arguments, and an execution appending to one target's list must not be
+	# appending to what the next target is about to be told.
+	copy.passed_in_tags = passed_in_tags.duplicate()
 	copy.source_tags_snapshot = source_tags_snapshot.duplicate()
 	copy._source_tags_captured = _source_tags_captured
 	copy._runtime_magnitude_overrides = _runtime_magnitude_overrides.duplicate()

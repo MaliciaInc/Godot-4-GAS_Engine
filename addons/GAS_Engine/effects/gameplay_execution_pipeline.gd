@@ -29,7 +29,11 @@ static func run(
 	for execution: GameplayExecutionCalculation in spec.effect_def.executions:
 		if execution == null:
 			continue
-		var produced: GameplayExecutionOutput = execution.execute_typed(spec, target_asc)
+		# One context per calculation, dropped when it returns. Shared between
+		# two of them it would be a channel one execution could leave a number
+		# in for the next, which is the thing scratch space must not become.
+		var context: GameplayExecutionContext = _context_for(execution, spec, target_asc)
+		var produced: GameplayExecutionOutput = execution.execute_in(context)
 		if produced == null:
 			continue
 		merged.modifiers.append_array(produced.modifiers)
@@ -38,7 +42,55 @@ static func run(
 		# the alternative is the loudest calculation in an effect deciding for
 		# every other one.
 		merged.trigger_cues = merged.trigger_cues and produced.trigger_cues
+		# And so is saying the stack was counted: an effect where one
+		# calculation did it by hand cannot have the factor applied to the
+		# merged answer without applying it twice to that one's share.
+		merged.stack_count_handled_manually = (
+			merged.stack_count_handled_manually or produced.stack_count_handled_manually
+		)
 	return merged
+
+
+## The context one calculation runs in: what it was told, an empty scratch
+## space, and whichever of its scoped adjustments both sides qualify for.
+static func _context_for(
+	execution: GameplayExecutionCalculation,
+	spec: GameplayEffectSpec,
+	target_asc: AbilitySystemComponent
+) -> GameplayExecutionContext:
+	var context: GameplayExecutionContext = GameplayExecutionContext.new()
+	context.spec = spec
+	context.source_asc = spec.source_asc
+	context.target_asc = target_asc
+	context.passed_in_tags = spec.passed_in_tags.duplicate()
+	for modifier: GameplayExecutionScopedModifier in execution.scoped_modifiers():
+		if _scope_qualifies(modifier, spec, target_asc):
+			context.scoped.append(modifier)
+	return context
+
+
+## Whether both sides are what this adjustment requires them to be.
+##
+## The source is read from the spec's snapshot, the target live, for the
+## reason an attribute-based magnitude reads them that way: the caster is
+## being asked about the moment the effect was made, and the target about the
+## moment it is landing.
+static func _scope_qualifies(
+	modifier: GameplayExecutionScopedModifier,
+	spec: GameplayEffectSpec,
+	target_asc: AbilitySystemComponent
+) -> bool:
+	if modifier == null:
+		return false
+	var wanted_source: GameplayTagQuery = modifier.source_requirements
+	if wanted_source != null and not wanted_source.is_empty():
+		if not wanted_source.matches_tags(spec.source_tags_snapshot):
+			return false
+	var wanted_target: GameplayTagQuery = modifier.target_requirements
+	if wanted_target != null and not wanted_target.is_empty():
+		if target_asc == null or not wanted_target.matches_runtime(target_asc.tags):
+			return false
+	return true
 
 
 ## The first write this entity has no attribute for, or null when all of them
@@ -70,13 +122,25 @@ static func first_unresolved(
 ## They all land in channel zero: an execution writes the durable base, and
 ## channels order passes over a value, which a base is not.
 ##
-## Never scaled by stack count. A standard modifier is scaled for its author
-## because a stack of two is twice the buff; a calculation reads `stack_count`
-## itself and decides what two of it means, and scaling on top of that would
-## apply the stack twice.
+## Scaled by stack count only where the reference scales it.
+##
+## Under Unreal's contracts an execution's numbers are multiplied by how many
+## of the effect are on the target, and a calculation that has already
+## counted them says so with `stack_count_handled_manually`. The native
+## profile has never scaled an execution and does not start: a calculation
+## there reads `stack_count` and decides for itself what two of it means, and
+## a factor applied on top would be the stack counted twice.
 static func writes_of(
-	produced: GameplayExecutionOutput, application_order: int
+	produced: GameplayExecutionOutput,
+	application_order: int,
+	stack_count: int = 1,
+	unreal: bool = false
 ) -> Array[AttributeModifierContribution]:
+	var factor: int = (
+		stack_count
+		if unreal and not produced.stack_count_handled_manually
+		else 1
+	)
 	var writes: Array[AttributeModifierContribution] = []
 	for index: int in produced.modifiers.size():
 		var modifier: GameplayExecutionOutput.Modifier = produced.modifiers[index]
@@ -85,7 +149,9 @@ static func writes_of(
 		var write: AttributeModifierContribution = AttributeModifierContribution.new()
 		write.attribute_name = modifier.attribute.attribute_name
 		write.operation = modifier.operation
-		write.magnitude = modifier.magnitude
+		write.magnitude = AttributeAggregateMath.stack_scaled(
+			modifier.magnitude, factor, modifier.operation, unreal
+		)
 		write.modifier_index = index
 		write.application_order = application_order
 		writes.append(write)

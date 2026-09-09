@@ -70,6 +70,28 @@ func execute_typed(
 	return GameplayExecutionOutput.from_deltas(execute(spec, target_asc))
 
 
+## What this calculation decided, given everything it is allowed to know.
+##
+## The door the engine actually calls now. The default hands the two things
+## an execution has always been given straight to `execute_typed()`, so every
+## calculation written before this keeps working without knowing a context
+## exists; one that needs scratch space between its own steps, the tags this
+## application was handed, or its own scoped adjustments overrides this.
+func execute_in(context: GameplayExecutionContext) -> GameplayExecutionOutput:
+	return execute_typed(context.spec, context.target_asc)
+
+
+## Adjustments that hold only while this calculation runs.
+##
+## For the arithmetic that would otherwise be either a mutation nobody asked
+## for or a number buried inside a script: "against armour, if the attacker
+## were 20% stronger" is a scoped modifier rather than a temporary buff on
+## the attacker. Nothing declared here is registered as a contribution, and
+## no other effect on the target ever sees it.
+func scoped_modifiers() -> Array[GameplayExecutionScopedModifier]:
+	return []
+
+
 ## Every attribute this calculation needs captured before execute() runs.
 ## `GameplayEffectSpec.prepare_captures()` registers and takes each one ahead
 ## of time, so a SOURCE or TARGET SNAPSHOT is already frozen by the time
