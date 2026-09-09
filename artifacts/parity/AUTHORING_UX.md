@@ -23,7 +23,8 @@ F6.4.7 reads both columns and writes the verdict.
 
 | key | before | now | what it counts |
 |---|---|---|---|
-| modifier_plus_ten_resources | 4 | 4 | Resources a person constructs to put a `+10` on an attribute: the effect, the modifier, the magnitude, and the scalable float it reads. Each is a separate "New Resource" in the inspector. |
+| modifier_plus_ten_resources | 4 | 4 | Resources a `+10` on an attribute is made of: the effect, the modifier, the magnitude, and the scalable float it reads. Still four, and deliberately - that is the engine's model, and collapsing it would take away the magnitude kinds an author picks between. What changed is how many times a person has to build one, which is the row below. |
+| modifier_plus_ten_authoring_actions | 4 | 1 | How many authoring actions it takes to produce a complete modifier row. On the baseline each of the four Resources above was its own "New Resource" in the inspector, because there was no editor: four clicks, in the right order, with the right class chosen each time. F6.4.1's `GameplayEffectDocument.add_modifier()` builds the whole chain in one, which is the action the editor's `+` button performs. |
 | attribute_ref_typo_caught_before_runtime | no | yes | Whether a misspelled attribute name is caught before the game runs. On the baseline `GameplayAttributeRef.is_valid()` only asked whether the fields were filled in, which a typo passes, and the asset validator had nothing to say about a name that does not exist. F6.4.2 ships the catalogue and the inspector picker, which shows a typo in red to whoever opens that row; the validator now asks the same catalogue, so an effect naming an attribute nothing declares is a finding wherever assets are validated rather than only where somebody happens to look. |
 | cue_authored_without_a_script | no | yes | Whether a cue with a sound and a particle can be authored as data. On the baseline every cue was a scene whose root carried a `GameplayCueNotify` subclass somebody wrote. F6.2.6 ships two templates - a burst and a loop - that read a `GameplayCueEffectSet`, so a cue is now a Resource of sounds, particles and decals bound to a tag. |
 | debug_surface_outside_the_editor | no | yes | Whether a running game can show ability-system state. On the baseline the runtime debugger was an `EditorDebuggerPlugin`, so QA on an exported build saw nothing. F6.4.4 ships `GasDebugOverlay`, a scene the game instantiates itself: four pages - attributes, effects, abilities and tags - each a transformation from a `GasRuntimeSnapshot` to rows, with a bounded 128-entry attribute history behind them. |
@@ -31,20 +32,28 @@ F6.4.7 reads both columns and writes the verdict.
 | kit_grant_calls | 5 | 1 | Calls to put a loadout of three abilities, one effect and one attribute set onto a character, made one at a time because there is no way to say it once. |
 | kit_remove_calls | 5 | 1 | Calls to take the same loadout off again. |
 
-## What each number is expected to become
+## Targets, and whether they were met
 
-Written here rather than only in the phase document so the two columns can be
-read side by side without one.
+F6.4.7 reads the column above and writes a verdict against each target the
+phase set. The verdict is derived from the measurement rather than from
+anybody's reading of it: `test_authoring_friction.gd` takes the measurement,
+decides the word, and fails when this table says a different one. "Improved" is
+not a verdict this table can hold.
 
-| key | target | closed by |
-|---|---|---|
-| modifier_plus_ten_resources | 1 authoring action produces the whole chain | F6.4.1 |
-| attribute_ref_typo_caught_before_runtime | yes, in the inspector | F6.4.2 |
-| cue_authored_without_a_script | yes, from a data-driven effect set | F6.2.6 |
-| debug_surface_outside_the_editor | yes, four pages with `Engine.is_editor_hint() == false` | F6.4.4 |
-| aoe_preview_pieces_shipped | at least a radius provider and a reticle | F6.3.2, F6.3.3 |
-| kit_grant_calls | 1 | F6.1.10 |
-| kit_remove_calls | 1 | F6.1.10 |
+| key | target | measured | verdict | closed by |
+|---|---|---|---|---|
+| modifier_plus_ten_authoring_actions | one editor action creates the whole row | 1 | met | F6.4.1 |
+| attribute_ref_typo_caught_before_runtime | visible before runtime | yes | met | F6.4.2 |
+| cue_authored_without_a_script | no custom subclass | yes | met | F6.2.6 |
+| debug_surface_outside_the_editor | works outside the editor | yes | met | F6.4.4 |
+| aoe_preview_pieces_shipped | preset and reticle as Resources, no game script | 5 | met | F6.3.2, F6.3.3 |
+| kit_grant_calls | grant is one call | 1 | met | F6.1.10 |
+| kit_remove_calls | take_back is one call | 1 | met | F6.1.10 |
+
+`modifier_plus_ten_resources` has no target of its own. The phase asked for one
+editor action, not for fewer objects, and the row above it is the one that
+answers that - making the count of Resources a target would have been asking the
+engine to describe itself less precisely.
 
 A row that does not reach its target is written as it landed, with the reason.
 A receipt that only records what went well is not a receipt.

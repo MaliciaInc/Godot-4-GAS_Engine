@@ -1,3 +1,3 @@
 RESULT: PASS
-SOURCE: be5ef2a9313597d166fa447ffb729314217a1a275e93df2397b1ec04bc6a0571
+SOURCE: 4cddc3c822d911e86169721900d490f8b70dbc72dd3b7a2b8a3ff7de38706aa4
 godot --headless --path . --import: every script parsed, global classes registered, no parse or script errors

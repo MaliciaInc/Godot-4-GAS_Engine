@@ -1,13 +1,13 @@
 {
-  "units": 2854,
-  "units_by_language": "gdscript 2812, powershell 4, python 38",
-  "elapsed_seconds": 12.314058599999044,
+  "units": 2858,
+  "units_by_language": "gdscript 2816, powershell 4, python 38",
+  "elapsed_seconds": 12.454065199999604,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 26687
+    "behavioral": 26715
   },
   "blocking": 0,
   "findings": [
@@ -994,7 +994,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
-      "right": "test/unit/test_authoring_friction.gd:70-78:_scripts_in",
+      "right": "test/unit/test_authoring_friction.gd:84-92:_scripts_in",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1372,7 +1372,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:541-549:_prepare_custom_costs",
-      "right": "test/unit/test_authoring_friction.gd:70-78:_scripts_in",
+      "right": "test/unit/test_authoring_friction.gd:84-92:_scripts_in",
       "score": 0.8125,
       "category": "executable"
     },
@@ -1421,7 +1421,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal",
-      "right": "test/unit/test_authoring_friction.gd:70-78:_scripts_in",
+      "right": "test/unit/test_authoring_friction.gd:84-92:_scripts_in",
       "score": 0.8,
       "category": "executable"
     },

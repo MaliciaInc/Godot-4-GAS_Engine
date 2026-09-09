@@ -34,6 +34,20 @@ const PROBE_TAG: StringName = &"Ability.Probe"
 ## measures today, and whoever closes a friction updates it in the same commit.
 const COLUMN: String = "now"
 
+## The second table, and the column F6.4.7 writes into it.
+const VERDICT_HEADING: String = "## Targets, and whether they were met"
+const VERDICT_COLUMN: String = "verdict"
+
+## The only two words a verdict may be. "Improved" is not one of them: a target
+## is a number or a yes, and a receipt that could say "better" would say it
+## about anything.
+const MET: String = "met"
+const NOT_MET: String = "not met"
+
+## How the receipt's lines are separated, said once so both parsers agree.
+const NEWLINE: String = "
+"
+
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
 
@@ -126,6 +140,28 @@ func _measure_typo_caught_before_runtime() -> bool:
 	return not GameplayAssetValidator.validate_effect(effect).is_empty()
 
 
+## 1b. How many authoring actions a complete modifier row takes.
+##
+## The question the phase's target actually asks, which the count above cannot
+## answer: four Resources built by four clicks and four Resources built by one
+## are the same four Resources. Counted by driving the editor's own document -
+## one call - and then checking that what came back is complete, because an
+## action that produced half a row would be one action and two clicks.
+func _measure_modifier_authoring_actions() -> int:
+	var document: GameplayEffectDocument = GameplayEffectDocument.new()
+	assert_true(document.adopt(GameplayEffect.new()), "there is an effect to author")
+
+	var actions: int = 1
+	var modifier: GameplayEffectModifier = document.add_modifier()
+	assert_not_null(modifier, "one action produced a modifier")
+	assert_not_null(modifier.attribute, "with somewhere to name the attribute")
+
+	var magnitude: GameplayScalableMagnitude = modifier.magnitude as GameplayScalableMagnitude
+	assert_not_null(magnitude, "and a magnitude")
+	assert_not_null(magnitude.value, "carrying the scalable float it reads")
+	return actions
+
+
 ## 3. Whether a cue with a sound and a particle can be authored without writing
 ##    a script - which needs a concrete notify shipped with the data on it.
 func _measure_cue_without_a_script() -> bool:
@@ -211,8 +247,7 @@ func _recorded() -> Dictionary[String, String]:
 	# measurement.
 	var column: int = -1
 	var started: bool = false
-	for line: String in printed.split("
-"):
+	for line: String in printed.split(NEWLINE):
 		if not line.begins_with("|"):
 			if started:
 				break
@@ -234,7 +269,72 @@ func _recorded() -> Dictionary[String, String]:
 func _said(recorded: Dictionary[String, String], key: String) -> String:
 	assert_true(recorded.has(key), "the receipt records `%s`" % key)
 	return str(recorded.get(key, ""))
+
+
+## The verdicts table, keyed the same way.
+##
+## Its own parser rather than the one above, because its columns mean something
+## else entirely and reading both with one column index is how a target ends up
+## recorded as a measurement. Read from the heading down, so a third table
+## added later cannot be mistaken for this one.
+func _verdicts() -> Dictionary[String, String]:
+	var said: Dictionary[String, String] = {}
+	var printed: String = FileAccess.get_file_as_string(RECEIPT)
+	var column: int = -1
+	var reached: bool = false
+	for line: String in printed.split(NEWLINE):
+		if line.begins_with(VERDICT_HEADING):
+			reached = true
+			continue
+		if not reached or not line.begins_with("|"):
+			continue
+		var trimmed: Array[String] = []
+		for cell: String in line.split("|"):
+			trimmed.append(cell.strip_edges())
+		if column < 0:
+			column = trimmed.find(VERDICT_COLUMN)
+			continue
+		if trimmed.size() > column and not trimmed[1].begins_with("-"):
+			said[trimmed[1]] = trimmed[column]
+	assert_gt(column, 0, "the receipt has a `%s` column" % VERDICT_COLUMN)
+	return said
 #endregion
+
+
+## Every target the phase set, and whether the measurement met it.
+##
+## The word is derived here and compared with the receipt, so the receipt cannot
+## say "met" about a number that does not. What each target is, is the phase
+## document's table, written out as the predicate that answers it.
+##
+##     [the key, whether the measurement meets its target]
+func _target_verdicts() -> Dictionary[String, bool]:
+	var kit: Array[int] = _measure_kit_calls()
+	return {
+		"modifier_plus_ten_authoring_actions": _measure_modifier_authoring_actions() == 1,
+		"attribute_ref_typo_caught_before_runtime": _measure_typo_caught_before_runtime(),
+		"cue_authored_without_a_script": _measure_cue_without_a_script(),
+		"debug_surface_outside_the_editor": _measure_debug_outside_the_editor(),
+		# A preset and a reticle at the least, which is two of the five shipped.
+		"aoe_preview_pieces_shipped": _measure_aoe_preview_pieces() >= 2,
+		"kit_grant_calls": kit[0] == 1,
+		"kit_remove_calls": kit[1] == 1,
+	}
+
+
+func test_every_target_the_phase_set_has_the_verdict_the_measurement_gives() -> void:
+	var written: Dictionary[String, String] = _verdicts()
+	var derived: Dictionary[String, bool] = _target_verdicts()
+
+	assert_eq(written.size(), derived.size(), "a verdict per target and no more")
+	for key: String in derived:
+		assert_true(written.has(key), "the receipt has a verdict for `%s`" % key)
+		var says: String = str(written.get(key, ""))
+		assert_eq(
+			says,
+			MET if derived[key] else NOT_MET,
+			"`%s` is written as the measurement found it" % key
+		)
 
 
 func test_the_six_authoring_frictions_are_measured_as_they_stand_today() -> void:
@@ -245,6 +345,12 @@ func test_the_six_authoring_frictions_are_measured_as_they_stand_today() -> void
 		str(resources),
 		_said(recorded, "modifier_plus_ten_resources"),
 		"resources built for a +10"
+	)
+
+	assert_eq(
+		str(_measure_modifier_authoring_actions()),
+		_said(recorded, "modifier_plus_ten_authoring_actions"),
+		"authoring actions for a complete modifier row"
 	)
 
 	assert_eq(
