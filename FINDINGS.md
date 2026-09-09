@@ -194,60 +194,6 @@ and the editor's own theme hides it.
 
 ---
 
-## GAS-009 — Alt over a data argument's pin does nothing · **OPEN**
-
-**Status:** `OPEN` — reproduced here, no regression test on main yet.
-Still reproduces against `main` at `277aefa`, which is the FASE 6 deploy: the
-same two checks of case 7 fall and the other 78 hold.
-**Severity:** medium - one of the four documented pin gestures, on one family of pins
-**Where:** `addons/GAS_Engine/editor/composer/composer_card.gd` (a `GraphNode`)
-
-### Repro
-
-`test/composer_smoke.gd` case 7, against
-`addons/GAS_Engine/reference/sweeping_volley.gd`, whose
-`apply_effect_to_targets(damage, found)` takes a cable on its second argument.
-
-Alt+LMB exactly on that argument's pin. The harness checks its aim first and the
-engine agrees with it:
-
-```text
-ok    7 · the argument's pin is the one the engine finds there   aimed at n36.arg_1, engine finds n36.arg_1
-FAIL  7 · and the canvas heard the gesture                        0 events reached it
-FAIL  7 · Alt over the argument's pin takes the cable off         14 -> 14
-```
-
-### Expected / Actual
-
-**Expected**, from section 2.4 of the phase document: "Alt+LMB sobre un pin
-rompe todas las conexiones de ese pin en una sola transacción." A pin, not an
-execution pin.
-
-**Actual:** nothing happens and nothing is said. The canvas never receives the
-event: `ComposerCard` is a `GraphNode`, a press inside its rectangle is the
-node's, and an argument's pin sits against the left edge well inside it. The
-execution output pins that do work sit on the outer edge, which is why case 4
-passes and this does not.
-
-### Impact
-
-A cable a person can see and cannot clear with the gesture the editor documents.
-The Inspector's disconnect still works, so nothing is stuck - it is the gesture
-that is missing.
-
-### Suggested shape of the fix (for `main`, not here)
-
-Not by overriding `_gui_input`: GraphNode's own handler is not callable from
-GDScript (`super._gui_input()` is refused at parse time), so an override would
-replace dragging and selection wholesale. The card's `gui_input` **signal** is
-emitted before the widget's handler and `accept_event()` from it stops that
-handler, which is the same door the canvas already uses. A card that recognised
-a press within reach of one of its own pins, accepted it and passed it on would
-close the whole family - inputs, arguments and outputs alike - rather than the
-one case measured here.
-
----
-
 ## GAS-001 — a file-local enum loses its name to a host project's autoload · **BLOCKER**
 
 **Status:** `VERIFIED IN SANDBOX` — fixed on main at `ad10a2b`, re-deployed here
@@ -614,6 +560,24 @@ Fixed here, in the harness: one place says what a run makes - the script, its
 teardown both clear all of it, and the final check names what is left rather
 than asserting about one file.
 
+## SBX-007 — the smoke aimed at a card that was off the canvas · **FIXED**
+
+The canvas is a window onto a graph larger than it. A card the layout puts near
+the right edge is drawn mostly outside, and a press aimed at a pin on the sliver
+that is left arrives at nothing - no card, no canvas, no control. From the
+outside that is indistinguishable from the Composer ignoring the gesture, and it
+is what GAS-009 turned out to be.
+
+`bring_into_view()` scrolls the card somewhere a pointer can reach before the
+aim is taken, and answers where the view was so it can be put back. Putting it
+back is not tidiness: cases 11 and 12 aim at cards where the layout left them,
+and a view left somewhere else made all seven of their checks miss - which is
+the same failure one step along, and it appeared the moment the scroll was
+added without the restore.
+
+With it, the Composer smoke is green for the first time: **82 checks, 82
+passed**.
+
 # Milestones
 
 ## 2026-09-01 — combat runs on GAS_Engine end to end
@@ -789,6 +753,62 @@ Of these, `7afb25e` is the one this game could meet: a crowded battle sweeping
 for targets was silently answered with at most thirty-two colliders.
 
 # Checked and not defects
+
+## GAS-009 — Alt over a data argument's pin does nothing · **NOT A DEFECT**
+
+**Status:** `NOT A DEFECT` (of GAS_Engine). Re-measured against `main` at
+`6187444`; the smoke was aiming at a card that was not on the canvas.
+
+This was written up as an engine defect and it was not one. The write-up is kept
+rather than deleted, because the way it went wrong is worth more than the entry
+was.
+
+### What was reported
+
+`test/composer_smoke.gd` case 7 Alt-clicked a data argument's pin and nothing
+happened - not the disconnect, and not even an event on the canvas:
+
+```text
+ok    7 · the argument's pin is the one the engine finds there   aimed at n36.arg_1, engine finds n36.arg_1
+FAIL  7 · and the canvas heard the gesture                        0 events reached it
+FAIL  7 · Alt over the argument's pin takes the cable off         14 -> 14
+```
+
+The cause written down was a hypothesis: `ComposerCard` is a `GraphNode`, a
+press inside its rectangle is the node's, and the execution pins that do work
+sit on the outer edge. It reads well and it was wrong.
+
+### What it actually was
+
+The card was not on the canvas. The layout had put it at `x = 1607` and the
+canvas ends at `x = 1630`; the pin was on the 23-pixel sliver still drawn, and
+the press landed on nothing at all. Measured by walking the tree at the point
+and by pressing at the card's own centre - `x = 1658`, past the edge - which
+was received by nobody either:
+
+```text
+canvas rect=[P: (251, 54), S: (1379, 894)]
+card   rect=[P: (1607, 442), S: (102, 107)]
+```
+
+Scrolling the card into view first makes the whole case pass, with the engine
+unchanged. That is the check now: `bring_into_view()` before aiming, and the
+view put back afterwards so the cases that follow still find their cards where
+the layout left them. SBX-007.
+
+### What it cost, and what it bought
+
+An engine change was written for the hypothesis before it was measured - a card
+that hands a press on one of its own controls back to the canvas - and it is on
+`main` at `6187444`. It is a real fix for a real case: a host theme that sets
+`port_h_offset` draws the port dots inside the card, on rows that are
+`MOUSE_FILTER_STOP`, and every modifier gesture on every pin then does nothing.
+That case is proved red and green in the engine's own suite. **It is not what
+GAS-009 was**, and the smoke passes with it disabled - which is how this was
+settled rather than assumed.
+
+The lesson is the cheap one and it was skipped: the entry said "the canvas never
+receives the event" and never asked *what did*. Nothing did.
 
 Recorded because a question asked and answered is worth as much as a bug found,
 and because the next person to wonder should not have to re-measure.

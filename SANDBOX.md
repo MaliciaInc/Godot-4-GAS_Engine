@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `277aefa` (FASE 6) |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `6187444` (FASE 6) |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -91,8 +91,13 @@ It needs a window - no `--headless` - and it finishes with a line a runner can
 read:
 
 ```text
-SMOKE_RESULT: PASS passed=N failed=0
+SMOKE_RESULT: PASS passed=82 failed=0
 ```
+
+Green as of `6187444`. It was not, and the two checks that were red were the
+harness aiming at a card that was off the canvas rather than anything the engine
+did - see GAS-009 under "Checked and not defects", which is worth reading before
+writing up the next one.
 
 Every check is a real press, a real travel and a real release. Nothing calls a
 handler, which is the whole point: the four defects in `FINDINGS.md` numbered

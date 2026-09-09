@@ -38,6 +38,37 @@ func run() -> void:
 
 
 #region Where a pin is
+## Scroll a card somewhere a pointer can actually reach it.
+##
+## The canvas is a window onto a graph that is larger than it, and a card the
+## layout put near the right edge can be drawn mostly outside it. A press aimed
+## at a pin on the sliver that is left arrives at nothing at all - no card, no
+## canvas, no control - and from the outside that is indistinguishable from the
+## Composer ignoring the gesture. It cost this branch a finding: GAS-009 was
+## written up as an engine defect on exactly that evidence, and the engine had
+## never been given the press.
+##
+## Called before aiming rather than once at the start, because which card is
+## being aimed at is what decides where the view has to be. Answers where the
+## view was, so the caller can put it back: the cases after this one aim at
+## cards where the layout left them, and a view left somewhere else makes every
+## one of them miss.
+func bring_into_view(node_id: StringName) -> Vector2:
+	var was: Vector2 = _it.canvas().scroll_offset
+	var card: ComposerCard = _it.card(node_id)
+	if card == null:
+		return was
+	_it.canvas().scroll_offset += card.position - Vector2(200.0, 200.0)
+	await _it.hand.frames(2)
+	return was
+
+
+## Put the view back where it was.
+func restore_view(was: Vector2) -> void:
+	_it.canvas().scroll_offset = was
+	await _it.hand.frames(2)
+
+
 ## A pin's place on the window, ready to be clicked.
 func pin(node_id: StringName, port_id: StringName, outgoing: bool) -> Vector2:
 	var card: ComposerCard = _it.card(node_id)
@@ -390,6 +421,7 @@ func case_7_data_pin() -> void:
 	await _it.shot("15-data-cable")
 
 	var before: int = _it.screen.graph().connections.size()
+	var was: Vector2 = await bring_into_view(fed.id)
 	var aim: Vector2 = pin(fed.id, argument, false)
 	_it.check("7 · the argument's pin is the one the engine finds there",
 		aims_at(fed.id, argument, false) == "%s.%s" % [fed.id, argument],
@@ -406,6 +438,7 @@ func case_7_data_pin() -> void:
 	_it.check("7 · and the canvas heard the gesture", heard[0] > 0,
 		"%d events reached it" % heard[0])
 
+	await restore_view(was)
 	_it.check("7 · Alt over the argument's pin takes the cable off",
 		_it.screen.graph().connections.size() < before,
 		"%d -> %d" % [before, _it.screen.graph().connections.size()])
