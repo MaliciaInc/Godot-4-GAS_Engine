@@ -99,8 +99,7 @@ func test_scenario_a_rpg_cast() -> void:
 	var cue_scene: PackedScene = PackedScene.new()
 	cue_scene.pack(cue_instance)
 	cue_instance.free()
-	manager.catalog.scenes[&"Cue.Fireball.Impact"] = cue_scene
-	manager._pool[&"Cue.Fireball.Impact"] = GameplayCuePoolBucket.new()
+	manager.bind_cue(&"Cue.Fireball.Impact", cue_scene)
 	var pooled_before: int = manager.get_pooled_count(&"Cue.Fireball.Impact")
 
 	var payload: GameplayEffect = Factory.instant([])

@@ -319,19 +319,9 @@ func test_a_freed_bridge_disconnects_itself() -> void:
 ## tag is, and the disagreement shows up as a message that was silently refused.
 func test_the_integrations_carry_no_second_copy_of_the_tag_grammar() -> void:
 	var offenders: Array[String] = []
-	for path: String in _integration_scripts(INTEGRATIONS_DIR):
+	for path: String in GDScriptClassScan.scripts_under(INTEGRATIONS_DIR):
 		if FileAccess.get_file_as_string(path).contains(GameplayTagRegistry.TAG_PATTERN):
 			offenders.append(path)
 
 	assert_eq(offenders, [] as Array[String], "the grammar is spelled in exactly one place")
-
-
-func _integration_scripts(directory: String) -> Array[String]:
-	var found: Array[String] = []
-	for entry: String in DirAccess.get_files_at(directory):
-		if entry.ends_with(".gd"):
-			found.append(directory + "/" + entry)
-	for child: String in DirAccess.get_directories_at(directory):
-		found.append_array(_integration_scripts(directory + "/" + child))
-	return found
 #endregion

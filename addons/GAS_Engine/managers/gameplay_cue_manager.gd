@@ -90,6 +90,41 @@ func _load_registry() -> void:
 #endregion
 
 
+## Bind a cue scene to a tag, the way the registry does at startup.
+##
+## A game that builds its cues rather than listing them in a file - a sample, a
+## mod, a tool previewing one - had no way to say so. The only way in was the
+## pool this manager keeps to itself, which is why every test that needed a cue
+## reached into it. Binding is what loading a registry does; it was never
+## something only a file was allowed to do.
+##
+## The bucket comes with it, because a bound tag with no bucket is a cue that
+## resolves and then cannot be pooled.
+func bind_cue(tag: StringName, scene: PackedScene) -> bool:
+	if tag == &"" or scene == null:
+		return false
+	catalog.scenes[tag] = scene
+	if not _pool.has(tag):
+		_pool[tag] = PoolBucket.new()
+	return true
+
+
+## Take a binding back, and everything pooled under it.
+##
+## The pooled instances are freed rather than dropped: they are children of
+## this manager, and a bucket erased on its own leaves them parented to it
+## forever, answering to a tag nothing resolves.
+func unbind_cue(tag: StringName) -> bool:
+	if not catalog.scenes.has(tag):
+		return false
+	catalog.scenes.erase(tag)
+	if _pool.has(tag):
+		for pooled: CueNotify in _pool[tag].items:
+			pooled.queue_free()
+		_pool.erase(tag)
+	return true
+
+
 #region Cue Execution
 ## Spawn a cue on its target. The ASC calls this with a typed parameter object;
 ## an arbitrary Dictionary payload would let the caller and the cue disagree

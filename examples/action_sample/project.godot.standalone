@@ -1,0 +1,32 @@
+;                                                    RENAME ME TO project.godot
+;
+; The sample as a project of its own.
+;
+; It is not called `project.godot` while it lives here, and that is not a
+; nicety: Godot skips any directory that contains a file by that name, so the
+; sample would stop being compiled, stop registering its classes, and stop
+; being checked by the engine's own suite - which is the one thing that keeps it
+; from quietly going stale. Copy the folder out, rename this file, and it is a
+; project.
+;
+; It carries no copy of the engine. Put `addons/GAS_Engine` beside this file -
+; from the asset library, or by copying it out of the engine's repository - and
+; open the folder in Godot. Everything below is what the addon needs and
+; nothing else; the addon writes the same lines into a project of yours when
+; you enable it.
+
+config_version=5
+
+[application]
+
+config/name="GAS_Engine Action Sample"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.5", "Forward Plus")
+
+[autoload]
+
+GameplayCueManager="*res://addons/GAS_Engine/managers/gameplay_cue_manager.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GAS_Engine/plugin.cfg")

@@ -215,6 +215,22 @@ func get_activation_event() -> GameplayEventData:
 	return _activation_context.gameplay_event if _activation_context != null else null
 
 
+## What this activation was aimed at, or null when it was aimed at nothing.
+##
+## The other half of `get_activation_event()`. Whoever starts an ability can
+## hand it its targets in the activation's effect context - a game's own input
+## code, an AI, a console command, a replay - and an ability had no way to read
+## them: the doors in were a task that waits and a provider that confirms, both
+## of which are for an aim with a middle. A hit that lands on the frame it was
+## pressed has no middle, and was reduced to finding its own target in a world
+## the caller had already decided about.
+## @composer
+func get_activation_target_data() -> GameplayAbilityTargetData:
+	if _activation_context == null or _activation_context.effect_context == null:
+		return null
+	return _activation_context.effect_context.target_data
+
+
 
 ## Called once, after this ability has been granted and wired to its owner.
 ##

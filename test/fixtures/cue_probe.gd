@@ -69,8 +69,7 @@ static func install(manager: CueManagerScript, tag: StringName) -> void:
 	var scene: PackedScene = PackedScene.new()
 	scene.pack(template)
 	template.free()
-	manager.catalog.scenes[tag] = scene
-	manager._pool[tag] = GameplayCuePoolBucket.new()
+	manager.bind_cue(tag, scene)
 
 
 ## A recording handler: the scriptless kind of cue, counting what it was told.
@@ -186,8 +185,7 @@ static func _executions_of(node: Node, tag: StringName) -> int:
 
 ## Take the tag back out of the manager the suite shares with every other test.
 static func uninstall(manager: CueManagerScript, tag: StringName) -> void:
-	manager.catalog.scenes.erase(tag)
-	manager._pool.erase(tag)
+	manager.unbind_cue(tag)
 
 
 ## The parameter object a cue playback needs, aimed at one node.

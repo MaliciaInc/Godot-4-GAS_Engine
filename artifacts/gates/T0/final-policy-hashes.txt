@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.4.5: 'off' is a word the gates' own CLI and the QA console each own in their own language.
+# F6.4.6: gameplay_ability.gd 1130 -> 1145 for get_activation_target_data, and the cue manager gets its first ceiling for the public binding door.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T16:38:19Z
-# commit-previo: a4fdb52ec4026292f434d514ce4024c9f1ce50a9
+# date-utc: 2026-09-09T17:03:24Z
+# commit-previo: 226d724cb1c16e44c5e2c83c7aa92fdc9915f50d
 # files: 26
-4456e86aa2de539c0c0c78d3df8db7151caad13aa1109bba12687f2d337fddce  tooling/.quality-gates.json
+ac0610f5f9a2445547aceb96d150e9579941ca355fc9cb6dba3d79a9705b6c6c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

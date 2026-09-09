@@ -78,8 +78,8 @@ func before_each() -> void:
 
 func after_each() -> void:
 	manager.remove_all_cues(fixture.owner)
-	manager.catalog.scenes.erase(IMPACT)
-	manager.catalog.scenes.erase(AURA)
+	manager.unbind_cue(IMPACT)
+	manager.unbind_cue(AURA)
 	manager.catalog.flags.erase(IMPACT)
 	manager.catalog.flags.erase(AURA)
 	manager._pool.erase(IMPACT)
@@ -99,8 +99,7 @@ func _bind_template(tag: StringName, cue: GameplayCueNotifyTemplate) -> void:
 	var scene: PackedScene = PackedScene.new()
 	scene.pack(cue)
 	cue.free()
-	manager.catalog.scenes[tag] = scene
-	manager._pool[tag] = GameplayCuePoolBucket.new()
+	manager.bind_cue(tag, scene)
 
 
 func _spark_set() -> GameplayCueEffectSet:
