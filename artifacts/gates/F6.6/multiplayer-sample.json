@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "port": 47921,
+  "server_exit": 0,
+  "client_exit": 0,
+  "server_steps": [
+    "listening on port 47921",
+    "attached the hero as entity 1 owned by peer 2053895030, naming 3 abilities",
+    "granted 3 abilities to peer 2053895030",
+    "sent the opening snapshot",
+    "accepted a request for Ability.Sample.Strike",
+    "accepted a request for Ability.Sample.Slam",
+    "refused a ACTIVATION_REQUEST: policy_refuses",
+    "the client settled; sent the closing snapshot"
+  ],
+  "client_steps": [
+    "connecting to 127.0.0.1:47921",
+    "attached the hero as entity 1 owned by peer 2053895030, naming 3 abilities",
+    "connected as peer 2053895030",
+    "told about 3 grants",
+    "read the opening state",
+    "predicted a strike (PREDICT_AND_ASK) and asked",
+    "the strike was accepted",
+    "aimed the slam at (3.000000, 0.000000, 0.000000) and sent it",
+    "the aim was accepted and validated",
+    "predicted a channel and spent 12 mana on it",
+    "the channel was refused and the 12 mana went back",
+    "settled",
+    "read the closing state"
+  ],
+  "state": "attr attack=10.000\nattr max_mana=50.000\nattr mana=50.000\nattr max_health=100.000\nattr health=100.000\ntag State.Cooldown.Sample.Strike=1\nability 691699658\nability 1161839048\nability 3650212936",
+  "faults": []
+}

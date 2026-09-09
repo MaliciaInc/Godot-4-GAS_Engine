@@ -23,9 +23,39 @@ class_name GameplayWireReader extends RefCounted
 ## something nobody sent.
 static func has_shape(wire: Dictionary, expected: Dictionary[String, int]) -> bool:
 	for key: String in expected:
-		if not wire.has(key) or typeof(wire[key]) != expected[key]:
+		if not wire.has(key) or not is_a(wire[key], expected[key]):
 			return false
 	return true
+
+
+## Whether one value is the kind the contract asked for.
+##
+## Numbers are one family here, and that is not leniency. This addon's wire
+## is JSON and JSON has a single number type: every integer written to one
+## comes back a float. A contract declaring TYPE_INT and comparing types
+## exactly therefore refuses every message that has actually crossed a wire -
+## which is what it did, and what nothing could see for as long as both ends
+## of every test lived in one process.
+##
+## An integer contract still refuses a number with a fraction in it. A count
+## that arrived as 2.5 is a machine that disagrees about the contract, not
+## one that wrote its integers the way JSON writes them.
+##
+## A string contract accepts a StringName for the same kind of reason: which
+## of the two a name is written as is an engine-side interning detail, and a
+## format that made the far side care about it would be a format with an
+## opinion about somebody else's memory.
+static func is_a(value: Variant, kind: int) -> bool:
+	var actual: int = typeof(value)
+	if kind == TYPE_INT:
+		if actual == TYPE_INT:
+			return true
+		return actual == TYPE_FLOAT and float(value) == floor(float(value))
+	if kind == TYPE_FLOAT:
+		return actual == TYPE_FLOAT or actual == TYPE_INT
+	if kind == TYPE_STRING:
+		return actual == TYPE_STRING or actual == TYPE_STRING_NAME
+	return actual == kind
 
 
 ## An entity identity, or null when the wire said there was none.
@@ -69,6 +99,40 @@ static func as_strings(tags: Array[StringName]) -> Array:
 	for tag: StringName in tags:
 		said.append(String(tag))
 	return said
+
+
+## A fixed-length list of numbers, or nothing when the wire said otherwise.
+##
+## What a vector crosses as. JSON has no vectors: `JSON.stringify` writes a
+## Vector3 as the text `(3, 0, 0)` and the far side reads back a String, so a
+## format that put one on the wire was a format whose positions never arrived.
+## Numbers do arrive, and how many of them there are is the contract.
+##
+## Empty means refused, which a caller can tell from a real reading because a
+## real one is never empty: a contract that asked for two numbers and got none
+## did not get two.
+static func numbers_from(said: Variant, how_many: int) -> PackedFloat64Array:
+	var read: PackedFloat64Array = PackedFloat64Array()
+	if not said is Array:
+		return read
+	var listed: Array = said
+	if listed.size() != how_many:
+		return read
+	for one: Variant in listed:
+		if typeof(one) != TYPE_FLOAT and typeof(one) != TYPE_INT:
+			return PackedFloat64Array()
+		read.append(float(one))
+	return read
+
+
+## A two-dimensional vector as the numbers a wire carries.
+static func numbers_of_2d(value: Vector2) -> Array:
+	return [value.x, value.y]
+
+
+## And a three-dimensional one.
+static func numbers_of_3d(value: Vector3) -> Array:
+	return [value.x, value.y, value.z]
 
 
 ## What an identity says, or the value that means nobody.

@@ -79,8 +79,8 @@
       },
       {
         "glob": "addons/GAS_Engine/networking/gameplay_network_runtime.gd",
-        "max_lines": 600,
-        "reason": "The one door the ability system has to a network, and F6.6 gave a client five more things it may ask for. Two layers left this file rather than raising it further: GameplayNetRequestRuntime holds what a client asks for and what the authority does with each, and GameplayNetStateRuntime holds what each peer has been told and which reading it was - both composed back in the way the effect runtime composes stacking and inhibition, so there is still one door. What is left is the conversation itself: who may author, who may ask, which direction each kind travels, what arrives, what is refused and why. Splitting the arrival switch from the authoring would put the two halves of one conversation in two files, and the question a reader has here - can a client do this - is answered by seeing both halves at once. F6.6.4 adds a fourth layer - batching - and takes it out again the same way; 540 -> 575 covers the four sets of delegations the door now carries. F6.6.5 adds the second gate on a request - what this ability accepts from somebody else, which is not where it runs - and takes two things out again: the four authored-field readers are GameplayNetAbilityPolicy, because two collaborators ask those questions and neither should have to know the answer lives in node zero's property list, and the release door went to GameplayNetRequestRuntime with the rest of what a client asks for. 575 -> 600 covers what is left."
+        "max_lines": 640,
+        "reason": "The one door the ability system has to a network, and F6.6 gave a client five more things it may ask for. Two layers left this file rather than raising it further: GameplayNetRequestRuntime holds what a client asks for and what the authority does with each, and GameplayNetStateRuntime holds what each peer has been told and which reading it was - both composed back in the way the effect runtime composes stacking and inhibition, so there is still one door. What is left is the conversation itself: who may author, who may ask, which direction each kind travels, what arrives, what is refused and why. Splitting the arrival switch from the authoring would put the two halves of one conversation in two files, and the question a reader has here - can a client do this - is answered by seeing both halves at once. F6.6.4 adds a fourth layer - batching - and takes it out again the same way; 540 -> 575 covers the four sets of delegations the door now carries. F6.6.5 adds the second gate on a request - what this ability accepts from somebody else, which is not where it runs - and takes two things out again: the four authored-field readers are GameplayNetAbilityPolicy, because two collaborators ask those questions and neither should have to know the answer lives in node zero's property list, and the release door went to GameplayNetRequestRuntime with the rest of what a client asks for. 575 -> 600 covers what is left. F6.6.7 adds one signal and one line of wiring, both found by running the sample as two operating-system processes. The signal is the authority saying which request it accepted: this runtime answers requests and does not activate anything, because what activating means - which grant, with what context, aimed at what - belongs to the game, and without the announcement an authority said yes and then nothing happened on the machine that said it. Beside it, a predicted start now opens its own journal window, so a game recording what it did under a guess does not first have to ask which guess it was. 600 -> 640."
       }
     ],
     "function_parameter_allowlist": [
@@ -505,6 +505,18 @@
       {
         "literal": "off",
         "reason": "Two vocabularies that happen to share a word. The gates' own CLI accepts `--fail-on off` to mean \"block on nothing\", and GAS_Engine's QA switches are typed at a console as `gas.ignore_costs off`. Neither can be spelled differently - one is a flag value this project's tooling already documents, the other is the word a person types - and neither can name the other's constant: a Python gate and a GDScript addon share no declarations. Each has one owner in its own language."
+      },
+      {
+        "literal": "--headless",
+        "reason": "Godot's own command-line flag, spelled by every tool in this repository that launches Godot: the distribution check and the two-process sample harness. Not a value this project chose, and not one it could name in a constant either - the two tools are Python and PowerShell, and a constant in one is not reachable from the other."
+      },
+      {
+        "literal": "--path",
+        "reason": "Godot's own command-line flag, for the same reason as --headless: two tools in two languages spell the same engine flag, and neither can share a constant with the other."
+      },
+      {
+        "literal": "--automation",
+        "reason": "The sample's own flag, named as SampleNetOptions.AUTOMATION in the GDScript that reads it and spelled again in the PowerShell that passes it. GDScript constants are not reachable from PowerShell; the alternative is the harness building its command line from a value it has no way to read, which is a longer way to write the same two spellings."
       }
     ],
     "allow_globs": [],

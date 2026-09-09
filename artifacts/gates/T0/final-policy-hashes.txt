@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.6.5: the ceilings for the ability contract, the ASC facade and the network door, after the two folds this task also made.
+# F6.6.7: the engine flags two languages both spell, and the network door after the accepted-request signal.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T19:46:39Z
-# commit-previo: 423f2fef0ee0663eb90b92c89330b53f63c4994e
+# date-utc: 2026-09-09T20:48:01Z
+# commit-previo: ef4240936f3be4c07ac7af02b14e21d78e63038e
 # files: 27
-8f0ca9ab09795cd3e199b3d12bd2cee862b9b963499c3d18d036c24092cfdd6c  tooling/.quality-gates.json
+82bf64590c38ee4239acb458807198e6dac9ce75421979c554a18273d7c78e20  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

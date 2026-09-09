@@ -14,6 +14,12 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name SampleGroundSlam extends GameplayAbility
 
+## What this ability is called, said once.
+##
+## The node's name and the key a loadout asks for are the same word, and
+## two spellings of it is a loadout that silently grants nothing.
+const NAME: StringName = &"SampleGroundSlam"
+
 const TAG: StringName = &"Ability.Sample.Slam"
 
 ## Who it landed on, in the order the preset put them. Read by the probe.
@@ -30,13 +36,18 @@ var _reticle: GameplayTargetReticle3D = null
 
 static func build() -> SampleGroundSlam:
 	var ability: SampleGroundSlam = SampleGroundSlam.new()
-	ability.name = "SampleGroundSlam"
+	ability.name = String(NAME)
 	ability.ability_name = "Slam"
 	ability.ability_tags = [TAG]
 	ability.auto_end_on_activate_return = false
 	# Staggered characters do not slam. One query rather than a check inside the
 	# activation, so the ability answers `can_activate` honestly to a UI as well.
 	ability.activation_blocked_query = _while_staggered()
+	# Predicted, because the aiming is the ability: a player who cannot see
+	# the ring until the server says so is a player aiming at nothing. Where
+	# it lands is still the authority's to decide - the spot travels as
+	# target data and is checked there.
+	ability.net_execution_policy = NetExecutionPolicy.LOCAL_PREDICTED
 	return ability
 
 

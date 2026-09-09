@@ -16,6 +16,7 @@ do I use this", and it is checked on every run of the engine's suite by
 | 5 | The runtime overlay, outside the editor | `scripts/sample_world.gd` |
 | 6 | A refusal visible as a failure tag | `tests/sample_probe.gd` |
 | 7 | A deterministic automated probe | `tests/sample_probe.gd` |
+| 8 | The same sample across two processes, over a real wire | `network/server_main.gd`, `network/client_main.gd` |
 
 ## Running it inside the engine's repository
 
@@ -52,7 +53,51 @@ engine's own repository and must not rewrite the repository's cue registry to
 run. A project of your own lists them in the registry file the
 `gas_engine/resources/cues/registry_file` setting points at.
 
-## What comes next
+## Running it as two processes
 
-F6.6 runs `SampleProbe` against a server and a client of this same sample and
-asks whether the two agree.
+The sample is also the engine's only check that bytes actually cross. Every
+other networking test in this repository puts two runtimes in one process, which
+checks the rules and cannot check the wire - and the difference is not
+academic. The first run of this harness found two defects that had been
+invisible for the whole of F6.6: this addon's wire is JSON, JSON has a single
+number type, and every reader comparing `typeof(value)` against `TYPE_INT`
+refused every message that had actually crossed one. Beside it, a `Vector3`
+written to JSON arrives as the text `(3, 0, 0)`, so no aim with a position in it
+ever reached an authority.
+
+```powershell
+pwsh -File tooling/run_multiplayer_sample.ps1
+```
+
+It launches an authority and a client as separate operating-system processes
+with an ENet connection between them, runs the scenario below, and fails unless
+both exited zero, neither reported a fault, and the two ended on the same
+reading of the same character. The receipt goes to
+`artifacts/gates/F6.6/multiplayer-sample.json`, and
+`test/integration/test_network_two_processes.gd` reads it - refusing one older
+than the code it vouches for.
+
+Either half can also be run by hand:
+
+```powershell
+godot --headless --path . -s res://examples/action_sample/network/server_main.gd -- --server --port=47921 --automation --out=server.json
+godot --headless --path . -s res://examples/action_sample/network/client_main.gd -- --client=127.0.0.1:47921 --automation --out=client.json
+```
+
+What happens, in order: the client connects and both halves bind the same
+character under the same entity id; the authority grants the loadout and sends
+one whole snapshot; the client predicts a strike and is told yes; it aims the
+slam and sends where it aimed, and the authority validates that against its own
+provider; it predicts the channel, spends on it, and is told no - because the
+channel's `net_security_policy` reserves starting it to the authority - and the
+spending goes back; the client says it has settled, reads the closing snapshot,
+and both processes exit.
+
+The three abilities carry the network policies that make this work, and they
+are worth reading as three different answers:
+
+| Ability | Where it runs | What the authority accepts | Notes |
+|---|---|---|---|
+| Strike | `LOCAL_PREDICTED` | `CLIENT_OR_SERVER` | The ordinary predicted ability. |
+| Slam | `LOCAL_PREDICTED` | `CLIENT_OR_SERVER` | Predicted so the ring appears now; where it lands is still checked. |
+| Channel | `LOCAL_PREDICTED` | `SERVER_ONLY_EXECUTION` | Only the authority starts it, and it replicates while it runs. |

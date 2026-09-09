@@ -110,6 +110,21 @@ func test_applying_to_a_location_reaches_nobody_and_says_so() -> void:
 
 
 #region Across a wire
+## The same dictionary after a real crossing.
+##
+## Through JSON, because that is what this addon's wire is. A round trip that
+## handed the dictionary straight back proved the translator and nothing at all
+## about the crossing - and what it was hiding was that JSON has no vectors:
+## `JSON.stringify` writes a Vector3 as the text `(3, 0, 0)` and the far side
+## read back a String where a position should have been, so no aimed ability
+## ever worked between two processes.
+func _crossed(wire: Dictionary, described: String) -> Dictionary:
+	var read: Variant = JSON.parse_string(JSON.stringify(wire))
+	assert_true(read is Dictionary, "%s: it is still a dictionary after JSON" % described)
+	var said: Dictionary = read if read is Dictionary else {}
+	return said
+
+
 ## Both dimensions round-trip, and what was hit crosses as an identity.
 ##
 ##     [what it is called, the position, the normal]
@@ -133,7 +148,9 @@ func test_an_aim_round_trips_as_identities_and_numbers(
 	data.append_node(struck.owner)
 	data.append_location(position, normal)
 
-	var wire: Dictionary = GameplayTargetDataTranslator.to_wire(data, registry)
+	var wire: Dictionary = _crossed(
+		GameplayTargetDataTranslator.to_wire(data, registry), described
+	)
 
 	var crossed: Array = wire[GameplayTargetDataTranslator.HITS_KEY]
 	for entry: Variant in crossed:

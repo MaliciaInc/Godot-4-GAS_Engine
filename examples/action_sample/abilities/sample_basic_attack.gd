@@ -12,6 +12,12 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name SampleBasicAttack extends GameplayAbility
 
+## What this ability is called, said once.
+##
+## The node's name and the key a loadout asks for are the same word, and
+## two spellings of it is a loadout that silently grants nothing.
+const NAME: StringName = &"SampleBasicAttack"
+
 const TAG: StringName = &"Ability.Sample.Strike"
 const COOLDOWN_SECONDS: float = 1.5
 
@@ -22,13 +28,17 @@ var struck: Array[Node] = []
 
 static func build() -> SampleBasicAttack:
 	var ability: SampleBasicAttack = SampleBasicAttack.new()
-	ability.name = "SampleBasicAttack"
+	ability.name = String(NAME)
 	ability.ability_name = "Strike"
 	ability.ability_tags = [TAG]
 	ability.cooldown_effect = SampleEffects.strike_cooldown(COOLDOWN_SECONDS)
 	# It ends when the activation function returns, because there is nothing to
 	# wait for: the hit has already landed by then.
 	ability.auto_end_on_activate_return = true
+	# The one abilities are predicted for. A hit that waits for the server
+	# before anything happens is a hit that feels late on every connection
+	# there is, so the client runs it now and unwinds if it was wrong.
+	ability.net_execution_policy = NetExecutionPolicy.LOCAL_PREDICTED
 	return ability
 
 

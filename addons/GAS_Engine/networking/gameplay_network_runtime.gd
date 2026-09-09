@@ -58,6 +58,18 @@ signal activation_replicated(
 	entity: GameplayNetEntityId, definition: GameplayNetDefinitionId, running: bool
 )
 
+## A request this machine accepted, for whoever runs abilities here.
+##
+## The authority answers requests; it does not activate anything, because what
+## activating means - which grant, with what context, aimed at what - belongs to
+## the game rather than to a networking layer. So an acceptance is announced and
+## the game acts on it, exactly the way a client acts on the answer to its own
+## guess. Without this the authority says yes to a request and then nothing
+## happens on the machine that said it, which reads as a dropped packet.
+signal activation_requested(
+	entity: GameplayNetEntityId, definition: Resource, key: GameplayPredictionKey
+)
+
 ## A reading of an entity's state was written onto it. Carries the state as
 ## well as the entity, because what a game shows - which buffs, how long left
 ## - is in the reading and deliberately not written into the component.
@@ -357,6 +369,15 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 	# answer has to name which ask it is answering, and a client with two in
 	# flight cannot tell them apart otherwise.
 	asking.prediction_key = journal.next_key(peer)
+	# A guess this machine is about to act on gets its window opened here, so
+	# that a game predicting under it records what it did without first
+	# having to ask which guess it was. Whichever answer arrives closes it.
+	#
+	# One at a time: a second predicted activation while the first is still
+	# in flight is refused a window and names its own key on each operation
+	# instead, which is the same thing said the longer way.
+	if decided == GameplayNetAuthority.Start.PREDICT_AND_ASK:
+		journal.open_window(asking.prediction_key)
 	publish(asking)
 	return decided
 
@@ -524,6 +545,7 @@ func _honour_request(message: GameplayNetMessage) -> bool:
 		_answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
 		return false
 	_answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
+	activation_requested.emit(message.entity, definition, message.prediction_key)
 	return true
 
 

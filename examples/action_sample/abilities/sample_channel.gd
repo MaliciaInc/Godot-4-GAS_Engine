@@ -13,6 +13,12 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name SampleChannel extends GameplayAbility
 
+## What this ability is called, said once.
+##
+## The node's name and the key a loadout asks for are the same word, and
+## two spellings of it is a loadout that silently grants nothing.
+const NAME: StringName = &"SampleChannel"
+
 const TAG: StringName = &"Ability.Sample.Channel"
 
 ## What the character is while it channels, so other abilities can ask.
@@ -25,11 +31,24 @@ var _drain: ActiveGameplayEffect = null
 
 static func build() -> SampleChannel:
 	var ability: SampleChannel = SampleChannel.new()
-	ability.name = "SampleChannel"
+	ability.name = String(NAME)
 	ability.ability_name = "Channel"
 	ability.ability_tags = [TAG]
 	# It outlives its own activation function, which is the whole point.
 	ability.auto_end_on_activate_return = false
+	# The one the authority starts. A channel is a character standing still
+	# draining itself for as long as it lasts, which is exactly the thing a
+	# client is not trusted to declare about itself - so the request is
+	# refused and the client unwinds whatever it guessed.
+	ability.net_execution_policy = NetExecutionPolicy.LOCAL_PREDICTED
+	ability.net_security_policy = NetSecurityPolicy.SERVER_ONLY_EXECUTION
+	# Its middle is the part that matters: a cast bar has nothing to draw
+	# from a start and an end. This is the one ability in the sample whose
+	# owner is told while it is running.
+	ability.replication_policy = ReplicationPolicy.REPLICATE_YES
+	# And the player who started it may call it off, which most abilities
+	# may not: there is no cost already committed for a cancel to steal.
+	ability.server_respects_remote_cancellation = true
 	return ability
 
 

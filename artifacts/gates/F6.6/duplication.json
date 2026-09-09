@@ -1,13 +1,13 @@
 {
-  "units": 3023,
-  "units_by_language": "gdscript 2978, powershell 4, python 41",
-  "elapsed_seconds": 12.583757099997456,
+  "units": 3056,
+  "units_by_language": "gdscript 3009, powershell 6, python 41",
+  "elapsed_seconds": 13.157329999998183,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27676
+    "behavioral": 26975
   },
   "blocking": 0,
   "findings": [
@@ -204,13 +204,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_composer_creation.gd:46-58:_context",
       "score": 1.0,
       "category": "executable"
     },
@@ -742,7 +735,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_set_handles.gd:43-51:published",
-      "right": "test/unit/test_target_data_locations.gd:185-194:test_a_malformed_aim_is_refused_rather_than_repaired",
+      "right": "test/unit/test_target_data_locations.gd:202-211:test_a_malformed_aim_is_refused_rather_than_repaired",
       "score": 0.875,
       "category": "executable"
     },
@@ -848,6 +841,20 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:163-173:give_ability",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "examples/action_sample/abilities/sample_basic_attack.gd:29-42:build",
+      "score": 0.8461538461538461,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "examples/action_sample/abilities/sample_ground_slam.gd:37-51:build",
       "score": 0.8461538461538461,
       "category": "executable"
     },
@@ -995,20 +1002,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query",
       "right": "addons/GAS_Engine/editor/composer/composer_flow_builder.gd:344-358:_connect_all",
-      "score": 0.8333333333333334,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
-      "right": "examples/action_sample/abilities/sample_basic_attack.gd:23-32:build",
-      "score": 0.8333333333333334,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
-      "right": "examples/action_sample/abilities/sample_ground_slam.gd:31-40:build",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1274,13 +1267,6 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
-      "right": "examples/action_sample/abilities/sample_channel.gd:26-33:build",
-      "score": 0.8181818181818182,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
       "right": "test/fixtures/test_effect_factory.gd:257-266:stacked",
       "score": 0.8181818181818182,
       "category": "executable"
@@ -1484,7 +1470,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
-      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:33-40:to_wire",
+      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:35-42:to_wire",
       "score": 0.8,
       "category": "executable"
     },
@@ -1623,6 +1609,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:73-82:_key_of_expression",
+      "right": "examples/action_sample/network/sample_net_session.gd:226-238:report",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
       "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:555-573:apply_cooldown",
       "score": 0.7894736842105263,
@@ -1681,6 +1674,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
       "right": "addons/GAS_Engine/editor/composer/composer_canvas.gd:340-347:picked",
+      "score": 0.7857142857142857,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "examples/action_sample/abilities/sample_channel.gd:32-52:build",
       "score": 0.7857142857142857,
       "category": "executable"
     },
@@ -2072,7 +2072,7 @@
     {
       "kind": "masked",
       "left": "addons/GAS_Engine/cues/gameplay_cue_wire.gd:133-150:_expected",
-      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:105-114:_expected",
+      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:132-141:_expected",
       "score": 1.0,
       "category": "executable"
     },

@@ -1,8 +1,10 @@
 ## An aim turned into identities and numbers, and back again.
 ##
 ## What was hit crosses as the identity of the entity it belongs to; where it
-## was hit crosses as the position and normal themselves, which are numbers
-## every machine agrees about. A collider no registry knows is left out rather
+## was hit crosses as the numbers a position and a normal are made of - two
+## of them or three, never a Vector2 or a Vector3. This addon's wire is JSON
+## and JSON has no vectors: one written to it arrives as the text `(3, 0, 0)`
+## and is read back as a String, which is an aim that never arrived. A collider no registry knows is left out rather
 ## than sent as its address: an ObjectID is a slot in one process's table, and a
 ## receiver resolving one would get whatever happens to be in that slot.
 ##
@@ -69,10 +71,14 @@ static func _hit_to_wire(hit: GameplayTargetHit, registry: GameplayNetRegistry) 
 			GameplayNetNaming.entity_of(hit.collider, registry)
 		),
 		HAS_POSITION_KEY: hit.has_position,
-		POSITION_2D_KEY: hit.position_2d if two_d else Vector2.ZERO,
-		NORMAL_2D_KEY: hit.normal_2d if two_d else Vector2.ZERO,
-		POSITION_3D_KEY: hit.position_3d,
-		NORMAL_3D_KEY: hit.normal_3d,
+		POSITION_2D_KEY: GameplayWireReader.numbers_of_2d(
+			hit.position_2d if two_d else Vector2.ZERO
+		),
+		NORMAL_2D_KEY: GameplayWireReader.numbers_of_2d(
+			hit.normal_2d if two_d else Vector2.ZERO
+		),
+		POSITION_3D_KEY: GameplayWireReader.numbers_of_3d(hit.position_3d),
+		NORMAL_3D_KEY: GameplayWireReader.numbers_of_3d(hit.normal_3d),
 	}
 
 
@@ -97,8 +103,29 @@ static func _hit_from_wire(
 		# still a hit that happened somewhere else.
 		return true
 	if two_d:
-		return data.append_location(entry[POSITION_2D_KEY], entry[NORMAL_2D_KEY])
-	return data.append_location(entry[POSITION_3D_KEY], entry[NORMAL_3D_KEY])
+		var flat: PackedFloat64Array = GameplayWireReader.numbers_from(
+			entry[POSITION_2D_KEY], 2
+		)
+		var facing: PackedFloat64Array = GameplayWireReader.numbers_from(
+			entry[NORMAL_2D_KEY], 2
+		)
+		if flat.is_empty() or facing.is_empty():
+			return false
+		return data.append_location(
+			Vector2(flat[0], flat[1]), Vector2(facing[0], facing[1])
+		)
+
+	var spot: PackedFloat64Array = GameplayWireReader.numbers_from(
+		entry[POSITION_3D_KEY], 3
+	)
+	var up: PackedFloat64Array = GameplayWireReader.numbers_from(
+		entry[NORMAL_3D_KEY], 3
+	)
+	if spot.is_empty() or up.is_empty():
+		return false
+	return data.append_location(
+		Vector3(spot[0], spot[1], spot[2]), Vector3(up[0], up[1], up[2])
+	)
 
 
 ## The type this contract declares for each key.
@@ -107,8 +134,8 @@ static func _expected() -> Dictionary[String, int]:
 		SPACE_KEY: TYPE_INT,
 		ENTITY_KEY: TYPE_INT,
 		HAS_POSITION_KEY: TYPE_BOOL,
-		POSITION_2D_KEY: TYPE_VECTOR2,
-		NORMAL_2D_KEY: TYPE_VECTOR2,
-		POSITION_3D_KEY: TYPE_VECTOR3,
-		NORMAL_3D_KEY: TYPE_VECTOR3,
+		POSITION_2D_KEY: TYPE_ARRAY,
+		NORMAL_2D_KEY: TYPE_ARRAY,
+		POSITION_3D_KEY: TYPE_ARRAY,
+		NORMAL_3D_KEY: TYPE_ARRAY,
 	}

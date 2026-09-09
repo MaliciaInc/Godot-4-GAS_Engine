@@ -238,7 +238,15 @@ func test_gameplay_event_wire_round_trips_without_object_references() -> void:
 		var carried: Variant = wire[key]
 		assert_false(carried is Object, "`%s` crosses as a value, not a reference" % key)
 
-	var back: GameplayEventWire = GameplayEventWire.from_wire(wire)
+	# Through JSON, because that is what this addon's wire is. Handing the
+	# dictionary straight back proved the shape and nothing about the crossing:
+	# JSON has one number type, every integer comes back a float, and a reader
+	# comparing against TYPE_INT refused every event that had actually crossed.
+	var read: Variant = JSON.parse_string(JSON.stringify(wire))
+	assert_true(read is Dictionary, "it is still a dictionary after JSON")
+	var crossed: Dictionary = read if read is Dictionary else {}
+
+	var back: GameplayEventWire = GameplayEventWire.from_wire(crossed)
 	assert_not_null(back, "it came back")
 	assert_eq(back.event_tag, CRITICAL, "the tag survived")
 	assert_eq(back.instigator.value, 7, "and who caused it")
