@@ -75,6 +75,9 @@ func try_activate_with(
 		spec.last_activation_result = result
 		if ability_runtime.owner_asc != null:
 			ability_runtime.owner_asc.ability_activation_failed.emit(spec.per_actor_instance, error)
+			ability_runtime.owner_asc.ability_activation_failed_with_tag.emit(
+				handle, error, AbilityFailureTags.of(error)
+			)
 		return result
 
 	# Retriggering replaces rather than stacks: the activation in flight is

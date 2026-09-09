@@ -353,6 +353,11 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 		return ActivationError.MISSING_TAG
 	if tag_semantics.blocked_by_active_ability(spec):
 		return ActivationError.BLOCKED_BY_ACTIVE_ABILITY
+	# After the ability's own declaration, never instead of it: the table adds
+	# restrictions and can never turn a refusal into an allow.
+	var by_relationship: ActivationError = _relationship_refusal(spec)
+	if by_relationship != ActivationError.NONE:
+		return by_relationship
 	if owner_asc != null and not spec.definition.costs.is_empty():
 		# The same resolver commit_ability() uses - never disagrees.
 		var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(
@@ -363,6 +368,15 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 		if resolved.status != GameplayResolvedCost.Status.OK:
 			return ActivationError.INTERNAL_ERROR
 	return ActivationError.NONE
+
+
+## What the component's relationship table says about this grant, if it has one.
+func _relationship_refusal(spec: GameplayAbilitySpec) -> ActivationError:
+	if owner_asc == null or owner_asc.ability_tag_relationships == null:
+		return ActivationError.NONE
+	return owner_asc.ability_tag_relationships.refusal_for(
+		effective_ability_tags(spec), tags
+	)
 
 
 ## Public: AbilityActivationPolicyRuntime needs the same check.

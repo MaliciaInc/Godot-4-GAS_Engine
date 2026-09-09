@@ -69,6 +69,18 @@ signal active_effect_refreshed(active_effect: ActiveGameplayEffect)
 ## An activation attempt was refused, with the closed reason why.
 signal ability_activation_failed(ability: GameplayAbility, reason: AbilityRuntime.ActivationError)
 
+## The same refusal, said in a vocabulary a UI can act on.
+##
+## The enum is what code switches on and it stays. A tag is what a game maps to
+## a message, an icon or a sound, and mapping an enum value to those means every
+## project writing the same switch. The existing signal is not removed: this is
+## a second way to hear one thing.
+signal ability_activation_failed_with_tag(
+	handle: GameplayAbilityHandle,
+	error: AbilityRuntime.ActivationError,
+	failure_tag: StringName
+)
+
 ## AbilityRuntime.try_activate() started this instance - accepted, not
 ## finished. See ability_runtime_ended for the outcome.
 ## An ability was granted. The moment a handle starts naming something.
@@ -157,6 +169,16 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		share_attributes = value
 		if is_node_ready():
 			_adopt_attribute_sets()
+
+@export_category("Tag relationships")
+## One place that says which kinds of ability block, cancel and require which,
+## instead of the same rule written on every ability it happens to be about.
+##
+## Optional, and additive only: nothing in it can make an ability activatable
+## that its own declaration refused. A central table quietly overruling what an
+## ability says about itself is a rule nobody reading the ability could account
+## for.
+@export var ability_tag_relationships: GameplayAbilityTagRelationships = null
 
 @export_category("Suppression")
 ## Do not play cues on this component.
