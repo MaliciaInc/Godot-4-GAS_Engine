@@ -77,3 +77,23 @@ func destroy() -> void:
 	asc = null
 	attributes = null
 #endregion
+## Everything about this component a loadout, an effect or an ability could have
+## moved, as one comparable value.
+##
+## Shared rather than written in each suite that needs it: two copies of "what
+## counts as unchanged" would eventually disagree, and the disagreement would
+## show up as a round trip that passed in one test and failed in another.
+func snapshot() -> Dictionary:
+	var attributes: Dictionary[StringName, float] = {}
+	for name: StringName in asc.attributes.all_attribute_names():
+		attributes[name] = asc.get_attribute_current(name)
+	var tag_counts: Dictionary[StringName, int] = {}
+	for tag: StringName in asc.tags.active_tags():
+		tag_counts[tag] = asc.tags.count_exact(tag)
+	return {
+		&"attributes": attributes,
+		&"tags": tag_counts,
+		&"effects": asc.get_active_effects().size(),
+		&"grants": asc.get_ability_specs().size(),
+		&"held_inputs": asc.get_held_inputs(),
+	}

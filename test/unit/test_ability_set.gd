@@ -66,26 +66,6 @@ func _full_kit() -> GameplayAbilitySet:
 	] as Array[GameplayEffect]
 	kit.attribute_sets = [VehicleAttributeSet.new()] as Array[AttributeSet]
 	return kit
-
-
-## Everything about this component that a loadout could have moved.
-func _snapshot() -> Dictionary:
-	var attributes: Dictionary[StringName, float] = {}
-	for name: StringName in asc.attributes.all_attribute_names():
-		attributes[name] = asc.get_attribute_current(name)
-	var tag_counts: Dictionary[StringName, int] = {}
-	for tag: StringName in asc.tags.active_tags():
-		tag_counts[tag] = asc.tags.count_exact(tag)
-	return {
-		&"attributes": attributes,
-		&"tags": tag_counts,
-		&"effects": asc.get_active_effects().size(),
-		&"grants": asc.get_ability_specs().size(),
-		&"held_inputs": asc.get_held_inputs(),
-	}
-#endregion
-
-
 #region On and off
 func test_a_kit_publishes_all_three_kinds() -> void:
 	var receipt: GameplayAbilitySetHandles = _full_kit().grant(asc)
@@ -100,14 +80,14 @@ func test_a_kit_publishes_all_three_kinds() -> void:
 ## The critical one: identical before and after, in every way a loadout could
 ## have changed it.
 func test_granting_and_taking_back_leaves_the_component_as_it_was() -> void:
-	var before: Dictionary = _snapshot()
+	var before: Dictionary = fixture.snapshot()
 
 	var receipt: GameplayAbilitySetHandles = _full_kit().grant(asc)
 	assert_false(asc.get_ability_specs().is_empty(), "it went on")
 
 	assert_true(receipt.take_back(), "and came off")
 
-	assert_eq(_snapshot(), before, "leaving nothing behind")
+	assert_eq(fixture.snapshot(), before, "leaving nothing behind")
 
 
 ## Retirement is the reverse of what was published, not a grouping by kind.

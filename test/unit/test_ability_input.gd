@@ -297,7 +297,24 @@ func test_one_press_does_not_double_activate_a_spec_bound_two_ways() -> void:
 	)
 
 
-func test_while_input_active_starts_on_press_and_ends_on_release() -> void:
+## Held down it runs; let go it ends - whichever way the input is named.
+##
+## Over both spellings because they are one rule with two front doors, and a
+## release that only worked by number would leave the by-name half of the
+## routing with no reader at all.
+##
+##     [what the input is called, the slot, the action]
+func _held_input_cases() -> Array:
+	return [["a slot", 3, &""], ["an action", -1, &"hold"]]
+
+
+func test_while_input_active_starts_on_press_and_ends_on_release(
+	case: Array = use_parameters(_held_input_cases())
+) -> void:
+	var described: String = case[0]
+	var slot: int = case[1]
+	var action: StringName = case[2]
+
 	# ChannelingAbility rather than a probe: `channels` is not exported, so it
 	# never survives the pack-then-instantiate round trip a grant goes through,
 	# and the ability would end the instant it started.
@@ -307,12 +324,21 @@ func test_while_input_active_starts_on_press_and_ends_on_release() -> void:
 	var scene: PackedScene = PackedScene.new()
 	scene.pack(channelling)
 	channelling.free()
-	var handle: GameplayAbilityHandle = asc.give_ability(scene, 1.0, 3)
+	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
+	options.input_id = slot
+	options.input_action = action
+	var handle: GameplayAbilityHandle = asc.give_ability_with_options(scene, options)
 	var spec: GameplayAbilitySpec = asc.get_ability_spec(handle)
 
-	asc.ability_local_input_pressed(3)
-	assert_true(spec.per_actor_instance.is_active, "held down, running")
+	if action == &"":
+		asc.ability_local_input_pressed(slot)
+	else:
+		asc.ability_local_input_action_pressed(action)
+	assert_true(spec.per_actor_instance.is_active, "%s: held down, running" % described)
 
-	asc.ability_local_input_released(3)
-	assert_false(spec.per_actor_instance.is_active, "let go, ended")
+	if action == &"":
+		asc.ability_local_input_released(slot)
+	else:
+		asc.ability_local_input_action_released(action)
+	assert_false(spec.per_actor_instance.is_active, "%s: let go, ended" % described)
 #endregion

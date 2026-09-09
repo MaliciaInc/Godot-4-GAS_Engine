@@ -1,13 +1,13 @@
 {
-  "units": 2500,
-  "units_by_language": "gdscript 2458, powershell 4, python 38",
-  "elapsed_seconds": 10.225162900002033,
+  "units": 2504,
+  "units_by_language": "gdscript 2462, powershell 4, python 38",
+  "elapsed_seconds": 10.27384819999861,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24104
+    "behavioral": 24050
   },
   "blocking": 0,
   "findings": [
@@ -846,21 +846,21 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:50-62:_on_ended",
       "score": 0.8461538461538461,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
       "right": "addons/GAS_Engine/editor/composer/composer_value_editor.gd:352-362:_swatch",
       "score": 0.8461538461538461,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
       "right": "addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:278-286:_evaluate_at",
       "score": 0.8461538461538461,
       "category": "executable"
@@ -979,7 +979,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:118-129:cancel_conflicting_abilities",
+      "right": "addons/GAS_Engine/networking/gameplay_event_translator.gd:71-80:_named_entity",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query",
       "right": "addons/GAS_Engine/editor/composer/composer_flow_builder.gd:344-358:_connect_all",
       "score": 0.8333333333333334,
       "category": "executable"
@@ -1182,7 +1189,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query",
       "right": "addons/GAS_Engine/events/gameplay_event_runtime.gd:36-50:dispatch",
       "score": 0.8260869565217391,
       "category": "executable"
@@ -1203,7 +1210,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:127-134:set_activation_owned_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:146-153:set_activation_owned_tags",
       "right": "addons/GAS_Engine/effects/gameplay_effect_chain_runtime.gd:55-63:fire_from_execution",
       "score": 0.8235294117647058,
       "category": "executable"
@@ -1462,7 +1469,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
       "right": "addons/GAS_Engine/effects/gameplay_effect_spec.gd:554-565:resolve_authored_timing",
       "score": 0.8,
       "category": "executable"
@@ -1616,14 +1623,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query",
       "right": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:48-57:can_apply_all",
       "score": 0.7916666666666666,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:62-69:cancel_matching_query",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query",
       "right": "addons/GAS_Engine/integrations/quest_system/quest_system_gas_bridge.gd:235-245:_on_gameplay_event",
       "score": 0.7916666666666666,
       "category": "executable"
@@ -1632,13 +1639,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of",
       "right": "addons/GAS_Engine/editor/composer/composer_flow.gd:96-106:predecessors_of",
-      "score": 0.7894736842105263,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:113-120:cancel_conflicting_abilities",
-      "right": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:214-222:_end_with",
       "score": 0.7894736842105263,
       "category": "executable"
     },
@@ -1672,7 +1672,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:75-83:cancel_with_tags",
+      "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
       "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:688-695:execute_cue",
       "score": 0.7857142857142857,
       "category": "executable"

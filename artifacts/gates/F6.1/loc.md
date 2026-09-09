@@ -2,7 +2,7 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 564
+- Source files scanned: 565
 - Blocking findings: 0
 - Scan issues: 0
 

@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: ef4a6f02de8e3d87150413ceb39ec4c1edf7d3ba47ef0950d982d7520bedf00f
+godot --headless --path . --import; project.godot restored afterwards

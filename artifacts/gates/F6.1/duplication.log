@@ -1,3 +1,12 @@
+RESULT: PASS
+stage:      duplication
+command:    python tooling\gates\run_gate.py duplication artifacts\gates\F6.1
+started:    2026-09-09T00:50:30.0975948Z
+ended:      2026-09-09T00:50:40.5480772Z
+duration_s: 10.450
+exit_code:  0
+
+--- stdout ---
 # Duplication Gate
 
 - Status: **PASS**
@@ -391,3 +400,6 @@
 ## Scan Issues
 
 - None
+
+--- stderr ---
+

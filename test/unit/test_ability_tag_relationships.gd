@@ -18,6 +18,7 @@ const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 const MELEE: StringName = &"Ability.Melee"
 const STUNNED: StringName = &"Status.Stunned"
 const READY: StringName = &"Status.Ready"
+const DODGE: StringName = &"Ability.Dodge"
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -51,6 +52,17 @@ func _table(configure: Callable) -> void:
 	var table: GameplayAbilityTagRelationships = GameplayAbilityTagRelationships.new()
 	table.relationships = [row] as Array[GameplayAbilityTagRelationship]
 	asc.ability_tag_relationships = table
+
+
+## A granted ability of one kind that stays active until the test lets it go.
+##
+## Channelled rather than ProbeAbility with `channels` set, because that field
+## is not exported and does not survive the grant's pack-then-instantiate trip.
+func _channelled(tag: StringName) -> GameplayAbilitySpec:
+	var ability: ChannelingAbility = ChannelingAbility.new()
+	ability.name = String(tag).replace(".", "_")
+	ability.ability_tags = [tag]
+	return AbilityFactory.give(asc, ability)
 
 
 func _melee() -> GameplayAbilitySpec:
@@ -151,6 +163,44 @@ func test_a_row_about_something_else_says_nothing() -> void:
 		asc.try_activate_ability_handle(spec.handle).is_ok(),
 		"a rule about ranged attacks is not a rule about this one"
 	)
+
+
+## The two arms of a row that nobody wrote on either ability involved.
+##
+## One test rather than two because it is one rule read from both sides: what
+## a running melee forbids is exactly what beginning a melee takes away. Split
+## in half, each side passes while the table is only half wired to the
+## runtime - which is how it first shipped.
+func test_tag_relationships_can_block_and_cancel() -> void:
+	var melee: GameplayAbilitySpec = _channelled(MELEE)
+	var dodge: GameplayAbilitySpec = _channelled(DODGE)
+	_table(func(row: GameplayAbilityTagRelationship) -> void:
+		row.blocks_query = _query([DODGE] as Array[StringName])
+		row.cancels_query = _query([DODGE] as Array[StringName])
+	)
+
+	assert_true(
+		asc.try_activate_ability_handle(dodge.handle).is_ok(), "a dodge on its own runs"
+	)
+	assert_true(
+		asc.try_activate_ability_handle(melee.handle).is_ok(), "and a melee may begin"
+	)
+	assert_false(
+		dodge.per_actor_instance.is_active,
+		"beginning the melee took the dodge away, though neither ability says so"
+	)
+
+	var refused: GameplayAbilityActivationResult = asc.try_activate_ability_handle(
+		dodge.handle
+	)
+	assert_false(refused.is_ok(), "and while the melee runs, no dodge starts")
+	assert_eq(
+		refused.status,
+		GameplayAbilityActivationResult.Status.BLOCKED_BY_ACTIVE_ABILITY,
+		"blocked by what is running, which is what the row is about"
+	)
+
+	(melee.per_actor_instance as ChannelingAbility).channel_gate.emit()
 
 
 #region Every refusal has a name
