@@ -1,7 +1,7 @@
 {
   "units": 3081,
   "units_by_language": "gdscript 3027, powershell 6, python 48",
-  "elapsed_seconds": 13.37668069999927,
+  "elapsed_seconds": 13.298066600000311,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {

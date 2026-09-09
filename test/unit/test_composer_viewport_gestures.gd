@@ -24,12 +24,17 @@ const OTHER: String = "apply_effect_to_target_data"
 ## Far enough to put a port dot inside a row rather than on the card's edge, and
 ## no further: it is the mechanism that matters, not the number.
 ##
-## `port_h_offset` is a GraphNode theme constant a host game is entitled to set,
-## and the game GAS-009 was found in sets one. What it does is move the dot off
-## the card's outer edge and onto one of the card's own rows - and a row is
-## `MOUSE_FILTER_STOP`, because a value editor has to get its clicks. So the
-## press stops there, and every modifier gesture on every pin of every card
-## silently does nothing.
+## `port_h_offset` is a GraphNode theme constant a host game is entitled to set.
+## What it does is move the dot off the card's outer edge and onto one of the
+## card's own rows - and a row is `MOUSE_FILTER_STOP`, because a value editor
+## has to get its clicks. So the press stops there, and every modifier gesture
+## on every pin of every card silently does nothing.
+##
+## Found while chasing something else, and worth saying which: the sandbox
+## finding this was written for turned out to be that harness aiming at a card
+## that was off its canvas, with nothing at all receiving the press. This case
+## is real and is reached by a theme rather than by that, and it is proved here
+## rather than assumed - which is the part the finding skipped.
 const INSIDE_THE_CARD: int = 24
 
 ## Every pin a person can clear, at every zoom they can be looking at, wherever

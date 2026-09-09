@@ -51,6 +51,11 @@ signal value_edited(node_id: StringName, position: int, source_text: String)
 ## where a pin gesture is read, never hears it. Every modifier gesture on
 ## every pin silently does nothing, and nothing says so.
 ##
+## Under this addon's own theme the dot sits on the card's edge and the press
+## reaches the canvas without any of this, which is why the suite could not see
+## it: the viewport battery was right about the routing it tested, and it tested
+## one theme.
+##
 ## Rather than teach the card what a pin gesture is, it hands the event back
 ## with the control that received it - which is what turns a point in that
 ## control's space into a point on the canvas. The canvas decides; this only
