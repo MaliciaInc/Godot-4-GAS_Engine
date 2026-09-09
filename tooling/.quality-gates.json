@@ -59,8 +59,8 @@
       },
       {
         "glob": "addons/GAS_Engine/gas_engine_plugin.gd",
-        "max_lines": 580,
-        "reason": "The plugin is the editor-side entry point: the main-screen registration, the tool menu, the inspector plugin, the autoload it installs, and every dialog those need. F5.1.5 (B13) adds the Save/Discard/Cancel navigation. Opening an ability over unsaved work used to replace it without a word, so opening now remembers what was asked for, puts the question, and each of the three answers has its own handler - a wrapper round two of them would have to branch on which answer it was, which is the same code with a flag in it. Plus the teardown: a plugin leaving the tree cannot hold a modal open, so it writes the unsaved text somewhere findable rather than losing it. F5.3.2 (G25) adds the Tools item that creates a GameplayEffect asset: the words it needs, the picker that asks where the file goes, and a handler that creates through GameplayEffectAsset and hands the person that very Resource to edit. Nothing here describes an effect - that is the whole point of the package, that there is one description and the inspector edits it - so the lines are the menu plumbing an EditorPlugin has to write out and nothing else."
+        "max_lines": 600,
+        "reason": "The plugin is the editor-side entry point: the main-screen registration, the tool menu, the inspector plugin, the autoload it installs, and every dialog those need. F5.1.5 (B13) adds the Save/Discard/Cancel navigation. Opening an ability over unsaved work used to replace it without a word, so opening now remembers what was asked for, puts the question, and each of the three answers has its own handler - a wrapper round two of them would have to branch on which answer it was, which is the same code with a flag in it. Plus the teardown: a plugin leaving the tree cannot hold a modal open, so it writes the unsaved text somewhere findable rather than losing it. F5.3.2 (G25) adds the Tools item that creates a GameplayEffect asset: the words it needs, the picker that asks where the file goes, and a handler that creates through GameplayEffectAsset and hands the person that very Resource to edit. Nothing here describes an effect - that is the whole point of the package, that there is one description and the inspector edits it - so the lines are the menu plumbing an EditorPlugin has to write out and nothing else. F6.4.2 raises it 580 -> 600 for the attribute picker: one inspector plugin registered beside the tag one, one field holding it, and the two lines that let the catalogue hear when the filesystem moved. Every one of them is the shape the tag picker's registration already has - this file is where an editor feature is plugged in, and its length tracks how many there are rather than how tangled any of them is."
       },
       {
         "glob": "addons/GAS_Engine/editor/composer/composer_reader.gd",
@@ -78,6 +78,11 @@
         "glob": "addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd",
         "function": "_parse_property",
         "reason": "Godot declares EditorInspectorPlugin._parse_property with seven parameters. Overriding it with fewer stops the override working, and the tag picker has no other entry point. The signature is the engine's, not this project's."
+      },
+      {
+        "glob": "addons/GAS_Engine/attributes/gameplay_attribute_inspector_plugin.gd",
+        "function": "_parse_property",
+        "reason": "The same engine signature the tag picker is exempted for. Godot declares EditorInspectorPlugin._parse_property with seven parameters; overriding it with fewer stops the override working, and the attribute picker has no other entry point."
       }
     ]
   },
@@ -482,6 +487,10 @@
       {
         "literal": "res://addons/GAS_Engine/target_data/gameplay_ability_target_data.gd",
         "reason": "preload() of a class two files in the GameplayCueManager autoload's parse-time closure both have to name. An autoload is parsed before Godot has scanned the project for class_name declarations, so neither file may use the global name - project_invariants.py fails the build when they do. Both appearances are that rule's consequence rather than a choice: one is the file preloading itself so a method can name its own return type, the other is gameplay_effect_context.gd naming what its target_data field holds. A shared constant is not available either, since holding it would be a third file in the same closure."
+      },
+      {
+        "literal": "font_color",
+        "reason": "Godot's own name for a Control's text colour, spelled in two places that cannot share a const. GASEditorTheme has it because it recolours the addon's icons to the host theme; the attribute picker has it because it colours a value the project does not declare. The picker lives under `attributes/` where the phase document puts it, and nothing outside `editor/` may name a class inside it - that separation is what keeps a running game from loading any of the editor, and test_editor_separation enforces it. So the two copies are the price of a boundary worth more than one repeated engine string."
       }
     ],
     "allow_globs": [],

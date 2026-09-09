@@ -2,10 +2,10 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 621
+- Source files scanned: 626
 - Blocking findings: 0
 - Scan issues: 0
-- Test files recognized: 241
+- Test files recognized: 242
 
 ## Violations
 

@@ -2,7 +2,7 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 380
+- Source files scanned: 384
 - Blocking findings: 0
 - Scan issues: 0
 - Blocking kinds: colors, repeated, templates

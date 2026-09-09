@@ -71,6 +71,9 @@ const COMPOSER_REFUSED: String = (
 var _runtime_debugger: GasRuntimeDebuggerPlugin = null
 
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
+const GameplayAttributeInspectorPlugin = preload(
+	"res://addons/GAS_Engine/attributes/gameplay_attribute_inspector_plugin.gd"
+)
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
 const AUTOLOAD_SETTING_PREFIX: String = "autoload/"
@@ -172,6 +175,7 @@ var _pending_composer_open_path: String = ""
 ## it, so an id coming back means the same file it named.
 var _choices: PackedStringArray = PackedStringArray()
 var _tag_inspector: EditorInspectorPlugin = null
+var _attribute_inspector: EditorInspectorPlugin = null
 
 #region Plugin Lifecycle
 ## Whether enabling this plugin would have to add the autoload.
@@ -205,6 +209,9 @@ func _enter_tree() -> void:
 	_tag_inspector = GameplayTagInspectorPlugin.new()
 	add_inspector_plugin(_tag_inspector)
 
+	_attribute_inspector = GameplayAttributeInspectorPlugin.new()
+	add_inspector_plugin(_attribute_inspector)
+
 	var main_screen: Control = EditorInterface.get_editor_main_screen()
 
 	_composer_instance = ComposerScreen.new()
@@ -225,6 +232,9 @@ func _enter_tree() -> void:
 	# the remembered list is dropped on its word rather than on a guess about
 	# how long an answer stays true.
 	ComposerLibrary.listen_to(EditorInterface.get_resource_filesystem(), FILES_MOVED)
+	GameplayAttributeCatalog.listen_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
 	add_tool_menu_item(EFFECT_MENU, _ask_for_new_effect)
@@ -255,8 +265,13 @@ func _exit_tree() -> void:
 	ComposerLibrary.stop_listening_to(
 		EditorInterface.get_resource_filesystem(), FILES_MOVED
 	)
+	GameplayAttributeCatalog.stop_listening_to(
+		EditorInterface.get_resource_filesystem(), FILES_MOVED
+	)
 	if _tag_inspector != null:
 		remove_inspector_plugin(_tag_inspector)
+	if _attribute_inspector != null:
+		remove_inspector_plugin(_attribute_inspector)
 
 	if _composer_instance != null and _composer_instance.has_unsaved_changes():
 		var recovery_path: String = ComposerRecovery.write(
