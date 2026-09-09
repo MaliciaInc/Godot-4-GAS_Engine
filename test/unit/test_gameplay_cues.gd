@@ -142,7 +142,7 @@ func test_the_registry_answers_the_same_scene_the_manager_plays() -> void:
 	first.tag = IMPACT
 	var second: GameplayCueEntry = GameplayCueEntry.new()
 	second.tag = IMPACT
-	second.scene = manager._cue_scenes[IMPACT]
+	second.scene = manager.catalog.scenes[IMPACT]
 
 	var registry: GameplayCueRegistry = GameplayCueRegistry.new()
 	registry.entries = [first, second] as Array[GameplayCueEntry]
@@ -297,7 +297,7 @@ func test_deactivate_persistent_cue_tolerates_target_freed_first() -> void:
 	target_node.free()
 	manager.deactivate_persistent_cue(handle, params)
 
-	assert_false(manager._active_persistent_by_id.has(handle.id))
+	assert_false(manager._playbacks.has(handle.id))
 
 
 func test_persistent_cue_rejects_an_invalid_target_reference() -> void:
@@ -324,14 +324,14 @@ func test_a_persistent_cue_that_ends_itself_leaves_no_handle_behind() -> void:
 	var handle: GameplayCueHandle = manager.activate_persistent_cue(params)
 	assert_true(handle.is_valid())
 
-	var cue: GameplayCueNotify = manager._active_persistent_by_id[handle.id]
+	var cue: GameplayCueNotify = manager._playbacks.get_playback(handle.id).node
 	# `finish_cue()` is the documented way for a cue to report itself done, and
 	# a persistent one is not stopped from using it. The manager hears that
 	# signal and pools the node, so the registration has to go with it.
 	cue.finish_cue()
 
 	assert_false(
-		manager._active_persistent_by_id.has(handle.id),
+		manager._playbacks.has(handle.id),
 		"a pooled cue is no longer an active persistent one"
 	)
 	assert_eq(manager.get_pooled_count(IMPACT), 1, "it went back to its bucket")
@@ -344,7 +344,7 @@ func test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else() ->
 	var first_params: GameplayCueParams = _params()
 	first_params.target = target_node
 	var stale: GameplayCueHandle = manager.activate_persistent_cue(first_params)
-	var instance: GameplayCueNotify = manager._active_persistent_by_id[stale.id]
+	var instance: GameplayCueNotify = manager._playbacks.get_playback(stale.id).node
 	instance.finish_cue()
 
 	# The pool has one instance and hands that same one to the next activation.
@@ -352,13 +352,13 @@ func test_a_stale_handle_cannot_end_the_cue_the_pool_handed_to_someone_else() ->
 	second_params.target = target_node
 	var live: GameplayCueHandle = manager.activate_persistent_cue(second_params)
 	assert_eq(
-		manager._active_persistent_by_id[live.id], instance, "the pool reused the instance"
+		manager._playbacks.get_playback(live.id).node, instance, "the pool reused the instance"
 	)
 
 	manager.deactivate_persistent_cue(stale, first_params)
 
 	assert_true(
-		manager._active_persistent_by_id.has(live.id),
+		manager._playbacks.has(live.id),
 		"a handle from a finished playback must not end the activation that followed it"
 	)
 	assert_not_null(instance.current_params, "the live cue is still playing")

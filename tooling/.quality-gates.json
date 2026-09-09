@@ -240,6 +240,18 @@
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, and also the file's own self-reference. GameplayCueParams carries two entity identities so a cue can be replicated, and that file is in the closure - Godot parses autoloads before the global class cache exists, so the type has to arrive by preload rather than by name. The declaring file then cannot reach its own global name as an identifier either, so it aliases itself the same way GameplayCueParams already does. Two spellings of one path, neither of which can be a shared const: a const naming it would have to live in a file both could resolve, and inside this closure there is no such file."
       },
       {
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_flags.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure. Godot parses autoloads before the global class cache exists, so every type a file in that closure names has to arrive by preload rather than by name - and a const holding the path once would itself have to live in a file both ends could resolve, which inside this closure is the same problem again. F6.2.7 split the manager into a catalogue, a playback registry and the records they pass between them, and each of those is one more file in the closure that has to spell the path it needs."
+      },
+      {
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_handler.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure. Godot parses autoloads before the global class cache exists, so every type a file in that closure names has to arrive by preload rather than by name - and a const holding the path once would itself have to live in a file both ends could resolve, which inside this closure is the same problem again. F6.2.7 split the manager into a catalogue, a playback registry and the records they pass between them, and each of those is one more file in the closure that has to spell the path it needs."
+      },
+      {
+        "literal": "res://addons/GAS_Engine/cues/gameplay_cue_playback.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure. Godot parses autoloads before the global class cache exists, so every type a file in that closure names has to arrive by preload rather than by name - and a const holding the path once would itself have to live in a file both ends could resolve, which inside this closure is the same problem again. F6.2.7 split the manager into a catalogue, a playback registry and the records they pass between them, and each of those is one more file in the closure that has to spell the path it needs."
+      },
+      {
         "literal": "res://addons/GAS_Engine/target_data/gameplay_effect_context.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
       },

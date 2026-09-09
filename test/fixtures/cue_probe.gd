@@ -69,7 +69,7 @@ static func install(manager: CueManagerScript, tag: StringName) -> void:
 	var scene: PackedScene = PackedScene.new()
 	scene.pack(template)
 	template.free()
-	manager._cue_scenes[tag] = scene
+	manager.catalog.scenes[tag] = scene
 	manager._pool[tag] = GameplayCuePoolBucket.new()
 
 
@@ -108,12 +108,12 @@ static func install_handler(
 	manager: CueManagerScript, tag: StringName
 ) -> RecordingHandler:
 	var handler: RecordingHandler = RecordingHandler.new()
-	manager._handlers[tag] = handler
+	manager.catalog.handlers[tag] = handler
 	return handler
 
 
 static func uninstall_handler(manager: CueManagerScript, tag: StringName) -> void:
-	manager._handlers.erase(tag)
+	manager.catalog.handlers.erase(tag)
 
 
 ## Mark a tag as ending a fallback walk without binding anything to it.
@@ -122,11 +122,11 @@ static func uninstall_handler(manager: CueManagerScript, tag: StringName) -> voi
 ## same way `install` injects a binding: through the manager's own map, so
 ## the manager is exercised rather than stubbed.
 static func silence(manager: CueManagerScript, tag: StringName) -> void:
-	manager._override_parent[tag] = true
+	manager.catalog.overrides[tag] = true
 
 
 static func unsilence(manager: CueManagerScript, tag: StringName) -> void:
-	manager._override_parent.erase(tag)
+	manager.catalog.overrides.erase(tag)
 
 
 ## How many times the cue under `tag` has actually run.
@@ -186,7 +186,7 @@ static func _executions_of(node: Node, tag: StringName) -> int:
 
 ## Take the tag back out of the manager the suite shares with every other test.
 static func uninstall(manager: CueManagerScript, tag: StringName) -> void:
-	manager._cue_scenes.erase(tag)
+	manager.catalog.scenes.erase(tag)
 	manager._pool.erase(tag)
 
 

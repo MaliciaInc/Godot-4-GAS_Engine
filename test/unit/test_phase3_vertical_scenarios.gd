@@ -99,7 +99,7 @@ func test_scenario_a_rpg_cast() -> void:
 	var cue_scene: PackedScene = PackedScene.new()
 	cue_scene.pack(cue_instance)
 	cue_instance.free()
-	manager._cue_scenes[&"Cue.Fireball.Impact"] = cue_scene
+	manager.catalog.scenes[&"Cue.Fireball.Impact"] = cue_scene
 	manager._pool[&"Cue.Fireball.Impact"] = GameplayCuePoolBucket.new()
 	var pooled_before: int = manager.get_pooled_count(&"Cue.Fireball.Impact")
 
@@ -153,7 +153,7 @@ func test_scenario_a_rpg_cast() -> void:
 	caster.asc.send_gameplay_event(_event(&"Event.Fireball.Confirmed"))
 	assert_true(instance.finished_successfully)
 
-	manager._cue_scenes.erase(&"Cue.Fireball.Impact")
+	manager.catalog.scenes.erase(&"Cue.Fireball.Impact")
 	manager._pool.erase(&"Cue.Fireball.Impact")
 #endregion
 

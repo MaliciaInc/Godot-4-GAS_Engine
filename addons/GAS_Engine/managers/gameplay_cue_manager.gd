@@ -18,23 +18,17 @@ extends Node
 
 const GASEngineProjectSettings = preload("res://addons/GAS_Engine/utilities/project_settings.gd")
 const CueNotify = preload("res://addons/GAS_Engine/cues/gameplay_cue_notify.gd")
-const CueRegistry = preload("res://addons/GAS_Engine/cues/gameplay_cue_registry.gd")
-const CueGenerator = preload("res://addons/GAS_Engine/cues/gameplay_cue_generator.gd")
 
-const SCENE_MISSING: String = "GAS_Engine: cue %s names a scene that will not load: %s"
-const CueEntry = preload("res://addons/GAS_Engine/cues/gameplay_cue_entry.gd")
 const CueParams = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 const CueHandle = preload("res://addons/GAS_Engine/cues/gameplay_cue_handle.gd")
 const CueHandler = preload("res://addons/GAS_Engine/cues/gameplay_cue_handler.gd")
+const Playback = preload("res://addons/GAS_Engine/cues/gameplay_cue_playback.gd")
+const CueFlags = preload("res://addons/GAS_Engine/cues/gameplay_cue_flags.gd")
+const PlaybackRegistry = preload(
+	"res://addons/GAS_Engine/cues/gameplay_cue_playback_registry.gd"
+)
+const Catalog = preload("res://addons/GAS_Engine/cues/gameplay_cue_catalog.gd")
 const PoolBucket = preload("res://addons/GAS_Engine/cues/gameplay_cue_pool_bucket.gd")
-
-## What a tag family is, borrowed from the one place that already knows.
-##
-## The family and not the whole tag store: this file is an autoload, so
-## everything it reaches is bound by the preload rule, and that is a
-## reasonable thing to ask of ten lines about tag names and not of the
-## reference-counted store the whole engine writes through.
-const TagFamily = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_family.gd")
 
 ## Where every caller outside this file's own closure finds this autoload -
 ## `get_node_or_null(AUTOLOAD_NODE_PATH)`, never the bare global identifier,
@@ -43,39 +37,27 @@ const TagFamily = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_fam
 ## attached) needs a null it can check rather than a resolution error.
 const AUTOLOAD_NODE_PATH: NodePath = ^"/root/GameplayCueManager"
 
+## The method a target implements to hear about its own cues.
+##
+## Beside the binding, never instead of it: both receive. A target that
+## wants to flash red when it is hit should not have to be the thing that
+## plays the impact, and a project that binds a scene should not lose the
+## chance to react in code.
+const TARGET_INTERFACE_METHOD: StringName = &"handle_gameplay_cue"
+
 ## Dormant instances, one bucket per cue tag.
 var _pool: Dictionary[StringName, PoolBucket] = {}
 
-## Scenes to instantiate, one per cue tag.
-var _cue_scenes: Dictionary[StringName, PackedScene] = {}
 
-## The tags that end a fallback walk, from the same file as the bindings.
-##
-## A set rather than a list: this is asked once per level of every cue
-## resolution, and the answer is only ever yes or no.
-var _override_parent: Dictionary[StringName, bool] = {}
+## Which persistent cues are running, keyed by handle id - the id rather
+## than the handle object, so a caller's own copy still resolves. Its own
+## collaborator, because resolving a tag and keeping track of what is playing
+## are two jobs.
+var _playbacks: PlaybackRegistry = PlaybackRegistry.new()
 
-## Tags answered by a script rather than a scene.
-##
-## One handler answers for every entity that plays its tag: it is stateless
-## by contract, so there is nothing to pool and nothing to parent.
-var _handlers: Dictionary[StringName, CueHandler] = {}
-
-## Persistent playbacks currently running on a handler, by the same handle
-## ids the scene-backed ones use. A handle resolves in exactly one of the
-## two maps, because a tag is answered by exactly one kind of binding.
-var _active_handler_by_id: Dictionary[int, CueHandler] = {}
-
-## What each running handler playback was told, so `while_active` can be
-## given the same params `on_active` was.
-var _handler_params_by_id: Dictionary[int, CueParams] = {}
-
-## Every persistent cue currently running, keyed by its handle's own id -
-## the id, not the handle object, so a caller's copy of the handle still
-## resolves.
-var _active_persistent_by_id: Dictionary[int, CueNotify] = {}
-
-var _next_persistent_id: int = 1
+## What is bound to what, and which binding answers a request. Its own
+## object, because a catalogue and a pool have no fields in common.
+var catalog: Catalog = Catalog.new()
 
 
 #region Initialization
@@ -95,46 +77,16 @@ func _ready() -> void:
 ## a walk over the live dictionary would then be walking something that
 ## changed underneath it.
 func _process(_delta: float) -> void:
-	for id: int in _active_handler_by_id.keys():
-		if not _active_handler_by_id.has(id):
-			continue
-		_active_handler_by_id[id].while_active(_handler_params_by_id[id])
+	_playbacks.tick_handlers()
 
 
-## Load the cue registry from disk and prepare one empty bucket per tag.
+## Fill the catalogue, and give each bound tag an empty bucket to be pooled
+## into. The buckets are the manager's because the pool is.
 func _load_registry() -> void:
-	var path: String = GASEngineProjectSettings.get_generated_cue_script_path()
-	if not FileAccess.file_exists(path):
-		_warn_missing_registry(path)
+	if not catalog.load_from_project():
 		return
-
-	var bindings: Dictionary[StringName, String] = CueGenerator.bindings_in_file()
-	for tag: StringName in bindings:
-		var scene: PackedScene = load(bindings[tag]) as PackedScene
-		if scene == null:
-			push_error(SCENE_MISSING % [String(tag), bindings[tag]])
-			continue
-		_cue_scenes[tag] = scene
+	for tag: StringName in catalog.scenes:
 		_pool[tag] = PoolBucket.new()
-
-	var handler_paths: Dictionary[StringName, String] = CueGenerator.handlers_in_file()
-	for tag: StringName in handler_paths:
-		var handler_script: Script = load(handler_paths[tag]) as Script
-		if handler_script == null:
-			push_error(SCENE_MISSING % [String(tag), handler_paths[tag]])
-			continue
-		_handlers[tag] = handler_script.new()
-
-	for tag: StringName in CueGenerator.overrides_in_file():
-		_override_parent[tag] = true
-
-
-## A missing registry is normal in a project that declares no cues, and noisy in
-## one that meant to. Only the second case warrants a warning.
-func _warn_missing_registry(cue_registry_path: String) -> void:
-	if Engine.is_editor_hint() and not EditorInterface.is_plugin_enabled(GASEngineProjectSettings.ADDON_NAME):
-		return
-	push_warning("GAS_Engine: No cue registry found at " + cue_registry_path)
 #endregion
 
 
@@ -146,10 +98,27 @@ func execute_cue(params: CueParams) -> void:
 	var handler: CueHandler = _handler_for(params)
 	if handler != null:
 		handler.on_execute(params)
+		_told(params.target, params, CueNotify.Event.EXECUTED)
 		return
 	var cue_instance: CueNotify = _resolve_and_parent(params)
 	if cue_instance != null:
 		cue_instance.execute_cue(params)
+	_told(params.target, params, CueNotify.Event.EXECUTED)
+
+
+## Tell the target itself, when it has said it wants to hear.
+##
+## Duck-typed on purpose: an interface would be a class every target has to
+## extend, and a target is whatever the game already had. Called even when
+## nothing was bound to the tag, because "nobody has art for this yet" and
+## "this did not happen" are different things and the target is entitled to
+## know the difference.
+func _told(target: Node, params: CueParams, event: CueNotify.Event) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method(TARGET_INTERFACE_METHOD):
+		return
+	target.call(TARGET_INTERFACE_METHOD, params.cue_tag, event, params)
 
 
 ## The handler answering this request, or null when a scene answers it.
@@ -161,10 +130,10 @@ func _handler_for(params: CueParams) -> CueHandler:
 	if params == null:
 		return null
 	var matched: StringName = resolve_cue_tag(params.cue_tag)
-	if matched == &"" or not _handlers.has(matched):
+	if matched == &"" or not catalog.handlers.has(matched):
 		return null
 	params.matched_cue_tag = matched
-	return _handlers[matched]
+	return catalog.handlers[matched]
 
 
 ## Take/instantiate a cue, parent it, and run its PERSISTENT on_active/
@@ -175,21 +144,76 @@ func activate_persistent_cue(params: CueParams) -> CueHandle:
 	var handle: CueHandle = CueHandle.new()
 	var handler: CueHandler = _handler_for(params)
 	if handler != null:
-		handle.id = _next_persistent_id
-		_next_persistent_id += 1
-		_active_handler_by_id[handle.id] = handler
-		_handler_params_by_id[handle.id] = params
+		handle.id = _begin(params, null, handler)
 		handler.on_active(params)
+		_told(params.target, params, CueNotify.Event.ON_ACTIVE)
 		set_process(true)
 		return handle
+
+	# A cue that declares itself unique may already be running for this
+	# instigator or this source. The existing handle is what comes back, so
+	# whoever asked can still end it - a second handle for one running cue
+	# would leave the first caller holding one that does nothing.
+	var already: int = _running_id_for(params)
+	if already != PlaybackRegistry.NO_PLAYBACK:
+		handle.id = already
+		var standing: Playback = _playbacks.get_playback(already)
+		var says: CueFlags = catalog.flags_for(standing.tag)
+		if standing.node != null and says != null and says.allow_multiple_on_active:
+			standing.node.begin_persistent(params)
+			_told(params.target, params, CueNotify.Event.ON_ACTIVE)
+		return handle
+
 	var cue_instance: CueNotify = _resolve_and_parent(params)
 	if cue_instance == null:
 		return handle
-	handle.id = _next_persistent_id
-	_next_persistent_id += 1
-	_active_persistent_by_id[handle.id] = cue_instance
+	handle.id = _begin(params, cue_instance, null)
 	cue_instance.begin_persistent(params)
+	_told(params.target, params, CueNotify.Event.ON_ACTIVE)
 	return handle
+
+
+## Register a running playback and answer with the handle id it lives under.
+func _begin(params: CueParams, node: CueNotify, handler: CueHandler) -> int:
+	var record: Playback = _described(params)
+	record.node = node
+	record.handler = handler
+	record.params = params
+	return _playbacks.begin(record)
+
+
+## What a request is, as the record a playback of it would be.
+##
+## The same shape for the request and for the thing running, because
+## uniqueness is the question of whether those two are the same cue - and a
+## request described differently from a playback could not be compared to one.
+func _described(params: CueParams) -> Playback:
+	var record: Playback = Playback.new()
+	record.tag = params.matched_cue_tag if params.matched_cue_tag != &"" else params.cue_tag
+	record.target = params.target
+	record.instigator = params.instigator
+	record.source_object = params.source_object
+	return record
+
+
+## The id of a running cue this request would be a second copy of, or
+## NO_PLAYBACK.
+##
+## Only a cue that declares itself unique can answer yes, so a project that
+## never sets either flag behaves exactly as it did before they existed.
+func _running_id_for(params: CueParams) -> int:
+	# A request whose target is already gone is not a second copy of
+	# anything, and asking would mean handing a freed instance to a typed
+	# Node parameter - which the engine refuses before the comparison runs,
+	# so a guard inside the comparison would never get the chance.
+	if params.target == null or not is_instance_valid(params.target):
+		return PlaybackRegistry.NO_PLAYBACK
+	var matched: StringName = resolve_cue_tag(params.cue_tag)
+	if matched == &"" or not catalog.scenes.has(matched):
+		return PlaybackRegistry.NO_PLAYBACK
+	var candidate: Playback = _described(params)
+	candidate.tag = matched
+	return _playbacks.matching(candidate, catalog.flags_for(matched))
 
 
 ## Ends and pools a persistent cue by its handle. A handle that no longer
@@ -199,20 +223,21 @@ func activate_persistent_cue(params: CueParams) -> CueHandle:
 func deactivate_persistent_cue(handle: CueHandle, params: CueParams) -> void:
 	if handle == null:
 		return
-	if _active_handler_by_id.has(handle.id):
-		var ending: CueHandler = _active_handler_by_id[handle.id]
-		_active_handler_by_id.erase(handle.id)
-		_handler_params_by_id.erase(handle.id)
-		set_process(not _active_handler_by_id.is_empty())
-		ending.on_removed(params)
+	var ending: Playback = _playbacks.end(handle.id)
+	if ending == null:
 		return
-	if not _active_persistent_by_id.has(handle.id):
+	set_process(_playbacks.any_handler_running())
+	# Asked before the call rather than inside it: a freed instance handed to
+	# a typed Node parameter is refused by the engine before the function
+	# body runs, so a guard in there would never get the chance.
+	if is_instance_valid(ending.target):
+		_told(ending.target, params, CueNotify.Event.REMOVED)
+	if ending.handler != null:
+		ending.handler.on_removed(params)
 		return
-	var cue_instance: CueNotify = _active_persistent_by_id[handle.id]
-	_active_persistent_by_id.erase(handle.id)
-	if not is_instance_valid(cue_instance):
+	if not is_instance_valid(ending.node):
 		return
-	cue_instance.end_persistent(params)
+	ending.node.end_persistent(params)
 
 
 ## Resolve the registry entry, take or instantiate the instance, and (re)parent
@@ -273,30 +298,33 @@ func _resolve_and_parent(params: CueParams) -> CueNotify:
 ##
 ## Answers &"" when nothing does, which every caller already treats as "no
 ## cue to show for it, and gameplay carries on regardless".
-## Both kinds of binding are consulted at each level, in one walk. Two walks -
-## scenes first, then handlers - would answer a request with an ancestor's
-## scene while a handler was bound to the exact tag, so which kind a project
-## chose would silently change which tag answered.
+## Which tag answers a request. The walk itself is the catalogue's, since it
+## is a question about bindings rather than about instances.
 func resolve_cue_tag(requested: StringName) -> StringName:
-	for candidate: StringName in TagFamily.ancestors_of(requested):
-		if _cue_scenes.has(candidate) or _handlers.has(candidate):
-			return candidate
-		if _override_parent.has(candidate):
-			return &""
-	return &""
+	return catalog.resolve(requested)
 #endregion
 
 
 #region Object Pooling
 ## Retrieve a dormant cue or instantiate a fresh one.
 func _get_or_create_cue(tag: StringName) -> CueNotify:
-	var bucket: PoolBucket = _bucket_for(tag)
-	var pooled: CueNotify = bucket.take()
+	var pooled: CueNotify = _bucket_for(tag).take()
 	if pooled != null:
 		_set_cue_state(pooled, true)
 		return pooled
+	var made: CueNotify = _instantiate_cue(tag)
+	if made != null:
+		_set_cue_state(made, true)
+	return made
 
-	var scene: PackedScene = _cue_scenes[tag]
+
+## Build one instance of a cue, without touching the pool.
+##
+## Apart from `_get_or_create_cue` because preallocation needs the making
+## without the taking: asking that function for instances to put INTO the pool
+## takes the last one straight back out again, and the bucket never grows.
+func _instantiate_cue(tag: StringName) -> CueNotify:
+	var scene: PackedScene = catalog.scenes[tag]
 	var raw_instance: Node = scene.instantiate()
 	if not is_instance_of(raw_instance, CueNotify):
 		push_error(
@@ -309,7 +337,6 @@ func _get_or_create_cue(tag: StringName) -> CueNotify:
 	var new_cue: CueNotify = raw_instance
 	new_cue.gameplay_cue_tag = tag
 	new_cue.cue_finished.connect(_on_cue_finished)
-	_set_cue_state(new_cue, true)
 	return new_cue
 
 
@@ -348,9 +375,7 @@ func _on_cue_finished(cue_node: CueNotify, tag: StringName) -> void:
 ## Keys are iterated from a copy, which `Dictionary.keys()` returns, so erasing
 ## inside the loop is safe.
 func _forget_persistent(cue_node: CueNotify) -> void:
-	for id: int in _active_persistent_by_id.keys():
-		if _active_persistent_by_id[id] == cue_node:
-			_active_persistent_by_id.erase(id)
+	_playbacks.forget(cue_node)
 
 
 ## Centralised lifecycle state. Handles process mode and visual toggling for
@@ -369,6 +394,50 @@ func _set_cue_state(cue: CueNotify, active: bool) -> void:
 
 ## How many dormant instances are pooled for a tag. An observation point for
 ## tests and tools; nothing in the runtime branches on it.
+## End every persistent cue running on one target.
+##
+## For a character being despawned or reset: the effects that started them
+## are gone with it, so nothing else is ever going to hand back their
+## handles, and an aura nobody can end is an aura forever.
+func remove_all_cues(target: Node) -> void:
+	for id: int in _playbacks.ids_for(target):
+		var running: Playback = _playbacks.get_playback(id)
+		if running == null:
+			continue
+		var ending: CueHandle = CueHandle.new()
+		ending.id = id
+		deactivate_persistent_cue(ending, running.params)
+
+
+## Whether a persistent cue with this tag is running on this target.
+##
+## By the tag that answered rather than the tag asked for, which is the same
+## rule uniqueness uses: two requests answered by one binding are one cue.
+func is_cue_active(target: Node, tag: StringName) -> bool:
+	return _playbacks.is_running(target, resolve_cue_tag(tag))
+
+
+## Make, ahead of time, as many of each cue as its scene asks for.
+##
+## Instantiating a scene is the expensive part of playing a cue, and a fight
+## that needs forty impacts in its first second is forty of them during the
+## fight. A project calls this when it can afford to - a loading screen, a
+## level start - and never has to: every cue is made on demand otherwise.
+func preallocate_from_registry() -> void:
+	for tag: StringName in catalog.scenes:
+		var declared: CueFlags = catalog.flags_for(tag)
+		if declared == null or declared.preallocate <= 0:
+			continue
+		var bucket: PoolBucket = _bucket_for(tag)
+		while bucket.size() < declared.preallocate:
+			var made: CueNotify = _instantiate_cue(tag)
+			if made == null:
+				break
+			_set_cue_state(made, false)
+			add_child(made)
+			bucket.give(made)
+
+
 func get_pooled_count(tag: StringName) -> int:
 	return _bucket_for(tag).size()
 #endregion
