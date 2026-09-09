@@ -42,3 +42,9 @@ func _is_restrictive() -> bool:
 		(application_query != null and not application_query.is_empty())
 		or (removal_query != null and not removal_query.is_empty())
 	)
+
+
+## One per effect: GameplayEffect._target_tag_requirements() takes the first it finds, and both the ongoing and the removal query are read through it,
+## so a second would be authored and never read.
+func allows_duplicates() -> bool:
+	return false

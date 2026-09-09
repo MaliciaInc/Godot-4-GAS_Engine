@@ -22,3 +22,9 @@ class_name GameplayEffectAdditionalEffectsComponent extends GameplayEffectCompon
 
 ## After any gameplay removal, natural or premature (not ASC_CLEANUP).
 @export var on_any_removal: Array[GameplayEffectConditionalEffect] = []
+
+
+## One per effect: GameplayEffect.get_additional_effects_component() takes the first it finds,
+## so a second would be authored and never read.
+func allows_duplicates() -> bool:
+	return false

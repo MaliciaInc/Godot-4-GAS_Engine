@@ -11,3 +11,9 @@
 class_name GameplayEffectRemoveOtherEffectsComponent extends GameplayEffectComponent
 
 @export var query: GameplayEffectQuery = null
+
+
+## One per effect: GameplayEffect.get_remove_other_effects_query() takes the first it finds,
+## so a second would be authored and never read.
+func allows_duplicates() -> bool:
+	return false

@@ -11,3 +11,9 @@
 class_name GameplayEffectImmunityComponent extends GameplayEffectComponent
 
 @export var incoming_effect_query: GameplayEffectQuery = null
+
+
+## One per effect: GameplayEffect.get_immunity_query() takes the first it finds,
+## so a second would be authored and never read.
+func allows_duplicates() -> bool:
+	return false

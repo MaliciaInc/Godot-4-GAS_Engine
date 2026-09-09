@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/GAS_Engine/editor/effects/gameplay_effect_editor.gd" id="1_editor"]
+
+[node name="GameplayEffectEditor" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_editor")

@@ -12,3 +12,9 @@
 class_name GameplayEffectBlockAbilityTagsComponent extends GameplayEffectComponent
 
 @export var query: GameplayTagQuery = null
+
+
+## One per effect: GameplayEffect.get_block_ability_tags_query() takes the first it finds,
+## so a second would be authored and never read.
+func allows_duplicates() -> bool:
+	return false
