@@ -1,0 +1,31 @@
+{
+  "scenario": "override_across_channels",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "One OVERRIDE in an earlier channel and one in a later one. A channel composes over what the last produced, so an override in a later channel is expected to be the answer whatever the earlier one said.",
+  "inputs": {
+    "base": {
+      "attack": 10.0
+    },
+    "modifiers": [
+      {
+        "attribute": "attack",
+        "operation": "OVERRIDE",
+        "magnitude": 40.0,
+        "evaluation_channel": 0
+      },
+      {
+        "attribute": "attack",
+        "operation": "OVERRIDE",
+        "magnitude": 70.0,
+        "evaluation_channel": 1
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": true,
+  "execution_order": null
+}

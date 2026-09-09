@@ -1,0 +1,31 @@
+{
+  "scenario": "double_override_same_channel",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "Two OVERRIDE modifiers on one attribute in one channel. Which of them wins is D-11, and the reference decides it - not intuition, and not whichever this engine happens to do today.",
+  "inputs": {
+    "base": {
+      "attack": 10.0
+    },
+    "modifiers": [
+      {
+        "attribute": "attack",
+        "operation": "OVERRIDE",
+        "magnitude": 40.0,
+        "evaluation_channel": 0
+      },
+      {
+        "attribute": "attack",
+        "operation": "OVERRIDE",
+        "magnitude": 70.0,
+        "evaluation_channel": 0
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": true,
+  "execution_order": null
+}

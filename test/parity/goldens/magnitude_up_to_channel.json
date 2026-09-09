@@ -1,0 +1,42 @@
+{
+  "scenario": "magnitude_up_to_channel",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "An attribute-based magnitude that reads the captured attribute as it stood up to a given channel rather than as it finally is, with a later channel modifying the same attribute.",
+  "inputs": {
+    "base": {
+      "attack": 10.0,
+      "health": 100.0
+    },
+    "modifiers": [
+      {
+        "attribute": "attack",
+        "operation": "ADD",
+        "magnitude": 5.0,
+        "evaluation_channel": 0
+      },
+      {
+        "attribute": "attack",
+        "operation": "ADD",
+        "magnitude": 100.0,
+        "evaluation_channel": 2
+      },
+      {
+        "attribute": "health",
+        "operation": "ADD",
+        "magnitude": null,
+        "evaluation_channel": 3,
+        "magnitude_kind": "ATTRIBUTE_BASED",
+        "captured_attribute": "attack",
+        "coefficient": -1.0,
+        "up_to_channel": 1
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": true,
+  "execution_order": null
+}

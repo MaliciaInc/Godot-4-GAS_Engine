@@ -1,0 +1,31 @@
+{
+  "scenario": "bonus_magnitude",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "An attribute-based magnitude reading a captured attribute with a bonus applied to what it read.",
+  "inputs": {
+    "base": {
+      "attack": 10.0,
+      "health": 100.0
+    },
+    "modifiers": [
+      {
+        "attribute": "health",
+        "operation": "ADD",
+        "magnitude": null,
+        "evaluation_channel": 0,
+        "magnitude_kind": "ATTRIBUTE_BASED",
+        "captured_attribute": "attack",
+        "coefficient": 2.0,
+        "pre_multiply_additive": 1.0,
+        "post_multiply_additive": 3.0
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": false,
+  "execution_order": null
+}

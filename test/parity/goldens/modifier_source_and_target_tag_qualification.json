@@ -1,0 +1,63 @@
+{
+  "scenario": "modifier_source_and_target_tag_qualification",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "One modifier that counts only against a target carrying a tag, and one that counts only from a source carrying one. Four combinations, because a qualification that was read from the wrong side would be right in two of them.",
+  "inputs": {
+    "base": {
+      "attack": 10.0
+    },
+    "modifiers": [
+      {
+        "attribute": "attack",
+        "operation": "ADD",
+        "magnitude": 5.0,
+        "evaluation_channel": 0,
+        "target_requires": [
+          "Status.Burning"
+        ]
+      },
+      {
+        "attribute": "attack",
+        "operation": "ADD",
+        "magnitude": 7.0,
+        "evaluation_channel": 0,
+        "source_requires": [
+          "Status.Empowered"
+        ]
+      }
+    ],
+    "variants": [
+      {
+        "target_tags": [],
+        "source_tags": []
+      },
+      {
+        "target_tags": [
+          "Status.Burning"
+        ],
+        "source_tags": []
+      },
+      {
+        "target_tags": [],
+        "source_tags": [
+          "Status.Empowered"
+        ]
+      },
+      {
+        "target_tags": [
+          "Status.Burning"
+        ],
+        "source_tags": [
+          "Status.Empowered"
+        ]
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": false,
+  "execution_order": null
+}

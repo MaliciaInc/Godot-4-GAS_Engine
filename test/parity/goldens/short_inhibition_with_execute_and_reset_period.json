@@ -1,0 +1,45 @@
+{
+  "scenario": "short_inhibition_with_execute_and_reset_period",
+  "ue_version": "5.7.4",
+  "changelist": "51494982",
+  "evidence": "NOT_UE_VERIFIED",
+  "what_it_is_about": "A periodic effect inhibited for less than one period, under the period policy that executes and resets on reactivation. What is observable is how many times it ticked and when.",
+  "inputs": {
+    "base": {
+      "health": 100.0
+    },
+    "modifiers": [
+      {
+        "attribute": "health",
+        "operation": "ADD",
+        "magnitude": -5.0,
+        "evaluation_channel": 0
+      }
+    ],
+    "period": 1.0,
+    "period_inhibition_policy": "EXECUTE_AND_RESET_PERIOD",
+    "timeline": [
+      {
+        "at": 0.0,
+        "do": "apply"
+      },
+      {
+        "at": 0.4,
+        "do": "inhibit"
+      },
+      {
+        "at": 0.7,
+        "do": "uninhibit"
+      },
+      {
+        "at": 2.5,
+        "do": "observe"
+      }
+    ],
+    "profile": "UE_5_7"
+  },
+  "outputs": null,
+  "numeric_tolerance": 0.0001,
+  "execution_order_observable": true,
+  "execution_order": null
+}
