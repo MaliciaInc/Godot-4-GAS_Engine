@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      test-location
 command:    python tooling\gates\run_gate.py test-location artifacts\gates\F6
-started:    2026-09-09T21:17:29.2592808Z
-ended:      2026-09-09T21:17:30.3052392Z
-duration_s: 1.046
+started:    2026-09-09T21:26:52.7063325Z
+ended:      2026-09-09T21:26:53.7973882Z
+duration_s: 1.091
 exit_code:  0
 
 --- stdout ---

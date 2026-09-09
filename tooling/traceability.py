@@ -46,16 +46,25 @@ PHASE = Path("docs/Fases/FASE_6_MAESTRA_EJECUTABLE_CIERRE_PARIDAD_UE57_GAS_ENGIN
 RECEIPTS = Path("artifacts/parity")
 DEFAULT_RECEIPT = RECEIPTS / "TRACEABILITY_F6.md"
 
-## The section the matrix lives in, and the one that ends it.
+## The section the matrix lives in, and the one that ends it. Both spellings,
+## because the same table is read out of two places.
+##
+## The phase document is where the matrix is decided, and it is not in this
+## repository: `docs/` is ignored, deliberately, since the phase papers are
+## working documents rather than shipped product. So a clean checkout has the
+## receipt and not the source, and this reads whichever is there - saying which,
+## because checking a receipt against itself is a weaker claim than checking it
+## against the document that decided it, and the two must not be confused.
 OPENS = "# 11. MATRIZ ÚNICA DE TRAZABILIDAD"
 CLOSES = "# 12."
+RECEIPT_OPENS = "## Every finding, and who closed it"
 
 ## How many of each the document counts. Spelled here so a matrix that grew a
 ## row without the count being updated fails rather than passing at thirty-four.
 DEFECTS = 11
 GAPS = 22
 
-ROW = re.compile(r"^\|\s*([DG]-\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*$")
+ROW = re.compile(r"^\|\s*([DG]-\d{2})\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|")
 
 ## A receipt's claim about one finding: the id, whatever it is called there,
 ## the status, and the reference. Matched loosely on the middle because a
@@ -78,11 +87,22 @@ class Finding:
 
 
 def rows(document: str) -> list[Finding]:
-	"""The matrix, as it is written in the document."""
-	opened = document.index(OPENS)
-	closed = document.index(CLOSES, opened + 1)
+	"""The matrix, as it is written wherever it was read from.
+
+	The receipt's table carries two more columns than the document's; the
+	pattern below takes the first three of however many there are, which is the
+	id, its owner and its support in both.
+	"""
+	opened = document.find(OPENS)
+	if opened < 0:
+		opened = document.find(RECEIPT_OPENS)
+	if opened < 0:
+		return []
+	closed = document.find(CLOSES, opened + 1)
+	body = document[opened:] if closed < 0 else document[opened:closed]
+
 	found: list[Finding] = []
-	for line in document[opened:closed].splitlines():
+	for line in body.splitlines():
 		matched = ROW.match(line)
 		if matched:
 			found.append(Finding(matched.group(1), matched.group(2), matched.group(3)))
@@ -195,12 +215,14 @@ def main() -> int:
 	parser.add_argument("--write", nargs="?", const=str(DEFAULT_RECEIPT), default="")
 	parsed = parser.parse_args()
 
-	if not PHASE.is_file():
-		print("no phase document at %s" % PHASE)
+	source = PHASE if PHASE.is_file() else DEFAULT_RECEIPT
+	if not source.is_file():
+		print("neither %s nor %s is here to read a matrix out of" % (PHASE, DEFAULT_RECEIPT))
 		return 1
 
-	found = rows(PHASE.read_text(encoding="utf-8"))
+	found = rows(source.read_text(encoding="utf-8"))
 	wrong = faults(found, claims())
+	print("read the matrix from %s" % source)
 
 	if parsed.write:
 		target = Path(parsed.write)

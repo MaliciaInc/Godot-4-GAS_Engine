@@ -8,10 +8,10 @@
 - Units scanned: 3076
 - Units by language: gdscript 3024, powershell 6, python 46
 - Findings: 380
-- Elapsed: 12.969s
+- Elapsed: 12.944s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27219 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27217 (raise with --max-pairs)
 
 ## Structural
 
