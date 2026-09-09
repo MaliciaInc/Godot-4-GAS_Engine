@@ -20,7 +20,11 @@ func find_candidate(spec: GameplayEffectSpec) -> ActiveGameplayEffect:
 	var effect: GameplayEffect = spec.effect_def
 	if effect.stacking_type == GameplayEffect.StackingType.NONE:
 		return null
-	for active: ActiveGameplayEffect in effects.active_effects():
+	# The bucket rather than the whole list: everything in it already shares the
+	# definition and, where the rule says so, the source. The checks below stay
+	# because the bucket is an index over what an effect says it is, and an
+	# effect whose spec was swapped since is answered from what it says now.
+	for active: ActiveGameplayEffect in effects.index.stack_candidates(spec):
 		if active.get_effect_def() != effect:
 			continue
 		if effect.stacking_type == GameplayEffect.StackingType.AGGREGATE_BY_SOURCE:

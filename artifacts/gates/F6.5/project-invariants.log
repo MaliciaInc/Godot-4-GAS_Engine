@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      project-invariants
+command:    python tooling/project_invariants.py
+started:    2026-09-09T18:17:39.6077205Z
+ended:      2026-09-09T18:17:40.0007668Z
+duration_s: 0.393
+exit_code:  0
+
+--- stdout ---
+project-invariants: project.godot is sound
+
+--- stderr ---
+

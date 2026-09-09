@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      product-identity
+command:    python tooling/product_identity.py
+started:    2026-09-09T18:17:40.0032212Z
+ended:      2026-09-09T18:17:40.1628302Z
+duration_s: 0.160
+exit_code:  0
+
+--- stdout ---
+product-identity: GAS_Engine identity is canonical
+
+--- stderr ---
+

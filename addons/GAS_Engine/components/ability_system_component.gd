@@ -414,7 +414,9 @@ func emit_tag_change(tag: StringName, change: GameplayTagRuntime.Change, new_cou
 		_:
 			pass
 	_emit_hierarchical_tag_change(tag, change)
-	effects.on_owner_tags_changed()
+	# Which tag moved is known here, and saying so is what lets the effect
+	# runtime ask only the effects whose requirements are about it.
+	effects.on_owner_tag_changed(tag)
 	ability_runtime.request_passive_reevaluation()
 
 

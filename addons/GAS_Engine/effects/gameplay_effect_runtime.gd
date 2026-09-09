@@ -44,6 +44,12 @@ var refusal_log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
 ## cycle cannot recurse forever.
 const MAX_EFFECT_CHAIN_DEPTH: int = 32
 
+## What is active, arranged for the two questions asked most often.
+##
+## Fed by the five statements below that change `_active` and by nothing else,
+## so there is one maintenance list rather than one per question.
+var index: GameplayEffectActiveIndex = GameplayEffectActiveIndex.new()
+
 var _active: Array[ActiveGameplayEffect] = []
 var _next_application_order: int = 0
 
@@ -75,8 +81,18 @@ func active_count() -> int:
 
 
 ## AbilitySystemComponent.emit_tag_change() calls this after its own public
-## F2 signals, for every tag change - the entry point for ongoing/removal
-## reevaluation. See GameplayEffectInhibitionRuntime.
+## F2 signals, for one tag change, saying which tag it was.
+##
+## The scoped door: only effects whose requirements are about that tag - or
+## about an ancestor of it - can have changed their answer, which on a character
+## carrying a thousand effects is almost none of them. See
+## GameplayEffectInhibitionRuntime.
+func on_owner_tag_changed(tag: StringName) -> void:
+	inhibition.on_owner_tag_changed(tag)
+
+
+## The same reevaluation for a caller that cannot say which tag moved, or that
+## changed several at once. Every active effect is asked.
 func on_owner_tags_changed() -> void:
 	inhibition.on_owner_tags_changed()
 
@@ -85,16 +101,18 @@ func on_owner_tags_changed() -> void:
 ## GameplayEffectPurgeTransaction alone, reversible until the incoming
 ## effect's own outcome is known.
 func extract_active(active: ActiveGameplayEffect) -> int:
-	var index: int = _active.find(active)
-	if index >= 0:
-		_active.remove_at(index)
-	return index
+	var at: int = _active.find(active)
+	if at >= 0:
+		_active.remove_at(at)
+		index.drop(active)
+	return at
 
 
 ## Undo extract_active: reinsert at `at_index`, clamped so a stale index
 ## from a since-shrunk registry still lands somewhere.
 func restore_active(active: ActiveGameplayEffect, at_index: int) -> void:
 	_active.insert(clampi(at_index, 0, _active.size()), active)
+	index.add(active)
 
 
 ## The longest remaining duration among effects granting a tag, in seconds,
@@ -218,7 +236,9 @@ func apply(spec: GameplayEffectSpec) -> GameplayEffectApplicationResult:
 ## query matches `spec` - an inhibited immunity's owner is not currently in
 ## force, so it does not block.
 func _is_immune_to(spec: GameplayEffectSpec) -> bool:
-	for active: ActiveGameplayEffect in _active:
+	# The effects that grant immunity, rather than every effect there is. Almost
+	# none of them do, and every application was asking all of them.
+	for active: ActiveGameplayEffect in index.immunities():
 		if active.inhibited:
 			continue
 		var query: GameplayEffectQuery = active.get_effect_def().get_immunity_query()
@@ -300,6 +320,7 @@ func _commit(
 		handles.register(active)
 		active.component_states = spec.prepared_component_states()
 		_active.append(active)
+		index.add(active)
 		# Decides the starting inhibited/attached state - an ongoing_query
 		# already unsatisfied registers inhibited from the start.
 		inhibition.initialize(active)
@@ -356,6 +377,7 @@ func remove(
 		return
 	_detach(active)
 	_active.erase(active)
+	index.drop(active)
 	recompose_and_emit(null)
 	chain.fire_on_removal(active, reason)
 	if owner_asc != null:
@@ -427,6 +449,7 @@ func cleanup() -> void:
 	for active: ActiveGameplayEffect in removed:
 		_detach(active)
 	_active.clear()
+	index.clear()
 
 	recompose_and_emit(null)
 	if owner_asc != null:

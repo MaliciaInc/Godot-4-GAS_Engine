@@ -37,7 +37,7 @@ func begin_state_mutation() -> void:
 func end_state_mutation() -> void:
 	_mutation_depth = maxi(_mutation_depth - 1, 0)
 	if _mutation_depth == 0 and _dirty:
-		_reevaluate()
+		_reevaluate(effects.active_effects())
 #endregion
 
 
@@ -48,13 +48,30 @@ func on_owner_tags_changed() -> void:
 	if _mutation_depth > 0:
 		_dirty = true
 		return
-	_reevaluate()
+	_reevaluate(effects.active_effects())
+
+
+## One tag moved, and only what is about it can have changed its answer.
+##
+## The first pass walks the effects whose ongoing or removal query names that
+## tag or an ancestor of it. Any pass after the first walks everything: a
+## transition grants and removes tags of its own, and what those changed is no
+## longer only about the tag that started this.
+##
+## Deferred the same way as the unscoped call, and deferred as a full one: a
+## mutation in flight can change any of it, so the tag that arrived here is no
+## longer the whole story by the time the guard unwinds.
+func on_owner_tag_changed(tag: StringName) -> void:
+	if _mutation_depth > 0:
+		_dirty = true
+		return
+	_reevaluate(effects.index.requirement_dependents(tag))
 
 
 ## 1. reentrant call while already reevaluating -> mark dirty, return.
 ## 2. snapshot active handles, evaluate, apply transitions.
 ## 3. repeat while dirty, until stable or the pass cap is hit.
-func _reevaluate() -> void:
+func _reevaluate(first_pass: Array[ActiveGameplayEffect]) -> void:
 	if _reevaluating:
 		_dirty = true
 		return
@@ -64,13 +81,17 @@ func _reevaluate() -> void:
 	var passes: int = 0
 	var converged: bool = false
 	var last_pass_changed: Array[ActiveGameplayEffect] = []
+	var over: Array[ActiveGameplayEffect] = first_pass
 	while passes < MAX_REQUIREMENT_REEVALUATION_PASSES:
 		_dirty = false
 		passes += 1
-		last_pass_changed = _reevaluate_one_pass()
+		last_pass_changed = _reevaluate_one_pass(over)
 		if last_pass_changed.is_empty() and not _dirty:
 			converged = true
 			break
+		# Everything, from here on. The first pass could be narrowed to what the
+		# tag was about; a pass after something transitioned cannot.
+		over = effects.active_effects()
 
 	if not converged:
 		_freeze_as_inhibited_and_diagnose(last_pass_changed)
@@ -87,9 +108,13 @@ func _reevaluate() -> void:
 ## One pass over a snapshot of active effects. Returns every effect that
 ## transitioned, so the caller knows whether another pass could be needed -
 ## and, if the cycle never stabilizes, exactly which ones were oscillating.
-func _reevaluate_one_pass() -> Array[ActiveGameplayEffect]:
+func _reevaluate_one_pass(over: Array[ActiveGameplayEffect]) -> Array[ActiveGameplayEffect]:
 	var changed: Array[ActiveGameplayEffect] = []
-	for active: ActiveGameplayEffect in effects.active_effects():
+	for active: ActiveGameplayEffect in over:
+		# The list was taken before any of this ran, and a transition can remove
+		# an effect further down it.
+		if not effects.contains_active(active):
+			continue
 		if _apply_removal_if_due(active):
 			changed.append(active)
 			continue

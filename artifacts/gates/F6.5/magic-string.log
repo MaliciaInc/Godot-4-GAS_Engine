@@ -1,0 +1,37 @@
+RESULT: PASS
+stage:      magic-string
+command:    python tooling\gates\run_gate.py magic-string artifacts\gates\F6.5
+started:    2026-09-09T18:17:42.4314334Z
+ended:      2026-09-09T18:17:51.2218933Z
+duration_s: 8.790
+exit_code:  0
+
+--- stdout ---
+# Magic String Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 414
+- Blocking findings: 0
+- Scan issues: 0
+- Blocking kinds: colors, repeated, templates
+- Configured exclusions: addons/gut/**, docs/**
+
+## Repeated Literals
+
+- None
+
+## Repeated Templates
+
+- None
+
+## Hard-coded Colors
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+
