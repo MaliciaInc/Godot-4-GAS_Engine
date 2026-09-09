@@ -108,8 +108,18 @@ func input_confirm() -> void:
 
 
 ## And somebody said no.
-func input_cancel() -> void:
-	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_cancel())
+##
+## `deaf` is the instances that do not hear this one - empty for a local no,
+## and for one that arrived over a wire the abilities whose grant reserves
+## termination to the authority. A list rather than a flag, because deciding
+## that is reading a network policy and this runtime has no business doing
+## it: it is told who, not asked why.
+func input_cancel(deaf: Array[GameplayAbility] = []) -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void:
+		if deaf.has(task.owner_ability):
+			return
+		task.handle_cancel()
+	)
 
 
 func gameplay_event(event: GameplayEventData) -> void:

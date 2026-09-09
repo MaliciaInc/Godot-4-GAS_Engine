@@ -90,6 +90,9 @@ func _message(
 	message.sequence = _counted[id.value]
 	net.publish(message)
 	return message
+
+
+## Write a reading of an entity onto it, if it is news.
 func apply(message: GameplayNetMessage) -> bool:
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	if asc == null:
@@ -104,5 +107,24 @@ func apply(message: GameplayNetMessage) -> bool:
 
 	GameplayNetReplication.apply(message.state, asc)
 	_applied_sequence[message.entity.value] = message.sequence
+	_announce_activations(message)
 	net.state_applied.emit(message.entity, message.state)
 	return true
+
+
+## Say which of this entity's activations started and which stopped.
+##
+## Announced rather than applied: a client that started an ability because
+## the state said one was running would be a client running an ability the
+## authority never asked it to, which is the whole thing the authority is
+## for. What this is is a UI being told, and a UI is the reason an ability
+## says REPLICATE_YES at all.
+func _announce_activations(message: GameplayNetMessage) -> void:
+	for value: int in message.state.running_abilities:
+		net.activation_replicated.emit(
+			message.entity, GameplayNetDefinitionId.from_wire(value), true
+		)
+	for value: int in message.state.stopped_abilities:
+		net.activation_replicated.emit(
+			message.entity, GameplayNetDefinitionId.from_wire(value), false
+		)

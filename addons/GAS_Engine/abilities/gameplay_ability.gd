@@ -68,6 +68,46 @@ enum NetExecutionPolicy {
 	SERVER_ONLY,
 }
 
+## What the authority accepts from somebody else about this ability.
+##
+## A different question from the one above, and never a translation of it.
+## `NetExecutionPolicy` says where an ability runs; this says what a remote
+## machine is allowed to ask for. An ability can be predicted locally and still
+## refuse a remote request to end it, and one that only ever runs on the server
+## can still be asked to start by the client whose character it is.
+##
+## CLIENT_OR_SERVER: either machine may ask for either thing.
+## SERVER_ONLY_EXECUTION: only the authority starts it. A remote request to
+##     start is refused; a remote request to end is not.
+## SERVER_ONLY_TERMINATION: only the authority ends it. The other way round -
+##     a client may start it and may not call it off.
+## SERVER_ONLY: neither. Nothing a remote machine says about this ability is
+##     acted on.
+##
+## Frozen at grant time like everything beside it.
+enum NetSecurityPolicy {
+	CLIENT_OR_SERVER,
+	SERVER_ONLY_EXECUTION,
+	SERVER_ONLY_TERMINATION,
+	SERVER_ONLY,
+}
+
+## Whether this activation's own state reaches the peer that owns it.
+##
+## REPLICATE_NO is the default and is most abilities: what a melee swing is
+## doing between starting and ending is nobody's business but the machine
+## running it, and replicating it is bandwidth spent on something no other
+## machine acts on.
+##
+## REPLICATE_YES is for the ones whose middle matters - a channel a UI draws a
+## bar for, a stance another player has to be able to see. It never serialises
+## the instance: a Node crossing a wire is a class name a receiver would have to
+## construct, and what crosses is what this addon already knows how to say.
+enum ReplicationPolicy {
+	REPLICATE_NO,
+	REPLICATE_YES,
+}
+
 signal ability_ended(was_cancelled: bool)
 
 @export_category("Ability Rules")
@@ -85,6 +125,44 @@ signal ability_ended(was_cancelled: bool)
 ## rather than read it: the snapshot's drift watch, and the network runtime
 ## reading a policy off a packed scene it has no instance of.
 const NET_EXECUTION_POLICY_FIELD: StringName = &"net_execution_policy"
+
+## What the authority accepts from a remote machine about this ability.
+##
+## Never derived from the policy above it. An ability that runs only on the
+## server is not thereby one a client may not ask to start, and one a client
+## predicts is not thereby one a client may call off - mapping either onto the
+## other is how an ability comes to refuse the request it was written for.
+@export var net_security_policy: GameplayAbility.NetSecurityPolicy = (
+	NetSecurityPolicy.CLIENT_OR_SERVER
+)
+
+## Whether this activation's own state reaches the peer that owns it.
+@export var replication_policy: GameplayAbility.ReplicationPolicy = (
+	ReplicationPolicy.REPLICATE_NO
+)
+
+## Whether the authority honours a remote request to call this off.
+##
+## False by default, and deliberately: a client that can end an ability on the
+## authority can end it after the authority has already committed its cost, and
+## the reference engine refuses that unless an ability says otherwise.
+@export var server_respects_remote_cancellation: bool = false
+
+## Whether the input crosses rather than the activation it would cause.
+##
+## For the abilities whose meaning is in the press and the release - a charge, a
+## hold, anything where letting go is the interesting half. The authority
+## resolves the input against the grant it made rather than against a handle the
+## client invented, which is the whole reason the input crosses instead.
+@export var replicate_input_directly: bool = false
+
+## The names of the four fields above, for the readers that look them up rather
+## than read them: the snapshot's drift watch, and the network runtime reading a
+## policy off a packed scene it has no instance of.
+const NET_SECURITY_POLICY_FIELD: StringName = &"net_security_policy"
+const REPLICATION_POLICY_FIELD: StringName = &"replication_policy"
+const REMOTE_CANCELLATION_FIELD: StringName = &"server_respects_remote_cancellation"
+const REPLICATE_INPUT_FIELD: StringName = &"replicate_input_directly"
 
 ## Identity, not activation gating - effective tags are these plus dynamic_tags.
 @export var ability_tags: Array[StringName] = []

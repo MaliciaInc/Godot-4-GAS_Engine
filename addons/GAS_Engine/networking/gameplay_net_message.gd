@@ -65,8 +65,10 @@ const TARGET_DATA_KEY: String = "payload.target_data"
 ## Which input slot an INPUT_PRESSED or INPUT_RELEASED is about.
 const INPUT_KEY: String = "payload.input"
 
-## The messages a BATCH carries, each in its own wire form.
+## The messages a BATCH carries, each in its own wire form, and whether the
+## batch stands or falls together.
 const BATCH_KEY: String = "payload.messages"
+const ATOMIC_KEY: String = "payload.atomic"
 
 ## The event an GAMEPLAY_EVENT carries, in GameplayEventWire's own shape.
 const EVENT_KEY: String = "payload.event"

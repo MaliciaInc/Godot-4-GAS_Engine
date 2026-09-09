@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.6.3: the network runtime keeps the conversation and hands the request and state layers to files of their own; 540 for what is left.
+# F6.6.5: the ceilings for the ability contract, the ASC facade and the network door, after the two folds this task also made.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T19:15:11Z
-# commit-previo: 56ef183487bb07398922e8c038287cbed24f9e91
+# date-utc: 2026-09-09T19:46:39Z
+# commit-previo: 423f2fef0ee0663eb90b92c89330b53f63c4994e
 # files: 27
-03ff1c7bea921ddc30300fed063d3428e85cb31b6f73428143f98ff83f037d00  tooling/.quality-gates.json
+8f0ca9ab09795cd3e199b3d12bd2cee862b9b963499c3d18d036c24092cfdd6c  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

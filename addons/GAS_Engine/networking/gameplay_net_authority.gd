@@ -116,6 +116,38 @@ static func honours_request(
 	return owns_the_entity and client_start(policy) != Start.REFUSED
 
 
+## Whether the authority acts on a remote request to START this ability.
+##
+## Asked of the security policy and of nothing else. Which machine an ability
+## runs on is `NetExecutionPolicy` and is a different question: an ability the
+## server alone executes can still be one whose owner is entitled to ask for it,
+## and deriving either from the other is how an ability comes to refuse the
+## request it was written for.
+static func accepts_remote_start(policy: GameplayAbility.NetSecurityPolicy) -> bool:
+	return (
+		policy == GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER
+		or policy == GameplayAbility.NetSecurityPolicy.SERVER_ONLY_TERMINATION
+	)
+
+
+## Whether the authority acts on a remote request to END or cancel it.
+##
+## Two gates rather than one. The policy says whether a remote machine may end
+## it at all; the ability then says whether the authority honours the request,
+## which is false by default because a client that can end an ability after the
+## authority has committed its cost is a client that has taken the cost and
+## given nothing back.
+static func accepts_remote_end(
+	policy: GameplayAbility.NetSecurityPolicy, respects_remote_cancellation: bool
+) -> bool:
+	if (
+		policy == GameplayAbility.NetSecurityPolicy.SERVER_ONLY_TERMINATION
+		or policy == GameplayAbility.NetSecurityPolicy.SERVER_ONLY
+	):
+		return false
+	return respects_remote_cancellation
+
+
 ## Whether a machine in this role may write state of its own accord.
 ##
 ## The one rule underneath every other: a client does not author. It asks, it

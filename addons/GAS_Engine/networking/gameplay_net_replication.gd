@@ -45,8 +45,11 @@ static func snapshot_of(
 		state.tags[tag] = asc.tags.count_exact(tag)
 	for spec: GameplayAbilitySpec in asc.get_ability_specs():
 		var granted: GameplayNetDefinitionId = registry.register_definition(_scene_of(spec))
-		if granted.is_valid():
-			state.abilities.append(granted.value)
+		if not granted.is_valid():
+			continue
+		state.abilities.append(granted.value)
+		if for_owner and _tells_that_it_is_running(spec):
+			state.running_abilities.append(granted.value)
 
 	for active: ActiveGameplayEffect in asc.get_active_effects():
 		for binding: GameplayCueBinding in active.get_effect_def().get_persistent_cue_bindings():
@@ -63,6 +66,21 @@ static func snapshot_of(
 			if reading != null:
 				state.effects.append(reading)
 	return state
+
+
+## Whether this grant's activations are anybody else's business.
+##
+## Asked of the frozen definition, and false unless it was authored to say
+## otherwise. REPLICATE_YES is for the abilities whose middle matters - a
+## channel a UI draws a bar for, a stance another player has to be able to
+## see - and for everything else the start and the end are the whole story.
+static func _tells_that_it_is_running(spec: GameplayAbilitySpec) -> bool:
+	if spec == null or spec.definition == null or spec.active_count <= 0:
+		return false
+	return (
+		spec.definition.replication_policy
+		== GameplayAbility.ReplicationPolicy.REPLICATE_YES
+	)
 
 
 ## Whether this recipient is told what is running, as opposed to what it did.
@@ -100,6 +118,12 @@ static func delta_between(
 			change.removed_tags.append(tag)
 
 	_diff_lists(before.abilities, after.abilities, change.abilities, change.revoked_abilities)
+	_diff_lists(
+		before.running_abilities,
+		after.running_abilities,
+		change.running_abilities,
+		change.stopped_abilities
+	)
 	_diff_cues(before.cues, after.cues, change)
 	_diff_effects(before, after, change)
 	return change

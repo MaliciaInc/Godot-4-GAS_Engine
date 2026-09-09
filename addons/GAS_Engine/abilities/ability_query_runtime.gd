@@ -149,14 +149,45 @@ func effect_that_granted(handle: GameplayAbilityHandle) -> GameplayEffectHandle:
 ## A snapshot: confirming one can end an ability, which calls off the rest,
 ## and a loop reading the live lists while that happens is reading lists that
 ## moved under it.
-func previewing_providers() -> Array[GameplayTargetProvider]:
+func previewing_providers(deaf: Array[GameplayAbility] = []) -> Array[GameplayTargetProvider]:
 	var waiting: Array[GameplayTargetProvider] = []
 	for spec: GameplayAbilitySpec in ability_runtime.specs():
 		for instance: GameplayAbility in _instances_of(spec):
+			if deaf.has(instance):
+				continue
 			for provider: GameplayTargetProvider in instance.aiming_providers():
 				if provider.is_choosing():
 					waiting.append(provider)
 	return waiting
+
+
+## Every live instance whose grant does not hear a remote machine saying no.
+##
+## The list a cancel that arrived over a wire has to skip. Whether an
+## activation can be called off from elsewhere is a property of the grant
+## rather than of the run, so it is read off the frozen definition and the
+## instances behind that grant are what comes back.
+func deaf_to_remote_cancellation() -> Array[GameplayAbility]:
+	var deaf: Array[GameplayAbility] = []
+	for spec: GameplayAbilitySpec in ability_runtime.specs():
+		if spec.definition == null or spec.definition.accepts_remote_termination():
+			continue
+		deaf.append_array(_instances_of(spec))
+	return deaf
+
+
+## The first grant made from this ability scene.
+##
+## What a networking layer holding a definition has to ask, because a wire
+## names a definition and never a handle: the slot a press is about is the
+## one this machine's own grant was bound to.
+func spec_for_scene(scene: PackedScene) -> GameplayAbilitySpec:
+	if scene == null:
+		return null
+	for spec: GameplayAbilitySpec in ability_runtime.specs():
+		if spec.definition != null and spec.definition.ability_scene == scene:
+			return spec
+	return null
 
 
 ## Every live instance behind one grant, whichever instancing policy it has.

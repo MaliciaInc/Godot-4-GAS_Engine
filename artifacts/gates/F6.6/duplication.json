@@ -1,13 +1,13 @@
 {
-  "units": 2970,
-  "units_by_language": "gdscript 2925, powershell 4, python 41",
-  "elapsed_seconds": 12.557768800001213,
+  "units": 3009,
+  "units_by_language": "gdscript 2964, powershell 4, python 41",
+  "elapsed_seconds": 12.581100200000947,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27085
+    "behavioral": 27462
   },
   "blocking": 0,
   "findings": [
@@ -41,14 +41,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:978-985:wait_gameplay_events",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:1056-1063:wait_gameplay_events",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:196-203:wait_ability_commit",
       "score": 1.0,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:978-985:wait_gameplay_events",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:1056-1063:wait_gameplay_events",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:85-93:wait_tag_query",
       "score": 1.0,
       "category": "executable"
@@ -216,14 +216,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_gameplay_ability_cost_resolver.gd:42-51:_percent_of_current",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:795-804:accepts_target",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:873-882:accepts_target",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error",
       "score": 0.967741935483871,
       "category": "executable"
@@ -237,7 +230,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/effects/gameplay_effect_spec.gd:565-576:resolve_authored_timing",
       "score": 0.9230769230769231,
       "category": "executable"
@@ -419,14 +412,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:978-985:wait_gameplay_events",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:1056-1063:wait_gameplay_events",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:108-118:wait_gameplay_effect_applied",
       "score": 0.9,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:978-985:wait_gameplay_events",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:1056-1063:wait_gameplay_events",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:288-297:network_sync_point",
       "score": 0.9,
       "category": "executable"
@@ -622,15 +615,15 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:477-495:apply_cooldown",
-      "right": "addons/GAS_Engine/debug/gas_debug_page_effects.gd:39-54:rows",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:1056-1063:wait_gameplay_events",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:227-235:play_animation_and_wait",
       "score": 0.8888888888888888,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:978-985:wait_gameplay_events",
-      "right": "addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:227-235:play_animation_and_wait",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:555-573:apply_cooldown",
+      "right": "addons/GAS_Engine/debug/gas_debug_page_effects.gd:39-54:rows",
       "score": 0.8888888888888888,
       "category": "executable"
     },
@@ -706,14 +699,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:455-472:check_cooldown",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:533-550:check_cooldown",
       "right": "test/unit/test_gameplay_effect_editor.gd:57-70:_described",
       "score": 0.8846153846153846,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of",
+      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of",
       "right": "addons/GAS_Engine/effects/gameplay_effect_runtime.gd:238-247:_is_immune_to",
       "score": 0.8823529411764706,
       "category": "executable"
@@ -797,7 +790,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:541-549:_prepare_custom_costs",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs",
       "right": "addons/GAS_Engine/editor/composer/composer_validator.gd:53-69:inspect",
       "score": 0.8571428571428571,
       "category": "executable"
@@ -846,7 +839,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/editor/effects/gameplay_effect_document.gd:260-267:set_stacking",
       "score": 0.8461538461538461,
       "category": "executable"
@@ -951,14 +944,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:477-495:apply_cooldown",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:555-573:apply_cooldown",
       "right": "addons/GAS_Engine/debug/gas_debug_page_tags.gd:28-42:rows",
       "score": 0.8421052631578947,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:763-773:deactivate_persistent_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:841-851:deactivate_persistent_cue",
       "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_tag_query.gd:17-25:execute",
       "score": 0.8421052631578947,
       "category": "executable"
@@ -1211,7 +1204,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_commit_contract.gd:120-129:unique_cooldowns",
-      "right": "addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of",
+      "right": "addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of",
       "score": 0.8235294117647058,
       "category": "executable"
     },
@@ -1350,6 +1343,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:533-550:check_cooldown",
+      "right": "addons/GAS_Engine/networking/gameplay_net_batch.gd:61-75:from_wire",
+      "score": 0.8148148148148148,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:83-96:_read_authorised_duration",
       "right": "addons/GAS_Engine/editor/composer/composer_reader.gd:375-385:_add_data_ports",
       "score": 0.8125,
@@ -1364,14 +1364,14 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:541-549:_prepare_custom_costs",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs",
       "right": "test/unit/test_authoring_friction.gd:84-92:_scripts_in",
       "score": 0.8125,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/networking/gameplay_net_request_runtime.gd:27-44:target_data",
       "score": 0.8125,
       "category": "executable"
@@ -1434,7 +1434,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of",
+      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of",
       "right": "addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query",
       "score": 0.8,
       "category": "executable"
@@ -1455,42 +1455,42 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:541-549:_prepare_custom_costs",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs",
       "right": "addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_class.gd:18-26:execute",
       "score": 0.8,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/editor/composer/ir/composer_ir.gd:236-245:_note_async_exit",
       "score": 0.8,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "examples/action_sample/scripts/sample_hero.gd:28-37:equip",
       "score": 0.8,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:763-773:deactivate_persistent_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:841-851:deactivate_persistent_cue",
       "right": "addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid",
       "score": 0.8,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:79-87:_duplicate_resource_array",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
       "right": "addons/GAS_Engine/networking/gameplay_prediction_journal.gd:78-85:reject",
       "score": 0.8,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:79-87:_duplicate_resource_array",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
       "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:33-40:to_wire",
       "score": 0.8,
       "category": "executable"
@@ -1616,7 +1616,7 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of",
+      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of",
       "right": "addons/GAS_Engine/editor/composer/composer_flow.gd:96-106:predecessors_of",
       "score": 0.7894736842105263,
       "category": "executable"
@@ -1624,7 +1624,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
-      "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:477-495:apply_cooldown",
+      "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:555-573:apply_cooldown",
       "score": 0.7894736842105263,
       "category": "executable"
     },
@@ -1652,34 +1652,34 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags",
-      "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "right": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "score": 0.7857142857142857,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:541-549:_prepare_custom_costs",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs",
       "right": "addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query",
       "score": 0.7857142857142857,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:50-62:_on_ended",
       "score": 0.7857142857142857,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:719-726:execute_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue",
       "right": "addons/GAS_Engine/editor/effects/gameplay_effect_document.gd:272-280:add_cue",
       "score": 0.7857142857142857,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:79-87:_duplicate_resource_array",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array",
       "right": "addons/GAS_Engine/editor/composer/composer_canvas.gd:340-347:picked",
       "score": 0.7857142857142857,
       "category": "executable"
@@ -1743,21 +1743,21 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:150-167:give_and_activate_once",
-      "right": "addons/GAS_Engine/networking/gameplay_net_replication.gd:198-211:_read",
+      "right": "addons/GAS_Engine/networking/gameplay_net_replication.gd:222-235:_read",
       "score": 0.782608695652174,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:763-773:deactivate_persistent_cue",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:841-851:deactivate_persistent_cue",
       "right": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:48-57:can_apply_all",
       "score": 0.782608695652174,
       "category": "executable"
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:500-535:apply_cost",
-      "right": "addons/GAS_Engine/networking/gameplay_net_request_runtime.gd:110-141:honour_target_data",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:578-613:apply_cost",
+      "right": "addons/GAS_Engine/networking/gameplay_net_request_runtime.gd:145-176:honour_target_data",
       "score": 0.7804878048780488,
       "category": "executable"
     },

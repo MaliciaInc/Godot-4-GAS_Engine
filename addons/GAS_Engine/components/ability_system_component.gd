@@ -1241,11 +1241,26 @@ func input_confirm() -> void:
 
 
 ## And no, on the same terms.
+##
+## `from_remote` is what a network runtime passes when the no arrived from
+## another machine, and it is the only thing that makes this door refuse
+## anybody: an ability whose grant reserves termination to the authority, or
+## which never said it honours a remote cancellation, does not hear it.
+##
+## The signal is emitted either way. A no arrived and a game listening for
+## one is entitled to know; what this addon owns - the tasks and the aiming
+## providers - is what the policy actually governs.
 ## @composer
-func input_cancel() -> void:
+func input_cancel(from_remote: bool = false) -> void:
 	generic_cancelled.emit()
-	ability_runtime.tasks.input_cancel()
-	for provider: GameplayTargetProvider in ability_runtime.queries.previewing_providers():
+	var deaf: Array[GameplayAbility] = (
+		ability_runtime.queries.deaf_to_remote_cancellation() if from_remote
+		else ([] as Array[GameplayAbility])
+	)
+	ability_runtime.tasks.input_cancel(deaf)
+	for provider: GameplayTargetProvider in (
+		ability_runtime.queries.previewing_providers(deaf)
+	):
 		provider.cancel()
 
 

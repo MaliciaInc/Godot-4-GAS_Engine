@@ -36,6 +36,19 @@ var tags: Dictionary[StringName, int] = {}
 ## The definitions this entity is granted, by net definition id.
 var abilities: Array[int] = []
 
+## Which of those grants are running right now.
+##
+## Only the ones whose grant says REPLICATE_YES, and only towards the peer
+## that owns the entity. Most abilities are in neither list: what a melee
+## swing is doing between starting and ending is nobody's business but the
+## machine running it, and saying so every reading is bandwidth spent on
+## something no other machine acts on.
+##
+## Ids rather than instances. A Node crossing a wire is a class name the
+## receiver would have to construct, and a run named by the definition it is
+## a run of is one both machines already agree about.
+var running_abilities: Array[int] = []
+
 ## What is running on it.
 var effects: Array[GameplayNetEffectState] = []
 
@@ -47,6 +60,7 @@ var cues: Array[StringName] = []
 ## thing is already the whole of the news about it.
 var removed_tags: Array[StringName] = []
 var revoked_abilities: Array[int] = []
+var stopped_abilities: Array[int] = []
 var ended_effects: Array[int] = []
 var ended_cues: Array[StringName] = []
 
@@ -58,10 +72,12 @@ const KIND_KEY: String = "state.kind"
 const ATTRIBUTES_KEY: String = "state.attributes"
 const TAGS_KEY: String = "state.tags"
 const ABILITIES_KEY: String = "state.abilities"
+const RUNNING_ABILITIES_KEY: String = "state.running_abilities"
 const EFFECTS_KEY: String = "state.effects"
 const CUES_KEY: String = "state.cues"
 const REMOVED_TAGS_KEY: String = "state.removed_tags"
 const REVOKED_ABILITIES_KEY: String = "state.revoked_abilities"
+const STOPPED_ABILITIES_KEY: String = "state.stopped_abilities"
 const ENDED_EFFECTS_KEY: String = "state.ended_effects"
 const ENDED_CUES_KEY: String = "state.ended_cues"
 
@@ -82,10 +98,12 @@ func to_wire() -> Dictionary:
 		ATTRIBUTES_KEY: _named_numbers(attributes),
 		TAGS_KEY: _named_numbers(tags),
 		ABILITIES_KEY: abilities.duplicate(),
+		RUNNING_ABILITIES_KEY: running_abilities.duplicate(),
 		EFFECTS_KEY: running,
 		CUES_KEY: GameplayWireReader.as_strings(cues),
 		REMOVED_TAGS_KEY: GameplayWireReader.as_strings(removed_tags),
 		REVOKED_ABILITIES_KEY: revoked_abilities.duplicate(),
+		STOPPED_ABILITIES_KEY: stopped_abilities.duplicate(),
 		ENDED_EFFECTS_KEY: ended_effects.duplicate(),
 		ENDED_CUES_KEY: GameplayWireReader.as_strings(ended_cues),
 	}
@@ -107,9 +125,11 @@ static func from_wire(wire: Variant) -> GameplayNetState:
 	made.attributes.assign(_named_from(said.get(ATTRIBUTES_KEY, {})))
 	made.tags.assign(_named_from(said.get(TAGS_KEY, {})))
 	made.abilities = _ints_from(said.get(ABILITIES_KEY, []))
+	made.running_abilities = _ints_from(said.get(RUNNING_ABILITIES_KEY, []))
 	made.cues = GameplayWireReader.tags_from(said.get(CUES_KEY, []))
 	made.removed_tags = GameplayWireReader.tags_from(said.get(REMOVED_TAGS_KEY, []))
 	made.revoked_abilities = _ints_from(said.get(REVOKED_ABILITIES_KEY, []))
+	made.stopped_abilities = _ints_from(said.get(STOPPED_ABILITIES_KEY, []))
 	made.ended_effects = _ints_from(said.get(ENDED_EFFECTS_KEY, []))
 	made.ended_cues = GameplayWireReader.tags_from(said.get(ENDED_CUES_KEY, []))
 
@@ -182,6 +202,8 @@ func is_empty() -> bool:
 		attributes.is_empty()
 		and tags.is_empty()
 		and abilities.is_empty()
+		and running_abilities.is_empty()
+		and stopped_abilities.is_empty()
 		and effects.is_empty()
 		and cues.is_empty()
 		and removed_tags.is_empty()
@@ -210,6 +232,8 @@ func copied() -> GameplayNetState:
 	theirs.attributes = attributes.duplicate()
 	theirs.tags = tags.duplicate()
 	theirs.abilities = abilities.duplicate()
+	theirs.running_abilities = running_abilities.duplicate()
+	theirs.stopped_abilities = stopped_abilities.duplicate()
 	theirs.cues = cues.duplicate()
 	theirs.removed_tags = removed_tags.duplicate()
 	theirs.revoked_abilities = revoked_abilities.duplicate()

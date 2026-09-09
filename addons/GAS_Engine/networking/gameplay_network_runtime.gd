@@ -45,6 +45,19 @@ signal activation_answered(
 	key: GameplayPredictionKey, activation: GameplayNetActivationId, accepted: bool
 )
 
+## An activation on another machine started or stopped, and this machine was
+## told about it.
+##
+## Only for the grants whose ReplicationPolicy says REPLICATE_YES, and only on
+## the peer that owns the entity - what most abilities are doing between
+## starting and ending is nobody else's business. Announced rather than acted
+## on: a client that started an ability because it was told one was running
+## would be a client running what the authority never asked it to. This is a
+## cast bar being told, which is the reason an ability says REPLICATE_YES.
+signal activation_replicated(
+	entity: GameplayNetEntityId, definition: GameplayNetDefinitionId, running: bool
+)
+
 ## A reading of an entity's state was written onto it. Carries the state as
 ## well as the entity, because what a game shows - which buffs, how long left
 ## - is in the reading and deliberately not written into the component.
@@ -107,6 +120,9 @@ var replication_mode: GameplayNetReplication.Mode = GameplayNetReplication.Mode.
 ## suite has always done.
 var transport: GameplayNetTransport = null
 
+## Several messages gathered to arrive together.
+var batching: GameplayNetBatchRuntime = GameplayNetBatchRuntime.new()
+
 ## What each peer has been told about each entity.
 var state: GameplayNetStateRuntime = GameplayNetStateRuntime.new()
 
@@ -142,6 +158,31 @@ func set_transport(value: GameplayNetTransport) -> void:
 		transport.packet_received.connect(_on_packet_received)
 
 
+#region Several messages that arrive together
+## The rules live in GameplayNetBatchRuntime; these are the names a caller
+## knows.
+func begin_batch() -> void:
+	batching.begin()
+
+
+func end_batch() -> bool:
+	return batching.finish()
+
+
+func is_batching() -> bool:
+	return batching.is_gathering()
+
+
+## Close a batch somebody left open, from wherever this runtime is being ticked.
+##
+## One route, and it is this one: the runtime is a RefCounted with no frame of
+## its own, and inventing a `_process` for it would make every game that holds
+## one hold a Node. Whoever ticks the ability system calls this.
+func flush_deferred_batch() -> bool:
+	return batching.flush()
+#endregion
+
+
 #region On and off the wire
 ## Announce a message, and put it on the wire when there is one.
 ##
@@ -150,6 +191,10 @@ func set_transport(value: GameplayNetTransport) -> void:
 func publish(message: GameplayNetMessage) -> void:
 	message_ready.emit(message)
 	if transport == null:
+		return
+	# Gathered rather than sent while a batch is open. Announced either way:
+	# a listener on this machine is watching what happened, not what left.
+	if batching.gather(message):
 		return
 	_send(message)
 
@@ -200,6 +245,7 @@ func _on_packet_received(packet: PackedByteArray, _from_peer: int) -> void:
 func _init() -> void:
 	requests.net = self
 	state.net = self
+	batching.net = self
 
 
 func is_authority() -> bool:
@@ -280,7 +326,9 @@ func _author(
 ## and "ask and wait" are both success and a caller that could not tell them
 ## apart would have to guess whether anything had happened yet.
 func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuthority.Start:
-	var spec_policy: GameplayAbility.NetExecutionPolicy = _policy_of(definition)
+	var spec_policy: GameplayAbility.NetExecutionPolicy = (
+		GameplayNetAbilityPolicy.execution_of(definition)
+	)
 	var decided: GameplayNetAuthority.Start = (
 		GameplayNetAuthority.authority_start(spec_policy) if is_authority()
 		else GameplayNetAuthority.client_start(spec_policy)
@@ -297,6 +345,13 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST, id
 	)
 	asking.definition = named
+	# An ability that replicates its input directly does not ask to be
+	# activated. The press crosses instead and the authority decides what
+	# activating it means, which is the only arrangement in which letting go
+	# can end the run the press started.
+	if GameplayNetAbilityPolicy.replicates_input_directly(definition):
+		requests.press(asc, id, definition)
+		return decided
 	# A request carries a key whichever way it was started. The predicting
 	# client needs it to unwind by; the waiting one needs it because the
 	# answer has to name which ask it is answering, and a client with two in
@@ -306,19 +361,13 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 	return decided
 
 
-## The policy a definition was authored with, or LOCAL_ONLY for anything that
-## is not an ability scene - an effect has no policy and asking one for it
-## should answer the harmless value rather than fail.
-func _policy_of(definition: Resource) -> GameplayAbility.NetExecutionPolicy:
-	var scene: PackedScene = definition as PackedScene
-	if scene == null:
-		return GameplayAbility.NetExecutionPolicy.LOCAL_ONLY
-	var state: SceneState = scene.get_state()
-	for index: int in state.get_node_property_count(0):
-		if state.get_node_property_name(0, index) == GameplayAbility.NET_EXECUTION_POLICY_FIELD:
-			var authored: GameplayAbility.NetExecutionPolicy = state.get_node_property_value(0, index)
-			return authored
-	return GameplayAbility.NetExecutionPolicy.LOCAL_ONLY
+## Letting go of an ability that replicates its input directly.
+##
+## Its own door because an activation request has no opposite, and an ability
+## whose meaning is in the release - a charge, a hold - needs one. The rule
+## lives in GameplayNetRequestRuntime with the rest of what a client asks for.
+func release(asc: AbilitySystemComponent, definition: Resource) -> bool:
+	return requests.release(asc, definition)
 #endregion
 
 
@@ -427,13 +476,17 @@ func _act_on(message: GameplayNetMessage) -> bool:
 			journal.reject(message.prediction_key, registry.asc_for(message.entity))
 			activation_answered.emit(message.prediction_key, message.activation, false)
 			return true
+		GameplayNetMessage.Kind.BATCH:
+			return batching.honour(message)
 		GameplayNetMessage.Kind.TARGET_DATA:
 			return requests.honour_target_data(message)
 		GameplayNetMessage.Kind.GENERIC_CONFIRM:
 			registry.asc_for(id).input_confirm()
 			return true
 		GameplayNetMessage.Kind.GENERIC_CANCEL:
-			registry.asc_for(id).input_cancel()
+			# The generic no names no ability, so the refusal cannot be the
+			# message: it is per-activation, and the ASC applies it.
+			registry.asc_for(id).input_cancel(true)
 			return true
 		GameplayNetMessage.Kind.GAMEPLAY_EVENT:
 			return requests.honour_event(message)
@@ -486,7 +539,16 @@ func _why_not(
 ) -> StringName:
 	if not registry.is_owned_by(message.entity, asking):
 		return REASON_NOT_OWNED
-	if not GameplayNetAuthority.honours_request(true, _policy_of(definition)):
+	var where: GameplayAbility.NetExecutionPolicy = (
+		GameplayNetAbilityPolicy.execution_of(definition)
+	)
+	if not GameplayNetAuthority.honours_request(true, where):
+		return REASON_POLICY
+	# And what this ability accepts from somebody else, which is a different
+	# question from where it runs.
+	if not GameplayNetAuthority.accepts_remote_start(
+		GameplayNetAbilityPolicy.security_of(definition)
+	):
 		return REASON_POLICY
 	return &""
 

@@ -31,6 +31,22 @@ var input_action: StringName = &""
 ## Where this grant is allowed to run. Frozen with the rest, so what a client
 ## may ask for is decided at grant time rather than by whatever the scene on
 ## disk says while a match is in progress.
+## What the authority accepts from a remote machine, frozen with the rest.
+var net_security_policy: GameplayAbility.NetSecurityPolicy = (
+	GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER
+)
+
+## Whether this activation's own state reaches the peer that owns it.
+var replication_policy: GameplayAbility.ReplicationPolicy = (
+	GameplayAbility.ReplicationPolicy.REPLICATE_NO
+)
+
+## Whether a remote request to call it off is honoured.
+var server_respects_remote_cancellation: bool = false
+
+## Whether the input crosses rather than the activation it would cause.
+var replicate_input_directly: bool = false
+
 var net_execution_policy: GameplayAbility.NetExecutionPolicy = (
 	GameplayAbility.NetExecutionPolicy.LOCAL_ONLY
 )
@@ -87,6 +103,17 @@ static func _duplicate_resource_array(values: Array) -> Array:
 	return result
 
 
+## Whether a remote machine ending this activation is honoured.
+##
+## Asked of the frozen reading rather than of the running instance: a policy
+## an activation could rewrite on itself mid-run is not one an authority can
+## rely on, which is the whole reason this snapshot exists.
+func accepts_remote_termination() -> bool:
+	return GameplayNetAuthority.accepts_remote_end(
+		net_security_policy, server_respects_remote_cancellation
+	)
+
+
 static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAbilityDefinitionSnapshot:
 	var snapshot: GameplayAbilityDefinitionSnapshot = GameplayAbilityDefinitionSnapshot.new()
 	snapshot.ability_scene = scene
@@ -97,6 +124,12 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.activation_policy = probe.activation_policy
 	snapshot.input_action = probe.input_action
 	snapshot.net_execution_policy = probe.net_execution_policy
+	snapshot.net_security_policy = probe.net_security_policy
+	snapshot.replication_policy = probe.replication_policy
+	snapshot.server_respects_remote_cancellation = (
+		probe.server_respects_remote_cancellation
+	)
+	snapshot.replicate_input_directly = probe.replicate_input_directly
 	snapshot.ability_tags = probe.ability_tags.duplicate()
 	snapshot.activation_required_query = (
 		_duplicate_resource(probe.activation_required_query) as GameplayTagQuery
@@ -178,6 +211,10 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"activation_policy",
 	&"input_action",
 	GameplayAbility.NET_EXECUTION_POLICY_FIELD,
+	GameplayAbility.NET_SECURITY_POLICY_FIELD,
+	GameplayAbility.REPLICATION_POLICY_FIELD,
+	GameplayAbility.REMOTE_CANCELLATION_FIELD,
+	GameplayAbility.REPLICATE_INPUT_FIELD,
 	&"ability_tags",
 	&"activation_required_query",
 	&"activation_blocked_query",

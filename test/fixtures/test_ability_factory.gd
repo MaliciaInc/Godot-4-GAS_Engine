@@ -49,9 +49,21 @@ static func net_ability(
 ) -> PackedScene:
 	var probe: ProbeAbility = ProbeAbility.build(tag)
 	probe.net_execution_policy = policy
+	return packed_at(probe, path)
+
+
+## Pack an already-configured ability into a scene that lives at a path.
+##
+## Split out of the door above once F6.6.5 gave an ability four network fields
+## rather than one: a builder with a parameter per field is a builder whose
+## call sites nobody can read. A caller sets what it cares about on the
+## instance and hands it here, and the instance is consumed - packing captures
+## state, the grant pipeline instantiates its own copy, and the template that
+## supplied it is nobody's.
+static func packed_at(ability: GameplayAbility, path: String) -> PackedScene:
 	var scene: PackedScene = PackedScene.new()
-	var pack_error: Error = scene.pack(probe)
+	var pack_error: Error = scene.pack(ability)
 	assert(pack_error == OK, "TestAbilityFactory: packing a networked ability failed")
-	probe.free()
+	ability.free()
 	scene.take_over_path(path)
 	return scene

@@ -49,6 +49,20 @@ func asc() -> AbilitySystemComponent:
 	return fixture.asc
 
 
+## The client that owns this bench's entity, on a runtime of its own.
+##
+## Three suites need one and each was building it the same four ways, with the
+## fourth - attaching the same component under the same id - being the one that
+## is easy to leave out and hard to read the absence of. The runtime that comes
+## back is the caller's to dispose.
+func client() -> GameplayNetworkRuntime:
+	var asking: GameplayNetworkRuntime = GameplayNetworkRuntime.new()
+	asking.role = GameplayNetAuthority.Role.CLIENT
+	asking.peer = OWNING_PEER
+	asking.attach(asc(), entity, OWNING_PEER)
+	return asking
+
+
 ## Let go of the runtime. The character is the caller's to free.
 func dispose() -> void:
 	runtime.dispose()

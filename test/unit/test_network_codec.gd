@@ -39,6 +39,7 @@ func _a_full_state() -> GameplayNetState:
 	state.attributes[HEALTH] = 73.5
 	state.tags[BURNING] = 2
 	state.abilities = [DEFINITION]
+	state.running_abilities = [DEFINITION]
 	state.cues = [CUE]
 
 	var effect: GameplayNetEffectState = GameplayNetEffectState.of(3, DEFINITION)
@@ -117,6 +118,10 @@ func test_a_state_survives_the_round_trip_whole() -> void:
 	assert_almost_eq(back.state.attributes[HEALTH], 73.5, TOLERANCE, "the attribute")
 	assert_eq(back.state.tags[BURNING], 2, "the tag, at its count")
 	assert_eq(back.state.abilities, [DEFINITION] as Array[int], "the grants")
+	assert_eq(
+		back.state.running_abilities, [DEFINITION] as Array[int],
+		"and which of them is running"
+	)
 	assert_eq(back.state.cues, [CUE] as Array[StringName], "the cues")
 
 	assert_eq(back.state.effects.size(), 1, "the effect")

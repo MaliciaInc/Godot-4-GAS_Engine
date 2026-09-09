@@ -95,6 +95,41 @@ func input(
 	return message
 
 
+## Pressing and letting go of an ability whose input crosses directly.
+##
+## Two doors rather than one with a flag, because they are reached from
+## different places: the press is what `start` sends instead of a request,
+## and the release has no activation-shaped opposite to be sent by.
+##
+## Both name the slot this machine's own grant was bound to. Never a handle:
+## the authority resolves the input against the grant it made, and a handle
+## is a number the client invented.
+func press(
+	asc: AbilitySystemComponent, id: GameplayNetEntityId, definition: Resource
+) -> GameplayNetMessage:
+	return input(id, definition, _slot_for(asc, definition), true)
+
+
+## Answers whether anything was sent. Nothing is, for an ability that does
+## not replicate its input, because there is no release for it to have.
+func release(asc: AbilitySystemComponent, definition: Resource) -> bool:
+	if net.is_authority() or not GameplayNetAbilityPolicy.replicates_input_directly(
+		definition
+	):
+		return false
+	var id: GameplayNetEntityId = net.registry.entity_for(asc)
+	if not id.is_valid():
+		return false
+	return input(id, definition, _slot_for(asc, definition), false) != null
+
+
+static func _slot_for(asc: AbilitySystemComponent, definition: Resource) -> int:
+	var spec: GameplayAbilitySpec = asc.ability_runtime.queries.spec_for_scene(
+		definition as PackedScene
+	)
+	return spec.input_id if spec != null else -1
+
+
 func _bare(
 	kind: GameplayNetMessage.Kind, id: GameplayNetEntityId
 ) -> GameplayNetMessage:
@@ -202,9 +237,27 @@ func honour_input(message: GameplayNetMessage) -> bool:
 		net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_DEFINITION)
 		return false
 
+	# A press starts and a release ends, so the two ask the security policy
+	# different questions. An ability the authority alone may start still
+	# accepts being let go of, and one the authority alone may end still
+	# accepts being pressed - which is why there are two answers and not one.
+	var pressed: bool = message.kind == GameplayNetMessage.Kind.INPUT_PRESSED
+	var allowed: bool = (
+		GameplayNetAuthority.accepts_remote_start(
+			GameplayNetAbilityPolicy.security_of(definition)
+		) if pressed
+		else GameplayNetAuthority.accepts_remote_end(
+			GameplayNetAbilityPolicy.security_of(definition),
+			GameplayNetAbilityPolicy.respects_remote_cancellation(definition)
+		)
+	)
+	if not allowed:
+		net._refuse(message, GameplayNetworkRuntime.REASON_POLICY)
+		return false
+
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	var slot: int = int(message.payload.get(GameplayNetMessage.INPUT_KEY, -1))
-	if message.kind == GameplayNetMessage.Kind.INPUT_PRESSED:
+	if pressed:
 		asc.ability_local_input_pressed(slot)
 	else:
 		asc.ability_local_input_released(slot)
