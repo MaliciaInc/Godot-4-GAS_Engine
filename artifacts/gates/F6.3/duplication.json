@@ -1,13 +1,13 @@
 {
-  "units": 2612,
-  "units_by_language": "gdscript 2570, powershell 4, python 38",
-  "elapsed_seconds": 10.440215500006161,
+  "units": 2625,
+  "units_by_language": "gdscript 2583, powershell 4, python 38",
+  "elapsed_seconds": 10.868037800006277,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24607
+    "behavioral": 24786
   },
   "blocking": 0,
   "findings": [
@@ -161,6 +161,13 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create",
       "score": 1.0,
       "category": "executable"
@@ -217,7 +224,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:298-305:conditional_effect",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
       "score": 1.0,
       "category": "executable"
     },
@@ -225,13 +232,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "test/fixtures/test_effect_factory.gd:96-104:turn_based",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
       "score": 1.0,
       "category": "executable"
     },
@@ -336,6 +336,13 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
+      "score": 0.9090909090909091,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create",
       "score": 0.9090909090909091,
       "category": "executable"
@@ -419,13 +426,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:392-403:capture_definition",
-      "score": 0.9090909090909091,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status",
       "right": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:179-194:_translate_magnitude_status",
       "score": 0.9,
@@ -484,6 +484,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
       "score": 0.9,
       "category": "executable"
     },
@@ -617,20 +624,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of",
-      "score": 0.9,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:257-266:stacked",
-      "score": 0.9,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects",
       "score": 0.9,
       "category": "executable"
     },
@@ -786,6 +779,13 @@
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:214-222:_end_with",
       "right": "addons/GAS_Engine/editor/composer/composer_flow_anchors.gd:105-112:edge_in",
       "score": 0.875,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:90-100:_place",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:93-102:_on_preview_changed",
+      "score": 0.8695652173913043,
       "category": "executable"
     },
     {
@@ -1030,6 +1030,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1589,13 +1596,6 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
-      "right": "test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "test/fixtures/test_effect_factory.gd:61-68:duration",
       "score": 0.8,
       "category": "executable"
@@ -1779,6 +1779,13 @@
       "kind": "masked",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create",
+      "right": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
       "score": 1.0,
       "category": "executable"
     },
@@ -2393,6 +2400,13 @@
     },
     {
       "kind": "masked",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create",
+      "right": "test/fixtures/test_effect_factory.gd:298-305:conditional_effect",
+      "score": 0.8717948717948718,
+      "category": "executable"
+    },
+    {
+      "kind": "masked",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create",
       "score": 0.8717948717948718,
@@ -2549,6 +2563,13 @@
       "kind": "structural",
       "left": "addons/GAS_Engine/targeting/gameplay_raycast_request_2d.gd:1-24:<file>",
       "right": "addons/GAS_Engine/targeting/gameplay_raycast_request_3d.gd:1-24:<file>",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "addons/GAS_Engine/targeting/gameplay_target_reticle_2d.gd:45-53:follow",
+      "right": "addons/GAS_Engine/targeting/gameplay_target_reticle_3d.gd:44-52:follow",
       "score": 1.0,
       "category": "executable"
     },

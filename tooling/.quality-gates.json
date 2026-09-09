@@ -498,9 +498,9 @@
   "duplication": {
     "pair_allowlist": [
       {
-        "left": "addons/GAS_Engine/targeting/gameplay_*_request_*d.gd:<file>",
-        "right": "addons/GAS_Engine/targeting/gameplay_*_request_*d.gd:<file>",
-        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3."
+        "left": "addons/GAS_Engine/targeting/gameplay_*_*d.gd:*",
+        "right": "addons/GAS_Engine/targeting/gameplay_*_*d.gd:*",
+        "reason": "Godot's 2D and 3D physics are two separate servers with two separate type hierarchies and no common base. An addon that supports both has to mirror them, and the only way to write the pair once would be to pass the query parameters as Variant - a dynamic boundary in the middle of our own code, which is exactly what the typing rules forbid. The mirror is the design, not an oversight, and it is declared here so a future duplication that is an oversight still fails. These four request objects differ only in Vector2 against Vector3. F6.3.2 adds the reticles to the same rule and for the same reason: a Node2D and a Node3D share no base, global_position is a different type on each, and a reticle written once would have to take positions as Variant."
       },
       {
         "left": "addons/GAS_Engine/targeting/gameplay_targeting_service.gd:raycast_2d",
@@ -623,9 +623,9 @@
         "reason": "The same private constructor as the entry above, against the cue params builder the policy already declared unrelated to an ability task's inputs. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. Merging them would couple the movement task to the cue layer to share six lines that say nothing in common."
       },
       {
-        "left": "addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:create",
+        "left": "addons/GAS_Engine/abilities/tasks/*.gd:create*",
         "right": "test/fixtures/test_effect_factory.gd:conditional_effect",
-        "reason": "The spawn task names a scene and the parent to put it under; the fixture names a child effect and the two queries that gate it. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. They share nothing else, and they are not even on the same side of the test boundary: one is production code that owns a spawned node for the length of an activation, the other exists only so a test can say what a conditional effect is in one line. Merging them would give a test fixture a dependency on an ability task."
+        "reason": "The spawn task names a scene and the parent to put it under; the fixture names a child effect and the two queries that gate it. Coincidence of shape, not of purpose. Both sides are the one named-constructor shape this engine uses everywhere - `new()`, three field assignments, `return` - which is exactly what the masked kind measures, since it compares structure with the identifiers taken out. They share nothing else, and they are not even on the same side of the test boundary: one is production code that owns a spawned node for the length of an activation, the other exists only so a test can say what a conditional effect is in one line. Merging them would give a test fixture a dependency on an ability task. Widened at F6.3.2: every task's `create` is the same four lines - make one, set the fields it was handed, hand it back - and so is any factory that builds a configured Resource. What they have in common is that they are constructors, which is not something two of them can share."
       },
       {
         "left": "addons/GAS_Engine/networking/gameplay_net_authority.gd:client_start",

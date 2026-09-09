@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 571
+- Source files scanned: 575
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 2612
-- Units by language: gdscript 2570, powershell 4, python 38
-- Findings: 369
-- Elapsed: 10.440s
+- Units scanned: 2625
+- Units by language: gdscript 2583, powershell 4, python 38
+- Findings: 372
+- Elapsed: 10.868s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 41 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 24607 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 24786 (raise with --max-pairs)
 
 ## Structural
 
@@ -34,6 +34,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/networking/gameplay_event_translator.gd:29-44:to_wire` <-> `addons/GAS_Engine/networking/gameplay_event_translator.gd:52-67:from_wire`
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_overlap_request_2d.gd:1-44:<file>` <-> `addons/GAS_Engine/targeting/gameplay_overlap_request_3d.gd:1-42:<file>`
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_raycast_request_2d.gd:1-24:<file>` <-> `addons/GAS_Engine/targeting/gameplay_raycast_request_3d.gd:1-24:<file>`
+- 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_target_reticle_2d.gd:45-53:follow` <-> `addons/GAS_Engine/targeting/gameplay_target_reticle_3d.gd:44-52:follow`
 - 1.000 [executable]: `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:23-37:raycast_2d` <-> `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:41-55:raycast_3d`
 - 1.000 [fixture_data]: `test/fixtures/test_effect_factory.gd:364-372:apply` <-> `test/fixtures/test_effect_factory.gd:377-385:apply_result`
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:110-117:_sweep` <-> `test/unit/test_targeting_3d.gd:109-116:_sweep`
@@ -46,6 +47,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:120-139:_translate` <-> `addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:179-194:_translate_magnitude_status`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:120-139:_translate` <-> `addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:235-244:_translate`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:20-27:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:30-37:create_matching`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:20-27:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_ended.gd:30-37:create_matching`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_ability_activated.gd:20-27:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_attribute_change.gd:20-27:create`
@@ -133,6 +135,7 @@
 - 0.875 [executable]: `test/unit/test_ability_tag_semantics.gd:101-113:test_activating_an_ability_cancels_others_matching_its_cancel_query` <-> `test/unit/test_ability_tag_semantics.gd:189-202:test_a_cancel_ability_tags_effect_cancels_matching_active_abilities`
 - 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
+- 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
 - 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.869 [executable]: `test/parity/contracts/gameplay_parity_contracts.gd:43-60:_an_instant_effect_changes_the_base_and_leaves_nothing_running` <-> `test/parity/contracts/gameplay_parity_contracts.gd:176-201:_a_multiplying_modifier_composes_after_the_additive_ones`
 - 0.868 [executable]: `test/unit/test_ability_lifecycle.gd:130-139:test_cancel_immediately_aborts_a_running_instance_and_drops_the_spec` <-> `test/unit/test_ability_lifecycle.gd:142-156:test_after_active_end_lets_a_running_instance_finish_first`
@@ -161,6 +164,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/effects/gameplay_effect_application_result.gd:51-62:failure`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:96-104:turn_based`
@@ -169,9 +173,8 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_gameplay_ability_cost_resolver.gd:42-51:_percent_of_current`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_quest_system_bridge.gd:71-78:_binding`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_refusal_statuses.gd:37-44:_cost`
-- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:96-104:turn_based`
-- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/unit/test_attribute_evaluation.gd:59-66:_request`
 - 0.968 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:768-777:accepts_target` <-> `addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error`
 - 0.941 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:58-65:blocked_externally` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid`
 - 0.923 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:692-699:execute_cue` <-> `addons/GAS_Engine/effects/gameplay_effect_spec.gd:565-576:resolve_authored_timing`
@@ -186,6 +189,7 @@
 - 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/unit/test_targeting_3d.gd:109-116:_sweep`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create`
+- 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `test/fixtures/test_effect_factory.gd:96-104:turn_based`
@@ -198,7 +202,6 @@
 - 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_gameplay_effect_components.gd:185-194:_refusal_stage_cases`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_typed_execution_output.gd:132-139:_evaluate`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_typed_execution_output.gd:80-92:_write`
-- 0.909 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:392-403:capture_definition`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status` <-> `addons/GAS_Engine/effects/gameplay_effect_evaluator.gd:179-194:_translate_magnitude_status`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:951-958:wait_gameplay_events` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:108-118:wait_gameplay_effect_applied`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:951-958:wait_gameplay_events` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:288-297:network_sync_point`
@@ -208,6 +211,7 @@
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:85-93:wait_tag_query` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:288-297:network_sync_point`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create`
+- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/fixtures/test_effect_factory.gd:96-104:turn_based`
@@ -227,8 +231,6 @@
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:445-454:wire`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status` <-> `addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:235-244:_translate`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status` <-> `addons/GAS_Engine/networking/gameplay_net_authority.gd:39-48:client_start`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid`
@@ -251,6 +253,7 @@
 - 0.875 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set_handles.gd:43-51:published` <-> `test/unit/test_target_data_locations.gd:185-194:test_a_malformed_aim_is_refused_rather_than_repaired`
 - 0.875 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:97-106:_on_answered` <-> `addons/GAS_Engine/components/ability_system_component.gd:826-834:_timed`
 - 0.875 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:214-222:_end_with` <-> `addons/GAS_Engine/editor/composer/composer_flow_anchors.gd:105-112:edge_in`
+- 0.870 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:90-100:_place` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:93-102:_on_preview_changed`
 - 0.857 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:46-63:instance_for_activation` <-> `addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:72-80:required_captures`
 - 0.857 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:73-82:_key_of_expression` <-> `addons/GAS_Engine/editor/diagnostics/gameplay_compile_service.gd:73-85:of_graph`
 - 0.857 [executable]: `addons/GAS_Engine/abilities/costs/gameplay_ability_cost.gd:1-41:<file>` <-> `addons/GAS_Engine/effects/gameplay_attribute_capture_definition.gd:1-39:<file>`
@@ -286,6 +289,7 @@
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:90-100:_place` <-> `addons/GAS_Engine/animation/gameplay_animation_surface.gd:32-42:of`
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create`
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create`
+- 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/editor/composer/composer_validator.gd:226-238:_at`
 - 0.833 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
@@ -365,7 +369,6 @@
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_composer_action_menu.gd:19-28:_context`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:433-440:port`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/effects/components/gameplay_effect_component_validation_result.gd:28-35:invalid`
-- 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:19-29:get_cooldown_tags` <-> `addons/GAS_Engine/components/ability_runtime.gd:616-628:_deliver_input`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal` <-> `addons/GAS_Engine/editor/composer/composer_flow_checks.gd:122-132:runs_forward`

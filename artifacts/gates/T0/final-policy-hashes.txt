@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.3.1: the shape table two wire formats each declare
+# F6.3.2: the 2D/3D mirror at function level, and every task constructor
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T03:18:06Z
-# commit-previo: 1a285100c6af205ddaf10ef3901ae6051b805c72
+# date-utc: 2026-09-09T03:27:05Z
+# commit-previo: 2f289c47867ac9714f5912f304ffb8cdfb99328a
 # files: 26
-9fc0b8f8582f219b89cdb50e9bf762820a929a8bbcde4943f0c3ab7a56fed965  tooling/.quality-gates.json
+5d004a9e65e02dd04a792c56e521f586069445057f5ce76dc78f87ee53052160  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
