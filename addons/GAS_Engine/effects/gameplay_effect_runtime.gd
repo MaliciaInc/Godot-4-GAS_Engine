@@ -34,6 +34,9 @@ var inhibition: GameplayEffectInhibitionRuntime = GameplayEffectInhibitionRuntim
 var stacking: GameplayEffectStackingRuntime = GameplayEffectStackingRuntime.new()
 ## Fires GameplayEffectAdditionalEffectsComponent's application/removal chains.
 var chain: GameplayEffectChainRuntime = GameplayEffectChainRuntime.new()
+## Assembles what a cue is told: its number, the range it is read against,
+## the two levels behind it and the snapshots of both sides.
+var cue_params: GameplayCueParamsRuntime = GameplayCueParamsRuntime.new()
 ## Bounded history of recent refusals, for the runtime debugger alone.
 var refusal_log: GameplayEffectRefusalLog = GameplayEffectRefusalLog.new()
 
@@ -309,8 +312,8 @@ func _commit(
 		owner_asc.active_effect_added.emit(active)
 
 	components.notify_applied(spec, active, owner_asc)
-	if evaluation.plays_cues():
-		play_cues(spec.effect_def.get_application_cue_tags(), spec, active.handle)
+	if evaluation.plays_cues_for(spec.effect_def):
+		play_cues(spec.effect_def.get_application_cue_bindings(), spec, active.handle)
 	dispatch_events(spec)
 	notify_received(spec)
 	chain.fire_on_application(spec)
@@ -454,6 +457,7 @@ func dispose() -> void:
 	inhibition.effects = null
 	stacking.effects = null
 	chain.effects = null
+	cue_params.effects = null
 
 	owner_asc = null
 	attributes = null
@@ -487,27 +491,27 @@ func notify_execute_hooks(mutations: Array[AttributeBaseMutation]) -> void:
 ## `effect_handle` is null for INSTANT (no handle exists) or when there is no
 ## active effect behind this call yet.
 func play_cues(
-	cue_tags: Array[StringName], spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+	bindings: Array[GameplayCueBinding],
+	spec: GameplayEffectSpec,
+	effect_handle: GameplayEffectHandle = null
 ) -> void:
 	if owner_asc == null:
 		return
-	for cue_tag: StringName in cue_tags:
-		owner_asc.execute_cue(cue_params_for(cue_tag, spec, effect_handle))
+	for binding: GameplayCueBinding in bindings:
+		owner_asc.execute_cue(cue_params_for(binding.cue_tag, spec, effect_handle, binding))
 
 
+## The parameters one cue of this application receives.
+##
+## Delegated: what a cue is told is its own question, and it grew three
+## decisions the moment a binding could name an attribute to read.
 func cue_params_for(
-	cue_tag: StringName, spec: GameplayEffectSpec, effect_handle: GameplayEffectHandle = null
+	cue_tag: StringName,
+	spec: GameplayEffectSpec,
+	effect_handle: GameplayEffectHandle = null,
+	binding: GameplayCueBinding = null
 ) -> GameplayCueParams:
-	var params: GameplayCueParams = GameplayCueParams.new()
-	params.cue_tag = cue_tag
-	params.instigator = spec.context.instigator if spec.context != null else null
-	params.target = owner_asc.get_effect_target()
-	params.context = spec.context
-	params.effect_handle = effect_handle
-	params.stack_count = spec.stack_count
-	var aimed: GameplayAbilityTargetData = spec.context.target_data if spec.context != null else null
-	params.target_hit = aimed.first_hit_for(params.target) if aimed != null else null
-	return params
+	return cue_params.params_for(cue_tag, spec, effect_handle, binding)
 
 
 func dispatch_events(spec: GameplayEffectSpec) -> void:
@@ -554,8 +558,8 @@ func run_periodic_tick(active: ActiveGameplayEffect) -> void:
 	if not contains_active(active) or active.inhibited:
 		return
 
-	if evaluation.plays_cues():
-		play_cues(spec.effect_def.get_periodic_cue_tags(), spec, active.handle)
+	if evaluation.plays_cues_for(spec.effect_def):
+		play_cues(spec.effect_def.get_periodic_cue_bindings(), spec, active.handle)
 	if not contains_active(active) or active.inhibited:
 		return
 

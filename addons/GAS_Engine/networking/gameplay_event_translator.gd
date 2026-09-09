@@ -34,10 +34,10 @@ static func to_wire(
 
 	var said: GameplayEventWire = GameplayEventWire.new()
 	said.event_tag = event.event_tag
-	said.instigator = _named_entity(event.instigator, registry_of)
-	said.target = _named_entity(event.target, registry_of)
-	said.optional_definition = _named_definition(event.optional_object)
-	said.optional_definition2 = _named_definition(event.optional_object2)
+	said.instigator = GameplayNetNaming.entity_of(event.instigator, registry_of)
+	said.target = GameplayNetNaming.entity_of(event.target, registry_of)
+	said.optional_definition = GameplayNetNaming.definition_of(event.optional_object)
+	said.optional_definition2 = GameplayNetNaming.definition_of(event.optional_object2)
 	said.instigator_tags = event.instigator_tags.duplicate()
 	said.target_tags = event.target_tags.duplicate()
 	said.magnitude = event.magnitude
@@ -57,39 +57,11 @@ static func from_wire(
 
 	var event: GameplayEventData = GameplayEventData.new()
 	event.event_tag = said.event_tag
-	event.instigator = _avatar_of(said.instigator, registry_of)
-	event.target = _avatar_of(said.target, registry_of)
+	event.instigator = GameplayNetNaming.avatar_of(said.instigator, registry_of)
+	event.target = GameplayNetNaming.avatar_of(said.target, registry_of)
 	event.optional_object = registry_of.definition_for(said.optional_definition)
 	event.optional_object2 = registry_of.definition_for(said.optional_definition2)
 	event.instigator_tags = said.instigator_tags.duplicate()
 	event.target_tags = said.target_tags.duplicate()
 	event.magnitude = said.magnitude
 	return event
-
-
-## The identity of whatever ability system this node belongs to, or null.
-static func _named_entity(
-	node: Node, registry_of: GameplayNetRegistry
-) -> GameplayNetEntityId:
-	if node == null or not is_instance_valid(node):
-		return null
-	var asc: AbilitySystemComponent = AbilitySystemLocator.find_for_node(node)
-	if asc == null:
-		return null
-	var id: GameplayNetEntityId = registry_of.entity_for(asc)
-	return id if id != null and id.is_valid() else null
-
-
-## What an identity points at here, as the node a game would recognise.
-static func _avatar_of(id: GameplayNetEntityId, registry_of: GameplayNetRegistry) -> Node:
-	var asc: AbilitySystemComponent = registry_of.asc_for(id)
-	return asc.get_effect_target() if asc != null else null
-
-
-## A definition id for an object, when the object is something with a place.
-static func _named_definition(object: Object) -> GameplayNetDefinitionId:
-	var resource: Resource = object as Resource
-	if resource == null:
-		return null
-	var id: GameplayNetDefinitionId = GameplayNetDefinitionId.of_resource(resource)
-	return id if id.is_valid() else null

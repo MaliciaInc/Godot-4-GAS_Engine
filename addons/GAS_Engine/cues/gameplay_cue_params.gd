@@ -25,6 +25,7 @@ const Params = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 const EffectContext = preload("res://addons/GAS_Engine/target_data/gameplay_effect_context.gd")
 const EffectHandle = preload("res://addons/GAS_Engine/effects/gameplay_effect_handle.gd")
 const TargetHit = preload("res://addons/GAS_Engine/target_data/gameplay_target_hit.gd")
+const NetEntityId = preload("res://addons/GAS_Engine/networking/gameplay_net_entity_id.gd")
 
 ## The cue tag as it was asked for.
 var cue_tag: StringName = &""
@@ -43,7 +44,49 @@ var instigator: Node = null
 var target: Node = null
 
 ## The scalar the cue may scale itself by - damage dealt, healing applied.
+##
+## The same number as `raw_magnitude`, kept under the name every cue written
+## before this reads. Two names for one value rather than a rename that would
+## silently zero every existing cue.
 var magnitude: float = 0.0
+
+## The number as it was measured, in whatever unit it is in - points of
+## damage, points of shield left.
+var raw_magnitude: float = 0.0
+
+## Where the raw number lands in the range its binding declared, clamped to
+## 0..1.
+##
+## This is the one a cue should scale itself by. A particle that scaled by the
+## raw number is a particle authored against this game's damage numbers, and
+## it breaks the day somebody rebalances them.
+var normalized_magnitude: float = 0.0
+
+## What the effect behind this cue was applied at, and what the ability that
+## caused it was activated at. Zero when there was no effect or no ability,
+## which is not the same as level zero and is why a cue that cares should ask
+## whether it has a `context` first.
+var effect_level: float = 0.0
+var ability_level: float = 0.0
+
+## What each side was at the moment the cue was made.
+##
+## Snapshots rather than a live read: by the time a removal cue plays, the
+## effect it announces is gone and so are the tags it granted.
+var source_tags: Array[StringName] = []
+var target_tags: Array[StringName] = []
+
+## The authored thing behind this cue - a weapon Resource, an ability scene -
+## and the Node that physically caused it, which is not always the instigator:
+## a turret shooting for its owner is the causer, the owner is the instigator.
+## Local only; neither crosses a wire.
+var source_object: Object = null
+var causer: Node = null
+
+## The same two, said in identities a receiving machine can resolve. Null on a
+## component with no network, which is every single-player game.
+var source_entity: NetEntityId = null
+var causer_entity: NetEntityId = null
 
 ## How many of the effect were on the target when this cue was made.
 ##
@@ -84,8 +127,24 @@ static func for_target(
 	params.cue_tag = tag
 	params.instigator = instigator_node
 	params.target = target_node
-	params.magnitude = cue_magnitude
+	params.set_magnitude(cue_magnitude)
 	return params
+
+
+## Set the measured number and its normalised reading in one call.
+##
+## One door rather than three assignments: `magnitude` and `raw_magnitude` are
+## two names for one value, and a caller that set one of them and forgot the
+## other would hand a cue two different answers to the same question.
+func set_magnitude(measured: float, low: float = 0.0, high: float = 1.0) -> void:
+	raw_magnitude = measured
+	magnitude = measured
+	# An empty range has no inside, so everything in it reads as the top: a
+	# binding that named one level is saying "whenever this happens, fully".
+	if is_equal_approx(low, high):
+		normalized_magnitude = 1.0
+	else:
+		normalized_magnitude = clampf(inverse_lerp(low, high, measured), 0.0, 1.0)
 
 
 func with_location(world_location: Vector3) -> GameplayCueParams:

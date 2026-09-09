@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.1.11 (G-21) raises ability_runtime 600 -> 660 and the component 1220 -> 1260 for routing input by InputMap action beside routing by slot, and the options-shaped grant that carries one.
+# F6.2.1: the cue codec's mirror, and two Resources that share a shape and nothing else
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T00:22:22Z
-# commit-previo: 6fd9447a053f56800066bfb0d8415c9a0e3a5d89
+# date-utc: 2026-09-09T01:15:53Z
+# commit-previo: cfdb63dd8a32dc43da674238323cfc091d0b291e
 # files: 26
-2a69316a7a88ada716f4b5d4c0ab6e9d7ae7de5bb34b0c4a778c354858683a3b  tooling/.quality-gates.json
+fae704f8abdef9047428a06b81a16671ec0d9304f37e41f77f2a24b326b65785  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

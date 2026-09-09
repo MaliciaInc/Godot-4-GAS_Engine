@@ -236,6 +236,10 @@
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary."
       },
       {
+        "literal": "res://addons/GAS_Engine/networking/gameplay_net_entity_id.gd",
+        "reason": "Inside the GameplayCueManager autoload's parse-time closure, and also the file's own self-reference. GameplayCueParams carries two entity identities so a cue can be replicated, and that file is in the closure - Godot parses autoloads before the global class cache exists, so the type has to arrive by preload rather than by name. The declaring file then cannot reach its own global name as an identifier either, so it aliases itself the same way GameplayCueParams already does. Two spellings of one path, neither of which can be a shared const: a const naming it would have to live in a file both could resolve, and inside this closure there is no such file."
+      },
+      {
         "literal": "res://addons/GAS_Engine/target_data/gameplay_effect_context.gd",
         "reason": "Inside the GameplayCueManager autoload's parse-time closure, where a global class name does not resolve: Godot initialises autoloads before it has scanned the project for class_name declarations. A clean checkout proved it with 'Parser Error: Could not find type \"GameplayCuePoolBucket\"'. So the reference must be a preload, and preload takes a literal. Two constraints, no expressible fix. tooling/project_invariants.py now enforces the rule that makes this literal necessary. Two sites: the sibling that preloads it, and the file's own self-preload, which it needs because even its own class name is an unresolvable identifier at that point."
       },
@@ -627,9 +631,14 @@
         "reason": "Every case in the differential corpus is the same eleven fields filled in: an id, the reference it was taken from, an initial state, one input, and the seven things the reference says happen. That sameness is the point rather than a smell - a corpus whose cases had different shapes would be a corpus where a dimension is checked in one case and quietly skipped in the next, which is exactly what GameplayParityCase.is_complete() refuses. What differs between two cases is what they say, and there is nothing to extract from that but the shape they already share."
       },
       {
-        "left": "addons/GAS_Engine/networking/gameplay_event_translator.gd:to_wire",
-        "right": "addons/GAS_Engine/networking/gameplay_event_translator.gd:from_wire",
-        "reason": "A codec's two directions are the same list of fields walked in opposite directions, so they mirror each other by construction. Writing the pair once would mean a table of field names driving both, which in GDScript means Variant on every read and write - a dynamic boundary in the middle of the one place that exists to keep a contract typed, and precisely what this project's typing rules forbid. F6.1.3 declares the mirror here so a future duplication that is an oversight still fails."
+        "left": "addons/GAS_Engine/networking/gameplay_*_translator.gd:*_wire",
+        "right": "addons/GAS_Engine/networking/gameplay_*_translator.gd:*_wire",
+        "reason": "A codec's two directions are the same list of fields read the other way, and every codec in this addon is that same list-of-fields shape. Folding either the pair inside one translator or the pair across two would mean driving the copy from a table of field names - a Variant-keyed loop in the middle of our own code, which the typing rules forbid and which would turn a rename into a silent field that stops crossing. What keeps this honest is that each direction is checked by a round trip: an assignment dropped from either half fails a test, which is not true of the reflection that would replace them."
+      },
+      {
+        "left": "addons/GAS_Engine/abilities/costs/gameplay_ability_cost.gd:<file>",
+        "right": "addons/GAS_Engine/cues/gameplay_cue_binding.gd:<file>",
+        "reason": "Two authoring Resources that describe unrelated things and happen to be the same shape: an enum, a handful of exported fields, a paragraph on each. One says what an ability charges and the other says which cue an effect plays and how loud; they share no field, no consumer and no concept, and the only way to make them stop looking alike would be to write one of them worse. Declared rather than suppressed so that a duplication between two Resources that DO share a concept still fails."
       }
     ]
   }

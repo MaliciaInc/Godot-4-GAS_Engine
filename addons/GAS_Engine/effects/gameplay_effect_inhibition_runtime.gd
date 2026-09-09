@@ -223,7 +223,9 @@ func _activate_persistent_cues(active: ActiveGameplayEffect) -> void:
 	if effects.owner_asc == null:
 		return
 	for binding: GameplayCueBinding in active.get_effect_def().get_persistent_cue_bindings():
-		var params: GameplayCueParams = effects.cue_params_for(binding.cue_tag, active.spec, active.handle)
+		var params: GameplayCueParams = effects.cue_params_for(
+			binding.cue_tag, active.spec, active.handle, binding
+		)
 		active.persistent_cue_handles.append(effects.owner_asc.activate_persistent_cue(params))
 
 
@@ -235,8 +237,11 @@ func _deactivate_persistent_cues(active: ActiveGameplayEffect) -> void:
 	if effects.owner_asc != null:
 		var bindings: Array[GameplayCueBinding] = active.get_effect_def().get_persistent_cue_bindings()
 		for i: int in active.persistent_cue_handles.size():
-			var tag: StringName = bindings[i].cue_tag if i < bindings.size() else &""
-			var params: GameplayCueParams = effects.cue_params_for(tag, active.spec, active.handle)
+			var ending: GameplayCueBinding = bindings[i] if i < bindings.size() else null
+			var tag: StringName = ending.cue_tag if ending != null else &""
+			var params: GameplayCueParams = effects.cue_params_for(
+				tag, active.spec, active.handle, ending
+			)
 			effects.owner_asc.deactivate_persistent_cue(active.persistent_cue_handles[i], params)
 	active.persistent_cue_handles.clear()
 

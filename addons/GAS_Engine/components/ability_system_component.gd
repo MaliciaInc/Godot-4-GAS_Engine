@@ -322,6 +322,7 @@ func _wire_runtimes() -> void:
 	effects.inhibition.effects = effects
 	effects.stacking.effects = effects
 	effects.chain.effects = effects
+	effects.cue_params.effects = effects
 
 	scheduler.effects = effects
 

@@ -37,10 +37,15 @@ class RecordingPersistentCue extends GameplayCueNotify:
 	## question: a request for a leaf tag is often played by an ancestor.
 	var last_matched_tag: StringName = &""
 
+	## Everything the last run was handed, so a test can ask what a cue was
+	## actually told rather than only whether it ran.
+	var last_params: GameplayCueParams = null
+
 	func executed(params: GameplayCueParams) -> void:
 		executed_count += 1
 		last_tag = params.cue_tag
 		last_matched_tag = params.matched_cue_tag
+		last_params = params
 
 	func play_cue(_params: GameplayCueParams) -> void:
 		play_cue_count += 1
@@ -98,6 +103,35 @@ static func executions(manager: CueManagerScript, target: Node, tag: StringName)
 		for child: Node in target.get_children():
 			count += _executions_of(child, tag)
 	return count
+
+
+## What the cue under `tag` was handed the last time it ran, or null.
+##
+## Found the same way `executions` counts: over the pool and over the target,
+## because a cue that has finished is back in one and a cue still on screen is
+## under the other.
+static func last_params(
+	manager: CueManagerScript, target: Node, tag: StringName
+) -> GameplayCueParams:
+	var bucket: GameplayCuePoolBucket = manager._pool.get(tag)
+	if bucket != null:
+		for pooled: GameplayCueNotify in bucket.items:
+			var from_pool: GameplayCueParams = _params_of(pooled, tag)
+			if from_pool != null:
+				return from_pool
+	if target != null:
+		for child: Node in target.get_children():
+			var from_child: GameplayCueParams = _params_of(child, tag)
+			if from_child != null:
+				return from_child
+	return null
+
+
+static func _params_of(node: Node, tag: StringName) -> GameplayCueParams:
+	var recording: RecordingPersistentCue = node as RecordingPersistentCue
+	if recording == null or recording.last_tag != tag:
+		return null
+	return recording.last_params
 
 
 static func _executions_of(node: Node, tag: StringName) -> int:

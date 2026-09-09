@@ -17,6 +17,16 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayNetEntityId extends RefCounted
 
+## This script's own type, preloaded rather than named.
+##
+## The cue params carry two of these, and those params are in the
+## GameplayCueManager autoload's parse-time closure - which Godot parses
+## before it has scanned the project for class_name declarations. A file in
+## that closure cannot reach its own global name as an identifier, so member
+## access goes through the alias. Annotations still use the global name, which
+## does resolve there.
+const EntityId = preload("res://addons/GAS_Engine/networking/gameplay_net_entity_id.gd")
+
 ## The value that means "nobody", so an unset id is not an id for entity zero.
 const NONE: int = 0
 
@@ -24,7 +34,7 @@ var value: int = NONE
 
 
 static func of(assigned: int) -> GameplayNetEntityId:
-	var made: GameplayNetEntityId = GameplayNetEntityId.new()
+	var made: GameplayNetEntityId = EntityId.new()
 	made.value = assigned
 	return made
 
@@ -48,4 +58,4 @@ func to_wire() -> int:
 
 
 static func from_wire(wire: int) -> GameplayNetEntityId:
-	return GameplayNetEntityId.of(wire)
+	return EntityId.of(wire)
