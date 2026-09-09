@@ -55,6 +55,20 @@ in the clone itself.
 | `pwsh -File tooling/run_multiplayer_sample.ps1` | `GAS_ENGINE_MULTIPLAYER_SAMPLE: PASS` |
 | `python tooling/traceability.py` | 33 findings, 2 BLOCKED — read from the receipt, since `docs/` is not in a checkout |
 
+## Five tests the document names, and where they actually are
+
+Every test function the phase document names exists. Five of them exist under a
+different name, because two of the document's tests turned out to be two rows of
+one rule and were written as one parameterised test rather than as two that
+would drift apart. They are listed so the next reader checking the document
+against the repository does not have to repeat this audit to find out.
+
+| What the document names | Where it is |
+|---|---|
+| `test_generic_confirm_reaches_tasks_before_target_providers`, `test_generic_cancel_reaches_tasks_before_target_providers` | `test/unit/test_ability_query_surface.gd::test_a_generic_answer_reaches_tasks_before_target_providers`, parameterised over both answers |
+| `test_owned_tag_added_does_not_cancel_when_the_tag_is_removed`, `test_owned_tag_present_cancels_when_the_tag_is_removed` | `test/unit/test_ability_activation_policies.gd::test_losing_the_tag_cancels_a_level_trigger_and_not_an_edge_one`, which asserts both halves of the same loss |
+| `test_tag_relationships_can_add_a_requirement` | `test/unit/test_ability_tag_relationships.gd::test_a_relationship_row_adds_a_restriction_and_only_a_restriction`, parameterised over requiring and blocking |
+
 ## What is not closed, and why
 
 D-08 and D-11 need Unreal Engine 5.7.4 run against the ten scenarios under
