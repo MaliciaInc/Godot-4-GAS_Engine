@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: a68f99412c73e562a149485172677d0c02fd6166d9293bceabd7a25401303de1
+godot --headless --import: no script errors at the F6 master gate.

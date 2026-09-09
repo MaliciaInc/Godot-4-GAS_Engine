@@ -26,13 +26,15 @@ python tooling/parity_receipt.py artifacts/parity/GATE_F6_0.md
 | D-06, held inputs stay `Array[int]` | CLOSED | `test/unit/test_ability_spec_and_handle.gd::test_the_component_reports_the_input_slots_it_is_holding` |
 | D-09 stacking default differs from the reference without saying so | CLOSED | `test/unit/test_gameplay_asset_validator.gd::test_a_stacking_effect_that_never_answered_the_stack_question_is_said_out_loud` |
 | D-10 the README documented one aggregation profile of two | CLOSED | `test/unit/test_readme_quick_start.gd::test_the_readme_documents_both_aggregation_profiles` |
-| D-01 the README's networking section | **PREPARED, owner F6.6.6** | `test/unit/test_readme_quick_start.gd::test_the_readme_says_what_the_network_layer_actually_ships` |
+| D-01 the README's networking section | **PREPARED, closed by F6.6.8** | `test/unit/test_readme_quick_start.gd::test_the_readme_says_what_the_network_layer_actually_ships` |
 
-D-01 is not closed here and is not claimed to be. The section now describes the
-authority, replication and prediction the repository actually contains, the
-three replication modes, and the transport it does **not** yet have. It becomes
-true in a different way when F6.6 ships the wire, and F6.6.6 owns rewriting it
-then.
+D-01 is not closed here and is not claimed to be. The section at this point
+described the authority, replication and prediction the repository contained,
+the three replication modes, and the transport it did not yet have. F6.6 shipped
+the wire and F6.6.8 rewrote the section as a final state, which is where D-01
+closes: `artifacts/parity/GATE_F6_6.md`. The owner named here was F6.6.6, which
+was wrong - the phase document's traceability matrix says F6.6.8, and that is
+the one that did it.
 
 ## The changes of behaviour, and the proof each one can fail
 

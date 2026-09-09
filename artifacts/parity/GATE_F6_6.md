@@ -22,6 +22,19 @@ Every reference here is checked against the repository:
 python tooling/parity_receipt.py artifacts/parity/GATE_F6_6.md
 ```
 
+## Findings
+
+| Finding | Status | Evidence |
+|---|---|---|
+| D-01 the README's networking section described an engine this is not | CLOSED | `test/unit/test_readme_quick_start.gd::test_the_readme_describes_the_final_network_contract` |
+| D-04 nothing said which machine an ability runs on | CLOSED | `test/unit/test_network_ability_policies.gd::test_the_execution_policy_does_not_decide_what_the_authority_accepts` |
+| D-05 an authority that accepted a request did nothing about it | CLOSED | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
+| G-08 replication, security and input policies per ability | CLOSED | `test/unit/test_network_ability_policies.gd::test_a_remote_request_is_asked_of_the_security_policy` |
+| G-17 wire, transport, per-entity mode, batching, target and event messages | CLOSED | `test/unit/test_gate_f6_6_real_transport.gd::test_a_message_crosses_as_bytes_and_arrives_whole` |
+
+D-04 and D-05 were closed by F6.0.5 and F6.0.6 and are named again here because
+F6.6 is where they became answerable across two machines rather than within one.
+
 ## NetLink against the real transport, case by case
 
 The F5.5 walk runs over `NetLink`, which can be told to repeat, reorder, lose

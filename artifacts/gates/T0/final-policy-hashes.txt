@@ -4,12 +4,12 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.6.7: the engine flags two languages both spell, and the network door after the accepted-request signal.
+# F6 master gate: tooling/traceability.py joins the sealed set, since it is the script section 11 asks for.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T20:48:01Z
-# commit-previo: ef4240936f3be4c07ac7af02b14e21d78e63038e
-# files: 27
+# date-utc: 2026-09-09T21:17:24Z
+# commit-previo: b5f4f3b64c7b1f6b6444a9ea2321030666efd83c
+# files: 28
 82bf64590c38ee4239acb458807198e6dac9ce75421979c554a18273d7c78e20  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
@@ -36,4 +36,5 @@ f0036b5d54de724d8a2f327233ea932629769ec9e6c26f0a7c83ce61bff28a3b  tooling/parity
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
+d8521ab6051ebb7e450d7267def3029c25af1cb3a021f534b25c7ffee7388312  tooling/traceability.py
 1f767ec0c13b7742de16bde5a7a54a14691b4696ef1b300a5b458ba9a7554cd3  tooling/verify.ps1
