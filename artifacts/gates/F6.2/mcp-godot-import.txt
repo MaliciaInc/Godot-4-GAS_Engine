@@ -1,3 +1,3 @@
 RESULT: PASS
-SOURCE: 13a67d65728275521d6901c6c88d90fbce68408c807f02e8a092c26e6db28bbd
+SOURCE: 245634be5258d938a65e718f4746456b02dba638410c2c08d4c4595b15a1ed22
 godot --headless --path . --import; project.godot restored afterwards

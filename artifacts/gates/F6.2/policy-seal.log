@@ -1,8 +1,8 @@
 RESULT: PASS
 stage:      policy-seal
 command:    python tooling/seal_policy.py
-started:    2026-09-09T02:11:07.1764346Z
-ended:      2026-09-09T02:11:07.2681153Z
+started:    2026-09-09T02:20:24.9028681Z
+ended:      2026-09-09T02:20:24.9947563Z
 duration_s: 0.092
 exit_code:  0
 
