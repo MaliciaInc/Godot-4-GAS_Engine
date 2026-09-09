@@ -28,9 +28,11 @@ const FONT_SIZE: String = "font_size"
 const TITLE_FONT_SIZE: String = "title_font_size"
 const TITLE_COLOR: String = "title_color"
 
-## An icon Godot ships. Used where drawing our own would be a second picture of
+## Icons Godot ships. Used where drawing our own would be a second picture of
 ## something the editor already has one for.
 const ICON_REMOVE: String = "Remove"
+const ICON_ADD: String = "Add"
+const ICON_FOLDER: String = "Folder"
 #endregion
 
 

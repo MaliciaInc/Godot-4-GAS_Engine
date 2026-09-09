@@ -74,6 +74,9 @@ const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag
 const GameplayAttributeInspectorPlugin = preload(
 	"res://addons/GAS_Engine/attributes/gameplay_attribute_inspector_plugin.gd"
 )
+const GameplayTagQueryInspectorPlugin = preload(
+	"res://addons/GAS_Engine/gameplay_tag/gameplay_tag_query_inspector_plugin.gd"
+)
 
 ## The autoload path as ProjectSettings stores it, for the idempotence check.
 const AUTOLOAD_SETTING_PREFIX: String = "autoload/"
@@ -176,6 +179,7 @@ var _pending_composer_open_path: String = ""
 var _choices: PackedStringArray = PackedStringArray()
 var _tag_inspector: EditorInspectorPlugin = null
 var _attribute_inspector: EditorInspectorPlugin = null
+var _query_inspector: EditorInspectorPlugin = null
 
 #region Plugin Lifecycle
 ## Whether enabling this plugin would have to add the autoload.
@@ -211,6 +215,9 @@ func _enter_tree() -> void:
 
 	_attribute_inspector = GameplayAttributeInspectorPlugin.new()
 	add_inspector_plugin(_attribute_inspector)
+
+	_query_inspector = GameplayTagQueryInspectorPlugin.new()
+	add_inspector_plugin(_query_inspector)
 
 	var main_screen: Control = EditorInterface.get_editor_main_screen()
 
@@ -272,6 +279,8 @@ func _exit_tree() -> void:
 		remove_inspector_plugin(_tag_inspector)
 	if _attribute_inspector != null:
 		remove_inspector_plugin(_attribute_inspector)
+	if _query_inspector != null:
+		remove_inspector_plugin(_query_inspector)
 
 	if _composer_instance != null and _composer_instance.has_unsaved_changes():
 		var recovery_path: String = ComposerRecovery.write(

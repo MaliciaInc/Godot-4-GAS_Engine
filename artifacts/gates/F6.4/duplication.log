@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      duplication
 command:    python tooling\gates\run_gate.py duplication artifacts\gates\F6.4
-started:    2026-09-09T15:07:24.5021181Z
-ended:      2026-09-09T15:07:35.8086736Z
-duration_s: 11.307
+started:    2026-09-09T15:45:51.9470719Z
+ended:      2026-09-09T15:46:04.0023456Z
+duration_s: 12.055
 exit_code:  0
 
 --- stdout ---
@@ -11,16 +11,16 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 603
+- Source files scanned: 613
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 2705
-- Units by language: gdscript 2663, powershell 4, python 38
+- Units scanned: 2758
+- Units by language: gdscript 2716, powershell 4, python 38
 - Findings: 373
-- Elapsed: 11.135s
+- Elapsed: 11.886s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 41 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 24911 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 25718 (raise with --max-pairs)
 
 ## Structural
 
@@ -195,6 +195,7 @@ exit_code:  0
 - 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/fixtures/test_effect_factory.gd:392-403:capture_definition`
 - 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/unit/test_typed_execution_output.gd:80-92:_write`
 - 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/unit/test_targeting_2d.gd:110-117:_sweep`
+- 0.917 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_repeat.gd:28-35:create` <-> `test/unit/test_targeting_3d.gd:109-116:_sweep`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create`
 - 0.909 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_visualize_targeting.gd:37-48:create`
@@ -385,7 +386,6 @@ exit_code:  0
 - 0.789 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:163-170:_instances_of` <-> `addons/GAS_Engine/editor/composer/composer_flow.gd:96-106:predecessors_of`
 - 0.789 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:480-508:apply_cost` <-> `addons/GAS_Engine/editor/composer/composer_types.gd:209-225:script_behind`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:285-297:_reevaluate_one_spec` <-> `addons/GAS_Engine/effects/components/gameplay_effect_grant_abilities_component.gd:24-35:prepare_application`
-- 0.786 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:305-317:active_requirements_error` <-> `addons/GAS_Engine/targeting/gameplay_target_filter.gd:36-49:accepts`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:21-28:effective_ability_tags` <-> `addons/GAS_Engine/editor/effects/gameplay_effect_editor_plugin.gd:57-64:_edit`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:80-88:cancel_with_tags` <-> `addons/GAS_Engine/abilities/gameplay_ability.gd:692-699:execute_cue`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:480-508:apply_cost` <-> `addons/GAS_Engine/editor/composer/composer_types.gd:239-258:name_reaching`

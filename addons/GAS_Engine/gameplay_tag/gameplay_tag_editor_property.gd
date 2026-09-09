@@ -210,15 +210,7 @@ func _on_button_pressed() -> void:
 	if is_instance_valid(_popup):
 		_popup.queue_free()
 
-	_popup = Window.new()
-	_popup.title = POPUP_TITLE
-	_popup.size = POPUP_SIZE
-	_popup.transient = true
-	_popup.exclusive = true
-	_popup.close_requested.connect(_on_popup_close_requested)
-
-	EditorInterface.get_base_control().add_child(_popup)
-	_popup.popup_centered()
+	_popup = GASEditorPopup.opened(POPUP_TITLE, POPUP_SIZE, _on_popup_close_requested)
 	_build_body(_popup)
 	_refresh_tree()
 
@@ -229,14 +221,10 @@ func _on_popup_close_requested() -> void:
 
 
 func _build_body(parent: Window) -> void:
-	var main_vbox: VBoxContainer = VBoxContainer.new()
-	main_vbox.set_anchors_and_offsets_preset(
-		Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, POPUP_MARGIN
-	)
-	parent.add_child(main_vbox)
+	var main_vbox: VBoxContainer = GASEditorPopup.body_of(parent, POPUP_MARGIN)
 
 	_search_bar = LineEdit.new()
-	_search_bar.placeholder_text = "Search tags..."
+	_search_bar.placeholder_text = GameplayTagTree.SEARCH_PLACEHOLDER
 	_search_bar.clear_button_enabled = true
 	_search_bar.text_changed.connect(_on_search_changed)
 	main_vbox.add_child(_search_bar)

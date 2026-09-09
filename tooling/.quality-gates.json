@@ -80,9 +80,9 @@
         "reason": "Godot declares EditorInspectorPlugin._parse_property with seven parameters. Overriding it with fewer stops the override working, and the tag picker has no other entry point. The signature is the engine's, not this project's."
       },
       {
-        "glob": "addons/GAS_Engine/attributes/gameplay_attribute_inspector_plugin.gd",
+        "glob": "addons/GAS_Engine/editor/gas_resource_inspector_plugin.gd",
         "function": "_parse_property",
-        "reason": "The same engine signature the tag picker is exempted for. Godot declares EditorInspectorPlugin._parse_property with seven parameters; overriding it with fewer stops the override working, and the attribute picker has no other entry point."
+        "reason": "The same engine signature the tag picker is exempted for, written once for every plugin that stands in for one Resource class - the attribute picker and the nested query editor both extend this. Godot declares EditorInspectorPlugin._parse_property with seven parameters; overriding it with fewer stops the override working, and a picker has no other entry point. One exemption rather than one per Resource class somebody wants an editor for."
       }
     ]
   },

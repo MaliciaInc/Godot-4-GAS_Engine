@@ -5,16 +5,14 @@
 ## plugin matching on names would have to be told about each new place one
 ## turns up.
 ##
-## `_parse_property` below takes seven parameters, past the five this project
-## holds itself to. The signature is Godot's: overriding it with fewer simply
-## stops the override working, and the picker has no other entry point. It is
-## exempted by name, with that reason written down, rather than the limit being
-## raised for everything.
+## The matching and Godot's seven-parameter override live in
+## GASResourceInspectorPlugin, which the tag query editor uses too. What is here
+## is the two things that differ: which class, and which editor.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
 @tool
-extends EditorInspectorPlugin
+extends GASResourceInspectorPlugin
 
 const AttributeProperty = preload(
 	"res://addons/GAS_Engine/attributes/gameplay_attribute_editor_property.gd"
@@ -24,32 +22,14 @@ const AttributeProperty = preload(
 const REFERENCE_CLASS: String = "GameplayAttributeRef"
 
 
-func _can_handle(_object: Object) -> bool:
-	return true
+func edited_class() -> String:
+	return REFERENCE_CLASS
 
 
-## Intercept a property and offer the picker instead of the default field.
-##
-## Seven parameters, fixed by Godot. See the note above.
-func _parse_property(
-	_object: Object,
-	type: Variant.Type,
-	name: String,
-	_hint_type: PropertyHint,
-	hint_string: String,
-	_usage_flags: int,
-	_wide: bool
-) -> bool:
-	if not is_an_attribute_reference(type, hint_string):
-		return false
-	add_property_editor(name, AttributeProperty.new())
-	return true
+func editor_for_property() -> EditorProperty:
+	return AttributeProperty.new()
 
 
 ## Whether a property holds a typed attribute reference.
-##
-## The hint string is what says which Resource class a property is for, and it
-## is the only thing that does: an exported `GameplayAttributeRef` and an
-## exported `Curve` are both TYPE_OBJECT.
 static func is_an_attribute_reference(type: Variant.Type, hint_string: String) -> bool:
-	return type == TYPE_OBJECT and hint_string == REFERENCE_CLASS
+	return GASResourceInspectorPlugin.stands_in_for(type, hint_string, REFERENCE_CLASS)

@@ -30,20 +30,31 @@ var max_targets: int = 0
 
 ## Whether this candidate is worth targeting at all.
 ##
-## Something with no ability system is not a target for the GAS: nothing could
-## receive the effect. That is a refusal here rather than an error, because a
-## sweep across a room is expected to touch scenery.
+## Something with neither an ability system nor an opinion of its own is not a
+## target: nothing could receive the effect. That is a refusal here rather than
+## an error, because a sweep across a room is expected to touch scenery - and a
+## door that is Locked is scenery with tags, which is why the opinion counts.
 func accepts(source_asc: AbilitySystemComponent, candidate: Node) -> bool:
 	if candidate == null:
 		return false
 
 	var candidate_asc: AbilitySystemComponent = AbilitySystemLocator.find_for_node(candidate)
-	if candidate_asc == null:
+	# Something with neither an ability system nor an opinion of its own is
+	# not a target: nothing could receive the effect. A refusal rather than
+	# an error, because a sweep across a room is expected to touch scenery.
+	if candidate_asc == null and not GameplayTagOwner.speaks_for_itself(candidate):
 		return false
-	if exclude_source and candidate_asc == source_asc:
+	if exclude_source and candidate_asc != null and candidate_asc == source_asc:
 		return false
-	if not candidate_asc.has_all_tags(required_tags):
-		return false
-	if candidate_asc.has_any_tags(blocked_tags):
-		return false
+
+	# Both sources of tags, because a node that has an ability system AND
+	# answers for itself is saying both things: dropping either would be this
+	# filter deciding which of somebody's two answers was the real one.
+	var carried: Array[StringName] = GameplayTagOwner.tags_of(candidate)
+	for wanted: StringName in required_tags:
+		if not carried.has(wanted):
+			return false
+	for refused: StringName in blocked_tags:
+		if carried.has(refused):
+			return false
 	return true

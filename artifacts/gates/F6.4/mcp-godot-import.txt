@@ -1,3 +1,3 @@
 RESULT: PASS
-SOURCE: eb75b7542f1bf62fec093dbd21eb2858bb90980bb55f6cc9e400fd808d4cae55
-godot --headless --path . --import; project.godot restored afterwards
+SOURCE: 4080bd08ec193913507e94c7ccc258bf5ae449840270bb8aefe3fecdd2ebeb79
+godot --headless --path . --import: every script parsed, global classes registered, no parse or script errors

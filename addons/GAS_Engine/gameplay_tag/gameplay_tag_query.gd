@@ -27,6 +27,15 @@ func matches_runtime(runtime: GameplayTagRuntime) -> bool:
 	return matches_tags(runtime.active_tags())
 
 
+## True against whatever a node says it is.
+##
+## Its ability system's tags and its own answer to `get_owned_gameplay_tags`,
+## together. A door that is Locked has no ability system and is still a thing
+## a query can be about.
+func matches_node(node: Node) -> bool:
+	return matches_tags(GameplayTagOwner.tags_of(node))
+
+
 ## True against an arbitrary tag set - a runtime's own, or a hypothetical one
 ## a tool wants to preview.
 func matches_tags(tags: Array[StringName]) -> bool:

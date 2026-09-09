@@ -42,12 +42,19 @@ func after_each() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCRATCH_REGISTRY))
 
 
-func _built(tags: Array[StringName], filter: String = NO_FILTER) -> Tree:
+func _built(
+	tags: Array[StringName],
+	filter: String = NO_FILTER,
+	comments: Dictionary[StringName, String] = {}
+) -> Tree:
 	# Written as the file the tags now live in, which is what the tree reads.
 	ProjectSettings.set_setting(SETTING, SCRATCH_REGISTRY)
 	var out: FileAccess = FileAccess.open(SCRATCH_REGISTRY, FileAccess.WRITE)
 	assert_not_null(out, "the scratch tags file opened")
-	out.store_string(GameplayTagGenerator.render_tags_source(tags))
+	var no_renames: Dictionary[StringName, StringName] = {}
+	out.store_string(
+		GameplayTagGenerator.render_tags_source(tags, no_renames, no_renames, comments)
+	)
 	out.close()
 
 	var tree: Tree = Tree.new()
@@ -138,6 +145,64 @@ func test_a_filter_keeps_only_the_tags_that_contain_it() -> void:
 func test_a_filter_matching_nothing_leaves_an_empty_tree() -> void:
 	var tree: Tree = _built([&"Status.Stunned"] as Array[StringName], "nothing")
 	assert_eq(_child_texts(tree.get_root()).size(), 0)
+#endregion
+
+
+#region What a tag is for
+## A tag whose author wrote down what it means says so on its own row.
+##
+## The third of the declarations the tags file carries, and the one an author
+## reads rather than the engine: a picker listing forty tags with no word about
+## any of them is a picker somebody guesses in. Shown as the row's tooltip,
+## because the row already has to say the tag.
+func test_a_leaf_shows_what_its_tag_is_for() -> void:
+	var explained: String = "Cannot act; movement is stopped."
+	var comments: Dictionary[StringName, String] = {&"Status.Stunned": explained}
+	var tree: Tree = _built(
+		[&"Status.Stunned", &"Damage.Fire"] as Array[StringName], NO_FILTER, comments
+	)
+
+	var stunned: TreeItem = tree.get_root().get_child(0).get_child(0)
+	var fire: TreeItem = tree.get_root().get_child(1).get_child(0)
+
+	assert_eq(_tag_of(stunned), &"Status.Stunned", "the row the comment is about")
+	assert_eq(stunned.get_tooltip_text(0), explained, "says what the tag is for")
+	assert_eq(_tag_of(fire), &"Damage.Fire", "and the row nobody described")
+	assert_eq(fire.get_tooltip_text(0), "", "says nothing extra")
+
+
+## A tag that cannot be picked says why, whatever else was written about it.
+##
+## Two things to say and one place to say them: which tag this is is on the row
+## already, and "you cannot have this one" is the one worth interrupting for.
+func test_an_unavailable_leaf_says_that_rather_than_its_comment() -> void:
+	var comments: Dictionary[StringName, String] = {&"Status.Stunned": "Cannot act."}
+	ProjectSettings.set_setting(SETTING, SCRATCH_REGISTRY)
+	var out: FileAccess = FileAccess.open(SCRATCH_REGISTRY, FileAccess.WRITE)
+	assert_not_null(out, "the scratch tags file opened")
+	var no_renames: Dictionary[StringName, StringName] = {}
+	out.store_string(
+		GameplayTagGenerator.render_tags_source(
+			[&"Status.Stunned"] as Array[StringName], no_renames, no_renames, comments
+		)
+	)
+	out.close()
+
+	var tree: Tree = Tree.new()
+	add_child_autofree(tree)
+	assert_true(
+		GameplayTagTree.build(
+			tree, NO_FILTER, [&"Status.Stunned"] as Array[StringName],
+			GameplayTagTree.Style.new()
+		),
+		"the registry was found"
+	)
+
+	var stunned: TreeItem = tree.get_root().get_child(0).get_child(0)
+	assert_eq(
+		stunned.get_tooltip_text(0), GameplayTagTree.UNAVAILABLE_TOOLTIP,
+		"why it cannot be picked comes first"
+	)
 #endregion
 
 
