@@ -36,6 +36,15 @@ func title() -> String:
 	return ""
 
 
+## The word this page is called by at a console.
+##
+## Its own title, because a page and the command that prints it are the same
+## thing said to two audiences, and two spellings of one word is how a command
+## comes to print a page nobody meant.
+func command() -> String:
+	return title().to_lower()
+
+
 ## The column headings, which also say how many cells a row has.
 func columns() -> PackedStringArray:
 	return PackedStringArray()

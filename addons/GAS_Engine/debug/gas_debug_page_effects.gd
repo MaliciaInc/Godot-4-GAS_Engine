@@ -25,6 +25,13 @@ func title() -> String:
 	return TITLE
 
 
+## Not the title lowered, which is two words. The one the wire already uses for
+## this part of an entity, so a person reading a log and a person typing a
+## command are saying the same thing.
+func command() -> String:
+	return GasDebugMessage.EFFECTS
+
+
 func columns() -> PackedStringArray:
 	return PackedStringArray(["Effect", "Stacks", "Seconds", "Turns", "State"])
 

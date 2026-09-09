@@ -29,6 +29,19 @@ static func get_cooldown_tags(spec: GameplayAbilitySpec) -> Array[StringName]:
 	return cooldown_tags
 
 
+## Whether this grant's cooldown is standing in the way right now.
+##
+## The one gate. The activation preflight and the commit preflight both ask it,
+## so they can never disagree about whether an ability is waiting - and it is
+## the one place a debug build stops asking, which is what `gas.ignore_cooldowns`
+## turns off. Nothing is cleared and no tag is touched: the moment the switch
+## goes off again, the entity is waiting exactly as long as it was going to.
+static func gates(spec: GameplayAbilitySpec, held: GameplayTagRuntime) -> bool:
+	if GasDebugOptions.cooldowns_ignored():
+		return false
+	return held != null and held.has_any(get_cooldown_tags(spec))
+
+
 ## Everything a UI needs to draw one grant's cooldown.
 func get_ability_cooldown_state(handle: GameplayAbilityHandle) -> AbilityCooldownState:
 	var state: AbilityCooldownState = AbilityCooldownState.new()

@@ -346,7 +346,7 @@ func activation_error(spec: GameplayAbilitySpec) -> AbilityRuntime.ActivationErr
 		return ActivationError.ALREADY_ACTIVE
 	if query_matches_runtime(spec.definition.activation_blocked_query, tags):
 		return ActivationError.BLOCKED_TAG
-	if tags.has_any(get_cooldown_tags(spec)):
+	if AbilityCooldownRuntime.gates(spec, tags):
 		return ActivationError.ON_COOLDOWN
 	var required: GameplayTagQuery = spec.definition.activation_required_query
 	if required != null and not required.is_empty() and not required.matches_runtime(tags):

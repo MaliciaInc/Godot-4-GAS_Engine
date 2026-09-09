@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.4.4: the debug channel's four projectors are one codec into the wire message, declared for the same reason the networking translators are.
+# F6.4.5: 'off' is a word the gates' own CLI and the QA console each own in their own language.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T16:13:25Z
-# commit-previo: 173d2f3d2063ff459e4ab07b3b56a7d838ad91f5
+# date-utc: 2026-09-09T16:38:19Z
+# commit-previo: a4fdb52ec4026292f434d514ce4024c9f1ce50a9
 # files: 26
-55cf4ebaecc49a06dc1bdea8acca9410d4868e94b57cb34b472d39f4d5310df8  tooling/.quality-gates.json
+4456e86aa2de539c0c0c78d3df8db7151caad13aa1109bba12687f2d337fddce  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

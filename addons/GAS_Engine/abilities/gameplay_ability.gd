@@ -451,8 +451,7 @@ func check_cooldown() -> AbilityCommitPreflight:
 			preflight.status = AbilityCommitPreflight.Status.INVALID_COOLDOWN
 			return preflight
 
-	var running: Array[StringName] = AbilityCooldownRuntime.get_cooldown_tags(current_spec)
-	if owner_asc.tags.has_any(running):
+	if AbilityCooldownRuntime.gates(current_spec, owner_asc.tags):
 		preflight.status = AbilityCommitPreflight.Status.ON_COOLDOWN
 	return preflight
 
@@ -462,6 +461,11 @@ func check_cooldown() -> AbilityCommitPreflight:
 func apply_cooldown(
 	preflight: AbilityCommitPreflight, result: AbilityCommitResult
 ) -> bool:
+	# Nothing is started while cooldowns are ignored. Started and then not
+	# enforced, a UI would draw a wait the player is not actually having - and
+	# the overlay would say "on cooldown" beside an ability firing freely.
+	if GasDebugOptions.cooldowns_ignored():
+		return true
 	for cooldown: GameplayEffect in preflight.cooldowns:
 		var started: ActiveGameplayEffect = owner_asc.apply_gameplay_effect(
 			cooldown, owner_asc, current_spec.level
@@ -478,6 +482,13 @@ func apply_cooldown(
 ## Take the charge the preflight resolved, or undo the cooldowns already started.
 ## @composer
 func apply_cost(preflight: AbilityCommitPreflight, result: AbilityCommitResult) -> bool:
+	# Nothing is taken while costs are ignored: not the resolved charge, not the
+	# authored effect, not a custom cost. The resolver has already answered
+	# "free" at every preflight, and this is the other half of that sentence -
+	# an ability that was allowed to start for nothing must not then be charged.
+	if GasDebugOptions.costs_ignored():
+		return true
+
 	# Everything is prepared before anything is taken, so a refusal at any
 	# point below has nothing to put back but what this function itself already
 	# took - and the transaction is holding all of that.

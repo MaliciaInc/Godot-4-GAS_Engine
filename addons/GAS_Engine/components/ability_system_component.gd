@@ -553,7 +553,7 @@ func _suppressed(what: StringName, switched_off: bool, why: String) -> bool:
 func _cues_are_off() -> bool:
 	return _suppressed(
 		CUE_SUPPRESSION,
-		suppress_cues,
+		suppress_cues or GasDebugOptions.cues_suppressed(),
 		"GAS_Engine: cues are suppressed on this component; none will play here."
 	)
 
@@ -562,7 +562,7 @@ func _cues_are_off() -> bool:
 func _grants_are_off() -> bool:
 	return _suppressed(
 		GRANT_SUPPRESSION,
-		suppress_ability_grants,
+		suppress_ability_grants or GasDebugOptions.ability_grants_suppressed(),
 		"GAS_Engine: ability grants are suppressed on this component; each is refused."
 	)
 
