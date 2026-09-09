@@ -25,6 +25,8 @@ var instancing_policy: GameplayAbility.InstancingPolicy = GameplayAbility.Instan
 var auto_end_on_activate_return: bool = true
 var retrigger_while_active: bool = false
 var activation_policy: GameplayAbility.ActivationPolicy = GameplayAbility.ActivationPolicy.MANUAL
+## The action this grant answers, frozen with everything else it is decided by.
+var input_action: StringName = &""
 
 ## Where this grant is allowed to run. Frozen with the rest, so what a client
 ## may ask for is decided at grant time rather than by whatever the scene on
@@ -93,6 +95,7 @@ static func from_probe(scene: PackedScene, probe: GameplayAbility) -> GameplayAb
 	snapshot.auto_end_on_activate_return = probe.auto_end_on_activate_return
 	snapshot.retrigger_while_active = probe.retrigger_while_active
 	snapshot.activation_policy = probe.activation_policy
+	snapshot.input_action = probe.input_action
 	snapshot.net_execution_policy = probe.net_execution_policy
 	snapshot.ability_tags = probe.ability_tags.duplicate()
 	snapshot.activation_required_query = (
@@ -173,6 +176,7 @@ const CAPTURED_FIELDS: Array[StringName] = [
 	&"auto_end_on_activate_return",
 	&"retrigger_while_active",
 	&"activation_policy",
+	&"input_action",
 	GameplayAbility.NET_EXECUTION_POLICY_FIELD,
 	&"ability_tags",
 	&"activation_required_query",

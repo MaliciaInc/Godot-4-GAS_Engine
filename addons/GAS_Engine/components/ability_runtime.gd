@@ -166,11 +166,37 @@ func give_ability(
 	input_id: int = -1,
 	source: GameplayAbilitySource = null
 ) -> GameplayAbilityHandle:
-	var prepared: PreparedAbilityGrant = prepare_ability_grant(scene, level, input_id, source)
+	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
+	options.level = level
+	options.input_id = input_id
+	options.source = source
+	return give_ability_with_options(scene, options)
+
+
+## The same grant, said in full.
+##
+## The action is read off the ability itself when the caller did not name one,
+## so an ability that declares which action it answers works without every
+## grant repeating it - and a caller that does name one overrules the
+## declaration, which is how one ability is given twice on two actions.
+func give_ability_with_options(
+	scene: PackedScene, options: GameplayAbilityGrantOptions
+) -> GameplayAbilityHandle:
+	var prepared: PreparedAbilityGrant = prepare_ability_grant(
+		scene, options.level, options.input_id, options.source
+	)
 	if not prepared.validation.is_ok():
 		discard_prepared_grant(prepared)
 		return GameplayAbilityHandle.new()
-	return commit_prepared_grant(prepared)
+	var handle: GameplayAbilityHandle = commit_prepared_grant(prepared)
+	var spec: GameplayAbilitySpec = get_spec(handle)
+	if spec != null:
+		spec.input_action = (
+			options.input_action
+			if options.input_action != &""
+			else spec.definition.input_action
+		)
+	return handle
 #endregion
 
 
@@ -501,6 +527,38 @@ func bind_to_input(ability: GameplayAbility, input_id: int, unbind_others: bool 
 ## As a copy: a caller clearing this must not leave the runtime believing nothing is pressed.
 func held_inputs() -> Array[int]:
 	return _held_inputs.duplicate()
+
+
+## An action was pressed, by name.
+##
+## The same rules as a slot: the grants are snapshotted first, because a
+## sibling granted by this very press must not also receive it.
+func input_action_pressed(action: StringName) -> void:
+	_route_action(action, true)
+
+
+func input_action_released(action: StringName) -> void:
+	_route_action(action, false)
+
+
+func _route_action(action: StringName, pressed: bool) -> void:
+	if action == &"":
+		return
+	for spec: GameplayAbilitySpec in _specs.duplicate():
+		if spec.input_action != action:
+			continue
+		if pressed:
+			_deliver_input(
+				spec,
+				func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
+				func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
+			)
+		else:
+			_deliver_input(
+				spec,
+				func(a: GameplayAbility) -> void: a._input_released(owner_asc),
+				func(a: GameplayAbility) -> void: a._active_input_released(owner_asc)
+			)
 
 
 func input_pressed(input_id: int) -> void:

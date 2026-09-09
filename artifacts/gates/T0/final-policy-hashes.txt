@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.1.10 (G-21) raises gameplay_attribute_runtime.gd 560 -> 620 for adopting and releasing one attribute set at a time, which a loadout needs and set_attribute_sets() cannot do without re-seeding every attribute already there.
+# F6.1.11 (G-21) raises ability_runtime 600 -> 660 and the component 1220 -> 1260 for routing input by InputMap action beside routing by slot, and the options-shaped grant that carries one.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T00:15:58Z
-# commit-previo: 3799b3354db5b1ee795b213bc481d2dec50cfbed
+# date-utc: 2026-09-09T00:22:22Z
+# commit-previo: 6fd9447a053f56800066bfb0d8415c9a0e3a5d89
 # files: 26
-437e2daf6c63fe9a38d45b99af781d8a00dda41a47db6d5fb3b329b2361a38d8  tooling/.quality-gates.json
+2a69316a7a88ada716f4b5d4c0ab6e9d7ae7de5bb34b0c4a778c354858683a3b  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

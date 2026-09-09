@@ -255,3 +255,64 @@ func test_ending_an_ability_leaves_it_granted_and_bound() -> void:
 	asc.ability_local_input_pressed(SLOT)
 	assert_eq(ability.activations, 2, "still granted and still bound")
 #endregion
+#region Routed by name as well as by number
+## Two ways of reaching one grant, not two grants. A project migrating from
+## slots to actions does it one ability at a time.
+func _named_grant(action: StringName, slot: int = -1) -> GameplayAbilitySpec:
+	var probe: ProbeAbility = ProbeAbility.build(&"Ability.Named")
+	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
+	options.input_id = slot
+	options.input_action = action
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(probe)
+	probe.free()
+	var handle: GameplayAbilityHandle = asc.give_ability_with_options(scene, options)
+	return asc.get_ability_spec(handle)
+
+
+func test_input_id_and_input_action_can_coexist() -> void:
+	var spec: GameplayAbilitySpec = _named_grant(&"fire", 2)
+
+	assert_eq(spec.input_id, 2, "it answers the slot")
+	assert_eq(spec.input_action, &"fire", "and the action")
+
+	asc.ability_local_input_action_pressed(&"fire")
+	assert_eq((spec.per_actor_instance as ProbeAbility).activations, 1, "by name")
+
+	asc.ability_local_input_pressed(2)
+	assert_eq((spec.per_actor_instance as ProbeAbility).activations, 2, "and by number")
+
+
+## One logical press is one activation. A grant reachable two ways that woke
+## twice on one press would be a grant that costs twice as much to use.
+func test_one_press_does_not_double_activate_a_spec_bound_two_ways() -> void:
+	var spec: GameplayAbilitySpec = _named_grant(&"fire", 2)
+
+	asc.ability_local_input_action_pressed(&"fire")
+
+	assert_eq(
+		(spec.per_actor_instance as ProbeAbility).activations,
+		1,
+		"the press that arrived by name arrived once"
+	)
+
+
+func test_while_input_active_starts_on_press_and_ends_on_release() -> void:
+	# ChannelingAbility rather than a probe: `channels` is not exported, so it
+	# never survives the pack-then-instantiate round trip a grant goes through,
+	# and the ability would end the instant it started.
+	var channelling: ChannelingAbility = ChannelingAbility.new()
+	channelling.ability_tags = [&"Ability.Held"] as Array[StringName]
+	channelling.activation_policy = GameplayAbility.ActivationPolicy.WHILE_INPUT_ACTIVE
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(channelling)
+	channelling.free()
+	var handle: GameplayAbilityHandle = asc.give_ability(scene, 1.0, 3)
+	var spec: GameplayAbilitySpec = asc.get_ability_spec(handle)
+
+	asc.ability_local_input_pressed(3)
+	assert_true(spec.per_actor_instance.is_active, "held down, running")
+
+	asc.ability_local_input_released(3)
+	assert_false(spec.per_actor_instance.is_active, "let go, ended")
+#endregion

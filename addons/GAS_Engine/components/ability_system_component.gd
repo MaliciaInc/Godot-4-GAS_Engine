@@ -908,6 +908,19 @@ func give_ability(
 	return ability_runtime.give_ability(ability_scene, level, input_id, source)
 
 
+## The same grant, with everything a grant can be told.
+##
+## The three-argument call above is what most grants are and it is unchanged.
+## This is for the ones that also name an InputMap action.
+## @composer
+func give_ability_with_options(
+	ability_scene: PackedScene, options: GameplayAbilityGrantOptions
+) -> GameplayAbilityHandle:
+	if _grants_are_off():
+		return GameplayAbilityHandle.new()
+	return ability_runtime.give_ability_with_options(ability_scene, options)
+
+
 ## What a handle was granted, or null when it names nothing here.
 ##
 ## The receipt is the identity. A running instance is a thing that exists for as
@@ -1136,6 +1149,21 @@ func bind_ability_to_input(
 ## @composer_name: Input Pressed
 func ability_local_input_pressed(input_id: int) -> void:
 	ability_runtime.input_pressed(input_id)
+
+
+## The same press, said by the name of an InputMap action.
+##
+## Beside the slot, not instead of it. A grant that carries both is reachable
+## two ways and is still one grant, so a project migrating from slots to
+## actions can do it one ability at a time.
+## @composer
+func ability_local_input_action_pressed(action: StringName) -> void:
+	ability_runtime.input_action_pressed(action)
+
+
+## @composer
+func ability_local_input_action_released(action: StringName) -> void:
+	ability_runtime.input_action_released(action)
 
 
 ## @composer

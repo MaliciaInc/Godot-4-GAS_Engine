@@ -34,6 +34,13 @@ enum ActivationPolicy {
 	ON_GRANTED,
 	ON_GAMEPLAY_EVENT,
 	PASSIVE,
+	## Runs while the input is held: the press starts it, the release ends
+	## it. Distinct from MANUAL with a wait-for-release task inside,
+	## because the ability declares the shape rather than implementing it,
+	## and a runtime that knows the shape can end it when the input is lost
+	## for reasons the ability never sees - a window losing focus, a
+	## controller unplugged.
+	WHILE_INPUT_ACTIVE,
 }
 
 
@@ -160,6 +167,10 @@ const NET_EXECUTION_POLICY_FIELD: StringName = &"net_execution_policy"
 @export_category("Input Routing")
 ## The input slot this ability answers, or -1 when unbound.
 @export var input_id: int = -1
+
+## The InputMap action this ability answers, for a project that routes input
+## by name. Empty means it does not answer one.
+@export var input_action: StringName = &""
 
 ## The context of the activation currently running. Null when idle.
 var current_context: GameplayEffectContext = null
@@ -791,8 +802,20 @@ func _input_pressed(asc: AbilitySystemComponent) -> void:
 
 ## The bound input was released.
 func _input_released(asc: AbilitySystemComponent) -> void:
-	if is_active:
-		_active_input_released(asc)
+	if not is_active:
+		return
+	# The policy decides first, because WHILE_INPUT_ACTIVE means the release
+	# is what ends the ability - and an ability that also wrote a hook for it
+	# would then be asked to handle an ability that is already over.
+	if (
+		current_spec != null
+		and current_spec.definition != null
+		and current_spec.definition.activation_policy
+			== GameplayAbility.ActivationPolicy.WHILE_INPUT_ACTIVE
+	):
+		end_ability(false)
+		return
+	_active_input_released(asc)
 
 
 ## Pressed while running. Override for "press again to cancel/detonate".
