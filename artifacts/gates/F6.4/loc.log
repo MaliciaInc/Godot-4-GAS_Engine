@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      loc
 command:    python tooling\gates\run_gate.py loc artifacts\gates\F6.4
-started:    2026-09-09T16:18:00.9302439Z
-ended:      2026-09-09T16:18:02.1050682Z
-duration_s: 1.175
+started:    2026-09-09T16:23:35.6545733Z
+ended:      2026-09-09T16:23:36.8286270Z
+duration_s: 1.174
 exit_code:  0
 
 --- stdout ---

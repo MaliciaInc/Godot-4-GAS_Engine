@@ -40,8 +40,36 @@ static func validate_effect(
 			findings.append(_empty_slot(effect, "modifiers[%d]" % index))
 			continue
 		findings.append_array(validate_magnitude(modifier.magnitude, effect, "modifiers[%d].magnitude" % index))
+		findings.append_array(_attribute_findings_for(modifier, effect, index))
 		findings.append_array(_profile_findings_for(modifier, effect, index, profile))
 	findings.append_array(_stacking_findings_for(effect, profile))
+	return findings
+
+
+## A modifier naming an attribute nothing in the project declares.
+##
+## The friction F6.0.9 measured, from the side the inspector cannot reach: the
+## picker shows a typo in red to whoever opens that row, and shows nothing at
+## all to whoever does not open it. A misspelled name is a modifier that
+## silently does nothing, and the first person to notice used to be whoever
+## wondered why the effect had no effect.
+##
+## Either way of naming one, because a modifier can carry a typed reference or
+## the bare name it was authored with before there was one, and a check that
+## only read the new field would miss every effect written before it existed.
+static func _attribute_findings_for(
+	modifier: GameplayEffectModifier, effect: GameplayEffect, index: int
+) -> Array[Result]:
+	var findings: Array[Result] = []
+	var reference: GameplayAttributeRef = GameplayAttributeRef.resolved(
+		modifier.attribute, modifier.attribute_name
+	)
+	if GameplayAttributeCatalog.is_unknown(reference):
+		findings.append(
+			Result.warning(
+				effect, "modifiers[%d].attribute" % index, Result.Code.UNDECLARED_ATTRIBUTE
+			)
+		)
 	return findings
 
 

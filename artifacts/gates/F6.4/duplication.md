@@ -5,13 +5,13 @@
 - Source files scanned: 621
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 2795
-- Units by language: gdscript 2753, powershell 4, python 38
+- Units scanned: 2798
+- Units by language: gdscript 2756, powershell 4, python 38
 - Findings: 379
-- Elapsed: 11.809s
+- Elapsed: 12.085s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 26187 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 26239 (raise with --max-pairs)
 
 ## Structural
 

@@ -32,6 +32,66 @@ func test_a_missing_magnitude_is_reported() -> void:
 	assert_eq(findings.size(), 1)
 	assert_eq(findings[0].code, Result.Code.MISSING_MAGNITUDE)
 	assert_eq(findings[0].field, "modifiers[0].magnitude")
+
+
+## A misspelled attribute is caught before anything runs.
+##
+## The friction F6.0.9 measured. `GameplayAttributeRef.is_valid()` only asks
+## whether the field was filled in, which a typo passes, and the inspector's
+## picker shows it in red to whoever opens that row and to nobody else. A
+## modifier naming an attribute nothing declares does nothing at all, and the
+## first person to notice used to be whoever wondered why the effect had no
+## effect.
+##
+## A warning rather than an error: the catalogue knows what the project's
+## scripts declare, and a game building an attribute somewhere it cannot see is
+## doing something legal.
+func test_a_modifier_naming_an_attribute_nobody_declares_is_reported() -> void:
+	var effect: GameplayEffect = Factory.instant([Factory.add(&"attakc", 1.0)])
+
+	var findings: Array[Result] = Validator.validate_effect(effect)
+
+	assert_eq(findings.size(), 1, "one finding, about the one thing wrong")
+	assert_eq(findings[0].code, Result.Code.UNDECLARED_ATTRIBUTE)
+	assert_eq(findings[0].field, "modifiers[0].attribute", "naming which modifier")
+	assert_eq(findings[0].severity, Result.Severity.WARNING, "loud, not blocking")
+
+
+## A typed reference is checked the same way a bare name is.
+##
+## Both, because a modifier can carry either: a check reading only the newer
+## field would miss every effect authored before that field existed, and a
+## check reading only the older one would miss everything authored since.
+##
+##     [what it is called, the set, the attribute, whether it is reported]
+func _reference_cases() -> Array:
+	return [
+		["a set and attribute that exist", &"test_attribute_set", TestAttributeSet.ATTACK, false],
+		["an attribute nobody declares", &"", &"attakc", true],
+		["a set nobody declares", &"no_such_set", TestAttributeSet.ATTACK, true],
+		["nothing chosen yet", &"", &"", false],
+	]
+
+
+func test_a_typed_reference_is_checked_the_same_way(
+	case: Array = use_parameters(_reference_cases())
+) -> void:
+	var described: String = case[0]
+	var set_name: StringName = case[1]
+	var attribute_name: StringName = case[2]
+	var reported: bool = case[3]
+
+	var effect: GameplayEffect = Factory.instant([Factory.add(ATTACK, 1.0)])
+	var reference: GameplayAttributeRef = GameplayAttributeRef.new()
+	reference.set_name = set_name
+	reference.attribute_name = attribute_name
+	effect.modifiers[0].attribute = reference
+
+	assert_eq(
+		_codes(Validator.validate_effect(effect)).has(Result.Code.UNDECLARED_ATTRIBUTE),
+		reported,
+		described
+	)
 #endregion
 
 

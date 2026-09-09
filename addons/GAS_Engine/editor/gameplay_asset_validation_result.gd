@@ -29,6 +29,13 @@ enum Code {
 	## compounding ones. It folds correctly; the author is told because the
 	## two arms produce different numbers and the name does not say which.
 	LEGACY_OPERATION_UNDER_UNREAL_PROFILE,
+	## A modifier naming an attribute no attribute set in the project declares.
+	## It is a warning rather than an error because the catalogue knows what
+	## the project's scripts declare and a game may build an attribute
+	## somewhere it cannot see - but a misspelled name is a modifier that does
+	## nothing at all, and the first person to notice used to be whoever
+	## wondered why the effect had no effect.
+	UNDECLARED_ATTRIBUTE,
 	## A stacking effect under UE_5_7 that left factor_in_stack_count false.
 	## The reference includes the stack count by default and this engine
 	## does not, so an effect ported from there scales differently until
