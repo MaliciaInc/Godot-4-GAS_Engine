@@ -287,14 +287,37 @@ func _compose(
 	return _compose_from(base, attribute_name, result, _bucket(attribute_name))
 
 
+## What this attribute would read if only the first channels had run.
+##
+## Only the UE profile has channels at all: the native one is a single pass,
+## so every channel ceiling answers the whole composition there. That is the
+## honest answer rather than a refusal - a project on the native profile
+## asking this is asking what the attribute is, and that is what it gets.
+func value_up_to_channel(attribute_name: StringName, through_channel: int) -> float:
+	var attribute: AttributeData = find(attribute_name)
+	if attribute == null:
+		return 0.0
+	var reading: AttributeEvaluationResult = AttributeEvaluationResult.new()
+	return _compose_from(
+		attribute.base_value,
+		attribute_name,
+		reading,
+		_bucket(attribute_name),
+		through_channel
+	)
+
+
 func _compose_from(
 	base: float,
 	attribute_name: StringName,
 	result: AttributeEvaluationResult,
-	contributions: Array[AttributeModifierContribution]
+	contributions: Array[AttributeModifierContribution],
+	through_channel: int = AttributeAggregateMath.CHANNELS - 1
 ) -> float:
 	var folded: AttributeAggregateMath.Composed = (
-		AttributeAggregateMath.unreal(base, attribute_name, contributions)
+		AttributeAggregateMath.unreal(
+			base, attribute_name, contributions, through_channel
+		)
 		if _uses_unreal_algebra()
 		else AttributeAggregateMath.godot_native(base, attribute_name, contributions)
 	)

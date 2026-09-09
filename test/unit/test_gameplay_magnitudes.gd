@@ -2,6 +2,12 @@
 ## LIVE reactive binding a persistent contribution needs that INSTANT and
 ## PERIODIC never do.
 ##
+## Which reading of a capture an attribute-based magnitude takes - and the two
+## tag gates in front of it - is test_attribute_based_readings.gd. That is a
+## different question from this file's: here a magnitude resolves and the
+## arithmetic is checked, there the arithmetic is fixed and the question is
+## which number went into it.
+##
 ## Flat and curve-scaled magnitudes are GameplayScalableFloat's own concern,
 ## already covered in test_gameplay_scalable_float.gd and (through a real
 ## modifier) test_modifier_magnitudes.gd; this file does not repeat them.
@@ -11,6 +17,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const Factory = preload("res://test/fixtures/test_effect_factory.gd")
+const Bench = preload("res://test/fixtures/magnitude_bench.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"
@@ -54,30 +61,6 @@ func after_each() -> void:
 
 
 #region Builders
-func _flat(value: float) -> GameplayScalableFloat:
-	var scalable: GameplayScalableFloat = GameplayScalableFloat.new()
-	scalable.value = value
-	return scalable
-
-
-## A throwaway spec for testing a magnitude's resolve() directly, without a
-## full application.
-func _spec() -> GameplayEffectSpec:
-	var effect: GameplayEffect = Factory.instant([])
-	var spec: GameplayEffectSpec = GameplayEffectSpec.new(effect, GameplayEffectContext.new(source.owner))
-	spec.source_asc = source.asc
-	return spec
-
-
-func _context(spec: GameplayEffectSpec) -> GameplayMagnitudeContext:
-	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
-	context.spec = spec
-	context.source_asc = spec.source_asc
-	context.target_asc = target.asc
-	context.level = spec.level
-	return context
-
-
 #endregion
 
 
@@ -120,14 +103,14 @@ func test_attribute_based_reads_a_snapshot_from_either_actor(
 
 	var magnitude: GameplayAttributeBasedMagnitude = GameplayAttributeBasedMagnitude.new()
 	magnitude.capture = Factory.capture_definition(case.actor, case.attribute_name)
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	spec.register_capture(magnitude.capture)
 	if per_source:
 		spec.capture_source_attributes(source.asc)
 	else:
 		spec.capture_target_attributes(target.asc)
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_true(result.is_ok(), case.label)
 	assert_almost_eq(result.value, case.value, TOLERANCE, case.label)
 
@@ -136,14 +119,14 @@ func test_attribute_based_applies_coefficient_pre_and_post_add() -> void:
 	source.set_base(ATTACK, 10.0)
 	var magnitude: GameplayAttributeBasedMagnitude = GameplayAttributeBasedMagnitude.new()
 	magnitude.capture = Factory.capture_definition(GameplayAttributeCaptureDefinition.Actor.SOURCE, ATTACK)
-	magnitude.pre_add = _flat(2.0)
-	magnitude.coefficient = _flat(3.0)
-	magnitude.post_add = _flat(1.0)
-	var spec: GameplayEffectSpec = _spec()
+	magnitude.pre_add = Bench.flat(2.0)
+	magnitude.coefficient = Bench.flat(3.0)
+	magnitude.post_add = Bench.flat(1.0)
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	spec.register_capture(magnitude.capture)
 	spec.capture_source_attributes(source.asc)
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_true(result.is_ok())
 	assert_almost_eq(result.value, 37.0, TOLERANCE, "((10 + 2) * 3) + 1")
 
@@ -192,51 +175,51 @@ func test_attribute_based_reports_why_its_capture_could_not_resolve(
 	magnitude.capture = Factory.capture_definition(
 		GameplayAttributeCaptureDefinition.Actor.SOURCE, case.attribute_name
 	)
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	spec.register_capture(magnitude.capture)
 	spec.capture_source_attributes(source.asc)
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_eq(result.status, case.status, case.label)
 #endregion
 
 
 #region SetByCaller
 func test_set_by_caller_reads_the_value_the_caller_supplied() -> void:
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	assert_true(spec.set_set_by_caller(CHARGE_TAG, 42.0))
 
 	var magnitude: GameplaySetByCallerMagnitude = GameplaySetByCallerMagnitude.new()
 	magnitude.data_tag = CHARGE_TAG
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_true(result.is_ok())
 	assert_almost_eq(result.value, 42.0, TOLERANCE)
 
 
 func test_a_required_set_by_caller_never_supplied_is_refused() -> void:
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	var magnitude: GameplaySetByCallerMagnitude = GameplaySetByCallerMagnitude.new()
 	magnitude.data_tag = CHARGE_TAG
 	magnitude.require_value = true
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_eq(result.status, GameplayMagnitudeResult.Status.MISSING_SET_BY_CALLER)
 
 
 func test_an_optional_set_by_caller_falls_back_to_its_default() -> void:
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	var magnitude: GameplaySetByCallerMagnitude = GameplaySetByCallerMagnitude.new()
 	magnitude.data_tag = CHARGE_TAG
 	magnitude.require_value = false
 	magnitude.default_value = 7.0
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(spec))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(spec, target.asc))
 	assert_true(result.is_ok())
 	assert_almost_eq(result.value, 7.0, TOLERANCE)
 
 
 func test_set_by_caller_is_isolated_per_target_copy() -> void:
-	var spec: GameplayEffectSpec = _spec()
+	var spec: GameplayEffectSpec = Bench.spec(source)
 	spec.set_set_by_caller(CHARGE_TAG, 10.0)
 	var copy_a: GameplayEffectSpec = spec.create_application_copy()
 	var copy_b: GameplayEffectSpec = spec.create_application_copy()
@@ -271,7 +254,7 @@ func test_a_custom_calculation_produces_its_own_value() -> void:
 	var magnitude: GameplayCustomMagnitude = GameplayCustomMagnitude.new()
 	magnitude.calculation = DoubleSourceAttack.new()
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(_spec()))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(Bench.spec(source), target.asc))
 	assert_true(result.is_ok())
 	assert_almost_eq(result.value, 30.0, TOLERANCE)
 
@@ -280,14 +263,36 @@ func test_a_failing_custom_calculation_refuses() -> void:
 	var magnitude: GameplayCustomMagnitude = GameplayCustomMagnitude.new()
 	magnitude.calculation = AlwaysFailsCalculation.new()
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(_spec()))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(Bench.spec(source), target.asc))
 	assert_eq(result.status, GameplayMagnitudeResult.Status.CALCULATION_FAILED)
+
+
+## The four dials, in the one order this class documents.
+##
+## The calculation answers 20 (twice the source's attack of 10). Then +5 is
+## 25, x2 is 50, the curve doubles it to 100, and +7 lands on 107. Every step
+## is a different number from every other ordering of the same four: applying
+## the curve last would be 214, and adding post_add before it would be 214
+## too but for a different reason - which is why the assertion is on 107 and
+## the values were picked so that nothing else reaches it.
+func test_a_custom_magnitude_applies_its_dials_in_the_documented_order() -> void:
+	source.set_base(ATTACK, 10.0)
+	var magnitude: GameplayCustomMagnitude = GameplayCustomMagnitude.new()
+	magnitude.calculation = DoubleSourceAttack.new()
+	magnitude.pre_add = Bench.flat(5.0)
+	magnitude.coefficient = Bench.flat(2.0)
+	magnitude.final_curve = Bench.bending_curve()
+	magnitude.post_add = Bench.flat(7.0)
+
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(Bench.spec(source), target.asc))
+	assert_true(result.is_ok(), "it resolved")
+	assert_almost_eq(result.value, 107.0, TOLERANCE, "raw, pre, coefficient, curve, post")
 
 
 func test_a_non_finite_custom_result_is_refused() -> void:
 	var magnitude: GameplayCustomMagnitude = GameplayCustomMagnitude.new()
 	magnitude.calculation = ReturnsInfinity.new()
 
-	var result: GameplayMagnitudeResult = magnitude.resolve(_context(_spec()))
+	var result: GameplayMagnitudeResult = magnitude.resolve(Bench.context(Bench.spec(source), target.asc))
 	assert_eq(result.status, GameplayMagnitudeResult.Status.NON_FINITE_VALUE)
 #endregion

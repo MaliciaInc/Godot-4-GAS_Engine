@@ -160,9 +160,7 @@ func get_magnitude(modifier_index: int) -> float:
 	if modifier != null:
 		var scalable: GameplayScalableMagnitude = modifier.magnitude as GameplayScalableMagnitude
 		if scalable != null:
-			var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
-			context.spec = self
-			context.level = level
+			var context: GameplayMagnitudeContext = GameplayMagnitudeContext.of(self, null, null)
 			var resolved: GameplayMagnitudeResult = scalable.resolve(context)
 			if resolved.is_ok():
 				return resolved.value
@@ -555,11 +553,11 @@ func resolve_authored_timing() -> void:
 	if effect_def == null:
 		return
 
-	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
-	context.spec = self
-	context.source_asc = source_asc
-	context.target_asc = null
-	context.level = level
+	# No target: timing is resolved before this application knows who it is
+	# landing on, which is the whole reason a duration cannot capture from one.
+	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.of(
+		self, source_asc, null
+	)
 
 	duration = _resolved_or(effect_def.duration_magnitude, context, duration)
 	period = _resolved_or(effect_def.period_magnitude, context, period)

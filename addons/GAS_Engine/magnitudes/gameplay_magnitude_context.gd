@@ -14,3 +14,22 @@ var spec: GameplayEffectSpec = null
 var source_asc: AbilitySystemComponent = null
 var target_asc: AbilitySystemComponent = null
 var level: float = 1.0
+
+
+## The ordinary context: a spec, the two sides, and the spec's own level.
+##
+## The level is not a parameter because there has never been a caller that
+## wanted a different one - a magnitude scales at the level the application
+## is at, and a context saying otherwise would be a magnitude resolved for
+## an application that is not happening.
+static func of(
+	for_spec: GameplayEffectSpec,
+	from_source: AbilitySystemComponent,
+	on_target: AbilitySystemComponent
+) -> GameplayMagnitudeContext:
+	var made: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
+	made.spec = for_spec
+	made.source_asc = from_source
+	made.target_asc = on_target
+	made.level = for_spec.level if for_spec != null else 1.0
+	return made

@@ -150,13 +150,21 @@ static func _last_applied_beats(
 ## The legacy MULTIPLY and DIVIDE keep their meaning here rather than being
 ## refused: they are products, so they fold in with the compound ones. Dropping
 ## them would silently delete an authored effect from the aggregate.
+##
+## `through_channel` stops the pass early, which is what a magnitude asking
+## what an attribute would be before the last channels ran needs. A ceiling
+## rather than a second function: the arithmetic is the same arithmetic, and
+## a copy of it that stopped sooner would be a second answer to drift from.
 static func unreal(
-	base: float, attribute_name: StringName, contributions: Array[AttributeModifierContribution]
+	base: float,
+	attribute_name: StringName,
+	contributions: Array[AttributeModifierContribution],
+	through_channel: int = CHANNELS - 1
 ) -> Composed:
 	var made: Composed = Composed.new()
 	made.value = base
 
-	for channel: int in CHANNELS:
+	for channel: int in mini(through_channel + 1, CHANNELS):
 		var folded: Composed = _one_channel(made.value, attribute_name, contributions, channel)
 		if not folded.is_ok():
 			return folded

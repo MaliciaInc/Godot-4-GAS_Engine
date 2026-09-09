@@ -624,6 +624,16 @@ func get_attribute_current(attribute_name: StringName) -> float:
 	return attributes.get_current_value(attribute_name)
 
 
+## What this attribute would read if only channels 0..`through_channel` had
+## run - the reading a magnitude wants when it is meant to see an attribute
+## before the last stages of its own composition are applied.
+## @composer
+func get_attribute_up_to_channel(
+	attribute_name: StringName, through_channel: int
+) -> float:
+	return attributes.value_up_to_channel(attribute_name, through_channel)
+
+
 ## The one durable-mutation path. No gameplay code writes `current_value`.
 ## @composer
 func set_attribute_base(

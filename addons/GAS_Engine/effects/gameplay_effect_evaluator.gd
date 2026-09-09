@@ -135,11 +135,9 @@ static func _resolve_authored_magnitudes(
 	request: Request, result: GameplayEffectEvaluationResult
 ) -> bool:
 	var spec: GameplayEffectSpec = request.spec
-	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.new()
-	context.spec = spec
-	context.source_asc = request.source_asc
-	context.target_asc = request.owner_asc
-	context.level = spec.level
+	var context: GameplayMagnitudeContext = GameplayMagnitudeContext.of(
+		spec, request.source_asc, request.owner_asc
+	)
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
