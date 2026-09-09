@@ -1,3 +1,3 @@
 RESULT: PASS
-SOURCE: 103fb7d4524d03405da83b35d10391c1174e867d092a8a06184ea9e4e95c4543
-godot --headless --import: no script errors after F6.6.5's two enums, four ability fields, GameplayNetAbilityPolicy and the running/stopped state lists.
+SOURCE: af32cb4dd119c1f5ff5aebf0e23fc9bdc1ac2508ed86b4a307809cd121ff527f
+godot --headless --import: no script errors after F6.6.6's TAG and ANIMATION receipts and the prediction window.

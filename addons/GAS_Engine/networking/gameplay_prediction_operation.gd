@@ -10,9 +10,17 @@
 ## back is a method on the thing rather than a case in whoever is undoing it.
 ## The list is short and closed on purpose: everything here can be undone with
 ## what the operation itself remembers, and anything that cannot is not
-## something to predict. A periodic tick, an arbitrary execution calculation and
-## a server-only side effect are all in that second group, and this addon says
-## so rather than pretending otherwise.
+## something to predict. Four things are named as being in that second group
+## rather than left to be discovered one bug at a time:
+##
+## - a periodic tick, because how many of them happened is a clock the two
+##   machines do not share;
+## - an arbitrary execution's calculation, because what it did is whatever it
+##   decided and nothing wrote down the inverse;
+## - a custom cost with no prediction kind, which is what `Kind.NONE` is for -
+##   a cost that says out loud that it cannot be taken back;
+## - a server-side effect nothing here can observe, since a client cannot undo
+##   what it was never able to see.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -32,7 +40,17 @@ class_name GameplayPredictionOperation extends RefCounted
 ## fifth thing to predict: it is a cost saying it is not predictable at all,
 ## which is the default for anything the journal cannot reverse from what the
 ## operation itself remembers - an inventory, a durability, a quest step.
-enum Kind { COST, COOLDOWN, ATTRIBUTE_DELTA, CUE, NONE }
+## TAG: a tag this machine held ahead of the answer, with the counts either
+##     side of the change - a tag is a reference count, and putting it back
+##     means putting the number back rather than removing one.
+## ANIMATION: a playback started on a surface this activation claimed. Only
+##     reversible while it is still the claim the surface records: another
+##     ability that has since taken the surface is playing something this
+##     guess has no business stopping.
+##
+## TAG and ANIMATION are last for the same reason NONE is: the four that
+## existed keep the numbers they had.
+enum Kind { COST, COOLDOWN, ATTRIBUTE_DELTA, CUE, NONE, TAG, ANIMATION }
 
 var kind: GameplayPredictionOperation.Kind = Kind.ATTRIBUTE_DELTA
 var key: GameplayPredictionKey = null
@@ -49,6 +67,25 @@ var effect_handle: GameplayEffectHandle = null
 ## For CUE: what was played, and the handle if it was a persistent one.
 var cue_tag: StringName = &""
 var cue_handle: GameplayCueHandle = null
+
+## For TAG: which tag, and the count either side of the change.
+##
+## Both counts rather than a delta. The count is what says whether this is
+## still the machine's own guess to take back: a reading from the authority
+## that arrived after it moves the number, and a reversal on top of that
+## would be this machine overwriting the authority with an arithmetic it did
+## on its own.
+var changed_tag: StringName = &""
+var old_count: int = 0
+var new_count: int = 0
+
+## For ANIMATION: the claim taken on the surface when the playback started.
+##
+## The ownership token, and the only thing that makes an animation
+## reversible at all: it says which activation of which instance started
+## this, and it can be asked - late, after the node may be gone - whether
+## that is still what the surface records.
+var ownership: GameplayAnimationOwnership = null
 
 ## Whether the authority has since agreed. An accepted operation is no longer a
 ## guess and must never be reversed - the state it produced is the state
@@ -85,6 +122,26 @@ static func cue(
 	return made
 
 
+## A tag held ahead of the answer, with the counts either side of it.
+static func tag(
+	under: GameplayPredictionKey, tag_name: StringName, was: int, now: int
+) -> GameplayPredictionOperation:
+	var made: GameplayPredictionOperation = _of(Kind.TAG, under, &"", 0.0)
+	made.changed_tag = tag_name
+	made.old_count = was
+	made.new_count = now
+	return made
+
+
+## A playback started on a surface this activation claimed.
+static func animation(
+	under: GameplayPredictionKey, claim: GameplayAnimationOwnership
+) -> GameplayPredictionOperation:
+	var made: GameplayPredictionOperation = _of(Kind.ANIMATION, under, &"", 0.0)
+	made.ownership = claim
+	return made
+
+
 static func _of(
 	of_kind: GameplayPredictionOperation.Kind,
 	under: GameplayPredictionKey,
@@ -105,6 +162,15 @@ static func _of(
 ## already played cannot be unplayed, and an effect that ended on its own is
 ## already gone. What matters is that the reversal was attempted and that
 ## nothing else is left standing on it.
+##
+## What guards against undoing the authority rather than the guess: `accepted`,
+## for everything - an operation the authority has agreed to is no longer this
+## machine's - and then, for the two kinds that can say more, the thing itself.
+## A tag says the count is still the one the guess left; a playback says the
+## surface still records this activation. A cost and an attribute delta have no
+## such answer here and are guarded only by `accepted`: an authoritative reading
+## that moved the same attribute between the guess and the refusal is undone
+## with it, and correcting that needs the next reading rather than this method.
 func reverse(asc: AbilitySystemComponent) -> bool:
 	if accepted or asc == null:
 		return false
@@ -113,13 +179,17 @@ func reverse(asc: AbilitySystemComponent) -> bool:
 			return _take_back_the_change(asc)
 		Kind.COOLDOWN:
 			return _take_off_the_effect(asc)
-		Kind.NONE:
-			# Nothing was guessed, so there is nothing to take back. Answered
-			# rather than fallen through: reaching the cue arm with NONE would
-			# have been a silent wrong answer.
-			return true
-		_:
+		Kind.TAG:
+			return _put_the_tag_back(asc)
+		Kind.ANIMATION:
+			return _stop_the_animation()
+		Kind.CUE:
 			return _stop_the_cue(asc)
+		_:
+			# NONE, and nothing else: the enum is closed. Nothing was guessed,
+			# so there is nothing to take back, and saying so here rather than
+			# falling into somebody else's arm is why each kind is named.
+			return true
 
 
 func _take_back_the_change(asc: AbilitySystemComponent) -> bool:
@@ -136,6 +206,50 @@ func _take_off_the_effect(asc: AbilitySystemComponent) -> bool:
 	if applied == null:
 		return false
 	asc.effects.remove(applied)
+	return true
+
+
+## Put a tag's count back, while it is still the count this guess produced.
+##
+## The ownership check, in the only form a tag has one. A tag is a reference
+## count and the authority replicates it as a number: a reading that arrived
+## since the guess has already written what the authority believes, and this
+## machine putting its own arithmetic back on top would undo it. So the count
+## has to still be the one this guess left, and if it is not, there is nothing
+## here that is still ours to take back.
+##
+## By adding and removing rather than by writing the number, because the count
+## is a reference count and everything watching it - a passive ability's
+## requirement, an immunity - is listening to the signals those raise.
+func _put_the_tag_back(asc: AbilitySystemComponent) -> bool:
+	if changed_tag == &"" or old_count == new_count:
+		return false
+	var held: int = asc.tags.count_exact(changed_tag)
+	if held != new_count:
+		return false
+	while held < old_count:
+		asc.add_tag(changed_tag)
+		held += 1
+	while held > old_count:
+		asc.remove_tag(changed_tag)
+		held -= 1
+	return true
+
+
+## Stop a playback, while this activation is still the one that owns it.
+##
+## The receipt answers that on its own, after the fact and without the node:
+## another ability that has since taken the surface is playing something this
+## guess has no business stopping, and a mixer that has been freed is not one
+## anybody is still watching. Both are ordinary, and both are false.
+func _stop_the_animation() -> bool:
+	if ownership == null or not ownership.still_holds():
+		return false
+	var surface: GameplayAnimationSurface = GameplayAnimationSurface.of(ownership.mixer())
+	if surface == null:
+		return false
+	surface.halt()
+	ownership.release()
 	return true
 
 

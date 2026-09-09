@@ -23,23 +23,22 @@ const SOMEBODY_ELSE: int = 3
 const A_PATH: String = "res://test_only/predicted_%d.tres"
 
 var made: int = 0
+var bench: PredictionBench = null
 var journal: GameplayPredictionJournal = null
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
 
 
 func before_each() -> void:
-	journal = GameplayPredictionJournal.new()
-	fixture = Fixture.create("Predictor")
-	add_child_autofree(fixture.owner)
-	asc = fixture.asc
-	asc.set_process(false)
-	fixture.set_base(MANA, 100.0)
-	fixture.set_base(HEALTH, 100.0)
+	bench = PredictionBench.stand(self, OWNING_PEER, {MANA: 100.0, HEALTH: 100.0})
+	journal = bench.journal
+	fixture = bench.fixture
+	asc = bench.asc()
 
 
 func after_each() -> void:
-	journal.clear()
+	bench.dispose()
+	bench = null
 	journal = null
 	fixture = null
 	asc = null

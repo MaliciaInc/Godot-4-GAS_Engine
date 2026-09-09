@@ -24,6 +24,15 @@ var _written: Array[GameplayPredictionOperation] = []
 ## This machine's own count of guesses, so two of them are never one.
 var _counted: int = 0
 
+## The guess anything recorded right now belongs to, when one is open.
+##
+## A window is the boundary a rejection unwinds. Everything between the open
+## and the close is one guess's doing, so a game that predicts five things
+## does not have to carry the key through five call sites - and what a
+## refusal has to take back is an unambiguous set, in the order it was
+## written and no other.
+var _window: GameplayPredictionKey = null
+
 
 ## The next key for this peer, standing on `parent` when it stands on anything.
 func next_key(peer: int, parent: GameplayPredictionKey = null) -> GameplayPredictionKey:
@@ -33,8 +42,42 @@ func next_key(peer: int, parent: GameplayPredictionKey = null) -> GameplayPredic
 	return GameplayPredictionKey.of(peer, _counted)
 
 
+## Start attributing whatever happens next to this guess.
+##
+## Answers whether it opened. A second one is refused rather than nested:
+## two boundaries around one thing is a boundary nobody can close, and the
+## caller finding out here is better than a rejection later unwinding half
+## of what it should have.
+func open_window(key: GameplayPredictionKey) -> bool:
+	if key == null or not key.is_valid() or _window != null:
+		return false
+	_window = key
+	return true
+
+
+## Stop. Answers whether this was the guess that was open.
+##
+## By key rather than by nothing, because closing somebody else's window is
+## the same bug as never closing your own and is harder to see.
+func close_window(key: GameplayPredictionKey) -> bool:
+	if _window == null or key == null or not _window.same_as(key):
+		return false
+	_window = null
+	return true
+
+
+## Write down one thing this machine did ahead of the answer.
+##
+## An operation that names no guess of its own belongs to the open window,
+## which is what a window is for. One that names a guess keeps it: an
+## operation deriving from a key inside somebody else's window is still that
+## key's, and quietly re-parenting it would unwind it at the wrong time.
 func record(operation: GameplayPredictionOperation) -> void:
-	if operation == null or operation.key == null or not operation.key.is_valid():
+	if operation == null:
+		return
+	if _window != null and (operation.key == null or not operation.key.is_valid()):
+		operation.key = _window
+	if operation.key == null or not operation.key.is_valid():
 		return
 	_written.append(operation)
 
@@ -66,7 +109,7 @@ func accept(key: GameplayPredictionKey) -> int:
 	var bound: Array[GameplayPredictionOperation] = under(key)
 	for operation: GameplayPredictionOperation in bound:
 		operation.accepted = true
-	_forget(bound)
+	_forget(bound, key)
 	return bound.size()
 
 
@@ -81,13 +124,21 @@ func reject(key: GameplayPredictionKey, asc: AbilitySystemComponent) -> int:
 	for operation: GameplayPredictionOperation in owed:
 		if operation.reverse(asc):
 			reversed_count += 1
-	_forget(owed)
+	_forget(owed, key)
 	return reversed_count
 
 
-func _forget(operations: Array[GameplayPredictionOperation]) -> void:
+## Drop what has been answered for, and close the window it was open under.
+##
+## Closing it here is what makes a second answer harmless: a window left open
+## under a guess that has been settled would go on attributing later work to
+## a key nothing is waiting on, and the next rejection would unwind it.
+func _forget(
+	operations: Array[GameplayPredictionOperation], key: GameplayPredictionKey
+) -> void:
 	for operation: GameplayPredictionOperation in operations:
 		_written.erase(operation)
+	close_window(key)
 
 
 ## How much this machine still owes an answer on.
@@ -101,3 +152,4 @@ func is_empty() -> bool:
 
 func clear() -> void:
 	_written.clear()
+	_window = null

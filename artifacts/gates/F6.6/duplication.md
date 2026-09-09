@@ -2,16 +2,16 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 660
+- Source files scanned: 662
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 3009
-- Units by language: gdscript 2964, powershell 4, python 41
+- Units scanned: 3023
+- Units by language: gdscript 2978, powershell 4, python 41
 - Findings: 380
-- Elapsed: 12.581s
+- Elapsed: 12.584s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27462 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27676 (raise with --max-pairs)
 
 ## Structural
 
@@ -139,7 +139,7 @@
 - 0.898 [executable]: `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:61-82:overlap_2d` <-> `addons/GAS_Engine/targeting/gameplay_targeting_service.gd:86-107:overlap_3d`
 - 0.895 [executable]: `addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:19-34:find_candidate` <-> `test/unit/test_effect_index_scaling.gd:71-82:_scanned`
 - 0.893 [executable]: `test/unit/test_gameplay_live_magnitudes.gd:55-67:test_live_instant_resolves_fresh_each_time_without_a_binding` <-> `test/unit/test_gameplay_live_magnitudes.gd:140-151:test_snapshot_persistent_contribution_does_not_change`
-- 0.878 [executable]: `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of` <-> `test/unit/test_refusal_statuses.gd:37-44:_cost`
+- 0.878 [executable]: `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:145-156:_of` <-> `test/unit/test_refusal_statuses.gd:37-44:_cost`
 - 0.875 [executable]: `test/unit/test_ability_tag_semantics.gd:101-113:test_activating_an_ability_cancels_others_matching_its_cancel_query` <-> `test/unit/test_ability_tag_semantics.gd:189-202:test_a_cancel_ability_tags_effect_cancels_matching_active_abilities`
 - 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_velocity_change.gd:29-38:create`
 - 0.872 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
@@ -167,7 +167,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:445-454:wire`
-- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:145-156:_of`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `test/unit/test_composer_graph.gd:22-30:_field`
@@ -230,10 +230,9 @@
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:445-454:wire`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of`
+- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:145-156:_of`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
-- 0.900 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_composer_graph.gd:22-30:_field`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status` <-> `addons/GAS_Engine/magnitudes/gameplay_attribute_based_magnitude.gd:235-244:_translate`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_commit_preflight.gd:44-54:as_commit_status` <-> `addons/GAS_Engine/networking/gameplay_net_authority.gd:69-78:client_start`
 - 0.889 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid`
@@ -331,7 +330,7 @@
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_spawn_actor.gd:39-46:create`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_state.gd:31-38:create`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/editor/composer/composer_reader.gd:445-454:wire`
-- 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:88-99:_of`
+- 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:145-156:_of`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `examples/action_sample/abilities/sample_channel.gd:26-33:build`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `test/fixtures/test_effect_factory.gd:257-266:stacked`
 - 0.818 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag` <-> `test/fixtures/test_effect_factory.gd:269-278:with_overflow_effects`
@@ -350,7 +349,7 @@
 - 0.810 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:89-97:unbind` <-> `addons/GAS_Engine/integrations/dialogic/dialogic_gas_bridge.gd:89-106:_on_signal_event`
 - 0.810 [executable]: `addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:19-29:get_cooldown_tags` <-> `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching`
 - 0.810 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal` <-> `addons/GAS_Engine/editor/composer/composer_statement_factory.gd:56-67:arguments`
-- 0.810 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching` <-> `addons/GAS_Engine/networking/gameplay_prediction_journal.gd:47-55:under`
+- 0.810 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching` <-> `addons/GAS_Engine/networking/gameplay_prediction_journal.gd:90-98:under`
 - 0.808 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:90-100:_place` <-> `addons/GAS_Engine/animation/gameplay_animation_ownership.gd:46-57:claim`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal` <-> `test/unit/test_authoring_friction.gd:84-92:_scripts_in`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:128-135:clear_specs_with_input` <-> `addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query`
@@ -361,12 +360,13 @@
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/editor/composer/ir/composer_ir.gd:236-245:_note_async_exit`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `examples/action_sample/scripts/sample_hero.gd:28-37:equip`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:841-851:deactivate_persistent_cue` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid`
-- 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/networking/gameplay_prediction_journal.gd:78-85:reject`
+- 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/networking/gameplay_prediction_journal.gd:121-128:reject`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/networking/gameplay_target_data_translator.gd:33-40:to_wire`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/prepared_ability_grant.gd:1-27:<file>` <-> `addons/GAS_Engine/attributes/attribute_modifier_contribution.gd:1-35:<file>`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:108-118:wait_gameplay_effect_applied` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:227-235:play_animation_and_wait`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:227-235:play_animation_and_wait` <-> `addons/GAS_Engine/abilities/tasks/ability_task_factory.gd:288-297:network_sync_point`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/debug/gas_debug_page.gd:59-66:row_of`
+- 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:126-133:tag`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/abilities/tasks/ability_task_wait_attribute_threshold.gd:29-43:create`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/effects/gameplay_effect_runtime.gd:255-266:evaluate_spec`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/unit/test_gate_f6_2_authoring_walk.gd:105-118:_spark_set`
@@ -391,7 +391,7 @@
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/editor/effects/gameplay_effect_document.gd:272-280:add_cue`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:95-103:_duplicate_resource_array` <-> `addons/GAS_Engine/editor/composer/composer_canvas.gd:340-347:picked`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set.gd:77-86:_may_publish` <-> `addons/GAS_Engine/editor/composer/composer_port_types.gd:128-139:color_for`
-- 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set.gd:77-86:_may_publish` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:132-139:_take_off_the_effect`
+- 0.786 [executable]: `addons/GAS_Engine/abilities/gameplay_ability_set.gd:77-86:_may_publish` <-> `addons/GAS_Engine/networking/gameplay_prediction_operation.gd:202-209:_take_off_the_effect`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `addons/GAS_Engine/components/ability_runtime.gd:163-173:give_ability`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/unit/test_gate_f6_2_authoring_walk.gd:124-136:_bonus_of_speed`
 - 0.786 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create` <-> `test/unit/test_handle_facade.gd:54-63:_blocked_while_silenced`
