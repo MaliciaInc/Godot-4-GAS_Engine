@@ -73,6 +73,49 @@ static func install(manager: CueManagerScript, tag: StringName) -> void:
 	manager._pool[tag] = GameplayCuePoolBucket.new()
 
 
+## A recording handler: the scriptless kind of cue, counting what it was told.
+##
+## Stateless is the handler contract, and these counters are the exception a
+## test is allowed - they are the observation rather than the cue's own
+## state, and one instance answers for everybody the way a real one does.
+class RecordingHandler extends GameplayCueHandler:
+	var executed: int = 0
+	var actives: int = 0
+	var ticks: int = 0
+	var removals: int = 0
+	var last_matched_tag: StringName = &""
+
+	func on_execute(params: GameplayCueParams) -> void:
+		executed += 1
+		last_matched_tag = params.matched_cue_tag
+
+	func on_active(params: GameplayCueParams) -> void:
+		actives += 1
+		last_matched_tag = params.matched_cue_tag
+
+	func while_active(_params: GameplayCueParams) -> void:
+		ticks += 1
+
+	func on_removed(_params: GameplayCueParams) -> void:
+		removals += 1
+
+
+## Bind a handler to `tag`, through the manager's own map.
+##
+## No pool beside it, unlike a scene: a handler is not instantiated per
+## playback, so there is nothing to take or return.
+static func install_handler(
+	manager: CueManagerScript, tag: StringName
+) -> RecordingHandler:
+	var handler: RecordingHandler = RecordingHandler.new()
+	manager._handlers[tag] = handler
+	return handler
+
+
+static func uninstall_handler(manager: CueManagerScript, tag: StringName) -> void:
+	manager._handlers.erase(tag)
+
+
 ## Mark a tag as ending a fallback walk without binding anything to it.
 ##
 ## What a project writes under OVERRIDE_PARENT in its cues file, injected the

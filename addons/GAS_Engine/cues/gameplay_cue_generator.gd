@@ -74,6 +74,10 @@ static func _header_lines() -> Array[String]:
 		"## where it stands - with its own binding when it has one, and with",
 		"## silence when it has none.",
 		"##",
+		"## A tag under HANDLERS is answered by a script instead of a scene, for the",
+		"## cues that never draw anything. Both are consulted at each level of that",
+		"## walk, so which kind a tag uses never changes which tag answers.",
+		"##",
 		Source.ADDON_DOC_LINE,
 		Source.LICENSE_DOC_LINE,
 		"",
@@ -85,6 +89,8 @@ static func _header_lines() -> Array[String]:
 
 
 const CLOSING_LINE: String = "}"
+## One entry, whether it names a scene or a script: both are a tag and a
+## path, and two constants saying so would be two places to change it.
 const BINDING_LINE: String = '	&"%s": preload("%s"),'
 
 ## The second declaration in the file: the tags that end a fallback walk.
@@ -93,6 +99,18 @@ const BINDING_LINE: String = '	&"%s": preload("%s"),'
 ## is a PackedScene and its type says so. It is not a list of bindings either:
 ## a tag here with no binding is the useful case, and says "nothing plays under
 ## here, and do not go looking further up".
+## The third declaration: tags answered by a script rather than by a scene.
+##
+## Its own dictionary rather than a second column on a binding, for the
+## reason OVERRIDE_PARENT is its own list: a binding's value is a PackedScene
+## and its type says so. A tag belongs to one of the two, and the resolution
+## walk consults both at every level so that which one it is never changes
+## which tag answers a request.
+const HANDLERS_NAME: String = "const HANDLERS"
+const HANDLERS_DECLARATION: String = (
+	HANDLERS_NAME + ": Dictionary[StringName, Script] = {"
+)
+
 const OVERRIDE_NAME: String = "const OVERRIDE_PARENT"
 const OVERRIDE_DECLARATION: String = OVERRIDE_NAME + ": Array[StringName] = ["
 const OVERRIDE_LINE: String = '	&"%s",'
@@ -105,12 +123,20 @@ const QUOTE: String = '"'
 
 ## What the file for these bindings looks like.
 static func render_source(
-	bindings: Dictionary[StringName, String], overrides: Array[StringName] = []
+	bindings: Dictionary[StringName, String],
+	overrides: Array[StringName] = [],
+	handlers: Dictionary[StringName, String] = {}
 ) -> String:
 	var lines: Array[String] = []
 	lines.assign(_header_lines())
 	for tag: StringName in bindings:
 		lines.append(BINDING_LINE % [tag, bindings[tag]])
+	lines.append(CLOSING_LINE)
+	lines.append("")
+	lines.append("")
+	lines.append(HANDLERS_DECLARATION)
+	for tag: StringName in handlers:
+		lines.append(BINDING_LINE % [tag, handlers[tag]])
 	lines.append(CLOSING_LINE)
 	lines.append("")
 	lines.append("")
@@ -137,13 +163,28 @@ static func render_source(
 ## So a binding is a line inside the BINDINGS body that starts where a binding
 ## starts. Everything else in the file is somebody else's business.
 static func bindings_in_file() -> Dictionary[StringName, String]:
+	return _entries_in(BINDINGS_NAME)
+
+
+## Every tag-and-path entry inside one declared body.
+##
+## Both declarations are the same shape - a tag, a preloaded path - so both
+## are read the same way. A second copy of this loop would be a second set of
+## rules about what counts as an entry, and the rules are the careful part.
+static func _entries_in(declaration_name: String) -> Dictionary[StringName, String]:
 	var found: Dictionary[StringName, String] = {}
-	for trimmed: String in _body_of(BINDINGS_NAME, CLOSING_LINE):
+	for trimmed: String in _body_of(declaration_name, CLOSING_LINE):
 		var tag: String = _between(trimmed, OPEN_TAG, CLOSE_TAG)
-		var scene: String = _between(trimmed, OPEN_SCENE, CLOSE_SCENE)
-		if not tag.is_empty() and not scene.is_empty():
-			found[StringName(tag)] = scene
+		var path: String = _between(trimmed, OPEN_SCENE, CLOSE_SCENE)
+		if not tag.is_empty() and not path.is_empty():
+			found[StringName(tag)] = path
 	return found
+
+
+## The tags answered by a script, read out of the same file, the same way
+## and for the same reasons the bindings are.
+static func handlers_in_file() -> Dictionary[StringName, String]:
+	return _entries_in(HANDLERS_NAME)
 
 
 ## The tags that end a fallback walk, read out of the same file.

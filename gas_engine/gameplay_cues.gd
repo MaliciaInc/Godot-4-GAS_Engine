@@ -10,6 +10,10 @@
 ## where it stands - with its own binding when it has one, and with
 ## silence when it has none.
 ##
+## A tag under HANDLERS is answered by a script instead of a scene, for the
+## cues that never draw anything. Both are consulted at each level of that
+## walk, so which kind a tag uses never changes which tag answers.
+##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
 
@@ -17,6 +21,10 @@
 class_name GameplayCues
 
 const BINDINGS: Dictionary[StringName, PackedScene] = {
+}
+
+
+const HANDLERS: Dictionary[StringName, Script] = {
 }
 
 

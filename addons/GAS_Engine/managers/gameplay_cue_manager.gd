@@ -25,6 +25,7 @@ const SCENE_MISSING: String = "GAS_Engine: cue %s names a scene that will not lo
 const CueEntry = preload("res://addons/GAS_Engine/cues/gameplay_cue_entry.gd")
 const CueParams = preload("res://addons/GAS_Engine/cues/gameplay_cue_params.gd")
 const CueHandle = preload("res://addons/GAS_Engine/cues/gameplay_cue_handle.gd")
+const CueHandler = preload("res://addons/GAS_Engine/cues/gameplay_cue_handler.gd")
 const PoolBucket = preload("res://addons/GAS_Engine/cues/gameplay_cue_pool_bucket.gd")
 
 ## What a tag family is, borrowed from the one place that already knows.
@@ -54,6 +55,21 @@ var _cue_scenes: Dictionary[StringName, PackedScene] = {}
 ## resolution, and the answer is only ever yes or no.
 var _override_parent: Dictionary[StringName, bool] = {}
 
+## Tags answered by a script rather than a scene.
+##
+## One handler answers for every entity that plays its tag: it is stateless
+## by contract, so there is nothing to pool and nothing to parent.
+var _handlers: Dictionary[StringName, CueHandler] = {}
+
+## Persistent playbacks currently running on a handler, by the same handle
+## ids the scene-backed ones use. A handle resolves in exactly one of the
+## two maps, because a tag is answered by exactly one kind of binding.
+var _active_handler_by_id: Dictionary[int, CueHandler] = {}
+
+## What each running handler playback was told, so `while_active` can be
+## given the same params `on_active` was.
+var _handler_params_by_id: Dictionary[int, CueParams] = {}
+
 ## Every persistent cue currently running, keyed by its handle's own id -
 ## the id, not the handle object, so a caller's copy of the handle still
 ## resolves.
@@ -65,6 +81,24 @@ var _next_persistent_id: int = 1
 #region Initialization
 func _ready() -> void:
 	_load_registry()
+	# Nothing to tick until a handler-backed persistent cue is running, and
+	# a manager that processed every frame regardless would be a per-frame
+	# cost every project pays for a feature most of them do not use.
+	set_process(false)
+
+
+## Tell every running handler playback that it is still running.
+##
+## The scriptless counterpart of GameplayCueNotify's own while_active: a
+## RefCounted has no frame of its own, so the manager gives it one. Over a
+## snapshot of the ids, because a handler is entitled to end its own cue and
+## a walk over the live dictionary would then be walking something that
+## changed underneath it.
+func _process(_delta: float) -> void:
+	for id: int in _active_handler_by_id.keys():
+		if not _active_handler_by_id.has(id):
+			continue
+		_active_handler_by_id[id].while_active(_handler_params_by_id[id])
 
 
 ## Load the cue registry from disk and prepare one empty bucket per tag.
@@ -82,6 +116,14 @@ func _load_registry() -> void:
 			continue
 		_cue_scenes[tag] = scene
 		_pool[tag] = PoolBucket.new()
+
+	var handler_paths: Dictionary[StringName, String] = CueGenerator.handlers_in_file()
+	for tag: StringName in handler_paths:
+		var handler_script: Script = load(handler_paths[tag]) as Script
+		if handler_script == null:
+			push_error(SCENE_MISSING % [String(tag), handler_paths[tag]])
+			continue
+		_handlers[tag] = handler_script.new()
 
 	for tag: StringName in CueGenerator.overrides_in_file():
 		_override_parent[tag] = true
@@ -101,9 +143,28 @@ func _warn_missing_registry(cue_registry_path: String) -> void:
 ## an arbitrary Dictionary payload would let the caller and the cue disagree
 ## about every key with nothing in between to notice.
 func execute_cue(params: CueParams) -> void:
+	var handler: CueHandler = _handler_for(params)
+	if handler != null:
+		handler.on_execute(params)
+		return
 	var cue_instance: CueNotify = _resolve_and_parent(params)
 	if cue_instance != null:
 		cue_instance.execute_cue(params)
+
+
+## The handler answering this request, or null when a scene answers it.
+##
+## Resolves the tag through the one walk and stamps `matched_cue_tag` the way
+## the scene path does, so a cue can always tell how specific the binding that
+## answered it was - regardless of which kind it turned out to be.
+func _handler_for(params: CueParams) -> CueHandler:
+	if params == null:
+		return null
+	var matched: StringName = resolve_cue_tag(params.cue_tag)
+	if matched == &"" or not _handlers.has(matched):
+		return null
+	params.matched_cue_tag = matched
+	return _handlers[matched]
 
 
 ## Take/instantiate a cue, parent it, and run its PERSISTENT on_active/
@@ -112,6 +173,15 @@ func execute_cue(params: CueParams) -> void:
 ## principle.
 func activate_persistent_cue(params: CueParams) -> CueHandle:
 	var handle: CueHandle = CueHandle.new()
+	var handler: CueHandler = _handler_for(params)
+	if handler != null:
+		handle.id = _next_persistent_id
+		_next_persistent_id += 1
+		_active_handler_by_id[handle.id] = handler
+		_handler_params_by_id[handle.id] = params
+		handler.on_active(params)
+		set_process(true)
+		return handle
 	var cue_instance: CueNotify = _resolve_and_parent(params)
 	if cue_instance == null:
 		return handle
@@ -127,7 +197,16 @@ func activate_persistent_cue(params: CueParams) -> CueHandle:
 ## the same "gameplay stays correct without the cue" contract as a missing
 ## registry entry.
 func deactivate_persistent_cue(handle: CueHandle, params: CueParams) -> void:
-	if handle == null or not _active_persistent_by_id.has(handle.id):
+	if handle == null:
+		return
+	if _active_handler_by_id.has(handle.id):
+		var ending: CueHandler = _active_handler_by_id[handle.id]
+		_active_handler_by_id.erase(handle.id)
+		_handler_params_by_id.erase(handle.id)
+		set_process(not _active_handler_by_id.is_empty())
+		ending.on_removed(params)
+		return
+	if not _active_persistent_by_id.has(handle.id):
 		return
 	var cue_instance: CueNotify = _active_persistent_by_id[handle.id]
 	_active_persistent_by_id.erase(handle.id)
@@ -194,9 +273,13 @@ func _resolve_and_parent(params: CueParams) -> CueNotify:
 ##
 ## Answers &"" when nothing does, which every caller already treats as "no
 ## cue to show for it, and gameplay carries on regardless".
+## Both kinds of binding are consulted at each level, in one walk. Two walks -
+## scenes first, then handlers - would answer a request with an ancestor's
+## scene while a handler was bound to the exact tag, so which kind a project
+## chose would silently change which tag answered.
 func resolve_cue_tag(requested: StringName) -> StringName:
 	for candidate: StringName in TagFamily.ancestors_of(requested):
-		if _cue_scenes.has(candidate):
+		if _cue_scenes.has(candidate) or _handlers.has(candidate):
 			return candidate
 		if _override_parent.has(candidate):
 			return &""

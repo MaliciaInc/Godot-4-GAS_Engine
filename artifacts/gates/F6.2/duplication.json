@@ -1,13 +1,13 @@
 {
-  "units": 2554,
-  "units_by_language": "gdscript 2512, powershell 4, python 38",
-  "elapsed_seconds": 10.605066099997202,
+  "units": 2560,
+  "units_by_language": "gdscript 2518, powershell 4, python 38",
+  "elapsed_seconds": 10.561981400001969,
   "scan_issues": [],
   "shape_only_pairs": 41,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 24492
+    "behavioral": 24698
   },
   "blocking": 0,
   "findings": [
@@ -230,6 +230,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
+      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:700-709:accepts_target",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error",
       "score": 0.967741935483871,
@@ -240,13 +247,6 @@
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:58-65:blocked_externally",
       "right": "addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid",
       "score": 0.9411764705882353,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:97-106:_on_answered",
-      "right": "addons/GAS_Engine/managers/gameplay_cue_manager.gd:129-136:deactivate_persistent_cue",
-      "score": 0.9375,
       "category": "executable"
     },
     {
@@ -1490,13 +1490,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:688-695:execute_cue",
-      "right": "addons/GAS_Engine/managers/gameplay_cue_manager.gd:113-122:activate_persistent_cue",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability_definition_snapshot.gd:79-87:_duplicate_resource_array",
       "right": "addons/GAS_Engine/networking/gameplay_prediction_journal.gd:78-85:reject",
       "score": 0.8,
@@ -1597,6 +1590,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
       "right": "test/fixtures/test_effect_factory.gd:61-68:duration",
+      "score": 0.8,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_root_motion.gd:36-44:create",
+      "right": "test/unit/test_composer_action_menu.gd:19-28:_context",
       "score": 0.8,
       "category": "executable"
     },

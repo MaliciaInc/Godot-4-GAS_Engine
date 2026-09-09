@@ -71,7 +71,9 @@ func test_the_project_has_a_cues_file_and_it_parses() -> void:
 	assert_true(FileAccess.file_exists(path), "the file is where the setting says")
 	assert_eq(
 		GameplayCueGenerator.render_source(
-			GameplayCueGenerator.bindings_in_file(), GameplayCueGenerator.overrides_in_file()
+			GameplayCueGenerator.bindings_in_file(),
+			GameplayCueGenerator.overrides_in_file(),
+			GameplayCueGenerator.handlers_in_file()
 		),
 		FileAccess.get_file_as_string(path),
 		"and reading it and writing it again gives it back byte for byte"

@@ -28,6 +28,7 @@ var asc: AbilitySystemComponent = null
 var manager: CueManagerScript = null
 var _bound: Array[StringName] = []
 var _silenced: Array[StringName] = []
+var _handled: Array[StringName] = []
 
 
 func before_each() -> void:
@@ -44,6 +45,9 @@ func after_each() -> void:
 		CueProbe.uninstall(manager, tag)
 	for tag: StringName in _silenced:
 		CueProbe.unsilence(manager, tag)
+	for tag: StringName in _handled:
+		CueProbe.uninstall_handler(manager, tag)
+	_handled = []
 	_bound = []
 	_silenced = []
 	fixture = null
@@ -251,4 +255,79 @@ func _the_cue_on_the_target() -> GameplayCueNotify:
 		if cue != null:
 			return cue
 	return null
+#endregion
+
+
+#region Cues that are a script rather than a scene
+## Bind a handler to `tag` and remember to take it back out.
+func _handler_on(tag: StringName) -> CueProbe.RecordingHandler:
+	_handled.append(tag)
+	return CueProbe.install_handler(manager, tag)
+
+
+## A cue bound to a script plays through it, and nothing is instantiated.
+##
+## The second half is why the handler exists at all: a screen shake request or
+## a line in a combat log should not cost a Node to parent, pool and eventually
+## free for something that never drew anything.
+func test_a_handler_answers_without_a_node_being_made() -> void:
+	var handler: CueProbe.RecordingHandler = _handler_on(BRANCH)
+	var children_before: int = fixture.owner.get_child_count()
+
+	asc.execute_cue(CueProbe.params_for(BRANCH, fixture.owner))
+
+	assert_eq(handler.executed, 1, "the handler was asked")
+	assert_eq(
+		handler.last_matched_tag, BRANCH, "and told which binding answered"
+	)
+	assert_eq(
+		fixture.owner.get_child_count(),
+		children_before,
+		"and nothing was parented under the target"
+	)
+
+
+## One walk consults both kinds at every level.
+##
+## A scene on the parent and a handler on the leaf: asked for the leaf, the
+## handler answers, because it is the more specific binding. Two walks - every
+## scene first, then every handler - would have answered with the parent's
+## scene, so which kind a project chose would silently change which tag
+## answered a request.
+func test_a_handler_and_a_scene_are_consulted_in_the_same_walk() -> void:
+	_bind(BRANCH)
+	var handler: CueProbe.RecordingHandler = _handler_on(LEAF)
+
+	asc.execute_cue(CueProbe.params_for(LEAF, fixture.owner))
+
+	assert_eq(handler.executed, 1, "the exact binding answered")
+	assert_eq(
+		CueProbe.executions(manager, fixture.owner, BRANCH),
+		0,
+		"and the ancestor's scene was not reached"
+	)
+
+
+## A persistent cue on a handler starts, is told it is still running, and ends.
+##
+## The middle one is the reason the manager processes at all: a RefCounted has
+## no frame of its own, and a while_active nothing ever called would be a hook
+## in the contract with no producer.
+func test_a_persistent_handler_is_told_it_is_still_running_and_then_ended() -> void:
+	var handler: CueProbe.RecordingHandler = _handler_on(BRANCH)
+	var params: GameplayCueParams = CueProbe.params_for(BRANCH, fixture.owner)
+
+	var handle: GameplayCueHandle = asc.activate_persistent_cue(params)
+	assert_true(handle.is_valid(), "it started")
+	assert_eq(handler.actives, 1, "and the handler was told once")
+
+	await wait_process_frames(2)
+	assert_gt(handler.ticks, 0, "and told it was still running")
+
+	var ticks_at_end: int = handler.ticks
+	asc.deactivate_persistent_cue(handle, params)
+	assert_eq(handler.removals, 1, "it ended")
+
+	await wait_process_frames(2)
+	assert_eq(handler.ticks, ticks_at_end, "and stopped being told anything")
 #endregion
