@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      magic-string
 command:    python tooling\gates\run_gate.py magic-string artifacts\gates\F6.4
-started:    2026-09-09T15:45:43.3058645Z
-ended:      2026-09-09T15:45:51.9453925Z
-duration_s: 8.640
+started:    2026-09-09T16:18:03.1157590Z
+ended:      2026-09-09T16:18:11.7495167Z
+duration_s: 8.634
 exit_code:  0
 
 --- stdout ---
@@ -11,7 +11,7 @@ exit_code:  0
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 392
+- Source files scanned: 399
 - Blocking findings: 0
 - Scan issues: 0
 - Blocking kinds: colors, repeated, templates

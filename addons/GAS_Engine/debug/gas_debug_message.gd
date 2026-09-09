@@ -79,6 +79,17 @@ const STACKS: String = "stacks"
 const SECONDS_LEFT: String = "seconds_left"
 const TURNS_LEFT: String = "turns_left"
 
+## Why a thing is not doing what somebody expected: an effect that is applied
+## and not in force, and the three ordinary reasons an ability does not go off.
+## Sent because the answer has to survive the crossing - a snapshot rebuilt
+## without them would report "not inhibited" about an inhibited effect, which
+## is worse than reporting nothing.
+const INHIBITED: String = "inhibited"
+const ON_COOLDOWN: String = "on_cooldown"
+const COOLDOWN_SECONDS_LEFT: String = "cooldown_seconds_left"
+const COOLDOWN_TURNS_LEFT: String = "cooldown_turns_left"
+const LAST_RESULT: String = "last_result"
+
 
 ## The name of a kind, for a log a person reads without an editor.
 static func named(kind: GasDebugMessage.Kind) -> StringName:

@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# F6.4.3: the attribute picker and the nested tag query editor now share GASResourceInspectorPlugin, so Godot's seven-parameter _parse_property is exempted once on the base instead of once per picker.
+# F6.4.4: the debug channel's four projectors are one codec into the wire message, declared for the same reason the networking translators are.
 #
 # python: 3.14.6
-# date-utc: 2026-09-09T15:39:20Z
-# commit-previo: ba16d8821a9da6a3f7158b5a8d1fef09e341f032
+# date-utc: 2026-09-09T16:13:25Z
+# commit-previo: 173d2f3d2063ff459e4ab07b3b56a7d838ad91f5
 # files: 26
-650415a6a4a31ab7cb26fa5d70e9561bfc1d9c2e45ca5d0cd816341f3850d5aa  tooling/.quality-gates.json
+55cf4ebaecc49a06dc1bdea8acca9410d4868e94b57cb34b472d39f4d5310df8  tooling/.quality-gates.json
 2f5418b3e14b80cd4a0a94cba3db1f41b11f9b8f35bb2eb3c2d91c884b9771ed  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

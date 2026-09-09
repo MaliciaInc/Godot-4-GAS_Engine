@@ -662,6 +662,11 @@
         "reason": "Two authoring Resources that describe unrelated things and happen to be the same shape: an enum, a handful of exported fields, a paragraph on each. One says what an ability charges and the other says which cue an effect plays and how loud; they share no field, no consumer and no concept, and the only way to make them stop looking alike would be to write one of them worse. Declared rather than suppressed so that a duplication between two Resources that DO share a concept still fails."
       },
       {
+        "left": "addons/GAS_Engine/debug/gas_debug_channel.gd:_*_of",
+        "right": "addons/GAS_Engine/debug/gas_debug_channel.gd:_*_of",
+        "reason": "The four halves of one codec. Each walks a different typed row of a GasRuntimeSnapshot and writes a different set of wire keys, and they are alike in shape because a codec is a list of fields copied one way. Folding them would mean driving the copy from a table of field names - a Variant-keyed loop over Object.get() in the middle of our own code, which the typing rules forbid and which would turn a rename into a field that silently stops crossing the process boundary. What keeps them honest is that the whole message is read back by GasRuntimeSnapshot.from_message in the same round trip test, so a field dropped from either end fails rather than producing a debugger that shows nothing. Same reason the networking translators are declared, and declared per file so a duplication between two things that are NOT one codec still fails."
+      },
+      {
         "left": "addons/GAS_Engine/**:_expected",
         "right": "addons/GAS_Engine/**:_expected",
         "reason": "A wire contract's type table: every key of a format mapped to the TYPE_* it must arrive as. It is data rather than logic - the whole content of one is the field names of one format - and two of them are alike in shape precisely because they are both exhaustive. Folding them would mean one table for two formats, which is how a field added to one silently becomes required by the other."

@@ -86,15 +86,21 @@ func send_snapshot() -> void:
 ## Plain because it crosses a process boundary: an object would arrive as an
 ## object of a class the editor may not have loaded, and a Node reference would
 ## arrive as nothing at all.
+##
+## The capture itself is GasRuntimeSnapshot's, which the in-game overlay draws
+## from too. This used to walk the component itself, which was a second
+## description of what an entity looks like - and two descriptions of one thing
+## disagree the first time one of them learns about a new field.
 static func snapshot_of(component: AbilitySystemComponent) -> Dictionary:
+	var taken: GasRuntimeSnapshot = GasRuntimeSnapshot.of(component)
 	var said: Dictionary = {}
-	said[GasDebugMessage.ASC_ID] = component.get_instance_id()
-	said[GasDebugMessage.OWNER] = _named(component.get_parent())
-	said[GasDebugMessage.AVATAR] = _named(component.get_effect_target())
-	said[GasDebugMessage.ATTRIBUTES] = _attributes_of(component)
-	said[GasDebugMessage.TAGS] = _tags_of(component)
-	said[GasDebugMessage.ABILITIES] = _abilities_of(component)
-	said[GasDebugMessage.EFFECTS] = _effects_of(component)
+	said[GasDebugMessage.ASC_ID] = taken.asc_id
+	said[GasDebugMessage.OWNER] = taken.owner_name
+	said[GasDebugMessage.AVATAR] = taken.avatar_name
+	said[GasDebugMessage.ATTRIBUTES] = _attributes_of(taken)
+	said[GasDebugMessage.TAGS] = _tags_of(taken)
+	said[GasDebugMessage.ABILITIES] = _abilities_of(taken)
+	said[GasDebugMessage.EFFECTS] = _effects_of(taken)
 	return said
 
 
@@ -102,13 +108,13 @@ static func _named(node: Node) -> String:
 	return String(node.name) if node != null else ""
 
 
-static func _attributes_of(component: AbilitySystemComponent) -> Array:
+static func _attributes_of(taken: GasRuntimeSnapshot) -> Array:
 	var said: Array = []
-	for attribute_name: StringName in component.attributes.all_attribute_names():
+	for attribute: GasRuntimeSnapshot.Attribute in taken.attributes:
 		said.append({
-			GasDebugMessage.NAME: String(attribute_name),
-			GasDebugMessage.BASE: component.get_attribute_base(attribute_name),
-			GasDebugMessage.CURRENT: component.get_attribute_current(attribute_name),
+			GasDebugMessage.NAME: attribute.name,
+			GasDebugMessage.BASE: attribute.base,
+			GasDebugMessage.CURRENT: attribute.current,
 		})
 	return said
 
@@ -117,53 +123,44 @@ static func _attributes_of(component: AbilitySystemComponent) -> Array:
 ## exact tag, and how much of the family is held. A debugger showing one of them
 ## is a debugger somebody has to do arithmetic in front of - `State` reading 0
 ## while `State.Stunned` reads 2 is a person working out the hierarchy by hand.
-static func _tags_of(component: AbilitySystemComponent) -> Array:
+static func _tags_of(taken: GasRuntimeSnapshot) -> Array:
 	var said: Array = []
-	var families: Array[StringName] = []
-	for tag: StringName in component.tags.active_tags():
+	for tag: GasRuntimeSnapshot.Tag in taken.tags:
 		said.append({
-			GasDebugMessage.NAME: String(tag),
-			GasDebugMessage.COUNT: component.tags.count_exact(tag),
-			GasDebugMessage.FAMILY_COUNT: component.tags.count(tag),
-		})
-		for ancestor: StringName in GameplayTagRuntime.ancestors_of(tag):
-			if ancestor != tag and not families.has(ancestor):
-				families.append(ancestor)
-
-	# A parent nothing holds directly is still something a listener watches, and
-	# a debugger that only listed what is written on the entity would leave the
-	# person to work out that `State` is held at all.
-	for ancestor: StringName in families:
-		said.append({
-			GasDebugMessage.NAME: String(ancestor),
-			GasDebugMessage.COUNT: component.tags.count_exact(ancestor),
-			GasDebugMessage.FAMILY_COUNT: component.tags.count(ancestor),
+			GasDebugMessage.NAME: tag.name,
+			GasDebugMessage.COUNT: tag.count,
+			GasDebugMessage.FAMILY_COUNT: tag.family_count,
 		})
 	return said
 
 
 ## By handle, which is what a grant is: the instance behind it comes and goes.
-static func _abilities_of(component: AbilitySystemComponent) -> Array:
+static func _abilities_of(taken: GasRuntimeSnapshot) -> Array:
 	var said: Array = []
-	for spec: GameplayAbilitySpec in component.ability_runtime.specs():
+	for ability: GasRuntimeSnapshot.Ability in taken.abilities:
 		said.append({
-			GasDebugMessage.HANDLE: spec.handle.id,
-			GasDebugMessage.NAME: spec.definition.ability_name,
-			GasDebugMessage.LEVEL: spec.level,
-			GasDebugMessage.ACTIVE: spec.active_count,
+			GasDebugMessage.HANDLE: ability.handle,
+			GasDebugMessage.NAME: ability.name,
+			GasDebugMessage.LEVEL: ability.level,
+			GasDebugMessage.ACTIVE: ability.active,
+			GasDebugMessage.ON_COOLDOWN: ability.on_cooldown,
+			GasDebugMessage.COOLDOWN_SECONDS_LEFT: ability.cooldown_seconds_left,
+			GasDebugMessage.COOLDOWN_TURNS_LEFT: ability.cooldown_turns_left,
+			GasDebugMessage.LAST_RESULT: ability.last_result,
 		})
 	return said
 
 
-static func _effects_of(component: AbilitySystemComponent) -> Array:
+static func _effects_of(taken: GasRuntimeSnapshot) -> Array:
 	var said: Array = []
-	for active: ActiveGameplayEffect in component.get_active_effects():
+	for effect: GasRuntimeSnapshot.Effect in taken.effects:
 		said.append({
-			GasDebugMessage.HANDLE: active.handle.id if active.handle != null else 0,
-			GasDebugMessage.NAME: String(active.get_effect_def().resource_name),
-			GasDebugMessage.STACKS: active.stack_count,
-			GasDebugMessage.SECONDS_LEFT: active.time_remaining,
-			GasDebugMessage.TURNS_LEFT: component.get_effect_turns_remaining(active.handle),
+			GasDebugMessage.HANDLE: effect.handle,
+			GasDebugMessage.NAME: effect.name,
+			GasDebugMessage.STACKS: effect.stacks,
+			GasDebugMessage.SECONDS_LEFT: effect.seconds_left,
+			GasDebugMessage.TURNS_LEFT: effect.turns_left,
+			GasDebugMessage.INHIBITED: effect.inhibited,
 		})
 	return said
 #endregion
