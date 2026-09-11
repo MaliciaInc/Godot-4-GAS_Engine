@@ -580,6 +580,76 @@ passed**.
 
 # Milestones
 
+## SBX-008 — the re-deploy copied the addon and left the generated half behind · **FIXED**
+
+A re-deploy was understood as "copy `addons/GAS_Engine` from `main`", and by
+that definition every re-deploy since `08bd807` was complete. The addon here is
+byte for byte `main`'s - same git tree, `2d53709`, 817 files. `gas_engine/` was
+not, and had not been for two phases.
+
+### Repro
+
+```bash
+git rev-parse origin/main:addons/GAS_Engine
+git rev-parse origin/godot-open-rpg_GAS_Engine:addons/GAS_Engine   # the same
+git rev-parse origin/main:gas_engine
+git rev-parse origin/godot-open-rpg_GAS_Engine:gas_engine          # not the same
+```
+
+### Expected / Actual
+
+Five declarations a current engine writes were absent here:
+
+| declaration | in | added by |
+|---|---|---|
+| `REDIRECTS`, `RESTRICTED`, `COMMENTS` | `gameplay_tags.gd` | F6.4.3 |
+| `HANDLERS` | `gameplay_cues.gd` | F6.2.5 |
+| `OVERRIDE_PARENT` | `gameplay_cues.gd` | `d2f0588` |
+
+### Why it was silent
+
+Both registries are read as *text*, not loaded as scripts, and both readers walk
+the file looking for a declaration to step inside - `_body_of()` in each
+generator. A declaration that is not there is not an error; the walk simply
+never steps in and the reader returns empty. An absent `OVERRIDE_PARENT` reads
+exactly like an `OVERRIDE_PARENT` nobody filled in.
+
+So nothing broke, and that is the whole problem: the cue family walk, tag
+redirects, restricted tags and tag comments were all live in the addon here
+while the file they read from could not express any of them. Any probe written
+to exercise them would have passed against nothing.
+
+### The class, not just this instance
+
+The fix is not to copy `main`'s two files - their `.uid`s belong to `main`'s
+project and this project's own must survive. It is to notice that a host project
+has a *generated* surface as well as a copied one, and that only the copied half
+had a procedure. `SANDBOX.md` now defines a re-deploy as both steps, and the
+second is the generators writing back what this project already declares, so it
+stays correct for whatever declaration the next phase adds.
+
+### Fix
+
+Re-rendered here with the deployed generators. The result is byte for byte
+`main`'s content with this project's `.uid`s untouched. All four probes green
+afterwards: `gas_probe` both arenas to `combat_finished`, `composer_probe`
+`8 nodes, 7 wires, 0 notes, byte for byte`, `composer_harness` 58/58,
+`composer_smoke` `PASS passed=82 failed=0`.
+
+### Noticed on the way, not a defect here
+
+`GameplayCueGenerator.generate_cues_file()` calls `render_source(bindings,
+overrides)` and never passes `handlers`, so a regeneration would drop a
+project's cue handlers - where the tag generator round-trips all three of its
+declarations. It is unreachable today: the only two callers are the legacy
+`.tres` migration, which predates handlers, and the first-run seed, which is
+guarded by `file_exists`. Nothing in the editor writes either file. Recorded
+rather than repaired, because the sandbox does not repair - and recorded as
+latent rather than live, because that is what it is.
+
+---
+
+
 ## 2026-09-01 — combat runs on GAS_Engine end to end
 
 A battle was played through: entered from the field, action menu, target

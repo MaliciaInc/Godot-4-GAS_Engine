@@ -40,6 +40,41 @@ Fixing an engine defect inside the sandbox would put the repair somewhere the
 addon is never built from, and the next re-deploy would silently overwrite it.
 The sandbox reports; `main` repairs.
 
+### What a re-deploy is, in full
+
+Copying `addons/GAS_Engine` is most of it, but not all of it, and the half that
+was missed went unnoticed for two phases.
+
+```text
+1. copy addons/GAS_Engine from main, whole
+2. re-render gas_engine/ with the generators that were just copied
+```
+
+`gas_engine/` is not the addon - it is what the addon generates *into* a host
+project, and this project is a host. Its files are this project's own, down to
+their `.uid`s, so they are never copied from main. They are re-rendered here,
+by asking this project's freshly-copied generators to write back what this
+project already declares:
+
+```gdscript
+GameplayTagGenerator.generate_tags_file(GameplayTagGenerator.tags_in_file())
+GDScriptSource.write(
+	GASEngineProjectSettings.get_generated_cue_script_path(),
+	GameplayCueGenerator.render_source(
+		GameplayCueGenerator.bindings_in_file(),
+		GameplayCueGenerator.overrides_in_file(),
+		GameplayCueGenerator.handlers_in_file()
+	)
+)
+```
+
+Skipping step 2 is quiet rather than loud: a declaration a newer engine writes
+is simply absent, and every reader of an absent declaration reads it as empty.
+So the project keeps running and the features that declaration carries test
+nothing. That is what happened between `08bd807` and F6.4.3 - `REDIRECTS`,
+`RESTRICTED`, `COMMENTS`, `HANDLERS` and `OVERRIDE_PARENT` were all missing
+here while the addon beside them was current.
+
 ## Branch relationship
 
 This is an **orphan branch**. It shares no history with `main`, on purpose:
