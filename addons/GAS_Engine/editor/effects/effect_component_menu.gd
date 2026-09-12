@@ -29,10 +29,10 @@ const ALREADY_HELD: String = "%s (already on this effect)"
 
 ## An author picked a component. The script, not an instance: whoever asked is
 ## the one that decides when to build it.
-signal component_chosen(component_script: Script)
+signal component_chosen(component_script: GDScript)
 
 ## What each menu index offers, in the order the menu shows them.
-var _offered: Array[Script] = []
+var _offered: Array[GDScript] = []
 
 
 func _ready() -> void:
@@ -47,8 +47,9 @@ func _ready() -> void:
 func offer_for(document: GameplayEffectDocument) -> void:
 	clear()
 	_offered.clear()
-	for script: Script in available_components():
-		var made: GameplayEffectComponent = script.new() as GameplayEffectComponent
+	for script: GDScript in available_components():
+		var built: Object = script.new()
+		var made: GameplayEffectComponent = built as GameplayEffectComponent
 		if made == null:
 			continue
 		var held: bool = (
@@ -64,15 +65,15 @@ func offer_for(document: GameplayEffectDocument) -> void:
 ##
 ## Sorted by file name so the menu does not reorder itself between runs: a menu
 ## whose entries move is a menu people misclick.
-static func available_components() -> Array[Script]:
-	var found: Array[Script] = []
+static func available_components() -> Array[GDScript]:
+	var found: Array[GDScript] = []
 	var names: Array[String] = []
 	for name: String in DirAccess.get_files_at(COMPONENTS_DIRECTORY):
 		if name.ends_with(SUFFIX) and name != BASE_SCRIPT:
 			names.append(name)
 	names.sort()
 	for name: String in names:
-		var script: Script = load(COMPONENTS_DIRECTORY + "/" + name) as Script
+		var script: GDScript = load(COMPONENTS_DIRECTORY + "/" + name) as GDScript
 		if script != null:
 			found.append(script)
 	return found

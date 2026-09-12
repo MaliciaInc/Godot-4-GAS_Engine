@@ -28,7 +28,9 @@ func execute(
 
 ## Whether this node carries the named script, or something that extends it.
 func _is_the_kind(node: Node) -> bool:
-	var carried: Script = node.get_script() as Script
+	# Assigned rather than cast: `get_script()` answers a Variant, and a cast
+	# from Variant is unchecked where the assignment is checked.
+	var carried: Script = node.get_script()
 	while carried != null:
 		if carried == required_script:
 			return true

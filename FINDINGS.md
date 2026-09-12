@@ -636,16 +636,24 @@ afterwards: `gas_probe` both arenas to `combat_finished`, `composer_probe`
 `8 nodes, 7 wires, 0 notes, byte for byte`, `composer_harness` 58/58,
 `composer_smoke` `PASS passed=82 failed=0`.
 
-### Noticed on the way, not a defect here
+### Noticed on the way - fixed on main at `76958eb`
 
-`GameplayCueGenerator.generate_cues_file()` calls `render_source(bindings,
-overrides)` and never passes `handlers`, so a regeneration would drop a
+`GameplayCueGenerator.generate_cues_file()` called `render_source(bindings,
+overrides)` and never passed `handlers`, so a regeneration would drop a
 project's cue handlers - where the tag generator round-trips all three of its
-declarations. It is unreachable today: the only two callers are the legacy
-`.tres` migration, which predates handlers, and the first-run seed, which is
-guarded by `file_exists`. Nothing in the editor writes either file. Recorded
-rather than repaired, because the sandbox does not repair - and recorded as
-latent rather than live, because that is what it is.
+declarations. Recorded here as latent, because it was: the only two callers are
+the legacy `.tres` migration, which predates handlers, and the first-run seed,
+which is guarded by `file_exists`.
+
+Repairing it on `main` ran the strict-typing pass over the cue files for what
+looks like the first time, and that found something that was **not** latent:
+`gameplay_cue_catalog.gd:61` called `new()` on a var typed `Script` and put the
+result straight into a `Dictionary[StringName, CueHandler]`. A `HANDLERS` entry
+naming a loadable script that is not a handler therefore ended
+`load_from_project()` with an invalid-assignment error and took every cue after
+it with it. `HANDLERS` is hand-authored - no editor writes it - so that is a
+normal way for a host project to be wrong. It now names the tag and the file,
+skips that one and loads the rest.
 
 ---
 

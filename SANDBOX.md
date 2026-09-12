@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `aad0cbc` (FASE 6) |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `76958eb` (FASE 6) |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness

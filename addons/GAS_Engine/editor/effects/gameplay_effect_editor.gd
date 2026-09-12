@@ -195,7 +195,10 @@ func _component_rows() -> Array[Control]:
 		var held: GameplayEffectComponent = document.effect.components[index]
 		if held == null:
 			continue
-		rows.append(_removable(EffectComponentMenu.readable_name(held.get_script()), index, true))
+		# `get_script()` answers a Variant, and a Variant handed to a typed
+		# parameter is a check nobody makes. The local is the check.
+		var carried: Script = held.get_script()
+		rows.append(_removable(EffectComponentMenu.readable_name(carried), index, true))
 	return rows
 
 
@@ -290,8 +293,9 @@ func _on_add_component_pressed() -> void:
 	_menu.popup_centered()
 
 
-func _on_component_chosen(component_script: Script) -> void:
-	var made: GameplayEffectComponent = component_script.new() as GameplayEffectComponent
+func _on_component_chosen(component_script: GDScript) -> void:
+	var built: Object = component_script.new()
+	var made: GameplayEffectComponent = built as GameplayEffectComponent
 	if made != null:
 		document.add_component(made)
 #endregion

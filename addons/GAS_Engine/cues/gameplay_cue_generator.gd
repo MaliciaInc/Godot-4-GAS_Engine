@@ -256,11 +256,18 @@ static func _between(line: String, opens: String, closes: String) -> String:
 
 
 ## Write the cues file for these bindings.
-static func generate_cues_file(
-	bindings: Dictionary[StringName, String], overrides: Array[StringName] = []
-) -> bool:
+##
+## The handlers and the stops are read back and written again, the way the tag
+## file's three declarations are and for the same reason its header gives:
+## rendering with the defaults would delete them the first time anybody wrote
+## the file for an unrelated reason, and this file is the only copy a project
+## has of them. Bindings arrive as an argument because a caller is replacing
+## them; these two are hand-authored and no caller has ever had a value for
+## either, so asking for one was an invitation to pass nothing and lose them.
+static func generate_cues_file(bindings: Dictionary[StringName, String]) -> bool:
 	var path: String = Settings.get_generated_cue_script_path()
-	if not Source.write(path, render_source(bindings, overrides)):
+	var source: String = render_source(bindings, overrides_in_file(), handlers_in_file())
+	if not Source.write(path, source):
 		return false
 	print(GENERATED_REPORT % [path, bindings.size()])
 	return true
