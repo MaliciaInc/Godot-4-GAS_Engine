@@ -5,13 +5,13 @@
 - Source files scanned: 671
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 3081
-- Units by language: gdscript 3027, powershell 6, python 48
+- Units scanned: 3083
+- Units by language: gdscript 3029, powershell 6, python 48
 - Findings: 380
-- Elapsed: 13.298s
+- Elapsed: 14.480s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
-- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27215 (raise with --max-pairs)
+- Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27238 (raise with --max-pairs)
 
 ## Structural
 
@@ -179,6 +179,7 @@
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:298-305:conditional_effect`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:96-104:turn_based`
 - 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_attribute_evaluation.gd:59-66:_request`
+- 1.000 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_composer_creation.gd:46-58:_context`
 - 0.968 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:873-882:accepts_target` <-> `addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error`
 - 0.941 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:58-65:blocked_externally` <-> `addons/GAS_Engine/integrations/gloot/gloot_gas_equipment_catalog.gd:28-36:is_valid`
 - 0.923 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/effects/gameplay_effect_spec.gd:565-576:resolve_authored_timing`
@@ -352,7 +353,6 @@
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal` <-> `test/unit/test_authoring_friction.gd:84-92:_scripts_in`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:128-135:clear_specs_with_input` <-> `addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of` <-> `addons/GAS_Engine/components/ability_system_component.gd:1121-1128:try_activate_abilities_by_query`
-- 0.800 [executable]: `addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching` <-> `addons/GAS_Engine/editor/effects/gameplay_effect_editor.gd:190-199:_component_rows`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:21-28:effective_ability_tags` <-> `addons/GAS_Engine/components/ability_system_component.gd:828-836:_timed`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:619-627:_prepare_custom_costs` <-> `addons/GAS_Engine/targeting/presets/tasks/targeting_filter_by_class.gd:18-26:execute`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/gameplay_ability.gd:797-804:execute_cue` <-> `addons/GAS_Engine/editor/composer/ir/composer_ir.gd:236-245:_note_async_exit`
@@ -373,7 +373,7 @@
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:288-295:with_stack_clock_policies`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/fixtures/test_effect_factory.gd:61-68:duration`
 - 0.800 [executable]: `addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create` <-> `test/unit/test_composer_action_menu.gd:19-28:_context`
-- 0.792 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:134-146:_declares_trigger` <-> `addons/GAS_Engine/attributes/gameplay_attribute_catalog.gd:113-121:knows`
+- 0.792 [executable]: `addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:134-146:_declares_trigger` <-> `addons/GAS_Engine/attributes/gameplay_attribute_catalog.gd:114-122:knows`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_cooldown_runtime.gd:19-29:get_cooldown_tags` <-> `addons/GAS_Engine/components/ability_runtime.gd:616-628:_deliver_input`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_instancing_runtime.gd:93-103:mark_pending_removal` <-> `addons/GAS_Engine/editor/composer/composer_flow_checks.gd:122-132:runs_forward`
 - 0.792 [executable]: `addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:67-74:cancel_matching_query` <-> `addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:48-57:can_apply_all`

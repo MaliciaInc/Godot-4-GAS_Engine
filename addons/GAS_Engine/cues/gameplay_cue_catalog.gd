@@ -23,6 +23,14 @@ const TagFamily = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_fam
 
 const MISSING: String = "GAS_Engine: cue %s names a scene that will not load: %s"
 
+## Said when the script loads and is simply not one of these.
+##
+## Its own message rather than MISSING, because "will not load" sends
+## somebody to look for a file that is right there.
+const NOT_A_HANDLER: String = (
+	"GAS_Engine: cue %s names a script that is not a GameplayCueHandler: %s"
+)
+
 ## Tags answered by a scene, and tags answered by a script. A tag is in one or
 ## the other, never both.
 var scenes: Dictionary[StringName, PackedScene] = {}
@@ -54,11 +62,20 @@ func load_from_project() -> bool:
 
 	var handler_paths: Dictionary[StringName, String] = CueGenerator.handlers_in_file()
 	for tag: StringName in handler_paths:
-		var handler_script: Script = load(handler_paths[tag]) as Script
+		var handler_script: GDScript = load(handler_paths[tag]) as GDScript
 		if handler_script == null:
 			push_error(MISSING % [String(tag), handler_paths[tag]])
 			continue
-		handlers[tag] = handler_script.new()
+		# Built through Object rather than cast straight from what `new()`
+		# answers, which is a Variant: a cast from Variant is unchecked, and
+		# the thing being checked here is exactly whether a project pointed
+		# this tag at a script that is a handler at all.
+		var made: Object = handler_script.new()
+		var handler: CueHandler = made as CueHandler
+		if handler == null:
+			push_error(NOT_A_HANDLER % [String(tag), handler_paths[tag]])
+			continue
+		handlers[tag] = handler
 
 	for tag: StringName in CueGenerator.overrides_in_file():
 		overrides[tag] = true

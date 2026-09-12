@@ -1,13 +1,13 @@
 {
-  "units": 3081,
-  "units_by_language": "gdscript 3027, powershell 6, python 48",
-  "elapsed_seconds": 13.298066600000311,
+  "units": 3083,
+  "units_by_language": "gdscript 3029, powershell 6, python 48",
+  "elapsed_seconds": 14.479702399999951,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27215
+    "behavioral": 27238
   },
   "blocking": 0,
   "findings": [
@@ -204,6 +204,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
+      "right": "test/unit/test_composer_creation.gd:46-58:_context",
       "score": 1.0,
       "category": "executable"
     },
@@ -1420,13 +1427,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:90-97:specs_matching",
-      "right": "addons/GAS_Engine/editor/effects/gameplay_effect_editor.gd:190-199:_component_rows",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_tag_semantics_runtime.gd:21-28:effective_ability_tags",
       "right": "addons/GAS_Engine/components/ability_system_component.gd:828-836:_timed",
       "score": 0.8,
@@ -1568,7 +1568,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_activation_policy_runtime.gd:134-146:_declares_trigger",
-      "right": "addons/GAS_Engine/attributes/gameplay_attribute_catalog.gd:113-121:knows",
+      "right": "addons/GAS_Engine/attributes/gameplay_attribute_catalog.gd:114-122:knows",
       "score": 0.7916666666666666,
       "category": "executable"
     },

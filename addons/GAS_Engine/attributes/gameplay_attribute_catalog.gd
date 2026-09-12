@@ -90,10 +90,11 @@ static func entries() -> Array[Entry]:
 static func scan() -> Array[Entry]:
 	var found: Array[Entry] = []
 	for path: String in GDScriptClassScan.scripts_extending(SET_CLASS):
-		var script: Script = load(path) as Script
+		var script: GDScript = load(path) as GDScript
 		if script == null:
 			continue
-		var made: AttributeSet = script.new() as AttributeSet
+		var built: Object = script.new()
+		var made: AttributeSet = built as AttributeSet
 		if made == null:
 			continue
 		var set_name: StringName = StringName(path.get_file().get_basename())
