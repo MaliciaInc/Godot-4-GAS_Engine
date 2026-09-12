@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      parity-receipts
 command:    python tooling/parity_receipt.py --all
-started:    2026-09-12T01:33:30.0538338Z
-ended:      2026-09-12T01:33:30.1855802Z
-duration_s: 0.132
+started:    2026-09-12T02:01:22.5705526Z
+ended:      2026-09-12T02:01:22.7097122Z
+duration_s: 0.139
 exit_code:  0
 
 --- stdout ---

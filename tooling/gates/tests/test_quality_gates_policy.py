@@ -29,7 +29,14 @@ POLICY_PATH = ROOT / "tooling" / ".quality-gates.json"
 
 #: Where a pin may point. GUT is vendored and pinned byte-identical, so nothing
 #: in the policy is allowed to name a function inside it.
-SOURCE_SUFFIXES = ("*.gd", "*.py", "*.ps1")
+#:
+#: `.cs` is here because the duplication gate reports C# files and this checker
+#: could not resolve one: a pair the gate blocked on was therefore impossible
+#: to allow, because allowing it was immediately called dead policy. Two halves
+#: of one rule disagreeing about which files exist is the same failure the
+#: engine evidence had, and it is fixed the same way - by making them read the
+#: same set.
+SOURCE_SUFFIXES = ("*.gd", "*.py", "*.ps1", "*.cs")
 VENDORED = "addons/gut/"
 
 #: The member a pin may name instead of a function: the whole file.

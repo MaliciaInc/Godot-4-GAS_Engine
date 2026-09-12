@@ -1,0 +1,8 @@
+# Everything a build makes. The harness is its sources and its config; the
+# rest is reproduced by running it.
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Content/
+*.sln

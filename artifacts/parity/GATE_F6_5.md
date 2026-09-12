@@ -49,8 +49,28 @@ phase names, and every one of them says `NOT_UE_VERIFIED`. That is the honest
 state: the numbers in them were derived from this engine and from the
 reference's documentation, and neither is a reference having been run.
 
-Unreal Engine 5.7.4 is not installed on this machine and the phase forbids
-inventing the outputs. So:
+**Correction, 2026-09-11.** This receipt said "Unreal Engine 5.7.4 is not
+installed on this machine". That was not measured, and it was false: UE 5.7.4
+CL 51494982 - the exact build these goldens name - is installed at
+`C:/Program Files/Epic Games/UE_5.7`, with the GameplayAbilities plugin and its
+prebuilt binaries. The STOP is real and stands, but not for the reason written
+here, and a blocker recorded as "the engine is missing" is one nobody re-checks.
+
+What actually blocks it is one missing component, and `tools/ue_reference/`
+now carries a harness that proves where the wall is rather than describing it.
+The editor target will not build because `SwarmInterface.Build.cs` throws
+without a .NET Framework 4.6+ SDK, which is not installed. The game target
+builds and links against real GAS but cannot run, because a monolithic binary
+needs cooked content and cooking needs the editor. Driving it from the editor's
+Python plugin gets as far as building modifiers exactly and then dies on
+`Ensure condition failed: AbilityActorInfo.IsValid()`, because
+`InitAbilityActorInfo` is not a `UFUNCTION` - which is why the harness has a
+C++ module at all, and that module compiles.
+
+Installing the .NET Framework 4.8 SDK closes all three at once. The engine
+install was deliberately left unmodified.
+
+The phase forbids inventing the outputs. So:
 
 - `tooling/parity_diff.py` refuses to compare and exits non-zero, which is the
   STOP rather than a failure of the engine;

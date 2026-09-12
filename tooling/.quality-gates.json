@@ -714,6 +714,11 @@
         "left": "addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:find_candidate",
         "right": "test/unit/test_effect_index_scaling.gd:_scanned",
         "reason": "An oracle is a copy on purpose. F6.5.1 replaced a walk over every active effect with a bucket lookup, and the only way to say the answer did not change is to keep the walk and compare the two over the same state - which means the oracle has to be the old implementation, written out, rather than something that calls the new one. An oracle that shared code with the thing it checks checks nothing. It lives in the test that uses it so that a reader sees both at once, and the pair is declared here rather than suppressed so that a duplication between two things that are NOT an implementation and its oracle still fails."
+      },
+      {
+        "left": "tools/ue_reference/harness/Source/UEParity.Target.cs:*",
+        "right": "tools/ue_reference/harness/Source/UEParityEditor.Target.cs:*",
+        "reason": "UnrealBuildTool discovers a target by finding exactly one file named <Target>.Target.cs declaring exactly one class named <Target>Target, and it requires one per target type. The game target and the editor target of the same project therefore have to be two files that differ in a class name and a TargetType and in nothing else - there is no shared base a project may put them in, and merging them means the build system cannot find either. Both are needed: the editor target is what the reference run uses once the .NET Framework SDK is installed, and the game target is what was used to prove the module compiles against real GAS without it."
       }
     ]
   }

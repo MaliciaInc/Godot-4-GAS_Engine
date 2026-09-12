@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.7",
+	"Category": "",
+	"Description": "GAS_Engine parity reference harness",
+	"Modules": [
+		{ "Name": "UEParity", "Type": "Runtime", "LoadingPhase": "Default" }
+	],
+	"Plugins": [
+		{ "Name": "GameplayAbilities", "Enabled": true },
+		{ "Name": "PythonScriptPlugin", "Enabled": true }
+	]
+}

@@ -31,6 +31,49 @@ should use, and whether execution order is observable in it.
 | `bonus_magnitude` | how a captured magnitude composes its coefficients |
 | `magnitude_up_to_channel` | what "as it stood up to a channel" reads |
 
+## The harness, and what it is still blocked on
+
+`harness/` is a real project for this, not a description of one. It was built
+and run against the installed engine on 2026-09-11, and what follows is
+measured rather than planned.
+
+**Unreal Engine 5.7.4 CL 51494982 is installed on this machine** - the version
+and changelist the goldens name, at `C:\Program Files\Epic Games\UE_5.7`, with
+the GameplayAbilities plugin and its prebuilt binaries. Earlier receipts said it
+was not. That was wrong, and correcting it is what turned an open-ended blocker
+into a named one.
+
+What was proved to work:
+
+- the editor boots headless and runs Python (`-run=pythonscript`);
+- `UAbilitySystemTestAttributeSet` is a shipped, reflected class, and
+  `init_stats` registers its sixteen attributes on a component;
+- a `FGameplayModifierInfo` can be built exactly, including its evaluation
+  channel, by `import_text` with the text Unreal itself exports;
+- a `UGameplayEffect` class can be made from a Blueprint asset and its CDO
+  edited;
+- the game target compiles against real GAS (`ParityHelpers.cpp`,
+  `ParityGameInstance.cpp` build clean with MSVC 14.44).
+
+What blocks it, precisely:
+
+| | |
+|---|---|
+| Editor target | will not build: `SwarmInterface.Build.cs` throws *"Could not find NetFxSDK install dir"*. The .NET Framework 4.6+ SDK is not installed - no `Windows Kits\NETFXSDK`, no `Microsoft SDKs\NETFXSDK` registry key. |
+| Game target | builds and links, and cannot run: a monolithic binary needs cooked content, and cooking needs the editor. |
+| Python alone | cannot reach `UAbilitySystemComponent::InitAbilityActorInfo`, which is not a `UFUNCTION`; every apply path dereferences `AbilityActorInfo` and the process dies on `Ensure condition failed: AbilityActorInfo.IsValid()` at `AbilitySystemComponent.cpp:476`. |
+
+So one component closes all three: install the **.NET Framework 4.8 SDK** (the
+Visual Studio Installer component `Microsoft.Net.Component.4.8.SDK`, or
+Microsoft's standalone Developer Pack). With it the editor target builds,
+`ParityHelpers` exposes the initialiser, and `python_harness.py` already has the
+rest.
+
+The engine install is deliberately not modified. Editing
+`SwarmInterface.Build.cs` to stop it throwing would also work and would change
+nothing about GameplayEffect arithmetic - and it would mean these goldens were
+produced on an engine that is not the stock one they name.
+
 ## How
 
 1. Open Unreal Engine 5.7.4 (changelist 51494982) with a project that has the

@@ -1,7 +1,7 @@
 {
-  "units": 3087,
-  "units_by_language": "gdscript 3033, powershell 6, python 48",
-  "elapsed_seconds": 13.479967499999475,
+  "units": 3094,
+  "units_by_language": "c 1, cpp 2, csharp 3, gdscript 3033, powershell 6, python 49",
+  "elapsed_seconds": 13.437474999998813,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
@@ -2668,6 +2668,13 @@
       "kind": "structural",
       "left": "test/unit/test_targeting_2d.gd:200-219:test_a_tag_rule_keeps_out_whoever_does_not_qualify",
       "right": "test/unit/test_targeting_3d.gd:198-217:test_a_tag_rule_keeps_out_whoever_does_not_qualify",
+      "score": 1.0,
+      "category": "executable"
+    },
+    {
+      "kind": "structural",
+      "left": "tools/ue_reference/harness/Source/UEParity.Target.cs:1-12:<file>",
+      "right": "tools/ue_reference/harness/Source/UEParityEditor.Target.cs:1-12:<file>",
       "score": 1.0,
       "category": "executable"
     }

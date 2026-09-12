@@ -2,13 +2,13 @@
 
 - Status: **PASS**
 - Project: `<repo>`
-- Source files scanned: 672
+- Source files scanned: 682
 - Blocking findings: 0
 - Scan issues: 0
-- Units scanned: 3087
-- Units by language: gdscript 3033, powershell 6, python 48
-- Findings: 380
-- Elapsed: 13.480s
+- Units scanned: 3094
+- Units by language: c 1, cpp 2, csharp 3, gdscript 3033, powershell 6, python 49
+- Findings: 381
+- Elapsed: 13.437s
 - Explicit default exclusions: tooling/gates/**
 - Shape-only pairs not counted: 42 (identifier overlap < 0.55 or fewer than 3 identifiers)
 - Pairs found but not listed, per-kind cap 250: structural 0, masked 0, behavioral 27248 (raise with --max-pairs)
@@ -42,6 +42,7 @@
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:151-159:test_a_trace_keeps_the_point_and_the_normal_physics_gave_it` <-> `test/unit/test_targeting_3d.gd:149-157:test_a_trace_keeps_the_point_and_the_normal_physics_gave_it`
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:179-186:test_a_sweep_stops_at_the_limit_it_was_given` <-> `test/unit/test_targeting_3d.gd:177-184:test_a_sweep_stops_at_the_limit_it_was_given`
 - 1.000 [executable]: `test/unit/test_targeting_2d.gd:200-219:test_a_tag_rule_keeps_out_whoever_does_not_qualify` <-> `test/unit/test_targeting_3d.gd:198-217:test_a_tag_rule_keeps_out_whoever_does_not_qualify`
+- 1.000 [executable]: `tools/ue_reference/harness/Source/UEParity.Target.cs:1-12:<file>` <-> `tools/ue_reference/harness/Source/UEParityEditor.Target.cs:1-12:<file>`
 
 ## Masked
 
