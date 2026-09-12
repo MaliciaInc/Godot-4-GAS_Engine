@@ -119,13 +119,17 @@ static func from_wire(wire: Dictionary) -> GameplayCueWire:
 	made.source_tags = GameplayWireReader.tags_from(wire[SOURCE_TAGS_KEY])
 	made.target_tags = GameplayWireReader.tags_from(wire[TARGET_TAGS_KEY])
 
-	made.raw_magnitude = float(wire[RAW_KEY])
-	made.normalized_magnitude = float(wire[NORMALIZED_KEY])
-	made.effect_level = float(wire[EFFECT_LEVEL_KEY])
-	made.ability_level = float(wire[ABILITY_LEVEL_KEY])
-	made.stack_count = int(wire[STACK_KEY])
+	# Read into typed locals rather than converted in place: the shape was
+	# checked above, so these values already are what the contract says -
+	# what was missing is saying so where the compiler can see it.
+	made.raw_magnitude = GameplayWireReader.fraction_from(wire[RAW_KEY])
+	made.normalized_magnitude = GameplayWireReader.fraction_from(wire[NORMALIZED_KEY])
+	made.effect_level = GameplayWireReader.fraction_from(wire[EFFECT_LEVEL_KEY])
+	made.ability_level = GameplayWireReader.fraction_from(wire[ABILITY_LEVEL_KEY])
+	made.stack_count = GameplayWireReader.number_from(wire[STACK_KEY])
 	made.location = wire[LOCATION_KEY]
-	made.has_location = bool(wire[HAS_LOCATION_KEY])
+	var placed: bool = wire[HAS_LOCATION_KEY]
+	made.has_location = placed
 	return made
 
 

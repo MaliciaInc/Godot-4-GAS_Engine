@@ -32,10 +32,9 @@ static func name_of(attribute_set: AttributeSet) -> StringName:
 
 ## Whether more than one of those sets declares that attribute.
 static func is_ambiguous(sets: Array[AttributeSet], attribute_name: StringName) -> bool:
-	var property_name: String = String(attribute_name)
 	var found: int = 0
 	for attribute_set: AttributeSet in sets:
-		if attribute_set != null and attribute_set.get(property_name) is AttributeData:
+		if attribute_set != null and attribute_set.attribute_named(attribute_name) != null:
 			found += 1
 			if found > 1:
 				return true
@@ -54,16 +53,15 @@ static func set_for(
 	if reference == null or not reference.is_valid():
 		return null
 
-	var property_name: String = String(reference.attribute_name)
 	if reference.set_name == &"":
 		if is_ambiguous(sets, reference.attribute_name):
 			return null
-		return _first_declaring(sets, property_name)
+		return _first_declaring(sets, reference.attribute_name)
 
 	for attribute_set: AttributeSet in sets:
 		if attribute_set == null or name_of(attribute_set) != reference.set_name:
 			continue
-		if attribute_set.get(property_name) is AttributeData:
+		if attribute_set.attribute_named(reference.attribute_name) != null:
 			return attribute_set
 	return null
 
@@ -75,14 +73,13 @@ static func attribute_for(
 	var attribute_set: AttributeSet = set_for(sets, reference)
 	if attribute_set == null:
 		return null
-	var found: Variant = attribute_set.get(String(reference.attribute_name))
-	return found if found is AttributeData else null
+	return attribute_set.attribute_named(reference.attribute_name)
 
 
 static func _first_declaring(
-	sets: Array[AttributeSet], property_name: String
+	sets: Array[AttributeSet], attribute_name: StringName
 ) -> AttributeSet:
 	for attribute_set: AttributeSet in sets:
-		if attribute_set != null and attribute_set.get(property_name) is AttributeData:
+		if attribute_set != null and attribute_set.attribute_named(attribute_name) != null:
 			return attribute_set
 	return null

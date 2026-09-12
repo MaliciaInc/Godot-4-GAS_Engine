@@ -112,9 +112,14 @@ static func from_wire(wire: Dictionary) -> GameplayEventWire:
 	made.instigator_tags = GameplayWireReader.tags_from(wire[INSTIGATOR_TAGS_KEY])
 	made.target_tags = GameplayWireReader.tags_from(wire[TARGET_TAGS_KEY])
 
-	made.magnitude = float(wire[MAGNITUDE_KEY])
-	made.target_data = (wire[TARGET_DATA_KEY] as Dictionary).duplicate(true)
-	made.context = (wire[CONTEXT_KEY] as Dictionary).duplicate(true)
+	# Read into typed locals rather than converted in place: the shape was
+	# checked above, so these values already are what the contract says -
+	# what was missing is saying so where the compiler can see it.
+	made.magnitude = GameplayWireReader.fraction_from(wire[MAGNITUDE_KEY])
+	var aimed: Dictionary = wire[TARGET_DATA_KEY]
+	var about: Dictionary = wire[CONTEXT_KEY]
+	made.target_data = aimed.duplicate(true)
+	made.context = about.duplicate(true)
 	return made
 
 

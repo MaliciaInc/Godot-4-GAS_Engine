@@ -95,6 +95,15 @@ func _run() -> void:
 	await case_12_clipboard()
 	await case_13_reload()
 
+	var missing: Array[String] = []
+	for named: String in CASES:
+		if not _finished.has(named):
+			missing.append(named)
+	check(
+		"every case ran to its last line",
+		missing.is_empty(),
+		"stopped part way: %s" % ", ".join(missing)
+	)
 	check(
 		"13 · the game's own file was never written to",
 		FileAccess.get_file_as_string(ABILITY) == original
@@ -161,6 +170,25 @@ func check(what: String, held: bool, detail: String = "") -> void:
 	if not held and not _last_refusal.is_empty():
 		said = ("%s   refused: %s" % [detail, _last_refusal]).strip_edges()
 	_report.append("%s %-62s %s" % ["  ok " if held else "FAIL", what, said])
+
+
+## Which cases got all the way to their last line.
+##
+## A GDScript runtime error - a call to something that is not there - aborts the
+## function it is in and resumes the caller, silently. Every check after it
+## simply never runs, and a run that lost five of them looks exactly like a run
+## that had five fewer. This is how that is told apart: the last thing a case
+## does is say so, and a case that never said so is one that stopped.
+var _finished: Array[String] = []
+
+## The cases there are, so a missing one is named rather than counted.
+const CASES: Array[String] = [
+	"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"
+]
+
+
+func finished(case_name: String) -> void:
+	_finished.append(case_name)
 
 
 ## Forget what was refused, so the next check reports its own reason and not
@@ -287,6 +315,7 @@ func case_1_startup() -> void:
 	check("1 · with nothing to complain about", screen.graph().diagnostics.is_empty())
 	await shot("01-startup")
 #endregion
+	self.finished("1")
 
 
 #region Case 2 · New Ability
@@ -346,6 +375,7 @@ func case_2_new_ability() -> void:
 		"%s -> %s" % [where, reopened.position_offset if reopened != null else "gone"]
 	)
 #endregion
+	self.finished("2")
 
 
 #region Case 3 · Wait Delay
@@ -384,6 +414,7 @@ func case_3_wait_delay() -> void:
 	check("3 · and the file still reads back", screen.graph().is_editable(),
 		screen.graph().blocked_reason())
 	await shot("05-wait-delay-edited")
+	self.finished("3")
 
 
 func _palette_row(named: String) -> Button:
@@ -467,6 +498,7 @@ func case_10_right_click_blank() -> void:
 	check("10 · and the card is where it was asked for",
 		made != null and made.has_layout_position, "%s" % [made != null])
 	await shot("07-made-from-menu")
+	self.finished("10")
 
 
 func _action_menu() -> ComposerActionMenu:
@@ -507,6 +539,7 @@ func case_11_multi_selection() -> void:
 	await _frames(SETTLE)
 	check("11 · one undo puts both back", _placed_lines() == 0)
 	await shot("09-both-moved-back")
+	self.finished("11")
 
 
 func _placed_lines() -> int:
@@ -551,6 +584,7 @@ func case_12_clipboard() -> void:
 		"%d nodes" % statements().size())
 	_check_agreement("12 · after copy and paste")
 	await shot("10-clipboard")
+	self.finished("12")
 
 
 func _pick_first() -> void:
@@ -610,6 +644,7 @@ func case_13_reload() -> void:
 		"%d -> %d" % [orphans_before, _live_nodes()]
 	)
 	await shot("11-reloaded")
+	self.finished("13")
 
 
 func _live_nodes() -> int:

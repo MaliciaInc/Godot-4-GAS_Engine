@@ -118,7 +118,7 @@ func release_attribute_set(taken: AttributeSet) -> bool:
 ## Seed the attributes one set declares, and no others.
 func _seed_only(taken: AttributeSet) -> void:
 	for name: StringName in taken.get_attribute_names():
-		var attribute: AttributeData = taken.get(String(name)) as AttributeData
+		var attribute: AttributeData = taken.attribute_named(name)
 		if attribute == null:
 			continue
 		if not is_finite(attribute.base_value):
@@ -131,11 +131,10 @@ func _seed_only(taken: AttributeSet) -> void:
 
 ## The set that declares an attribute, or null.
 func find_set(attribute_name: StringName) -> AttributeSet:
-	var property_name: String = String(attribute_name)
 	for attribute_set: AttributeSet in _sets:
 		if attribute_set == null:
 			continue
-		if attribute_set.get(property_name) is AttributeData:
+		if attribute_set.attribute_named(attribute_name) != null:
 			return attribute_set
 	return null
 

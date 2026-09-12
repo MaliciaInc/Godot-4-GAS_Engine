@@ -190,6 +190,7 @@ func case_4_break() -> void:
 	_it.check("4 · redo takes them off again",
 		_it.screen.graph().connections.size() == after,
 		"%d wires" % _it.screen.graph().connections.size())
+	_it.finished("4")
 
 
 ## Whether the text is one the Composer reads and writes back as it stands.
@@ -266,25 +267,29 @@ func case_5_reconnect() -> void:
 	_it.check("5 · saving and opening keeps it",
 		wired(_it.statements()[0].id, _it.statements()[1].id))
 #endregion
+	_it.finished("5")
 
 
 #region Case 6 · Moving what is on a pin
 ## Ctrl carries every cable on one pin to another of the same direction, family
 ## and type.
 ##
-## The direction the editor implements is producer to producer: pick up what a
-## local feeds and hand all of it to a different local. Moving the *consuming*
-## end - an argument's pin onto another argument's pin - is the same sentence in
-## section 2.4 and is not implemented; it is written up as GAS-010 rather than
-## asserted here, because a smoke that fails on a known gap says nothing new
-## every time it runs.
+## Both directions, because both are implemented now. Producer to producer picks
+## up what a local feeds and hands all of it to a different local. Consumer to
+## consumer moves one value between two argument slots, and leaves the slot it
+## came from holding what it would have been created holding - an argument text
+## *is* the cable, so it cannot be left empty.
+##
+## The second one was GAS-010, written up here as a gap and closed on main. It
+## is asserted rather than described now, which is the only way the sandbox can
+## tell the difference again.
 ##
 ## Execution is a third case and correctly refuses: carrying a run of control
 ## means rewriting the order statements are written in, which the editor says
 ## out loud instead of guessing at.
 ##
 ## Written here rather than borrowed from the reference set, because none of
-## those declares two locals of one type with something reading one of them.
+## those declares two locals of one type with two statements reading them.
 const TWO_PRODUCERS: String = """extends GameplayAbility
 
 @export var damage: GameplayEffect
@@ -300,6 +305,7 @@ func _activate_ability() -> bool:
 		owner_asc, caster.get_world_2d(), sweep
 	)
 	apply_effect_to_targets(damage, found)
+	apply_effect_to_targets(damage, null)
 	end_ability()
 	return true
 """
@@ -364,6 +370,45 @@ func case_6_ctrl_move() -> void:
 		"%d -> %d" % [depth, _it.screen.history().depth()])
 
 
+	# The consuming half: GAS-010. One argument's value onto another argument.
+	var readers: Array[ComposerNode] = _consumers()
+	_it.check("6 · two statements read a value", readers.size() == 2,
+		"%d" % readers.size())
+	if readers.size() != 2:
+		return
+	var carried: String = _wired_on(readers[0])
+	var arrives_at: String = _wired_on(readers[1])
+	_it.check("6 · one of them is fed and the other is not",
+		carried != "" and arrives_at == "",
+		"%s / %s" % [carried, arrives_at])
+
+	var was: String = _it.screen.printed()
+	var before_steps: int = _it.screen.history().depth()
+	_it.clear_refusal()
+	await _it.hand.drag(
+		pin(readers[0].id, StringName(ComposerReader.ARGUMENT % 1), false),
+		pin(readers[1].id, StringName(ComposerReader.ARGUMENT % 1), false),
+		Input_.CTRL
+	)
+	await _it.hand.frames(6)
+
+	var after: Array[ComposerNode] = _consumers()
+	_it.check("6 · the value moved to the other argument",
+		after.size() == 2 and _wired_on(after[1]) == carried,
+		"%s" % (_wired_on(after[1]) if after.size() == 2 else "?"),
+	)
+	_it.check("6 · and the slot it left is valid rather than empty",
+		after.size() == 2 and _wired_on(after[0]) != carried)
+	_it.check("6 · the consuming move is one step too",
+		_it.screen.history().depth() == before_steps + 1,
+		"%d -> %d" % [before_steps, _it.screen.history().depth()])
+
+	await _it.screen.undo()
+	await _it.hand.frames(4)
+	_it.check("6 · one undo returns the consuming move", _it.screen.printed() == was)
+	_it.finished("6")
+
+
 ## The statement that declares a local of this name.
 func _producer_named(local: String) -> ComposerNode:
 	for node: ComposerNode in _it.statements():
@@ -378,6 +423,23 @@ func _producer_named(local: String) -> ComposerNode:
 ##
 ## Named rather than "the first statement with a cable on it" - the two
 ## `overlap_2d` calls read a local as well, and they come first.
+## Every statement that reads a value, in the order they are written.
+func _consumers() -> Array[ComposerNode]:
+	var found: Array[ComposerNode] = []
+	for node: ComposerNode in _it.statements():
+		if node.type_id == &"apply_effect_to_targets":
+			found.append(node)
+	return found
+
+
+## The name of the local one statement reads, or nothing.
+func _wired_on(node: ComposerNode) -> String:
+	for field: ComposerNode.Field in node.fields:
+		if field.source == ComposerNode.ValueSource.WIRED:
+			return field.display
+	return ""
+
+
 func _consumer() -> ComposerNode:
 	for node: ComposerNode in _it.statements():
 		if node.type_id == &"apply_effect_to_targets":
@@ -455,6 +517,7 @@ func case_7_data_pin() -> void:
 		_prints_back(_it.screen.printed()))
 	await _it.shot("16-data-cable-off")
 #endregion
+	_it.finished("7")
 
 
 #region Case 8 · A cable that cannot be
@@ -487,6 +550,7 @@ func case_8_incompatible() -> void:
 		_it.screen.history().depth() == steps,
 		"%d -> %d" % [steps, _it.screen.history().depth()])
 	await _it.shot("17-refused")
+	_it.finished("8")
 
 
 ## A value output and an argument that cannot take it.
@@ -572,4 +636,5 @@ func case_9_pin_to_empty() -> void:
 	_it.check("9 · one undo takes the statement and its cables together",
 		_it.statements().size() == before,
 		"%d nodes" % _it.statements().size())
+	_it.finished("9")
 #endregion

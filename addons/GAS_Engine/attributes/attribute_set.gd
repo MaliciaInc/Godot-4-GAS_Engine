@@ -91,13 +91,25 @@ func aggregator_policy(_attribute_name: StringName) -> AttributeSet.AggregatorPo
 	return AggregatorPolicy.ALL
 
 
+## The attribute one of this set's names stands for, or nothing.
+##
+## Here rather than at each caller, because `get()` answers a Variant and a
+## cast from one is unchecked: every place that wanted an AttributeData had
+## to ask whether the property is one before it could say so, which is the
+## question `get_attribute_names()` below already asks to build the list
+## those callers then walk. One question, asked once.
+func attribute_named(attribute_name: StringName) -> AttributeData:
+	var held: Variant = get(String(attribute_name))
+	return held if held is AttributeData else null
+
+
 func get_attribute_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	for property: Dictionary in get_property_list():
 		var property_name: String = property.get("name", "")
 		if property_name.is_empty():
 			continue
-		if get(property_name) is AttributeData:
+		if attribute_named(StringName(property_name)) != null:
 			names.append(StringName(property_name))
 	return names
 #endregion

@@ -194,7 +194,9 @@ static func _named_nobody(
 		if not entry is Dictionary:
 			continue
 		var hit: Dictionary = entry
-		if int(hit.get(GameplayTargetDataTranslator.ENTITY_KEY, 0)) != 0:
+		if GameplayWireReader.number_in(
+			hit, GameplayTargetDataTranslator.ENTITY_KEY, 0
+		) != 0:
 			return true
 	return false
 
@@ -216,7 +218,10 @@ func honour_event(message: GameplayNetMessage) -> bool:
 	if not carried is Dictionary:
 		net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
 		return false
-	var said: GameplayEventWire = GameplayEventWire.from_wire(carried)
+	# Named rather than handed straight over: the guard above proved it is
+	# a Dictionary, and the local is where that proof is written down.
+	var payload: Dictionary = carried
+	var said: GameplayEventWire = GameplayEventWire.from_wire(payload)
 	var event: GameplayEventData = GameplayEventTranslator.from_wire(said, net.registry)
 	if event == null:
 		net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
@@ -256,7 +261,9 @@ func honour_input(message: GameplayNetMessage) -> bool:
 		return false
 
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
-	var slot: int = int(message.payload.get(GameplayNetMessage.INPUT_KEY, -1))
+	var slot: int = GameplayWireReader.number_in(
+		message.payload, GameplayNetMessage.INPUT_KEY, -1
+	)
 	if pressed:
 		asc.ability_local_input_pressed(slot)
 	else:

@@ -28,46 +28,10 @@ run again.
 
 # Open — GAS_Engine
 
-## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **OPEN**
-
-**Status:** `OPEN` — reproduced here, no regression test on main yet.
-Not re-measured against `277aefa`: the smoke covers the direction that is
-implemented, and the refused one has no check to fall.
-**Severity:** low - one direction of one gesture, and it refuses rather than damages
-**Where:** `addons/GAS_Engine/editor/composer/composer_connection_controller.gd:move_connections()`
-
-### Repro
-
-Two statements taking the same kind of value, one of them fed by a local.
-Ctrl+LMB drag from the fed argument's pin onto the other argument's pin. The
-smoke aims with the engine's own arithmetic and both ends check out, so the
-gesture lands where it says it does.
-
-```text
-refused: Target Data is declared after this statement, so it does not exist here yet
-```
-
-### Expected / Actual
-
-**Expected**, from section 2.4: "Ctrl+LMB y drag desde un pin conectado mueve
-sus conexiones a otro pin de la misma dirección, familia y compatibilidad." An
-argument's pin is a connected pin, and two argument pins are the same direction.
-
-**Actual:** the data half of `move_connections()` is written for the *other*
-direction - output to output, re-sourcing every consumer to a different local.
-It reads the destination's `label` as the name of a local (`named = to_port.label`)
-and checks `_in_scope(destination, consumer)`. Handed two inputs it passes the
-direction check, then reasons about them as if they were producers, and refuses
-with a message about declaration order that has nothing to do with what was
-asked.
-
-### Impact
-
-The supported direction works and the smoke covers it (case 6). This one refuses
-safely, so nothing is damaged - but the reason given is wrong, and a person
-reading it would go looking for a scope problem that is not there.
-
----
+Nothing. Every defect this sandbox found in the addon is fixed on `main`,
+re-deployed here and re-run - the last was GAS-010, closed 2026-09-11 and
+moved below. A finding is only allowed to leave this section by being
+re-measured here, never by a fix existing somewhere else.
 
 ## GAS-006 — a call from the palette was written after the return · **FIXED ON MAIN**
 
@@ -658,6 +622,41 @@ skips that one and loads the rest.
 ---
 
 
+## SBX-009 — a case that stopped part way left the smoke saying PASS · **FIXED**
+
+Found by tripping it rather than by reading: a check written against
+`_it.refusal()`, which does not exist, made case 6 stop three checks early. The
+run reported `SMOKE_RESULT: PASS passed=87 failed=0` and looked completely
+healthy. The only reason it was noticed is that seven checks had just been added
+and the total went up by five.
+
+### Why it is silent
+
+A GDScript runtime error - a call to something that is not there - aborts the
+function it happens in and resumes the caller. The `await` in the runner
+returns normally, the next case starts, and every check after the error simply
+never runs. The result line counts what ran, so fewer checks is not fewer
+passes: it is a smaller, still-green run.
+
+That is the worst shape a harness can have. It does not fail when it breaks; it
+quietly asks less, and it asks least exactly when somebody has just changed
+something.
+
+### Fix
+
+Each case says so as its last line, and the run checks that all thirteen did:
+
+```text
+FAIL every case ran to its last line    stopped part way: 6
+SMOKE_RESULT: FAIL passed=88 failed=1
+```
+
+Proved by breaking case 6 on purpose - a call to a function that is not there,
+in front of its marker - and confirming the run names it and fails. Restored
+afterwards.
+
+---
+
 ## 2026-09-01 — combat runs on GAS_Engine end to end
 
 A battle was played through: entered from the field, action menu, target
@@ -916,6 +915,66 @@ base, no float drift". What a playtest would add is confirmation that this game
 wires them correctly - not evidence about the engine.
 
 # Closed
+
+## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **VERIFIED IN SANDBOX**
+
+**Status:** `VERIFIED IN SANDBOX` — fixed on `main`, re-run here 2026-09-11 and
+it does what section 2.4 says. The entry below is what was reproduced; what
+follows the rule is what closed it.
+**Severity:** low - one direction of one gesture, and it refuses rather than damages
+**Where:** `addons/GAS_Engine/editor/composer/composer_connection_controller.gd:move_connections()`
+
+### Repro
+
+Two statements taking the same kind of value, one of them fed by a local.
+Ctrl+LMB drag from the fed argument's pin onto the other argument's pin. The
+smoke aims with the engine's own arithmetic and both ends check out, so the
+gesture lands where it says it does.
+
+```text
+refused: Target Data is declared after this statement, so it does not exist here yet
+```
+
+### Expected / Actual
+
+**Expected**, from section 2.4: "Ctrl+LMB y drag desde un pin conectado mueve
+sus conexiones a otro pin de la misma dirección, familia y compatibilidad." An
+argument's pin is a connected pin, and two argument pins are the same direction.
+
+**Actual:** the data half of `move_connections()` is written for the *other*
+direction - output to output, re-sourcing every consumer to a different local.
+It reads the destination's `label` as the name of a local (`named = to_port.label`)
+and checks `_in_scope(destination, consumer)`. Handed two inputs it passes the
+direction check, then reasons about them as if they were producers, and refuses
+with a message about declaration order that has nothing to do with what was
+asked.
+
+### Impact
+
+The supported direction works and the smoke covers it (case 6). This one refuses
+safely, so nothing is damaged - but the reason given is wrong, and a person
+reading it would go looking for a scope problem that is not there.
+
+### How it closed
+
+`main` grew the consuming half - `ComposerConnectionMoves._data_input()`, with
+`test/unit/test_composer_data_moves.gd` covering both destinations and all three
+refusals, including the scope one this was mistaken for. Reading that test is
+not what closes a finding here, though: the smoke said in a comment that the
+direction "is not implemented" and asserted nothing, so nothing in this branch
+could have told the difference.
+
+Case 6 asserts it now. The fixture grew a second statement reading a value, and
+the case drags one argument's pin onto the other's: the value arrives, the slot
+it left goes back to a valid default, and it is one undo step.
+
+    6 · two statements read a value                       2
+    6 · one of them is fed and the other is not           found /
+    6 · the value moved to the other argument             found
+    6 · and the slot it left is valid rather than empty
+    6 · the consuming move is one step too                0 -> 1
+
+---
 
 ## GAS-002 — no safe way to await an ability that may already have ended
 

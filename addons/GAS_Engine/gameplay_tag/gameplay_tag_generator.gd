@@ -113,7 +113,10 @@ static func _render_block(
 	lines.append("")
 	lines.append(declaration)
 	for tag: StringName in entries:
-		lines.append(entry_line % [String(tag), String(entries[tag])])
+		# `str()` rather than `String()`: the dictionary is untyped because the
+		# three declarations it renders hold different value types, so its
+		# values are Variants, and `String()` will not take one.
+		lines.append(entry_line % [String(tag), str(entries[tag])])
 	lines.append(CLOSING_LINE)
 
 

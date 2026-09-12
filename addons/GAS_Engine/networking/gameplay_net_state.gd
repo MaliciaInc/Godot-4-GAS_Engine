@@ -120,7 +120,11 @@ static func from_wire(wire: Variant) -> GameplayNetState:
 		return null
 	var said: Dictionary = wire
 	var made: GameplayNetState = GameplayNetState.new()
-	made.kind = Kind.DELTA if int(said.get(KIND_KEY, 0)) == int(Kind.DELTA) else Kind.SNAPSHOT
+	made.kind = (
+		Kind.DELTA
+		if GameplayWireReader.number_in(said, KIND_KEY, 0) == int(Kind.DELTA)
+		else Kind.SNAPSHOT
+	)
 
 	made.attributes.assign(_named_from(said.get(ATTRIBUTES_KEY, {})))
 	made.tags.assign(_named_from(said.get(TAGS_KEY, {})))
@@ -174,7 +178,7 @@ static func _ints_from(value: Variant) -> Array[int]:
 		return made
 	var listed: Array = value
 	for entry: Variant in listed:
-		made.append(int(entry))
+		made.append(GameplayWireReader.number_from(entry))
 	return made
 #endregion
 
