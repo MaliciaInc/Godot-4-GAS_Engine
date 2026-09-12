@@ -117,10 +117,15 @@ static func from_wire(wire: Variant) -> GameplayNetMessage:
 		return _refused(REASON_MALFORMED)
 	var said: Dictionary = wire
 
-	if int(said.get(VERSION, 0)) != SCHEMA_VERSION:
+	# Every one of these goes through the reader now. `int()` on a Variant
+	# answers 0 for a string, a dictionary and null alike, so a wire that
+	# disagreed about the contract was read as a wire that agreed and said
+	# zero - which for a schema version is the one value that must not be
+	# guessed.
+	if GameplayWireReader.number_in(said, VERSION, 0) != SCHEMA_VERSION:
 		return _refused(REASON_UNSUPPORTED_SCHEMA)
 
-	var kind: int = int(said.get(KIND, -1))
+	var kind: int = GameplayWireReader.number_in(said, KIND, -1)
 	if kind < 0 or kind >= GameplayNetMessage.Kind.size():
 		return _refused(REASON_MALFORMED)
 
@@ -128,18 +133,18 @@ static func from_wire(wire: Variant) -> GameplayNetMessage:
 	made.kind = kind as GameplayNetMessage.Kind
 	made.entity = GameplayWireReader.entity_from(said.get(ENTITY, 0))
 	made.definition = GameplayWireReader.definition_from(said.get(DEFINITION, 0))
-	made.sequence = int(said.get(SEQUENCE, 0))
+	made.sequence = GameplayWireReader.number_in(said, SEQUENCE, 0)
 
 	# An activation is a run of one entity's, so it is rebuilt from the entity
 	# this message is already about rather than carrying a second copy of it.
-	var activation: int = int(said.get(ACTIVATION, 0))
+	var activation: int = GameplayWireReader.number_in(said, ACTIVATION, 0)
 	if activation != 0:
 		made.activation = GameplayNetActivationId.of(made.entity, activation)
 
-	var prediction: int = int(said.get(PREDICTION_VALUE, 0))
+	var prediction: int = GameplayWireReader.number_in(said, PREDICTION_VALUE, 0)
 	if prediction != 0:
 		made.prediction_key = GameplayPredictionKey.of(
-			int(said.get(PREDICTION_PEER, 0)), prediction
+			GameplayWireReader.number_in(said, PREDICTION_PEER, 0), prediction
 		)
 
 	if not _read_state(said, made):

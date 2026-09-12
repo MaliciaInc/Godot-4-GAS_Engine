@@ -253,7 +253,12 @@ func filed_count() -> int:
 static func _push(into: Dictionary, key: Variant, active: ActiveGameplayEffect) -> void:
 	if not into.has(key):
 		into[key] = []
-	into[key].append(active)
+	# Named rather than reached through twice. The dictionaries are
+	# untyped because a typed one cannot hold a bucket of mixed keys, so
+	# `into[key]` is a Variant - and an Array is a reference, so appending
+	# to the local appends to the one in the dictionary.
+	var bucket: Array = into[key]
+	bucket.append(active)
 
 
 ## Take one out, and take the bucket away when it empties.
@@ -263,7 +268,8 @@ static func _push(into: Dictionary, key: Variant, active: ActiveGameplayEffect) 
 static func _pull(from: Dictionary, key: Variant, active: ActiveGameplayEffect) -> void:
 	if not from.has(key):
 		return
-	from[key].erase(active)
-	if from[key].is_empty():
+	var bucket: Array = from[key]
+	bucket.erase(active)
+	if bucket.is_empty():
 		from.erase(key)
 #endregion

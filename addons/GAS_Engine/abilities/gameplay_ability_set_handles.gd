@@ -72,9 +72,15 @@ func take_back() -> bool:
 func _undo(step: Dictionary) -> void:
 	var kind: GameplayAbilitySetHandles.Kind = step[STEP_KIND]
 	match kind:
+		# A handle is published as a Variant because which of the three it is
+		# depends on the kind beside it. The kind is what this match just
+		# established, so each branch can say which one it has.
 		Kind.ABILITY:
-			owner_asc.remove_ability_handle(step[STEP_HANDLE])
+			var ability: GameplayAbilityHandle = step[STEP_HANDLE]
+			owner_asc.remove_ability_handle(ability)
 		Kind.EFFECT:
-			owner_asc.remove_active_effect_by_handle(step[STEP_HANDLE])
+			var effect: GameplayEffectHandle = step[STEP_HANDLE]
+			owner_asc.remove_active_effect_by_handle(effect)
 		Kind.ATTRIBUTE_SET:
-			owner_asc.unregister_attribute_set(step[STEP_HANDLE])
+			var registered: RegisteredAttributeSetHandle = step[STEP_HANDLE]
+			owner_asc.unregister_attribute_set(registered)

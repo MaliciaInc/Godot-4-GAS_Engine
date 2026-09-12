@@ -50,7 +50,15 @@ static func is_a(value: Variant, kind: int) -> bool:
 	if kind == TYPE_INT:
 		if actual == TYPE_INT:
 			return true
-		return actual == TYPE_FLOAT and float(value) == floor(float(value))
+		if actual != TYPE_FLOAT:
+			return false
+		# Assigned rather than converted. `float(x)` on a Variant is a
+		# conversion the compiler cannot check, and this whole file exists
+		# to be the place where wire values ARE checked - so the one step
+		# that leaves Variant behind is taken after `typeof` has said what
+		# the value is, by an assignment the compiler can see is sound.
+		var number: float = value
+		return number == floor(number)
 	if kind == TYPE_FLOAT:
 		return actual == TYPE_FLOAT or actual == TYPE_INT
 	if kind == TYPE_STRING:
@@ -58,15 +66,59 @@ static func is_a(value: Variant, kind: int) -> bool:
 	return actual == kind
 
 
+## A whole number off a wire, or `fallback` when the wire did not carry one.
+##
+## `is_a` first, and that is the point rather than a formality: `int()`
+## answers 0 for a string, for a dictionary and for null alike, so a wire
+## that said `"five"` where a count belongs used to become a count of zero
+## and be applied. It is now the fallback, which is what a reader that was
+## told nothing usable should answer.
+static func number_from(value: Variant, fallback: int = 0) -> int:
+	if not is_a(value, TYPE_INT):
+		return fallback
+	if typeof(value) == TYPE_INT:
+		# Taken as it is. A float cannot hold a whole number past 2^53, so
+		# converting one that already arrived as an integer would be this
+		# reader changing a value nobody asked it to change.
+		var exact: int = value
+		return exact
+	# A JSON wire has one number type, so an integer written to one comes
+	# back a float, and that is the reading this converts.
+	var number: float = value
+	return int(number)
+
+
+## A fractional number off a wire, or `fallback`, checked the same way.
+static func fraction_from(value: Variant, fallback: float = 0.0) -> float:
+	if not is_a(value, TYPE_FLOAT):
+		return fallback
+	var number: float = value
+	return number
+
+
+## A whole number under one key of a wire, or `fallback`.
+##
+## The key form as well as the value form because the call sites are
+## `said.get(KEY, default)` and writing the default twice is how the two
+## halves come to disagree.
+static func number_in(said: Dictionary, key: String, fallback: int = 0) -> int:
+	return number_from(said.get(key, fallback), fallback)
+
+
+## A fractional number under one key of a wire, or `fallback`.
+static func fraction_in(said: Dictionary, key: String, fallback: float = 0.0) -> float:
+	return fraction_from(said.get(key, fallback), fallback)
+
+
 ## An entity identity, or null when the wire said there was none.
 static func entity_from(value: Variant) -> GameplayNetEntityId:
-	var named: int = int(value)
+	var named: int = number_from(value, GameplayNetEntityId.NONE)
 	return GameplayNetEntityId.from_wire(named) if named != GameplayNetEntityId.NONE else null
 
 
 ## A definition identity, or null when the wire said there was none.
 static func definition_from(value: Variant) -> GameplayNetDefinitionId:
-	var named: int = int(value)
+	var named: int = number_from(value, GameplayNetDefinitionId.NONE)
 	if named == GameplayNetDefinitionId.NONE:
 		return null
 	return GameplayNetDefinitionId.from_wire(named)
@@ -78,7 +130,10 @@ static func definition_from(value: Variant) -> GameplayNetDefinitionId:
 ## first bad entry would hand a receiver a list that is a subset of what was
 ## sent, with nothing to say so.
 static func tags_are_named(value: Variant) -> bool:
-	for entry: Variant in (value as Array):
+	if not value is Array:
+		return false
+	var listed: Array = value
+	for entry: Variant in listed:
 		if typeof(entry) != TYPE_STRING and typeof(entry) != TYPE_STRING_NAME:
 			return false
 	return true
@@ -87,7 +142,10 @@ static func tags_are_named(value: Variant) -> bool:
 ## A validated tag list, as names.
 static func tags_from(value: Variant) -> Array[StringName]:
 	var read: Array[StringName] = []
-	for entry: Variant in (value as Array):
+	if not value is Array:
+		return read
+	var listed: Array = value
+	for entry: Variant in listed:
 		read.append(StringName(str(entry)))
 	return read
 
@@ -121,7 +179,8 @@ static func numbers_from(said: Variant, how_many: int) -> PackedFloat64Array:
 	for one: Variant in listed:
 		if typeof(one) != TYPE_FLOAT and typeof(one) != TYPE_INT:
 			return PackedFloat64Array()
-		read.append(float(one))
+		var number: float = one
+		read.append(number)
 	return read
 
 

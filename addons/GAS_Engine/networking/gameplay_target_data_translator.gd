@@ -55,10 +55,12 @@ static func from_wire(
 		return null
 
 	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
-	for entry: Variant in (wire[HITS_KEY] as Array):
+	var listed: Array = wire[HITS_KEY]
+	for entry: Variant in listed:
 		if typeof(entry) != TYPE_DICTIONARY:
 			return null
-		if not _hit_from_wire(entry as Dictionary, data, registry):
+		var hit: Dictionary = entry
+		if not _hit_from_wire(hit, data, registry):
 			return null
 	return data
 
@@ -90,14 +92,18 @@ static func _hit_from_wire(
 	if not GameplayWireReader.has_shape(entry, _expected()):
 		return false
 
-	var two_d: bool = int(entry[SPACE_KEY]) == int(GameplayTargetHit.SpaceKind.TWO_D)
+	var two_d: bool = (
+		GameplayWireReader.number_from(entry[SPACE_KEY])
+		== int(GameplayTargetHit.SpaceKind.TWO_D)
+	)
 	var node: Node = GameplayNetNaming.avatar_of(
 		GameplayWireReader.entity_from(entry[ENTITY_KEY]), registry
 	)
 	if node != null:
 		return data.append_node(node)
 
-	if not bool(entry[HAS_POSITION_KEY]):
+	var placed: bool = entry[HAS_POSITION_KEY]
+	if not placed:
 		# Neither an entity this machine knows nor a place: nothing to record,
 		# and nothing wrong with that - a hit on somebody who is not here is
 		# still a hit that happened somewhere else.

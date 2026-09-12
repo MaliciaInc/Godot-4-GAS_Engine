@@ -1,13 +1,13 @@
 {
-  "units": 3083,
-  "units_by_language": "gdscript 3029, powershell 6, python 48",
-  "elapsed_seconds": 14.479702399999951,
+  "units": 3087,
+  "units_by_language": "gdscript 3033, powershell 6, python 48",
+  "elapsed_seconds": 13.479967499999475,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27238
+    "behavioral": 27248
   },
   "blocking": 0,
   "findings": [
@@ -721,13 +721,6 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/costs/gameplay_resolved_cost_entry.gd:1-24:<file>",
-      "right": "addons/GAS_Engine/effects/executions/gameplay_execution_scoped_modifier.gd:1-33:<file>",
-      "score": 0.875,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/costs/gameplay_resolved_cost_entry.gd:1-24:<file>",
       "right": "addons/GAS_Engine/targeting/gameplay_overlap_request_2d.gd:1-44:<file>",
       "score": 0.875,
       "category": "executable"
@@ -980,7 +973,7 @@
     {
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_lifecycle_runtime.gd:150-167:give_and_activate_once",
-      "right": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:320-347:_compose_from",
+      "right": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd:319-346:_compose_from",
       "score": 0.8333333333333334,
       "category": "executable"
     },
@@ -1602,6 +1595,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/ability_commit_contract.gd:120-129:unique_cooldowns",
+      "right": "addons/GAS_Engine/networking/gameplay_wire_reader.gd:132-139:tags_are_named",
+      "score": 0.7894736842105263,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/ability_query_runtime.gd:194-201:_instances_of",
       "right": "addons/GAS_Engine/editor/composer/composer_flow.gd:96-106:predecessors_of",
       "score": 0.7894736842105263,
@@ -2071,8 +2071,8 @@
     },
     {
       "kind": "masked",
-      "left": "addons/GAS_Engine/cues/gameplay_cue_wire.gd:133-150:_expected",
-      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:132-141:_expected",
+      "left": "addons/GAS_Engine/cues/gameplay_cue_wire.gd:137-154:_expected",
+      "right": "addons/GAS_Engine/networking/gameplay_target_data_translator.gd:138-147:_expected",
       "score": 1.0,
       "category": "executable"
     },

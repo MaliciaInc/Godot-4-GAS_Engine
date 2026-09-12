@@ -186,6 +186,10 @@ func test_an_incomplete_message_encodes_to_nothing() -> void:
 	assert_true(GameplayNetCodec.encode(null).is_empty(), "and neither is nothing")
 
 
+## The last three rows are numbers written as something else. `int()` reads
+## `"1"` as 1 and `"five"` as 0 without complaining, so a wire disagreeing
+## about the contract used to be read as a wire that agreed - and for a
+## schema version that is the one field whose whole job is to catch this.
 ##     [what arrived, the bytes, why it is refused]
 func _malformed_cases() -> Array:
 	return [
@@ -198,6 +202,9 @@ func _malformed_cases() -> Array:
 		["a kind that is not one", '{"wire.v":1,"wire.kind":99,"wire.entity":42}'.to_utf8_buffer(), GameplayNetCodec.REASON_MALFORMED],
 		["a grant with no definition", '{"wire.v":1,"wire.kind":0,"wire.entity":42}'.to_utf8_buffer(), GameplayNetCodec.REASON_INCOMPLETE],
 		["a state that is not one", '{"wire.v":1,"wire.kind":5,"wire.entity":42,"wire.state":7}'.to_utf8_buffer(), GameplayNetCodec.REASON_MALFORMED],
+	["a version written as text", '{"wire.v":"1","wire.kind":0}'.to_utf8_buffer(), GameplayNetCodec.REASON_UNSUPPORTED_SCHEMA],
+	["a version with a fraction in it", '{"wire.v":1.5,"wire.kind":0}'.to_utf8_buffer(), GameplayNetCodec.REASON_UNSUPPORTED_SCHEMA],
+	["a kind written as text", '{"wire.v":1,"wire.kind":"0","wire.entity":42}'.to_utf8_buffer(), GameplayNetCodec.REASON_MALFORMED],
 	]
 
 

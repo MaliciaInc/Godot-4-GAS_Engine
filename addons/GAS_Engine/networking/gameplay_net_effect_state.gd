@@ -92,11 +92,13 @@ static func from_wire(wire: Variant) -> GameplayNetEffectState:
 		return null
 	var said: Dictionary = wire
 	var made: GameplayNetEffectState = GameplayNetEffectState.new()
-	made.id = int(said.get(ID_KEY, NONE))
-	made.definition = int(said.get(DEFINITION_KEY, GameplayNetDefinitionId.NONE))
-	made.stack_count = int(said.get(STACKS_KEY, 1))
-	made.time_remaining = float(said.get(SECONDS_KEY, 0.0))
-	made.remaining_turns = int(said.get(TURNS_KEY, 0))
+	made.id = GameplayWireReader.number_in(said, ID_KEY, NONE)
+	made.definition = GameplayWireReader.number_in(
+		said, DEFINITION_KEY, GameplayNetDefinitionId.NONE
+	)
+	made.stack_count = GameplayWireReader.number_in(said, STACKS_KEY, 1)
+	made.time_remaining = GameplayWireReader.fraction_in(said, SECONDS_KEY, 0.0)
+	made.remaining_turns = GameplayWireReader.number_in(said, TURNS_KEY, 0)
 	made.inhibited = said.get(INHIBITED_KEY, false) == true
 	return made if made.is_valid() else null
 #endregion
