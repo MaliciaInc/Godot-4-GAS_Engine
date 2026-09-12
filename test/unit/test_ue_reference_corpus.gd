@@ -150,89 +150,37 @@ func test_a_verified_golden_carries_what_a_run_produces() -> void:
 #endregion
 
 
-#region What this engine produces
-## What this engine does for each scenario, written where the diff reads it.
+## A golden that says this engine answers something else says why.
 ##
-## Five of the ten are one application of one effect and are produced here. The
-## other five need a timeline, a capture or a stack the reference decides the
-## shape of, and are written as null with the reason - a produced number that
-## was a guess would be the same lie the corpus exists to refuse, told on this
-## side of it.
-func test_what_this_engine_produces_is_written_where_the_diff_reads_it() -> void:
-	var produced: Dictionary = {}
-	produced["legacy_multiply_one_and_a_half_twice"] = _composed(
-		[
-			_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
-			_modifier(GameplayEffectModifier.Operation.MULTIPLY, 1.5),
-		]
-	)
-	produced["multiply_compound_one_and_a_half_twice"] = _composed(
-		[
-			_modifier(GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5),
-			_modifier(GameplayEffectModifier.Operation.MULTIPLY_COMPOUND, 1.5),
-		]
-	)
-	produced["legacy_divide"] = _composed(
-		[_modifier(GameplayEffectModifier.Operation.DIVIDE, 2.0)]
-	)
-	produced["double_override_same_channel"] = _composed(
-		[
-			_modifier(GameplayEffectModifier.Operation.OVERRIDE, 40.0),
-			_modifier(GameplayEffectModifier.Operation.OVERRIDE, 70.0),
-		]
-	)
-	produced["override_across_channels"] = _composed(
-		[
-			_modifier(GameplayEffectModifier.Operation.OVERRIDE, 40.0, 0),
-			_modifier(GameplayEffectModifier.Operation.OVERRIDE, 70.0, 1),
-		]
-	)
-	produced["stack_count_factor_off_and_on"] = _stacked()
-	produced["bonus_magnitude"] = _bonus_magnitude()
-	produced["magnitude_up_to_channel"] = _up_to_channel()
+## `engine_deviation` is the one thing in this corpus that can make a real
+## difference not a failure, which is exactly what makes it worth a rule: an
+## empty one would be a way to quiet any disagreement at all. It is only
+## allowed on a golden that was actually run, and it has to be a sentence
+## rather than a marker.
+func test_a_declared_deviation_says_why_and_is_on_a_golden_that_ran() -> void:
+	var declared: int = 0
 	for scenario: String in SCENARIOS:
-		if not produced.has(scenario):
-			produced[scenario] = null
-
-	for scenario: String in SCENARIOS:
-		assert_true(produced.has(scenario), "%s has a place in the results" % scenario)
-	var decides_d11: Variant = produced["double_override_same_channel"]
-	assert_false(
-		decides_d11 == null,
-		"the scenario that decides D-11 is one this engine can answer for"
-	)
-	# Every scenario this engine answered for landed. A produced entry whose
-	# application was refused says nothing about arithmetic.
-	for scenario: String in SCENARIOS:
-		var entry: Variant = produced[scenario]
-		if entry == null:
+		var golden: Dictionary = _golden(scenario)
+		if not golden.has("engine_deviation"):
 			continue
-		var outcome: Dictionary = entry
-		# A scenario with variants says `applied` once per variant. Reading
-		# only the top level called every one of them a refusal.
-		var readings: Array = []
-		if outcome.has("variants"):
-			var listed: Array = outcome["variants"]
-			readings.assign(listed)
-		else:
-			readings.append(outcome)
-		for one: Variant in readings:
-			var reading: Dictionary = one
-			var landed: bool = reading.get("applied", false)
-			assert_true(landed, "%s was applied rather than refused" % scenario)
-
-	produced["_about"] = (
-		"What this engine produces, written by "
-		+ "test/unit/test_ue_reference_corpus.gd, under the UE_5_7 compatibility "
-		+ "profile, which is what every golden names: under the other one the "
-		+ "legacy names compound and the UE-only arms are refused outright, "
-		+ "which is correct behaviour and a different question. A null is a "
-		+ "scenario this engine cannot answer for without deciding something "
-		+ "the reference is supposed to decide."
-	)
-	_write(produced)
-	assert_true(FileAccess.file_exists(RESULTS), "and the results are written down")
+		declared += 1
+		var because: String = str(golden.get("engine_deviation", "")).strip_edges()
+		assert_gt(
+			because.length(),
+			80,
+			"%s: a deviation is a reason, not a marker" % scenario
+		)
+		assert_eq(
+			str(golden.get("evidence", "")),
+			UE_VERIFIED,
+			"%s: nothing deviates from a reference that was never run" % scenario
+		)
+	# Reported rather than asserted at a number: how many there are is the
+	# corpus's business and not this test's.
+	gut.p("declared deviations: %d of %d" % [declared, SCENARIOS.size()])
+	assert_between(declared, 0, SCENARIOS.size(), "however many, they are of the ten")
 #endregion
+
 
 
 #region Getting there
@@ -250,181 +198,7 @@ func _golden(scenario: String) -> Dictionary:
 	return {}
 
 
-func _modifier(
-	operation: GameplayEffectModifier.Operation, magnitude: float, channel: int = 0
-) -> GameplayEffectModifier:
-	var made: GameplayEffectModifier = EffectFactory.modifier(ATTACK, operation, magnitude)
-	made.evaluation_channel = channel
-	return made
-
-
 ## One effect carrying those modifiers, applied, and what `attack` became.
 ##
 ## The whole observable outcome of a composition scenario: the value, and the
 ## base it did not touch.
-func _composed(modifiers: Array[GameplayEffectModifier]) -> Dictionary:
-	# From nothing, every time. Five scenarios sharing one character composed on
-	# top of each other, and a divide by two came back as 11.25 - a number that
-	# looks like a measurement and is the sum of five scenarios.
-	asc.effects.cleanup()
-	assert_eq(asc.effects.active_count(), 0, "nothing is left from the last scenario")
-	assert_almost_eq(
-		asc.get_attribute_current(ATTACK), BASE_ATTACK, TOLERANCE,
-		"and the attribute is back where it started"
-	)
-
-	var typed: Array[GameplayEffectModifier] = []
-	typed.assign(modifiers)
-	var applied: ActiveGameplayEffect = asc.apply_gameplay_effect(
-		EffectFactory.infinite(typed), asc, 1.0
-	)
-	# Whether it landed, not only what the attribute reads. An application the
-	# engine refused leaves the attribute exactly where it was, and recording
-	# that as an outcome is recording a refusal as a measurement - which the
-	# first version of this did, and it read as "compound multiplication does
-	# nothing".
-	return {
-		"applied": applied != null,
-		"attack_current": asc.get_attribute_current(ATTACK),
-		"attack_base": asc.get_attribute_base(ATTACK),
-	}
-
-
-## Three applications of one effect, with the stack count out and then in.
-##
-## Produced now that the reference has decided the shape, which is what these
-## three were waiting for rather than anything this engine could not do.
-func _stacked() -> Dictionary:
-	var variants: Array = []
-	for factored: bool in [false, true]:
-		_from_nothing()
-		var typed: Array[GameplayEffectModifier] = []
-		typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 5.0))
-		var effect: GameplayEffect = EffectFactory.infinite(typed)
-		effect.stacking_type = GameplayEffect.StackingType.AGGREGATE_BY_TARGET
-		effect.stack_limit_count = 3
-		effect.factor_in_stack_count = factored
-		var applied: ActiveGameplayEffect = null
-		for again: int in 3:
-			applied = asc.apply_gameplay_effect(effect, asc, 1.0)
-		variants.append(_attack_reading(applied != null))
-	return {"variants": variants}
-
-
-## A captured magnitude composing its coefficients.
-func _bonus_magnitude() -> Dictionary:
-	_from_nothing()
-	var typed: Array[GameplayEffectModifier] = []
-	# Through the factory, which is where a modifier is built in these tests.
-	var carried: GameplayEffectModifier = EffectFactory.modifier(
-		HEALTH, GameplayEffectModifier.Operation.ADD, 0.0
-	)
-	carried.magnitude = _reading_of_attack(
-		GameplayAttributeBasedMagnitude.Calculation.BONUS_MAGNITUDE, 2.0, 1.0, 3.0, 0
-	)
-	typed.append(carried)
-	var applied: ActiveGameplayEffect = asc.apply_gameplay_effect(
-		EffectFactory.infinite(typed), asc, 1.0
-	)
-	return _health_reading(applied != null)
-
-
-## A captured magnitude read only as far as one channel.
-func _up_to_channel() -> Dictionary:
-	_from_nothing()
-	var typed: Array[GameplayEffectModifier] = []
-	typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 5.0, 0))
-	typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 100.0, 2))
-	var carried: GameplayEffectModifier = EffectFactory.modifier(
-		HEALTH, GameplayEffectModifier.Operation.ADD, 0.0
-	)
-	carried.magnitude = _reading_of_attack(
-		GameplayAttributeBasedMagnitude.Calculation.MAGNITUDE_UP_TO_CHANNEL,
-		-1.0,
-		0.0,
-		0.0,
-		1
-	)
-	carried.evaluation_channel = 3
-	typed.append(carried)
-	var applied: ActiveGameplayEffect = asc.apply_gameplay_effect(
-		EffectFactory.infinite(typed), asc, 1.0
-	)
-	var said: Dictionary = _health_reading(applied != null)
-	said["attack_current"] = asc.get_attribute_current(ATTACK)
-	said["attack_base"] = asc.get_attribute_base(ATTACK)
-	return said
-
-
-## A reading of attack, composed the way the goldens describe one.
-func _reading_of_attack(
-	calculation: GameplayAttributeBasedMagnitude.Calculation,
-	coefficient: float,
-	pre_add: float,
-	post_add: float,
-	final_channel: int
-) -> GameplayAttributeBasedMagnitude:
-	var capture: GameplayAttributeCaptureDefinition = (
-		GameplayAttributeCaptureDefinition.new()
-	)
-	capture.actor = GameplayAttributeCaptureDefinition.Actor.TARGET
-	capture.attribute_name = ATTACK
-	capture.value = GameplayAttributeCaptureDefinition.Value.CURRENT
-	capture.policy = GameplayAttributeCaptureDefinition.Policy.LIVE
-
-	var reading: GameplayAttributeBasedMagnitude = (
-		GameplayAttributeBasedMagnitude.new()
-	)
-	reading.capture = capture
-	reading.calculation = calculation
-	reading.final_channel = final_channel
-	reading.coefficient = _number(coefficient)
-	reading.pre_add = _number(pre_add)
-	reading.post_add = _number(post_add)
-	return reading
-
-
-
-func _number(value: float) -> GameplayScalableFloat:
-	var made: GameplayScalableFloat = GameplayScalableFloat.new()
-	made.value = value
-	return made
-
-
-## Back to a character nothing has been applied to.
-func _from_nothing() -> void:
-	asc.effects.cleanup()
-	asc.set_attribute_base(ATTACK, BASE_ATTACK)
-	# The fixture's health is clamped to its max_health, and the goldens have
-	# no such attribute: a scenario that added five to a full character
-	# measured the clamp and was recorded as a parity difference. Lifted so
-	# the reading is of the arithmetic the scenario is about.
-	asc.set_attribute_base(MAX_HEALTH, 100000.0)
-	asc.set_attribute_base(HEALTH, BASE_HEALTH)
-
-
-func _attack_reading(landed: bool) -> Dictionary:
-	return {
-		"applied": landed,
-		"attack_current": asc.get_attribute_current(ATTACK),
-		"attack_base": asc.get_attribute_base(ATTACK),
-	}
-
-
-func _health_reading(landed: bool) -> Dictionary:
-	return {
-		"applied": landed,
-		"health_current": asc.get_attribute_current(HEALTH),
-		"health_base": asc.get_attribute_base(HEALTH),
-	}
-
-## What this engine produced, and what it did not produce and why.
-func _write(produced: Dictionary) -> void:
-	DirAccess.make_dir_recursive_absolute(RESULTS.get_base_dir())
-	var file: FileAccess = FileAccess.open(RESULTS, FileAccess.WRITE)
-	assert_not_null(file, "the results file opened for writing")
-	if file == null:
-		return
-	file.store_string(JSON.stringify(produced, "  ", false))
-	file.close()
-#endregion

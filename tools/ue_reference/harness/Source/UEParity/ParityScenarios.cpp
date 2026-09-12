@@ -53,12 +53,31 @@ FGameplayModifierInfo Flat(
 	return Made;
 }
 
+UGameplayEffect* Instant(const TArray<FGameplayModifierInfo>& Modifiers);
+
 UGameplayEffect* Infinite(const TArray<FGameplayModifierInfo>& Modifiers)
 {
 	UGameplayEffect* Effect =
 		NewObject<UGameplayEffect>(GetTransientPackage(), NAME_None);
 	Effect->DurationPolicy = EGameplayEffectDurationType::Infinite;
 	Effect->Modifiers = Modifiers;
+	// Rooted for the run. FAggregatorMod keeps raw pointers into the
+	// FGameplayModifierInfo this definition owns - SourceTagReqs and
+	// TargetTagReqs are `const FGameplayTagRequirements*` - so a definition
+	// that is collected leaves an aggregator reading freed memory, and a
+	// requirement that can never be satisfied is what that looks like from
+	// outside.
+	Effect->AddToRoot();
+	return Effect;
+}
+
+UGameplayEffect* Instant(const TArray<FGameplayModifierInfo>& Modifiers)
+{
+	UGameplayEffect* Effect =
+		NewObject<UGameplayEffect>(GetTransientPackage(), NAME_None);
+	Effect->DurationPolicy = EGameplayEffectDurationType::Instant;
+	Effect->Modifiers = Modifiers;
+	Effect->AddToRoot();
 	return Effect;
 }
 
@@ -104,6 +123,25 @@ bool ChannelsUsable(const TArray<int32>& Channels)
 		}
 	}
 	return true;
+}
+
+/** Advance the world by one step.
+ *
+ *  The timer manager is ticked by hand. `UWorld::Tick` on a world built this
+ *  way advances `TimeSeconds` and does not run timers - measured with a timer
+ *  of this harness's own, set for one second and never fired over two. A
+ *  periodic gameplay effect is driven by exactly that timer manager, so
+ *  without this line the one scenario with a clock in it measures nothing. */
+void Advance(UWorld* World, float Step)
+{
+	World->Tick(LEVELTICK_All, Step);
+	// The frame counter, which is not decoration: FTimerManager ticks at most
+	// once per frame, so a loop that ticks a world many times without moving it
+	// runs the world's clock and never runs a timer. Measured with a timer of
+	// this harness's own, set for one second and never fired over two - and it
+	// is what Unreal's own GameplayEffectTests does between sub-ticks, with a
+	// comment calling it terrible and doing it anyway.
+	++GFrameCounter;
 }
 
 FGameplayTag TagNamed(const TCHAR* Named)
@@ -308,11 +346,63 @@ bool UParityScenarios::RunAll(UObject* WorldContext, const FString& OutPath)
 			Said->SetStringField(TEXT("_target_owned"), Owned.ToStringSimple());
 			Source->GetOwnedGameplayTags(Owned);
 			Said->SetStringField(TEXT("_source_owned"), Owned.ToStringSimple());
+			// What the spec captured is what a requirement is checked against,
+			// and a requirement that always filters with RequireTags and never
+			// filters with IgnoreTags is what an empty container looks like.
+			for (const FActiveGameplayEffect& Active :
+				 &Target->GetActiveGameplayEffects())
+			{
+				Said->SetStringField(TEXT("_captured_target"),
+					Active.Spec.CapturedTargetTags.GetActorTags().ToStringSimple());
+				Said->SetStringField(TEXT("_captured_source"),
+					Active.Spec.CapturedSourceTags.GetActorTags().ToStringSimple());
+				break;
+			}
 			Variants.Add(MakeShared<FJsonValueObject>(Said));
 		}
 		TSharedPtr<FJsonObject> Said = MakeShared<FJsonObject>();
 		Said->SetArrayField(TEXT("variants"), Variants);
 		Out->SetObjectField(TEXT("modifier_source_and_target_tag_qualification"), Said);
+
+		// The same four, as an execution rather than a persistent modifier.
+		//
+		// Unreal recomputes a persistent aggregator without source or target
+		// tags on purpose - GameplayEffect.cpp says so where it does it: "this
+		// is not an execution, so there are no 'source' and 'target' tags to
+		// fill out". So a modifier's own requirement is never met under an
+		// infinite effect, whatever either side is carrying, and an instant one
+		// is where the question the golden asks can actually be answered.
+		{
+			TArray<TSharedPtr<FJsonValue>> Executed;
+			const bool Wearing[4][2] = {{false, false}, {true, false},
+										{false, true}, {true, true}};
+			for (const bool* Pair : Wearing)
+			{
+				UAbilitySystemComponent* Target = Fresh(World);
+				UAbilitySystemComponent* Source = Fresh(World);
+				Target->SetNumericAttributeBase(Attack, 10.0f);
+				if (Pair[0])
+				{
+					Target->AddLooseGameplayTag(TagNamed(TEXT("Status.Burning")));
+				}
+				if (Pair[1])
+				{
+					Source->AddLooseGameplayTag(TagNamed(TEXT("Status.Empowered")));
+				}
+				UGameplayEffect* Once = Instant({
+					Qualified(Attack, 5.0f, TEXT("Status.Burning"), nullptr),
+					Qualified(Attack, 7.0f, nullptr, TEXT("Status.Empowered"))});
+				FGameplayEffectContextHandle Context = Source->MakeEffectContext();
+				FGameplayEffectSpec Spec(Once, Context, 1.0f);
+				const bool Landed = Source->ApplyGameplayEffectSpecToTarget(Spec, Target)
+										.WasSuccessfullyApplied();
+				Executed.Add(MakeShared<FJsonValueObject>(
+					Reading(Target, AttackName, TEXT("attack"), Landed)));
+			}
+			TSharedPtr<FJsonObject> AsExecution = MakeShared<FJsonObject>();
+			AsExecution->SetArrayField(TEXT("variants"), Executed);
+			Out->SetObjectField(TEXT("_tag_qualification_as_an_execution"), AsExecution);
+		}
 
 		// Controls, because four identical answers are also what a harness that
 		// applied nothing would say. One plain modifier across the same
@@ -338,6 +428,32 @@ bool UParityScenarios::RunAll(UObject* WorldContext, const FString& OutPath)
 				Qualified(Attack, 5.0f, TEXT("Status.Burning"), nullptr)});
 			const bool Landed = Apply(Target, One);
 			Out->SetObjectField(TEXT("_tag_control_target_requirement_met_on_self"),
+				Reading(Target, AttackName, TEXT("attack"), Landed));
+		}
+		{
+			// Whether a requirement is consulted at all, asked the other way
+			// round: a modifier that must NOT see a tag the target does not
+			// have. If this applies and the must-have one does not, the
+			// requirement is being read and only RequireTags is failing.
+			UAbilitySystemComponent* Target = Fresh(World);
+			Target->SetNumericAttributeBase(Attack, 10.0f);
+			FGameplayModifierInfo Avoiding =
+				Flat(Attack, EGameplayModOp::AddBase, 5.0f, 0);
+			Avoiding.TargetTags.IgnoreTags = Container(TEXT("Status.Burning"));
+			const bool Landed = Apply(Target, Infinite({Avoiding}));
+			Out->SetObjectField(TEXT("_tag_control_must_not_have_and_does_not"),
+				Reading(Target, AttackName, TEXT("attack"), Landed));
+		}
+		{
+			// The same, with the tag present, which must filter it out.
+			UAbilitySystemComponent* Target = Fresh(World);
+			Target->SetNumericAttributeBase(Attack, 10.0f);
+			Target->AddLooseGameplayTag(TagNamed(TEXT("Status.Burning")));
+			FGameplayModifierInfo Avoiding =
+				Flat(Attack, EGameplayModOp::AddBase, 5.0f, 0);
+			Avoiding.TargetTags.IgnoreTags = Container(TEXT("Status.Burning"));
+			const bool Landed = Apply(Target, Infinite({Avoiding}));
+			Out->SetObjectField(TEXT("_tag_control_must_not_have_and_does"),
 				Reading(Target, AttackName, TEXT("attack"), Landed));
 		}
 		{
@@ -403,26 +519,42 @@ bool UParityScenarios::RunAll(UObject* WorldContext, const FString& OutPath)
 		// The world's timers rather than the world: an editor world has never
 		// begun play and ticking it whole asserts, while the periodic execution
 		// this scenario is about is driven by the timer manager.
+		// The golden's timeline, each event once. An earlier version toggled on
+		// a pair of conditions and re-inhibited on the very next step, so the
+		// effect executed on every other tick and answered a number that was
+		// about the loop.
 		const float Step = 0.05f;
 		float Ran = 0.0f;
-		bool Inhibited = false;
+		bool Started = false;
+		bool Stopped = false;
+		FString Trace;
+		float Was = Asc->GetNumericAttribute(Health);
 		while (Ran < 2.5f)
 		{
-			World->Tick(LEVELTICK_All, Step);
+			Advance(World, Step);
 			Ran += Step;
-			if (!Inhibited && Ran >= 0.4f)
+			const float Now = Asc->GetNumericAttribute(Health);
+			if (!FMath::IsNearlyEqual(Now, Was))
+			{
+				Trace += FString::Printf(TEXT("%.2f:%.0f "), Ran, Now);
+				Was = Now;
+			}
+			if (!Started && Ran >= 0.4f)
 			{
 				Asc->AddLooseGameplayTag(TagNamed(TEXT("Status.Inhibited")));
-				Inhibited = true;
+				Started = true;
 			}
-			else if (Inhibited && Ran >= 0.7f)
+			if (Started && !Stopped && Ran >= 0.7f)
 			{
 				Asc->RemoveLooseGameplayTag(TagNamed(TEXT("Status.Inhibited")));
-				Inhibited = false;
+				Stopped = true;
 			}
 		}
-		Out->SetObjectField(TEXT("short_inhibition_with_execute_and_reset_period"),
-			Reading(Asc, HealthName, TEXT("health"), Landed));
+		TSharedPtr<FJsonObject> Timed =
+			Reading(Asc, HealthName, TEXT("health"), Landed);
+		Timed->SetStringField(TEXT("_trace"), Trace);
+		Out->SetObjectField(
+			TEXT("short_inhibition_with_execute_and_reset_period"), Timed);
 
 		// The same clock with nothing inhibited. Written down because the two
 		// can come out the same, and a reader is entitled to know that this
@@ -436,7 +568,7 @@ bool UParityScenarios::RunAll(UObject* WorldContext, const FString& OutPath)
 		const bool ControlLanded = Apply(Control, Plain);
 		for (float Went = 0.0f; Went < 2.5f; Went += Step)
 		{
-			World->Tick(LEVELTICK_All, Step);
+			Advance(World, Step);
 		}
 		TSharedPtr<FJsonObject> ControlSaid =
 			Reading(Control, HealthName, TEXT("health"), ControlLanded);
@@ -451,6 +583,23 @@ bool UParityScenarios::RunAll(UObject* WorldContext, const FString& OutPath)
 		FGameplayEffectSpec Reading(Plain, Asked, 1.0f);
 		ControlSaid->SetNumberField(TEXT("_spec_period"), Reading.GetPeriod());
 		ControlSaid->SetNumberField(TEXT("_spec_duration"), Reading.GetDuration());
+		ControlSaid->SetBoolField(
+			TEXT("_authoritative"), Control->IsOwnerActorAuthoritative());
+		ControlSaid->SetNumberField(
+			TEXT("_active_count"), Control->GetActiveEffects(FGameplayEffectQuery()).Num());
+
+		// A timer of this harness's own, on the same world and the same clock.
+		// If it does not fire, the finding is "the timer manager is not being
+		// ticked" and not anything about gameplay effects.
+		bool Fired = false;
+		FTimerHandle Ticket;
+		World->GetTimerManager().SetTimer(
+			Ticket, FTimerDelegate::CreateLambda([&Fired]() { Fired = true; }), 1.0f, false);
+		for (float Went = 0.0f; Went < 2.0f; Went += Step)
+		{
+			Advance(World, Step);
+		}
+		ControlSaid->SetBoolField(TEXT("_own_timer_fired"), Fired);
 		Out->SetObjectField(TEXT("_inhibition_control_never_inhibited"), ControlSaid);
 	}
 

@@ -4,11 +4,11 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# The policy self-test reads C# too, because the duplication gate reports it.
+# parity_diff: the declared-deviation line names the scenario and says it deviates on purpose, rather than sharing a bare '%s: %s' with engine_evidence.
 #
 # python: 3.14.6
-# date-utc: 2026-09-12T02:01:18Z
-# commit-previo: 8b78e69c9744ad796b38daa2f3b8d3778be2749b
+# date-utc: 2026-09-12T03:11:22Z
+# commit-previo: 010d257278c62b1f4fa0c80db2039a58989fccc8
 # files: 28
 966bfa6ca1dcb6b52771f8ac669c6569d066abdce3ed52f653e391ed38aad243  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
@@ -30,7 +30,7 @@ a3c7d0dc88aa826e4df3a164f535ed9b1f08890bb8cfb6183fa9347863ad18a8  tooling/gates/
 e81c73d8b53208301944119dc38e02ba8153e6abd392fde00976f586d9c90a06  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 1c3e982abdc41c322376e2dd33415fe3a254fa28b7abdd41f41f9fd3a6373cb7  tooling/gates/test-location-gate.py
-f0036b5d54de724d8a2f327233ea932629769ec9e6c26f0a7c83ce61bff28a3b  tooling/parity_diff.py
+f639d02eea312aff569c34fa7253a080bff91166dc417bd0df3b00584ce63308  tooling/parity_diff.py
 46445793b730cd7e91fad8e07e8d09439795af5048a5ffa71a495fe58b46df50  tooling/parity_receipt.py
 1764b29efbee2bb19d1807bdf1616d3c0205e19c0a18e294141b44c8e0458de2  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py

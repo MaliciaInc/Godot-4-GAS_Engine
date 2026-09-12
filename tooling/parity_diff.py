@@ -17,6 +17,13 @@ compared against them. Those outputs come from
 `artifacts/parity/results/ue_scenarios.json`, written by the suite - this tool
 runs no engine and invents no number.
 
+A golden may also carry `engine_deviation`: a written reason this engine
+answers something else on purpose. A difference under one is reported in full
+and is not a fault - the same thing this repository's traceability already
+calls EXPLICIT_DEVIATION. It is not a way to quiet a disagreement: the reason
+has to be there and the numbers are still printed, so a deviation nobody meant
+reads as loudly as a failure.
+
 Usage:
 
     python tooling/parity_diff.py [--goldens DIR] [--results FILE]
@@ -150,6 +157,7 @@ def main() -> int:
 
     faults: list[str] = []
     unverified: list[str] = []
+    declared: list[str] = []
     verified = 0
 
     for path in files:
@@ -163,11 +171,23 @@ def main() -> int:
             unverified.append(named)
             continue
         verified += 1
-        faults.extend(compared(golden, produced.get(named), named))
+        differences = compared(golden, produced.get(named), named)
+        if not differences:
+            continue
+        because = str(golden.get("engine_deviation", "")).strip()
+        if because:
+            declared.append("%s deviates on purpose: %s" % (named, because))
+            declared.extend("    " + one for one in differences)
+            continue
+        faults.extend(differences)
 
     print("goldens: %d" % len(files))
     print("%s: %d" % (UE_VERIFIED, verified))
     print("%s: %d" % (NOT_UE_VERIFIED, len(unverified)))
+    if declared:
+        print("declared deviations: %d" % len([one for one in declared if not one.startswith("    ")]))
+        for one in declared:
+            print("  " + one)
     for fault in faults:
         print("  - " + fault)
 

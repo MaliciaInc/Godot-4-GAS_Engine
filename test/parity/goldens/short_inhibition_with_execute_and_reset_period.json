@@ -2,7 +2,7 @@
   "scenario": "short_inhibition_with_execute_and_reset_period",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "A periodic effect inhibited for less than one period, under the period policy that executes and resets on reactivation. What is observable is how many times it ticked and when.",
   "inputs": {
     "base": {
@@ -38,9 +38,19 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "applied": true,
+    "health_current": 80,
+    "health_base": 80
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": true,
-  "execution_order": null,
-  "not_verified_because": "Not measured. The clock runs and the effect does not: the control with nothing inhibited executed zero times over a world that reached 5.1 seconds, when it should have executed most often of all. Whatever the inhibited case's -10 came from, it was not two periods elapsing, and a number that cannot be explained is not a measurement."
+  "execution_order": [
+    "applied at 0.0 and executed there, because the reference executes a periodic effect on application by default: health 100 -> 95",
+    "executed again by 0.05: health 95 -> 90",
+    "inhibited at 0.4 and uninhibited at 0.7, each once",
+    "executed at 1.05: health 90 -> 85",
+    "executed at 2.05: health 85 -> 80",
+    "read at 2.5: health 80. The same run with nothing ever inhibited answers 85, which is what says the clock and the period were real: three executions there against four here"
+  ]
 }

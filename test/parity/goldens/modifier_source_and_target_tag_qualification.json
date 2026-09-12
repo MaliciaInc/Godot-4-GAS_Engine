@@ -2,7 +2,7 @@
   "scenario": "modifier_source_and_target_tag_qualification",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "One modifier that counts only against a target carrying a tag, and one that counts only from a source carrying one. Four combinations, because a qualification that was read from the wrong side would be right in two of them.",
   "inputs": {
     "base": {
@@ -56,9 +56,32 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "variants": [
+      {
+        "applied": true,
+        "attack_current": 10,
+        "attack_base": 10
+      },
+      {
+        "applied": true,
+        "attack_current": 10,
+        "attack_base": 10
+      },
+      {
+        "applied": true,
+        "attack_current": 10,
+        "attack_base": 10
+      },
+      {
+        "applied": true,
+        "attack_current": 10,
+        "attack_base": 10
+      }
+    ]
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": false,
   "execution_order": null,
-  "not_verified_because": "Not measured. The harness could not make a modifier's own tag requirement count, and proved that rather than guessing: a plain modifier across the same source-to-target path applies (attack 10 -> 15), while a modifier whose target requirement IS met answers 10 - with the tag added before the effect and again with it added after, and with the target's owned tags read back as `Status.Burning` both times. Four identical variants are what a harness that applied nothing says, so they are not written here as what Unreal decided."
+  "engine_deviation": "The reference answers 10.0 for all four variants, and the reason is in Unreal's own source: a persistent aggregator is recomputed with no source or target tags at all - GameplayEffect.cpp, where it does it, says \"this is not an execution, so there are no 'source' and 'target' tags to fill out in the FAggregatorEvaluateParameters\". So a modifier's own requirement is never met under an infinite effect, whatever either side is carrying. Asked as an execution instead, the same reference answers 10, 15, 17 and 22 - target requirement read from the target, source from the source - which is the question this scenario is named for. GAS_Engine answers those four numbers under an infinite effect too, on purpose: a modifier that carries a condition and silently never counts is a feature that does nothing, and F5.2.3 added this so one effect can hit harder against the undead without being authored twice."
 }

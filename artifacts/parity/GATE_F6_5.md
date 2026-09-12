@@ -20,7 +20,7 @@ python tooling/parity_diff.py
 | Finding | Status | Evidence |
 |---|---|---|
 | D-07 application and reevaluation grew with the character, by global traversal | CLOSED | `test/unit/test_effect_index_scaling.gd::test_an_application_asks_only_what_grants_immunity` |
-| D-08 the parity corpus was authored rather than produced by a real reference | **BLOCKED** | `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word` |
+| D-08 the parity corpus was authored rather than produced by a real reference | CLOSED | `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces` |
 | D-11 override order has to be checked against the real reference | CLOSED | `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces` |
 
 ## D-07, and how it was found
@@ -74,29 +74,59 @@ establish: the same pair swapped answers 70.0. `override_across_channels` was
 swapped too, and answers 40.0 - so a later channel's override stands whatever
 its magnitude, and the two rules are different rules.
 
-### D-08 does not close, and its scope is now two scenarios
+### D-08 closes: all ten
 
-Eight goldens say `UE_VERIFIED` and carry what the run produced. Two do not,
-and are written up as not measured rather than filled in:
+The last two took two more findings to measure, and both were the harness.
 
-`modifier_source_and_target_tag_qualification` answered 10.0 in all four
-variants, and the controls say that is the harness rather than Unreal. A
-modifier with no requirement across the same source-to-target path applies
-(10.0 -> 15.0); a modifier whose target requirement *is* met answers 10.0, with
-the tag added before the effect and again after, with the target's owned tags
-read back as `Status.Burning` both times, and with the requirement written both
-as `RequireTags` and as a `TagQuery`.
+**The clock was never running.** `UWorld::Tick` advanced `TimeSeconds` and no
+timer ever fired - proved with a timer of the harness's own, set for one second
+and silent over two. `FTimerManager` ticks at most once per frame and the frame
+counter was never moving. Unreal's own `GameplayEffectTests.cpp` does
+`GFrameCounter++` between sub-ticks, with a comment calling it terrible and
+doing it anyway. With it, the control that inhibits nothing executes three
+times over 2.5 seconds at a period of 1.0 - which is the number that says the
+clock and the period are real - and the inhibited run answers 80.
 
-`short_inhibition_with_execute_and_reset_period` has a control that executes
-zero times over a world that reaches 5.1 seconds, when it should execute most
-often of all. The period is not what is missing, and that was measured: the
-definition says 1.0, the spec built from it says 1.0, the duration says
-infinite, and `bExecutePeriodicEffectOnApplication` is on - which should have
-executed once at application with no clock in it at all.
+**The tag scenario was measuring the right thing all along.** All four variants
+answer 10.0 under an infinite effect, and Unreal's own source says why, at the
+line that does it: *"this is not an execution, so there are no 'source' and
+'target' tags to fill out in the FAggregatorEvaluateParameters"*. A modifier's
+own requirement is never met under a persistent effect, whatever either side
+carries. The controls agree exactly: a requirement that must be present always
+filters (`HasAll` of an empty container is false) and one that must be absent
+never does (`HasAny` of an empty container is false). Asked as an execution
+instead, the same reference answers 10, 15, 17 and 22 - the target requirement
+read from the target and the source one from the source, which is the question
+the scenario is named for.
 
-Four identical variants and an idle clock are also what a harness that applied
-nothing produces. Writing either set of numbers down as Unreal's answer is the
-one thing this corpus exists to refuse, so neither is written down.
+### One declared deviation, and a corpus that can say so
+
+This engine answers 10, 15, 17 and 22 under an infinite effect too. That is
+deliberate - F5.2.3 added modifier requirements so one effect can hit harder
+against the undead without being authored twice, and a condition that silently
+never counts is a feature that does nothing.
+
+A corpus that can only say "same" or "wrong" cannot say "different on purpose",
+and this repository's traceability vocabulary already can: CLOSED,
+EXPLICIT_DEVIATION, BLOCKED. A golden may now carry `engine_deviation`, a
+written reason, and `parity_diff` reports the difference in full and does not
+call it a fault. It is not a way to quiet a disagreement: the reason must be
+there, it is only allowed on a golden that was actually run, and the numbers
+are still printed - checked by
+`test/unit/test_ue_reference_corpus.gd::test_a_declared_deviation_says_why_and_is_on_a_golden_that_ran`.
+
+One other difference turned out to be this engine's own default rather than a
+divergence. Unreal executes a periodic effect on application; this engine does
+not, and says so in `gameplay_effect.gd` where the flag lives. The scenario
+sets it, because the scenario is about what Unreal did.
+
+```text
+goldens: 10
+UE_VERIFIED: 10
+NOT_UE_VERIFIED: 0
+declared deviations: 1
+```
+
 
 ## D-08 and D-11, and why they are blocked
 

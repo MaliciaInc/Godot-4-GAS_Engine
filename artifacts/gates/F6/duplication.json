@@ -1,13 +1,13 @@
 {
-  "units": 3105,
-  "units_by_language": "c 3, cpp 4, csharp 3, gdscript 3040, powershell 6, python 49",
-  "elapsed_seconds": 12.45260749999943,
+  "units": 3109,
+  "units_by_language": "c 3, cpp 4, csharp 3, gdscript 3044, powershell 6, python 49",
+  "elapsed_seconds": 13.454473899999357,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27313
+    "behavioral": 27388
   },
   "blocking": 0,
   "findings": [
@@ -202,20 +202,6 @@
     },
     {
       "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_attribute_evaluation.gd:59-66:_request",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_composer_creation.gd:46-58:_context",
-      "score": 1.0,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/gameplay_ability.gd:873-882:accepts_target",
       "right": "addons/GAS_Engine/components/ability_runtime.gd:398-410:source_gate_error",
       "score": 0.967741935483871,
@@ -391,6 +377,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/gameplay_ability_event_trigger.gd:38-46:for_tag",
+      "right": "test/unit/test_ue_reference_production.gd:291-298:_needing",
+      "score": 0.9090909090909091,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "examples/action_sample/cues/sample_cues.gd:101-108:loop",
       "score": 0.9090909090909091,
@@ -540,6 +533,13 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards",
       "right": "test/unit/test_target_data.gd:49-57:_space_cases",
+      "score": 0.9,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_move_to.gd:43-51:_towards",
+      "right": "test/unit/test_ue_reference_production.gd:291-298:_needing",
       "score": 0.9,
       "category": "executable"
     },
@@ -1140,6 +1140,13 @@
     },
     {
       "kind": "behavioral",
+      "left": "addons/GAS_Engine/abilities/tasks/ability_task_network_sync_point.gd:56-67:create",
+      "right": "test/unit/test_ue_reference_production.gd:291-298:_needing",
+      "score": 0.8333333333333334,
+      "category": "executable"
+    },
+    {
+      "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "addons/GAS_Engine/abilities/tasks/ability_task_wait_confirm_cancel.gd:24-31:create",
       "score": 0.8333333333333334,
@@ -1548,13 +1555,6 @@
       "kind": "behavioral",
       "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
       "right": "test/fixtures/test_effect_factory.gd:61-68:duration",
-      "score": 0.8,
-      "category": "executable"
-    },
-    {
-      "kind": "behavioral",
-      "left": "addons/GAS_Engine/abilities/tasks/ability_task_play_animation_and_wait.gd:70-81:create",
-      "right": "test/unit/test_composer_action_menu.gd:19-28:_context",
       "score": 0.8,
       "category": "executable"
     },

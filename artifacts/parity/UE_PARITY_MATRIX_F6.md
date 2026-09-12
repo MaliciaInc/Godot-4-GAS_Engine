@@ -38,7 +38,7 @@ names are written, in the shape a comparison needs, under
 `test/parity/goldens/` — and every one of them says `NOT_UE_VERIFIED`, which is
 what `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word`
 checks. What this engine produces for those scenarios is written where a diff
-would read it, by `test/unit/test_ue_reference_corpus.gd::test_what_this_engine_produces_is_written_where_the_diff_reads_it`.
+would read it, by `test/unit/test_ue_reference_production.gd::test_what_this_engine_produces_is_written_where_the_diff_reads_it`.
 The missing half is the reference's outputs, and `tools/ue_reference/README.md`
 says exactly what to run to get them.
 
