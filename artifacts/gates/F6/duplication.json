@@ -1,13 +1,13 @@
 {
-  "units": 3094,
-  "units_by_language": "c 1, cpp 2, csharp 3, gdscript 3033, powershell 6, python 49",
-  "elapsed_seconds": 13.437474999998813,
+  "units": 3105,
+  "units_by_language": "c 3, cpp 4, csharp 3, gdscript 3040, powershell 6, python 49",
+  "elapsed_seconds": 12.45260749999943,
   "scan_issues": [],
   "shape_only_pairs": 42,
   "suppressed": {
     "structural": 0,
     "masked": 0,
-    "behavioral": 27248
+    "behavioral": 27313
   },
   "blocking": 0,
   "findings": [

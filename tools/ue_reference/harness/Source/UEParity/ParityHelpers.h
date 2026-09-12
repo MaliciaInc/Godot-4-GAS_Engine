@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActiveGameplayEffectHandle.h"
 #include "AttributeSet.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ParityHelpers.generated.h"
@@ -35,4 +36,15 @@ public:
 	/** Set the base without going through an effect, to seed a scenario. */
 	UFUNCTION(BlueprintCallable, Category = "Parity")
 	static void SetBaseValue(UAbilitySystemComponent* Asc, FGameplayAttribute Attribute, float Value);
+
+	/** Whether an application landed, which the handle knows and Python cannot ask. */
+	UFUNCTION(BlueprintCallable, Category = "Parity")
+	static bool WasApplied(FActiveGameplayEffectHandle Handle);
+
+	/** Whether this project actually has the evaluation channel it is about to
+	 *  ask for. Asked rather than assumed: a channel a project has not enabled
+	 *  is refused and quietly collapses into Channel0, and a scenario about two
+	 *  channels then measures one. */
+	UFUNCTION(BlueprintCallable, Category = "Parity")
+	static bool ChannelIsUsable(int32 Channel);
 };

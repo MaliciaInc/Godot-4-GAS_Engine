@@ -31,48 +31,76 @@ should use, and whether execution order is observable in it.
 | `bonus_magnitude` | how a captured magnitude composes its coefficients |
 | `magnitude_up_to_channel` | what "as it stood up to a channel" reads |
 
-## The harness, and what it is still blocked on
+## The harness, and what it produced
 
-`harness/` is a real project for this, not a description of one. It was built
-and run against the installed engine on 2026-09-11, and what follows is
-measured rather than planned.
+`harness/` is the project that produced them. It was built and run against the
+installed engine on 2026-09-11: **Unreal Engine 5.7.4 CL 51494982**, at
+`C:\Program Files\Epic Games\UE_5.7`. An earlier receipt said that engine was
+not installed; nobody had looked, and it was there.
 
-**Unreal Engine 5.7.4 CL 51494982 is installed on this machine** - the version
-and changelist the goldens name, at `C:\Program Files\Epic Games\UE_5.7`, with
-the GameplayAbilities plugin and its prebuilt binaries. Earlier receipts said it
-was not. That was wrong, and correcting it is what turned an open-ended blocker
-into a named one.
+Run it with:
 
-What was proved to work:
+```text
+Build.bat UEParityEditor Win64 Development -Project=<harness>/UEParity.uproject
+UnrealEditor-Cmd.exe <harness>/UEParity.uproject -run=pythonscript \
+    -script=<harness>/run_scenarios.py -unattended -nopause -nosplash -NullRHI
+```
 
-- the editor boots headless and runs Python (`-run=pythonscript`);
-- `UAbilitySystemTestAttributeSet` is a shipped, reflected class, and
-  `init_stats` registers its sixteen attributes on a component;
-- a `FGameplayModifierInfo` can be built exactly, including its evaluation
-  channel, by `import_text` with the text Unreal itself exports;
-- a `UGameplayEffect` class can be made from a Blueprint asset and its CDO
-  edited;
-- the game target compiles against real GAS (`ParityHelpers.cpp`,
-  `ParityGameInstance.cpp` build clean with MSVC 14.44).
+It needs the **.NET Framework 4.8 SDK** (`Microsoft.Net.Component.4.8.SDK`, or
+Microsoft's standalone Developer Pack). Without it the editor target does not
+build at all: `SwarmInterface.Build.cs` throws *"Could not find NetFxSDK install
+dir"*. The game target builds without it and cannot run, because a monolithic
+binary needs cooked content and cooking needs the editor.
 
-What blocks it, precisely:
+The C++ module is small on purpose. Everything a scenario is made of is
+reachable from Python except three things, and those are why it exists:
+`UAbilitySystemComponent::InitAbilityActorInfo` and `RegisterComponent` are not
+`UFUNCTION`s and every apply path dereferences the actor info; and a carrier has
+to implement `IAbilitySystemInterface`, because the source tags a modifier
+qualifies on are captured through `GetAbilitySystemComponentFromActor`, which
+finds a component no other way.
 
-| | |
+### Eight of ten
+
+| scenario | what the reference answered |
 |---|---|
-| Editor target | will not build: `SwarmInterface.Build.cs` throws *"Could not find NetFxSDK install dir"*. The .NET Framework 4.6+ SDK is not installed - no `Windows Kits\NETFXSDK`, no `Microsoft SDKs\NETFXSDK` registry key. |
-| Game target | builds and links, and cannot run: a monolithic binary needs cooked content, and cooking needs the editor. |
-| Python alone | cannot reach `UAbilitySystemComponent::InitAbilityActorInfo`, which is not a `UFUNCTION`; every apply path dereferences `AbilityActorInfo` and the process dies on `Ensure condition failed: AbilityActorInfo.IsValid()` at `AbilitySystemComponent.cpp:476`. |
+| `legacy_multiply_one_and_a_half_twice` | 20.0 - the legacy name is the additive arm |
+| `multiply_compound_one_and_a_half_twice` | 22.5 |
+| `legacy_divide` | 5.0 |
+| `double_override_same_channel` | **40.0** - the first override registered stands |
+| `override_across_channels` | 70.0 - the later channel stands |
+| `stack_count_factor_off_and_on` | 15.0 with the factor off, 25.0 with it on |
+| `bonus_magnitude` | 105.0 |
+| `magnitude_up_to_channel` | health 85.0, attack 115.0 |
 
-So one component closes all three: install the **.NET Framework 4.8 SDK** (the
-Visual Studio Installer component `Microsoft.Net.Component.4.8.SDK`, or
-Microsoft's standalone Developer Pack). With it the editor target builds,
-`ParityHelpers` exposes the initialiser, and `python_harness.py` already has the
-rest.
+The two override rows were each run a second time with the pair swapped, which
+is what makes "the first one stands" a measurement rather than a reading of the
+result: swapped, they answer 70.0 and 40.0.
 
-The engine install is deliberately not modified. Editing
-`SwarmInterface.Build.cs` to stop it throwing would also work and would change
-nothing about GameplayEffect arithmetic - and it would mean these goldens were
-produced on an engine that is not the stock one they name.
+This engine agrees with all eight.
+
+### Two that are not measured, and why
+
+Neither is written into its golden. A harness that answers the same thing for
+every variant is also what a harness that applied nothing answers, and the
+difference is the whole point of this corpus.
+
+**`modifier_source_and_target_tag_qualification`** - all four variants answer
+10.0, and the controls say that is the harness. A modifier with no requirement
+across the same source-to-target path applies (10.0 -> 15.0). A modifier whose
+target requirement *is* met answers 10.0 - with the tag added before the effect
+and again with it added after, with the target's owned tags read back as
+`Status.Burning` both times, and with the requirement expressed both as
+`RequireTags` and as a `TagQuery`.
+
+**`short_inhibition_with_execute_and_reset_period`** - the control with nothing
+inhibited executes zero times over a world that reaches 5.1 seconds, when it
+should execute most often of all. The period is not the problem and that was
+measured too: the definition says 1.0, the spec built from it says 1.0, the
+duration says infinite, and `bExecutePeriodicEffectOnApplication` is on, which
+should have executed once at application with no clock involved at all. So the
+periodic machinery needs something this harness's world does not give it, and
+the next person has that to look at rather than a shrug.
 
 ## How
 

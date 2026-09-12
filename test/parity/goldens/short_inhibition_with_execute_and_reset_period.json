@@ -41,5 +41,6 @@
   "outputs": null,
   "numeric_tolerance": 0.0001,
   "execution_order_observable": true,
-  "execution_order": null
+  "execution_order": null,
+  "not_verified_because": "Not measured. The clock runs and the effect does not: the control with nothing inhibited executed zero times over a world that reached 5.1 seconds, when it should have executed most often of all. Whatever the inhibited case's -10 came from, it was not two periods elapsing, and a number that cannot be explained is not a measurement."
 }

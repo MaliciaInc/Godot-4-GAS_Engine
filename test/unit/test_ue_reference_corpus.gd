@@ -58,6 +58,9 @@ const TOLERANCE: float = 0.0001
 ## What the goldens say the attribute starts at, and what the fixture declares.
 ## A scenario run against a different base is a scenario about something else.
 const BASE_ATTACK: float = 10.0
+const HEALTH: StringName = &"health"
+const MAX_HEALTH: StringName = &"max_health"
+const BASE_HEALTH: float = 100.0
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -184,6 +187,9 @@ func test_what_this_engine_produces_is_written_where_the_diff_reads_it() -> void
 			_modifier(GameplayEffectModifier.Operation.OVERRIDE, 70.0, 1),
 		]
 	)
+	produced["stack_count_factor_off_and_on"] = _stacked()
+	produced["bonus_magnitude"] = _bonus_magnitude()
+	produced["magnitude_up_to_channel"] = _up_to_channel()
 	for scenario: String in SCENARIOS:
 		if not produced.has(scenario):
 			produced[scenario] = null
@@ -202,8 +208,18 @@ func test_what_this_engine_produces_is_written_where_the_diff_reads_it() -> void
 		if entry == null:
 			continue
 		var outcome: Dictionary = entry
-		var landed: bool = outcome.get("applied", false)
-		assert_true(landed, "%s was applied rather than refused" % scenario)
+		# A scenario with variants says `applied` once per variant. Reading
+		# only the top level called every one of them a refusal.
+		var readings: Array = []
+		if outcome.has("variants"):
+			var listed: Array = outcome["variants"]
+			readings.assign(listed)
+		else:
+			readings.append(outcome)
+		for one: Variant in readings:
+			var reading: Dictionary = one
+			var landed: bool = reading.get("applied", false)
+			assert_true(landed, "%s was applied rather than refused" % scenario)
 
 	produced["_about"] = (
 		"What this engine produces, written by "
@@ -273,6 +289,134 @@ func _composed(modifiers: Array[GameplayEffectModifier]) -> Dictionary:
 		"attack_base": asc.get_attribute_base(ATTACK),
 	}
 
+
+## Three applications of one effect, with the stack count out and then in.
+##
+## Produced now that the reference has decided the shape, which is what these
+## three were waiting for rather than anything this engine could not do.
+func _stacked() -> Dictionary:
+	var variants: Array = []
+	for factored: bool in [false, true]:
+		_from_nothing()
+		var typed: Array[GameplayEffectModifier] = []
+		typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 5.0))
+		var effect: GameplayEffect = EffectFactory.infinite(typed)
+		effect.stacking_type = GameplayEffect.StackingType.AGGREGATE_BY_TARGET
+		effect.stack_limit_count = 3
+		effect.factor_in_stack_count = factored
+		var applied: ActiveGameplayEffect = null
+		for again: int in 3:
+			applied = asc.apply_gameplay_effect(effect, asc, 1.0)
+		variants.append(_attack_reading(applied != null))
+	return {"variants": variants}
+
+
+## A captured magnitude composing its coefficients.
+func _bonus_magnitude() -> Dictionary:
+	_from_nothing()
+	var typed: Array[GameplayEffectModifier] = []
+	# Through the factory, which is where a modifier is built in these tests.
+	var carried: GameplayEffectModifier = EffectFactory.modifier(
+		HEALTH, GameplayEffectModifier.Operation.ADD, 0.0
+	)
+	carried.magnitude = _reading_of_attack(
+		GameplayAttributeBasedMagnitude.Calculation.BONUS_MAGNITUDE, 2.0, 1.0, 3.0, 0
+	)
+	typed.append(carried)
+	var applied: ActiveGameplayEffect = asc.apply_gameplay_effect(
+		EffectFactory.infinite(typed), asc, 1.0
+	)
+	return _health_reading(applied != null)
+
+
+## A captured magnitude read only as far as one channel.
+func _up_to_channel() -> Dictionary:
+	_from_nothing()
+	var typed: Array[GameplayEffectModifier] = []
+	typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 5.0, 0))
+	typed.append(_modifier(GameplayEffectModifier.Operation.ADD, 100.0, 2))
+	var carried: GameplayEffectModifier = EffectFactory.modifier(
+		HEALTH, GameplayEffectModifier.Operation.ADD, 0.0
+	)
+	carried.magnitude = _reading_of_attack(
+		GameplayAttributeBasedMagnitude.Calculation.MAGNITUDE_UP_TO_CHANNEL,
+		-1.0,
+		0.0,
+		0.0,
+		1
+	)
+	carried.evaluation_channel = 3
+	typed.append(carried)
+	var applied: ActiveGameplayEffect = asc.apply_gameplay_effect(
+		EffectFactory.infinite(typed), asc, 1.0
+	)
+	var said: Dictionary = _health_reading(applied != null)
+	said["attack_current"] = asc.get_attribute_current(ATTACK)
+	said["attack_base"] = asc.get_attribute_base(ATTACK)
+	return said
+
+
+## A reading of attack, composed the way the goldens describe one.
+func _reading_of_attack(
+	calculation: GameplayAttributeBasedMagnitude.Calculation,
+	coefficient: float,
+	pre_add: float,
+	post_add: float,
+	final_channel: int
+) -> GameplayAttributeBasedMagnitude:
+	var capture: GameplayAttributeCaptureDefinition = (
+		GameplayAttributeCaptureDefinition.new()
+	)
+	capture.actor = GameplayAttributeCaptureDefinition.Actor.TARGET
+	capture.attribute_name = ATTACK
+	capture.value = GameplayAttributeCaptureDefinition.Value.CURRENT
+	capture.policy = GameplayAttributeCaptureDefinition.Policy.LIVE
+
+	var reading: GameplayAttributeBasedMagnitude = (
+		GameplayAttributeBasedMagnitude.new()
+	)
+	reading.capture = capture
+	reading.calculation = calculation
+	reading.final_channel = final_channel
+	reading.coefficient = _number(coefficient)
+	reading.pre_add = _number(pre_add)
+	reading.post_add = _number(post_add)
+	return reading
+
+
+
+func _number(value: float) -> GameplayScalableFloat:
+	var made: GameplayScalableFloat = GameplayScalableFloat.new()
+	made.value = value
+	return made
+
+
+## Back to a character nothing has been applied to.
+func _from_nothing() -> void:
+	asc.effects.cleanup()
+	asc.set_attribute_base(ATTACK, BASE_ATTACK)
+	# The fixture's health is clamped to its max_health, and the goldens have
+	# no such attribute: a scenario that added five to a full character
+	# measured the clamp and was recorded as a parity difference. Lifted so
+	# the reading is of the arithmetic the scenario is about.
+	asc.set_attribute_base(MAX_HEALTH, 100000.0)
+	asc.set_attribute_base(HEALTH, BASE_HEALTH)
+
+
+func _attack_reading(landed: bool) -> Dictionary:
+	return {
+		"applied": landed,
+		"attack_current": asc.get_attribute_current(ATTACK),
+		"attack_base": asc.get_attribute_base(ATTACK),
+	}
+
+
+func _health_reading(landed: bool) -> Dictionary:
+	return {
+		"applied": landed,
+		"health_current": asc.get_attribute_current(HEALTH),
+		"health_base": asc.get_attribute_base(HEALTH),
+	}
 
 ## What this engine produced, and what it did not produce and why.
 func _write(produced: Dictionary) -> void:

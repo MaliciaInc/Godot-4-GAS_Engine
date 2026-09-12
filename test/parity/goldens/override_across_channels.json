@@ -2,7 +2,7 @@
   "scenario": "override_across_channels",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "One OVERRIDE in an earlier channel and one in a later one. A channel composes over what the last produced, so an override in a later channel is expected to be the answer whatever the earlier one said.",
   "inputs": {
     "base": {
@@ -24,8 +24,16 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "applied": true,
+    "attack_current": 70,
+    "attack_base": 10
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": true,
-  "execution_order": null
+  "execution_order": [
+    "override 40.0 in channel 0",
+    "override 70.0 in channel 1",
+    "the later channel stands, whatever its magnitude: measured by running the pair swapped, which answered 40.0"
+  ]
 }

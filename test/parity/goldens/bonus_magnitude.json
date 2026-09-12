@@ -2,7 +2,7 @@
   "scenario": "bonus_magnitude",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "An attribute-based magnitude reading a captured attribute with a bonus applied to what it read.",
   "inputs": {
     "base": {
@@ -24,7 +24,11 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "applied": true,
+    "health_current": 105,
+    "health_base": 100
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": false,
   "execution_order": null

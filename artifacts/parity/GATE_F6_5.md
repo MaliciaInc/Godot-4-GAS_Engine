@@ -21,7 +21,7 @@ python tooling/parity_diff.py
 |---|---|---|
 | D-07 application and reevaluation grew with the character, by global traversal | CLOSED | `test/unit/test_effect_index_scaling.gd::test_an_application_asks_only_what_grants_immunity` |
 | D-08 the parity corpus was authored rather than produced by a real reference | **BLOCKED** | `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word` |
-| D-11 override order has to be checked against the real reference | **BLOCKED** | `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word` |
+| D-11 override order has to be checked against the real reference | CLOSED | `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces` |
 
 ## D-07, and how it was found
 
@@ -41,6 +41,62 @@ Three searches are indexed now, and each of them is a different question:
 The index is an accelerator and not a second source of truth: a scoped pass
 leaves the same state a full one would, and that is asserted rather than
 assumed — `test/unit/test_effect_index_scaling.gd::test_the_scoped_pass_leaves_the_same_state_as_a_full_one`.
+
+## The reference ran, 2026-09-11
+
+Unreal Engine 5.7.4 CL 51494982 - the build every golden names - produced eight
+of the ten scenarios. `tools/ue_reference/harness/` is the project that did it
+and `artifacts/parity/results/ue_reference_run.json` is what came out.
+
+| scenario | reference | this engine |
+|---|---|---|
+| `legacy_multiply_one_and_a_half_twice` | 20.0 | 20.0 |
+| `multiply_compound_one_and_a_half_twice` | 22.5 | 22.5 |
+| `legacy_divide` | 5.0 | 5.0 |
+| `double_override_same_channel` | **40.0** | 40.0 |
+| `override_across_channels` | 70.0 | 70.0 |
+| `stack_count_factor_off_and_on` | 15.0 / 25.0 | 15.0 / 25.0 |
+| `bonus_magnitude` | 105.0 | 105.0 |
+| `magnitude_up_to_channel` | health 85.0, attack 115.0 | the same |
+
+Eight comparisons, eight agreements, to each golden's tolerance.
+
+### D-11 closes
+
+The phase says the double-override golden decides the order and that the
+behaviour Unreal produces is the one to implement. Unreal produces **40.0**:
+the first override registered is the one that stands. This engine already
+produced 40.0, so there was nothing to implement - but that is now a
+measurement rather than a coincidence nobody had checked.
+
+It is a measurement of *order* and not of magnitude, which took a second run to
+establish: the same pair swapped answers 70.0. `override_across_channels` was
+swapped too, and answers 40.0 - so a later channel's override stands whatever
+its magnitude, and the two rules are different rules.
+
+### D-08 does not close, and its scope is now two scenarios
+
+Eight goldens say `UE_VERIFIED` and carry what the run produced. Two do not,
+and are written up as not measured rather than filled in:
+
+`modifier_source_and_target_tag_qualification` answered 10.0 in all four
+variants, and the controls say that is the harness rather than Unreal. A
+modifier with no requirement across the same source-to-target path applies
+(10.0 -> 15.0); a modifier whose target requirement *is* met answers 10.0, with
+the tag added before the effect and again after, with the target's owned tags
+read back as `Status.Burning` both times, and with the requirement written both
+as `RequireTags` and as a `TagQuery`.
+
+`short_inhibition_with_execute_and_reset_period` has a control that executes
+zero times over a world that reaches 5.1 seconds, when it should execute most
+often of all. The period is not what is missing, and that was measured: the
+definition says 1.0, the spec built from it says 1.0, the duration says
+infinite, and `bExecutePeriodicEffectOnApplication` is on - which should have
+executed once at application with no clock in it at all.
+
+Four identical variants and an idle clock are also what a harness that applied
+nothing produces. Writing either set of numbers down as Unreal's answer is the
+one thing this corpus exists to refuse, so neither is written down.
 
 ## D-08 and D-11, and why they are blocked
 

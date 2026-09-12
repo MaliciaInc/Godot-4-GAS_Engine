@@ -2,7 +2,7 @@
   "scenario": "stack_count_factor_off_and_on",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "The same three-stack effect with factor_in_stack_count false and true. The reference includes the stack count by default and this engine does not, so an effect ported over scales differently until somebody answers the question - and what the reference actually does is what this scenario is for.",
   "inputs": {
     "base": {
@@ -28,7 +28,20 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "variants": [
+      {
+        "applied": true,
+        "attack_current": 15,
+        "attack_base": 10
+      },
+      {
+        "applied": true,
+        "attack_current": 25,
+        "attack_base": 10
+      }
+    ]
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": false,
   "execution_order": null

@@ -2,7 +2,7 @@
   "scenario": "multiply_compound_one_and_a_half_twice",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "The same two magnitudes as compounding multiplications, which is the arm the legacy name does not mean.",
   "inputs": {
     "base": {
@@ -24,7 +24,11 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "applied": true,
+    "attack_current": 22.5,
+    "attack_base": 10
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": false,
   "execution_order": null

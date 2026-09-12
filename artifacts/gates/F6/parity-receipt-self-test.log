@@ -1,9 +1,9 @@
 RESULT: PASS
 stage:      parity-receipt-self-test
 command:    python tooling/parity_receipt.py --self-test
-started:    2026-09-12T02:01:22.7118535Z
-ended:      2026-09-12T02:01:22.7979967Z
-duration_s: 0.086
+started:    2026-09-12T02:48:44.0091014Z
+ended:      2026-09-12T02:48:44.0790734Z
+duration_s: 0.070
 exit_code:  0
 
 --- stdout ---

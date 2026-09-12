@@ -2,7 +2,7 @@
   "scenario": "magnitude_up_to_channel",
   "ue_version": "5.7.4",
   "changelist": "51494982",
-  "evidence": "NOT_UE_VERIFIED",
+  "evidence": "UE_VERIFIED",
   "what_it_is_about": "An attribute-based magnitude that reads the captured attribute as it stood up to a given channel rather than as it finally is, with a later channel modifying the same attribute.",
   "inputs": {
     "base": {
@@ -35,8 +35,18 @@
     ],
     "profile": "UE_5_7"
   },
-  "outputs": null,
+  "outputs": {
+    "applied": true,
+    "health_current": 85,
+    "health_base": 100,
+    "attack_current": 115,
+    "attack_base": 10
+  },
   "numeric_tolerance": 0.0001,
   "execution_order_observable": true,
-  "execution_order": null
+  "execution_order": [
+    "attack +5.0 in channel 0",
+    "attack +100.0 in channel 2",
+    "health captures attack evaluated up to channel 1, so it reads 15.0 and not 115.0, and lands in channel 3"
+  ]
 }

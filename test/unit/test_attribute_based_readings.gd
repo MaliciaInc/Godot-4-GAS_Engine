@@ -18,6 +18,7 @@ const Bench = preload("res://test/fixtures/magnitude_bench.gd")
 
 const TOLERANCE: float = 0.0001
 const ATTACK: StringName = &"attack"
+const HEALTH: StringName = &"health"
 
 var source: ASCFixture = null
 var target: ASCFixture = null
@@ -68,6 +69,85 @@ func _reading_cases() -> Array:
 		["only the buff", GameplayAttributeBasedMagnitude.Calculation.BONUS_MAGNITUDE, 12.0],
 	]
 
+
+## A reading of zero is still a reading, and the coefficients still compose.
+##
+## Found by the UE 5.7.4 reference run: an unbuffed character has a bonus
+## magnitude of exactly zero, and `(0 + pre) * coefficient + post` is 5.0 with
+## the goldens' numbers - the reference said 5.0 and this engine said nothing
+## at all. Every other case in this file has a non-zero reading, so the whole
+## composition could be skipped on a zero and no test would have noticed.
+func test_the_coefficients_compose_over_a_reading_of_zero() -> void:
+	var magnitude: GameplayAttributeBasedMagnitude = _over_source_attack()
+	magnitude.calculation = (
+		GameplayAttributeBasedMagnitude.Calculation.BONUS_MAGNITUDE
+	)
+	magnitude.coefficient = _number(2.0)
+	magnitude.pre_add = _number(1.0)
+	magnitude.post_add = _number(3.0)
+
+	# Nothing applied, so current and base agree and the bonus is zero.
+	source.set_base(ATTACK, 20.0)
+
+	var resolved: GameplayMagnitudeResult = _resolved(magnitude)
+
+	assert_true(resolved.is_ok(), "the magnitude resolved rather than refusing")
+	assert_almost_eq(
+		resolved.value,
+		5.0,
+		TOLERANCE,
+		"(0 + 1) * 2 + 3, which is what the reference answered"
+	)
+
+
+## The same magnitude, reaching the attribute through a normal application.
+##
+## Resolving one directly registers its captures by hand; applying an effect
+## is supposed to do that for whoever authored it. Whether it does for the two
+## twins a bonus reading needs is a different question, and the UE 5.7.4
+## reference run is what asked it: the reference put health at 105 and this
+## engine left it at 100.
+func test_a_bonus_reading_reaches_the_attribute_when_the_effect_is_applied() -> void:
+	var magnitude: GameplayAttributeBasedMagnitude = (
+		GameplayAttributeBasedMagnitude.new()
+	)
+	magnitude.capture = Factory.capture_definition(
+		GameplayAttributeCaptureDefinition.Actor.TARGET, ATTACK
+	)
+	magnitude.capture.policy = GameplayAttributeCaptureDefinition.Policy.LIVE
+	magnitude.calculation = (
+		GameplayAttributeBasedMagnitude.Calculation.BONUS_MAGNITUDE
+	)
+	magnitude.coefficient = _number(2.0)
+	magnitude.pre_add = _number(1.0)
+	magnitude.post_add = _number(3.0)
+
+	var modifier: GameplayEffectModifier = GameplayEffectModifier.new()
+	modifier.attribute_name = HEALTH
+	modifier.operation = GameplayEffectModifier.Operation.ADD
+	modifier.magnitude = magnitude
+	var carried: Array[GameplayEffectModifier] = [modifier]
+
+	# Unbuffed, so the bonus is exactly zero and the answer is the
+	# coefficients alone: (0 + 1) * 2 + 3. The fixture clamps health to
+	# max_health and a full character would have measured the clamp.
+	target.set_base(&"max_health", 100000.0)
+	var applied: ActiveGameplayEffect = target.asc.apply_gameplay_effect(
+		Factory.infinite(carried), target.asc, 1.0
+	)
+
+	assert_not_null(applied, "the effect was applied rather than refused")
+	assert_almost_eq(
+		target.current_of(HEALTH),
+		105.0,
+		TOLERANCE,
+		"health carries the five the magnitude resolved to"
+	)
+
+func _number(value: float) -> GameplayScalableFloat:
+	var made: GameplayScalableFloat = GameplayScalableFloat.new()
+	made.value = value
+	return made
 
 func test_a_calculation_picks_which_reading_of_the_capture_is_taken(
 	case: Array = use_parameters(_reading_cases())

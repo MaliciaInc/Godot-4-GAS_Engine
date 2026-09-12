@@ -59,5 +59,6 @@
   "outputs": null,
   "numeric_tolerance": 0.0001,
   "execution_order_observable": false,
-  "execution_order": null
+  "execution_order": null,
+  "not_verified_because": "Not measured. The harness could not make a modifier's own tag requirement count, and proved that rather than guessing: a plain modifier across the same source-to-target path applies (attack 10 -> 15), while a modifier whose target requirement IS met answers 10 - with the tag added before the effect and again with it added after, and with the target's owned tags read back as `Status.Burning` both times. Four identical variants are what a harness that applied nothing says, so they are not written here as what Unreal decided."
 }
