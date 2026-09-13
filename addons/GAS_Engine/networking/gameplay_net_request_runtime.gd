@@ -143,11 +143,18 @@ func _bare(
 ## claimed a provider for - AUD-09, and never "whichever is waiting" once two
 ## could be - and one no provider of the kind that is waiting could have
 ## produced. Only then is it handed over.
-func honour_target_data(message: GameplayNetMessage) -> bool:
+##
+## `apply` false asks the same five questions and stops there - R7-01. A
+## batch's atomic promise has to know every member would be honoured before
+## honouring the first one, and asking by calling this with nothing to lose
+## is what keeps that answer from ever disagreeing with what honouring for
+## real then does.
+func honour_target_data(message: GameplayNetMessage, apply: bool = true) -> bool:
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	var carried: Variant = message.payload.get(GameplayNetMessage.TARGET_DATA_KEY, {})
 	if not carried is Dictionary:
-		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
 		return false
 
 	var claimed: Dictionary = carried
@@ -155,32 +162,37 @@ func honour_target_data(message: GameplayNetMessage) -> bool:
 		claimed, net.registry
 	)
 	if aim == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
 		return false
 
 	# A claim that named somebody and resolved to nobody. It is not a place -
 	# a place never had an identity to be unknown - so it is a client naming an
 	# entity this machine has never registered.
 	if _named_nobody(claimed, aim):
-		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_UNKNOWN)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_UNKNOWN)
 		return false
 
 	var waiting: GameplayTargetProvider = asc.ability_runtime.queries.provider_for_activation(
 		message.activation
 	)
 	if waiting == null:
-		var anybody_aiming: bool = not asc.ability_runtime.queries.previewing_providers().is_empty()
-		net._refuse(
-			message,
-			GameplayNetworkRuntime.REASON_ACTIVATION_UNKNOWN if anybody_aiming
-			else GameplayNetworkRuntime.REASON_TARGET_UNREACHABLE
-		)
+		if apply:
+			var anybody_aiming: bool = not asc.ability_runtime.queries.previewing_providers().is_empty()
+			net._refuse(
+				message,
+				GameplayNetworkRuntime.REASON_ACTIVATION_UNKNOWN if anybody_aiming
+				else GameplayNetworkRuntime.REASON_TARGET_UNREACHABLE
+			)
 		return false
 	if not waiting.validate_authoritative(aim, asc):
-		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
 		return false
 
-	waiting.confirmed.emit(aim)
+	if apply:
+		waiting.confirmed.emit(aim)
 	return true
 
 
@@ -210,10 +222,14 @@ static func _named_nobody(
 
 
 ## An event a client sent, in the one shape events cross a wire in.
-func honour_event(message: GameplayNetMessage) -> bool:
+##
+## `apply` false decodes and stops there - R7-01 - so a batch can ask whether
+## this member would be honoured without sending it anywhere.
+func honour_event(message: GameplayNetMessage, apply: bool = true) -> bool:
 	var carried: Variant = message.payload.get(GameplayNetMessage.EVENT_KEY, {})
 	if not carried is Dictionary:
-		net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
 		return false
 	# Named rather than handed straight over: the guard above proved it is
 	# a Dictionary, and the local is where that proof is written down.
@@ -221,9 +237,11 @@ func honour_event(message: GameplayNetMessage) -> bool:
 	var said: GameplayEventWire = GameplayEventWire.from_wire(payload)
 	var event: GameplayEventData = GameplayEventTranslator.from_wire(said, net.registry)
 	if event == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
 		return false
-	net.registry.asc_for(message.entity).send_gameplay_event(event)
+	if apply:
+		net.registry.asc_for(message.entity).send_gameplay_event(event)
 	return true
 
 
@@ -233,10 +251,14 @@ func honour_event(message: GameplayNetMessage) -> bool:
 ## reason the input crosses instead of the activation it would cause: an
 ## authority resolving a client handle would be trusting a number that client
 ## invented.
-func honour_input(message: GameplayNetMessage) -> bool:
+##
+## `apply` false asks the same two questions - a known definition, a policy
+## that allows this peer to say so - and delivers nothing - R7-01.
+func honour_input(message: GameplayNetMessage, apply: bool = true) -> bool:
 	var definition: Resource = net.registry.definition_for(message.definition)
 	if definition == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_DEFINITION)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_DEFINITION)
 		return false
 
 	# A press starts and a release ends, so the two ask the security policy
@@ -254,9 +276,12 @@ func honour_input(message: GameplayNetMessage) -> bool:
 		)
 	)
 	if not allowed:
-		net._refuse(message, GameplayNetworkRuntime.REASON_POLICY)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_POLICY)
 		return false
 
+	if not apply:
+		return true
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	var slot: int = GameplayWireReader.number_in(
 		message.payload, GameplayNetMessage.INPUT_KEY, -1

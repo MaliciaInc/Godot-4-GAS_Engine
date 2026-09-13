@@ -186,10 +186,45 @@ func get_current_value(attribute_name: StringName) -> float:
 	return attribute.current_value if attribute != null else 0.0
 
 
-func set_current_value_from_replication(attribute_name: StringName, value: float) -> void:
+## Write a replicated reading of one attribute - base, current, or both - as
+## one mutation, `current_value`'s own before and after taken across the
+## whole write rather than around two independent public calls - R7-02. A
+## base write through `set_attribute_base` used to recompose and could emit
+## a value only this machine's own contributions produced, before an
+## authoritative current then silently overwrote it. `commit_base_write`
+## clamps the way `set_attribute_base` does, without the recompose it adds.
+func apply_replicated_attribute(
+	attribute_name: StringName, has_base: bool, new_base: float, has_current: bool, new_current: float
+) -> AttributeMutationResult:
+	var mutation: AttributeMutationResult = AttributeMutationResult.new()
+	mutation.attribute_name = attribute_name
+
 	var attribute: AttributeData = find(attribute_name)
-	if attribute != null:
-		attribute.write_current_from_replication(value)
+	if attribute == null:
+		mutation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
+		return mutation
+
+	var old_current: float = attribute.current_value
+
+	if has_base:
+		var staged: AttributeBaseMutation = stage_base_write(attribute_name, new_base)
+		if staged != null:
+			var based: AttributeMutationResult = commit_base_write(staged)
+			mutation.was_clamped = based.was_clamped
+
+	if has_current:
+		attribute.write_current_from_replication(new_current)
+	elif has_base:
+		# Base moved with no authoritative current alongside it - MIXED's own
+		# shape for nothing but this machine's aggregator to answer.
+		var evaluation: AttributeEvaluationResult = evaluate(attribute_name)
+		if evaluation.is_ok():
+			attribute.current_value = evaluation.final_value
+
+	mutation.old_current_value = old_current
+	mutation.new_current_value = attribute.current_value
+	mutation.current_changed = not is_equal_approx(old_current, attribute.current_value)
+	return mutation
 
 
 ## Every attribute name across every set, for a full recomposition.

@@ -348,6 +348,10 @@ func _purge_entity_bookkeeping(id: GameplayNetEntityId) -> void:
 	registry.forget_entity(id)
 	state.forget(id)
 	activation.forget(id)
+	# R7-03: a guess this entity made and never heard back on, forgotten by
+	# id rather than left in the journal for whoever this id is reused for
+	# next to inherit a late answer against.
+	journal.forget_entity(id)
 	for seen: String in _applied_by_entity.get(id.value, []):
 		_applied.erase(seen)
 	_applied_by_entity.erase(id.value)
@@ -552,50 +556,80 @@ func _identified(message: GameplayNetMessage, from_peer: int) -> bool:
 ## changed, and a peer with nothing for it to have changed from would apply
 ## half a character and believe it had all of one. That is the late joiner,
 ## and the answer is that it is sent a snapshot first.
-func _act_on(message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER) -> bool:
+##
+## `apply` false is `would_apply`'s door in, reusing each branch's own
+## question rather than a second copy of it that could disagree - R7-01.
+func _act_on(
+	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER,
+	apply: bool = true
+) -> bool:
 	var id: GameplayNetEntityId = message.entity
 	if registry.asc_for(id) == null:
-		_refuse(message, REASON_UNKNOWN_ENTITY)
+		if apply:
+			_refuse(message, REASON_UNKNOWN_ENTITY)
 		return false
 
 	match message.kind:
 		GameplayNetMessage.Kind.GRANT, GameplayNetMessage.Kind.REVOKE:
-			return _announce_grant(message)
+			return _announce_grant(message, apply)
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST:
-			return activation.honour_request(message, from_peer)
+			return activation.honour_request(message, from_peer, apply)
 		GameplayNetMessage.Kind.ACTIVATION_CONFIRM:
-			journal.accept(message.prediction_key)
-			activation_answered.emit(message.prediction_key, message.activation, true)
+			if apply:
+				journal.accept(message.prediction_key)
+				activation_answered.emit(message.prediction_key, message.activation, true)
 			return true
 		GameplayNetMessage.Kind.ACTIVATION_REJECT:
-			journal.reject(message.prediction_key, registry.asc_for(message.entity))
-			activation_answered.emit(message.prediction_key, message.activation, false)
+			if apply:
+				journal.reject(message.prediction_key, registry.asc_for(message.entity))
+				activation_answered.emit(message.prediction_key, message.activation, false)
 			return true
 		GameplayNetMessage.Kind.BATCH:
+			# Unreachable from would_apply: gather() never takes a BATCH member.
 			return batching.honour(message, from_peer)
 		GameplayNetMessage.Kind.TARGET_DATA:
-			return requests.honour_target_data(message)
+			return requests.honour_target_data(message, apply)
 		GameplayNetMessage.Kind.GENERIC_CONFIRM:
-			registry.asc_for(id).input_confirm()
+			if apply:
+				registry.asc_for(id).input_confirm()
 			return true
 		GameplayNetMessage.Kind.GENERIC_CANCEL:
 			# The generic no names no ability, so the refusal cannot be the
 			# message: it is per-activation, and the ASC applies it.
-			registry.asc_for(id).input_cancel(true)
+			if apply:
+				registry.asc_for(id).input_cancel(true)
 			return true
 		GameplayNetMessage.Kind.GAMEPLAY_EVENT:
-			return requests.honour_event(message)
+			return requests.honour_event(message, apply)
 		GameplayNetMessage.Kind.INPUT_PRESSED, GameplayNetMessage.Kind.INPUT_RELEASED:
-			return requests.honour_input(message)
+			return requests.honour_input(message, apply)
 		_:
 			return true
 
 
-func _announce_grant(message: GameplayNetMessage) -> bool:
+## Whether this message would actually be applied, without doing it -
+## `would_accept`'s shallow shape/direction/identity checks plus the rest:
+## a duplicate, an unresolved definition, whatever only this kind's own
+## handler can answer - R7-01, so a batch's atomic promise can know every
+## member would apply before applying the first one. A state reading is
+## asked of `state` instead, since `_receive` routes it there before
+## `_act_on` ever sees one.
+func would_apply(message: GameplayNetMessage, from_peer: int) -> bool:
+	if message.is_state():
+		return state.apply(message, false)
+	if _applied.has(_fingerprint(message)):
+		return false
+	return _act_on(message, from_peer, false)
+
+
+func _announce_grant(message: GameplayNetMessage, apply: bool = true) -> bool:
 	var definition: Resource = registry.definition_for(message.definition)
 	if definition == null:
-		_refuse(message, REASON_UNKNOWN_DEFINITION)
+		if apply:
+			_refuse(message, REASON_UNKNOWN_DEFINITION)
 		return false
+	if not apply:
+		return true
 	if message.kind == GameplayNetMessage.Kind.GRANT:
 		ability_granted_by_authority.emit(message.entity, definition)
 	else:

@@ -178,14 +178,25 @@ static func _diff_effects(
 ## that already have them in would count everything twice. What the effects in
 ## the state are for is a game's own display, and `GameplayNetState` is handed
 ## to it whole.
+##
+## Base and current are written together per attribute, one call each - R7-02
+## - rather than as two loops over two dictionaries: a name in both used to
+## mean a base write that could emit on its own, immediately followed by a
+## current write that never did, and `attribute_changed` heard whichever of
+## those two happened to fire rather than the one reading that was actually
+## true once both were applied.
 static func apply(state: GameplayNetState, asc: AbilitySystemComponent) -> bool:
 	if state == null or asc == null:
 		return false
 
-	for name: StringName in state.attributes:
-		asc.set_attribute_base(name, state.attributes[name])
-	for name: StringName in state.current_attributes:
-		asc.set_attribute_current_from_replication(name, state.current_attributes[name])
+	for name: StringName in _attribute_names_in(state):
+		var has_base: bool = state.attributes.has(name)
+		var has_current: bool = state.current_attributes.has(name)
+		asc.apply_replicated_attribute(
+			name,
+			has_base, state.attributes[name] if has_base else 0.0,
+			has_current, state.current_attributes[name] if has_current else 0.0
+		)
 	for tag: StringName in state.tags:
 		_hold_exactly(asc, tag, state.tags[tag])
 	for tag: StringName in state.removed_tags:
@@ -193,6 +204,20 @@ static func apply(state: GameplayNetState, asc: AbilitySystemComponent) -> bool:
 	if not state.is_delta():
 		_drop_tags_not_in(state, asc)
 	return true
+
+
+## Every attribute this reading says anything about, base or current, each
+## named once - the two dictionaries do not always agree on which attributes
+## they mention, a buff moving current with no base changed under it being
+## the ordinary case rather than the exception.
+static func _attribute_names_in(state: GameplayNetState) -> Array[StringName]:
+	var names: Array[StringName] = []
+	for name: StringName in state.attributes:
+		names.append(name)
+	for name: StringName in state.current_attributes:
+		if not names.has(name):
+			names.append(name)
+	return names
 
 
 ## Bring a tag's count to what the authority says it is.
