@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: 7ceda886f3bdf71f27402c4a174a8c165460a56e1557e3aa2a114bc4c87d3cbb
+GAS_ENGINE_GUT_RESULT: PASS passed=66436 failed=0 pending=0 orphans=0 - AUD-08: current attribute value replicates alongside base, written on the receiver without recomposition

@@ -1,16 +1,13 @@
 ## Telling another machine what a character is, and what has changed since.
 ##
-## The seven things the phase names travel: attributes, tags, abilities, active
-## effects, how many of each, how long is left in seconds and in turns, and the
-## cues that are playing. A snapshot is all of it and a delta is the part that
-## moved, and they are the same shape on purpose - a late joiner is a peer whose
-## whole state is news, and two shapes would be two readers with the late joiner
-## reading the one nobody exercised.
+## Attributes, tags, abilities, active effects and their counts, remaining
+## duration and turns, and cues. A snapshot is all of it and a delta is the
+## part that moved, and they are the same shape on purpose - a late joiner is
+## a peer whose whole state is news.
 ##
-## The client does not re-simulate. What arrives is the authority's answer, and
-## the tests below are careful about the difference: attributes and tags are
-## written onto the component, and the effects are handed over as a reading for
-## a game to show. Applying them as effects again would count everything twice.
+## The client does not re-simulate: attributes and tags are written onto the
+## component, and effects are handed over as a reading for a game to show.
+## Applying them as effects again would count everything twice.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
@@ -53,8 +50,8 @@ func after_each() -> void:
 
 
 #region Getting there
-## An effect that can be named to another machine, which means one that lives
-## somewhere: a resource built in memory has nothing to call it.
+## An effect nameable to another machine - a resource built in memory has
+## nothing to call it.
 func _named(effect: GameplayEffect) -> GameplayEffect:
 	made += 1
 	effect.take_over_path(A_PATH % made)
@@ -76,14 +73,8 @@ func _no_modifiers() -> Array[GameplayEffectModifier]:
 
 
 #region A snapshot is what is there
-## Base values and reference counts, which are the two things that cannot be
-## worked out again from anything else.
-##
-## The base and not the composed value, with a buff on to tell them apart: the
-## current value is what the base plus the effects come to, and both machines
-## have the effects. Sending the answer as well would be sending the same fact
-## twice, for the two copies to disagree the first time one of them was a frame
-## behind.
+## Base values, composed values, and reference counts - both attribute
+## readings, with a buff on to tell them apart (AUD-08).
 func test_a_snapshot_carries_the_base_attributes_and_the_tag_counts() -> void:
 	fixture.set_base(HEALTH, 70.0)
 	EffectFactory.apply(
@@ -100,7 +91,11 @@ func test_a_snapshot_carries_the_base_attributes_and_the_tag_counts() -> void:
 
 	var state: GameplayNetState = _snapshot()
 
-	assert_almost_eq(state.attributes[HEALTH], 70.0, 0.001, "the base value, not the composed one")
+	assert_almost_eq(state.attributes[HEALTH], 70.0, 0.001, "the base value")
+	assert_almost_eq(
+		state.current_attributes[HEALTH], 95.0, 0.001,
+		"and the composed one too - AUD-08, a receiver that does not re-simulate needs both"
+	)
 	assert_eq(state.tags[BURNING], 2, "counts, because a tag held twice is still held once over")
 
 
@@ -115,11 +110,10 @@ func test_a_snapshot_carries_what_is_granted() -> void:
 	assert_ne(state.abilities[0], GameplayNetDefinitionId.NONE)
 
 
-## And one granted from a scene that lives nowhere is not named at all.
-##
-## An ability packed in memory and never saved cannot be pointed at on
-## another machine, so it is left out rather than sent under an id the
-## receiver would resolve to whatever it happened to have.
+## And one granted from a scene that lives nowhere is not named at all - an
+## ability packed in memory and never saved cannot be pointed at on another
+## machine, so it is left out rather than sent under an id the receiver
+## would resolve to whatever it happened to have.
 func test_a_grant_from_a_scene_that_lives_nowhere_is_not_sent() -> void:
 	AbilityFactory.give(asc, Probe.build(&"Ability.Unsaved"))
 
@@ -180,9 +174,8 @@ func _modes() -> Array:
 	]
 
 
-## The effects are the expensive half and the private half at once. What a
-## character is doing stays public in every mode: the tags and the cues travel
-## whatever the mode says, because they are what anybody watching can see.
+## The effects are the expensive half and the private half at once; the tags
+## and cues travel in every mode, because they are what anybody watching can see.
 func test_the_mode_decides_who_hears_about_the_effects() -> void:
 	var rows: Array = _modes()
 	var checked: int = 0
@@ -225,6 +218,21 @@ func test_a_delta_carries_only_what_moved() -> void:
 	assert_true(change.is_delta(), "it says which it is")
 	assert_true(change.attributes.has(HEALTH), "health moved")
 	assert_false(change.attributes.has(ATTACK), "and attack did not")
+
+
+## A buff that never moved the base is still news (AUD-08): applying an effect
+## leaves base where it was, and current is the only field that says anything happened.
+func test_a_delta_notices_a_buff_that_never_moved_the_base() -> void:
+	fixture.set_base(HEALTH, 70.0)
+	var before: GameplayNetState = _snapshot()
+	EffectFactory.apply(
+		asc, _named(EffectFactory.infinite([EffectFactory.add(HEALTH, 25.0)] as Array[GameplayEffectModifier]))
+	)
+
+	var change: GameplayNetState = GameplayNetReplication.delta_between(before, _snapshot())
+
+	assert_false(change.attributes.has(HEALTH), "the base never moved")
+	assert_almost_eq(change.current_attributes[HEALTH], 95.0, 0.001, "but the composed value did")
 
 
 ## An absence cannot be expressed by a value: a tag that is gone and a tag
@@ -284,7 +292,26 @@ func test_applying_a_snapshot_writes_the_attributes_and_the_tags() -> void:
 	assert_true(GameplayNetReplication.apply(state, other.asc))
 
 	assert_almost_eq(other.asc.get_attribute_base(HEALTH), 100.0, 0.001)
-	assert_eq(other.asc.tags.count_exact(BURNING), 1)
+
+
+## The composed value is written straight onto the receiver rather than
+## derived (AUD-08), proved with a buff the receiver was never given.
+func test_applying_a_reading_writes_the_current_value_without_deriving_it() -> void:
+	fixture.set_base(HEALTH, 70.0)
+	EffectFactory.apply(
+		asc, _named(EffectFactory.infinite([EffectFactory.add(HEALTH, 25.0)] as Array[GameplayEffectModifier]))
+	)
+	var state: GameplayNetState = _snapshot(GameplayNetReplication.Mode.MIXED, false)
+	assert_true(state.effects.is_empty(), "a non-owner under MIXED is told nothing of the effect itself")
+
+	var other: ASCFixture = Fixture.create("Onlooker")
+	add_child_autofree(other.owner)
+	GameplayNetReplication.apply(state, other.asc)
+
+	assert_almost_eq(
+		other.asc.get_attribute_current(HEALTH), 95.0, 0.001,
+		"the composed answer arrived on its own, with no effect to have composed it from"
+	)
 
 
 ## A snapshot is the whole truth, so a tag it does not mention is one that is

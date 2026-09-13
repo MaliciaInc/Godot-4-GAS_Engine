@@ -181,6 +181,8 @@ static func fingerprint(state: GameplayNetState) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	for name: StringName in _sorted(state.attributes.keys()):
 		parts.append("attr %s=%.3f" % [name, state.attributes[name]])
+	for name: StringName in _sorted(state.current_attributes.keys()):
+		parts.append("current %s=%.3f" % [name, state.current_attributes[name]])
 	for tag: StringName in _sorted(state.tags.keys()):
 		parts.append("tag %s=%d" % [tag, state.tags[tag]])
 	for granted: int in _sorted_ints(state.abilities):

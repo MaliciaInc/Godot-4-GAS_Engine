@@ -1,7 +1,6 @@
 ## The attribute aggregator: lookup, base mutation and recomposition.
 ##
-## This is the authority for the canonical formula and nothing else may implement
-## it:
+## This is the authority for the canonical formula and nothing else may implement it:
 ##
 ##     current = ((base + sum(ADD)) * product(MULTIPLY)) / product(DIVIDE)
 ##
@@ -11,13 +10,11 @@
 ## Recomposition recomputes from scratch every time. Upstream applied a flat
 ## delta per modifier and reversed it on removal, which is order-dependent and
 ## unrecoverable: removing +20 while x1.5 and x2 are still active cannot be
-## expressed as one delta, and changing the base while buffs were active
-## silently discarded them. Recomputing has no such failure mode, because there
-## is no history to get wrong.
+## expressed as one delta. Recomputing has no such failure mode - there is no
+## history to get wrong.
 ##
 ## This class emits nothing. It returns results and the ASC facade emits from
-## them, so mutable state has exactly one owner and a caller cannot be surprised
-## by a signal fired from inside a query.
+## them, so a caller cannot be surprised by a signal fired inside a query.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -37,11 +34,9 @@ var _contributions: Array[AttributeModifierContribution] = []
 ## The same contributions, kept by the attribute they are about.
 ##
 ## Composing one attribute used to walk every contribution on the entity,
-## once per channel, skipping the ones about something else - so recomposing
-## a set of five attributes walked the whole list twenty times. Measured at
-## a thousand effects on one character that is six seconds, and the shape of
-## it is why: the work per application grows with how much is already there,
-## and every attribute pays for every other attribute's modifiers.
+## skipping the ones about something else - measured at a thousand effects on
+## one character, that is six seconds, because every attribute pays for every
+## other attribute's modifiers.
 ##
 ## An index rather than a sort, because the order within one attribute is
 ## the application order the algebra reads and must not move. `_contributions`
@@ -189,6 +184,12 @@ func get_base_value(attribute_name: StringName) -> float:
 func get_current_value(attribute_name: StringName) -> float:
 	var attribute: AttributeData = find(attribute_name)
 	return attribute.current_value if attribute != null else 0.0
+
+
+func set_current_value_from_replication(attribute_name: StringName, value: float) -> void:
+	var attribute: AttributeData = find(attribute_name)
+	if attribute != null:
+		attribute.write_current_from_replication(value)
 
 
 ## Every attribute name across every set, for a full recomposition.

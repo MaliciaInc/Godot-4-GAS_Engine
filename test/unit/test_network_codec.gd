@@ -37,6 +37,7 @@ func _round_tripped(message: GameplayNetMessage) -> GameplayNetMessage:
 func _a_full_state() -> GameplayNetState:
 	var state: GameplayNetState = GameplayNetState.snapshot()
 	state.attributes[HEALTH] = 73.5
+	state.current_attributes[HEALTH] = 98.5
 	state.tags[BURNING] = 2
 	state.abilities = [DEFINITION]
 	state.running_abilities = [DEFINITION]
@@ -116,7 +117,10 @@ func test_a_state_survives_the_round_trip_whole() -> void:
 
 	assert_not_null(back, "it decoded")
 	assert_eq(back.sequence, 17, "which reading it is")
-	assert_almost_eq(back.state.attributes[HEALTH], 73.5, TOLERANCE, "the attribute")
+	assert_almost_eq(back.state.attributes[HEALTH], 73.5, TOLERANCE, "the base attribute")
+	assert_almost_eq(
+		back.state.current_attributes[HEALTH], 98.5, TOLERANCE, "and the composed one - AUD-08"
+	)
 	assert_eq(back.state.tags[BURNING], 2, "the tag, at its count")
 	assert_eq(back.state.abilities, [DEFINITION] as Array[int], "the grants")
 	assert_eq(

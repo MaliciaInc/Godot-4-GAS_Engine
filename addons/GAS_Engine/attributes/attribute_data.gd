@@ -49,3 +49,14 @@ class_name AttributeData extends Resource
 func _init(initial_value: float = 0.0) -> void:
 	base_value = initial_value
 	current_value = initial_value
+
+
+## The other place `current_value` may be written outside recomposition - a
+## client applying the authority's own composed answer (AUD-08) rather than
+## deriving one from contributions it may not even have been sent under
+## `GameplayNetReplication.Mode.MIXED`. `GameplayAttributeRuntime` is still the
+## only caller; this is where the write itself lives so it stays a one-line
+## exception rather than a second place `current_value` is assigned from.
+func write_current_from_replication(value: float) -> void:
+	if is_finite(value):
+		current_value = value
