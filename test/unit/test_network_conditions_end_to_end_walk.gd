@@ -73,15 +73,12 @@ func _machine(role: GameplayNetAuthority.Role, peer: int) -> GameplayNetworkRunt
 
 ## An entity every machine knows about, owned by one of them.
 func _everywhere(value: int, owner_peer: int) -> GameplayNetEntityId:
-	var id: GameplayNetEntityId = GameplayNetEntityId.of(value)
-	for machine: GameplayNetworkRuntime in [server, first, second]:
-		var fixture: ASCFixture = Fixture.create("Entity%d" % value)
-		add_child_autofree(fixture.owner)
-		fixture.asc.set_process(false)
-		fixture.set_base(MANA, 100.0)
-		fixture.set_base(HEALTH, 100.0)
-		machine.attach(fixture.asc, id, owner_peer)
-	return id
+	return NetLinkEntity.everywhere(
+		self, [server, first, second], value, owner_peer,
+		func(fixture: ASCFixture) -> void:
+			fixture.set_base(MANA, 100.0)
+			fixture.set_base(HEALTH, 100.0)
+	)
 
 
 func _ability(policy: GameplayAbility.NetExecutionPolicy) -> PackedScene:

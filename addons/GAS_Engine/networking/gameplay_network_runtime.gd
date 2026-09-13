@@ -88,6 +88,16 @@ const REASON_ALREADY_APPLIED: StringName = &"already_applied"
 const REASON_OUT_OF_ORDER: StringName = &"out_of_order"
 const REASON_NOTHING_TO_UPDATE: StringName = &"nothing_to_update"
 
+## A message asking on behalf of an entity this machine did not hear it from.
+##
+## The one check a message's own content can never answer, because the
+## content is exactly what a forger controls. The transport that carried the
+## packet knows who sent it - a real socket cannot be told to lie about that -
+## and this is the peer that answer names, checked against what the message
+## itself claims: a prediction key naming somebody else, or an entity this
+## peer does not own.
+const REASON_PEER_MISMATCH: StringName = &"peer_mismatch"
+
 ## Why an aim was not accepted. Three, because they are three different
 ## things a client can be wrong about and a game reacting to a refusal
 ## wants to know which: somebody who is not here, somebody who is here and
@@ -141,11 +151,10 @@ var state: GameplayNetStateRuntime = GameplayNetStateRuntime.new()
 ## What a client may ask for beyond an activation, and what is done with it.
 var requests: GameplayNetRequestRuntime = GameplayNetRequestRuntime.new()
 
-var journal: GameplayPredictionJournal = GameplayPredictionJournal.new()
+## Granting an ability, asking to run one, and answering that ask.
+var activation: GameplayNetActivationRuntime = GameplayNetActivationRuntime.new()
 
-## The authority's count of runs per entity, which is what an activation id
-## is made of.
-var _runs: Dictionary[int, int] = {}
+var journal: GameplayPredictionJournal = GameplayPredictionJournal.new()
 
 ## What has already been acted on.
 ##
@@ -155,6 +164,13 @@ var _runs: Dictionary[int, int] = {}
 ## client retried a request it had not heard back about. A counter would only
 ## catch the first of those.
 var _applied: Dictionary[String, bool] = {}
+
+## Which fingerprints in `_applied` are about which entity, so forgetting an
+## entity can take its own fingerprints with it rather than leaving them to
+## collide with whoever is given that id next. `_applied` itself stays keyed
+## by fingerprint, unchanged, because that is the lookup every message makes;
+## this is the index the one caller that needs to walk it backwards uses.
+var _applied_by_entity: Dictionary[int, Array] = {}
 
 
 ## Start carrying messages over this transport, and stop using the last one.
@@ -254,12 +270,12 @@ func _must_arrive(message: GameplayNetMessage) -> bool:
 ## A packet that does not decode is refused with the codec's own reason rather
 ## than dropped: a peer sending a version this build does not speak is a thing
 ## somebody has to be able to find out.
-func _on_packet_received(packet: PackedByteArray, _from_peer: int) -> void:
+func _on_packet_received(packet: PackedByteArray, from_peer: int) -> void:
 	var message: GameplayNetMessage = GameplayNetCodec.decode(packet)
 	if message == null:
 		message_refused.emit(null, GameplayNetCodec.last_refusal)
 		return
-	receive(message)
+	receive_from_peer(message, from_peer)
 #endregion
 
 
@@ -267,6 +283,7 @@ func _init() -> void:
 	requests.net = self
 	state.net = self
 	batching.net = self
+	activation.net = self
 
 
 func is_authority() -> bool:
@@ -279,116 +296,89 @@ func is_authority() -> bool:
 ## The component keeps exactly one reference to a runtime, or null. More than
 ## one would be a component two authorities disagree about; a reference held
 ## somewhere else would be a component whose network can be changed without it
-## knowing.
+## knowing. Refused outright, before the registry is ever touched, when
+## another runtime already holds that reference: registering the entity first
+## and setting the reference after would leave this registry believing it owns
+## an entity a second runtime's registry believes the same thing about.
 func attach(
 	asc: AbilitySystemComponent,
 	id: GameplayNetEntityId,
 	owner_peer: int = GameplayNetRegistry.NO_PEER
 ) -> bool:
+	if asc != null and asc.network != null and asc.network != self:
+		return false
 	if not registry.register_entity(id, asc, owner_peer):
 		return false
 	asc.network = self
 	return true
 
 
+## Let go of one entity: the reference back to this runtime, and everything
+## this runtime itself remembers about it. An id reused for a different
+## character afterward starts from nothing rather than inheriting a run
+## counter, a duplicate-message fingerprint or a stale reading that were
+## really about whoever had it before.
 func detach(asc: AbilitySystemComponent) -> void:
 	if asc == null:
 		return
-	registry.forget_entity(registry.entity_for(asc))
+	var id: GameplayNetEntityId = registry.entity_for(asc)
+	_purge_entity_bookkeeping(id)
 	if asc.network == self:
 		asc.network = null
 
 
+func _purge_entity_bookkeeping(id: GameplayNetEntityId) -> void:
+	if id == null or not id.is_valid():
+		return
+	registry.forget_entity(id)
+	state.forget(id)
+	activation.forget(id)
+	for seen: String in _applied_by_entity.get(id.value, []):
+		_applied.erase(seen)
+	_applied_by_entity.erase(id.value)
+
+
 ## Let go of everything. A runtime kept alive by a scene that has ended is a
 ## scene that cannot be freed.
+##
+## In this order: every component still pointing here is told first, while the
+## registry that answers `registered_ascs()` still can - clearing the registry
+## before that would let go of the very list this loop reads. The transport is
+## unbound next, so a packet arriving after this call cannot invoke a runtime
+## that is in the middle of forgetting itself. Only then are the caches
+## cleared, which is safe to do in any order once nothing outside this object
+## still has a reason to ask them anything.
 func dispose() -> void:
+	for asc: AbilitySystemComponent in registry.registered_ascs():
+		if is_instance_valid(asc) and asc.network == self:
+			asc.network = null
+	set_transport(null)
 	registry.clear()
 	_applied.clear()
+	_applied_by_entity.clear()
 	state.forget()
-	_runs.clear()
+	activation.clear()
 	journal.clear()
 #endregion
 
 
 #region What the authority says
-## Grant an ability to an entity, and tell the peers.
-##
-## Refused on a client, and not politely: a client granting itself an ability
-## is the bug this whole layer exists to make impossible, so it is refused at
-## the one place a grant can be made rather than checked for afterwards.
+## Grant an ability to an entity, and tell the peers. Lives in
+## `GameplayNetActivationRuntime` with the rest of the conversation it opens.
 func grant(id: GameplayNetEntityId, definition: Resource) -> bool:
-	return _author(GameplayNetMessage.Kind.GRANT, id, definition)
+	return activation.grant(id, definition)
 
 
 func revoke(id: GameplayNetEntityId, definition: Resource) -> bool:
-	return _author(GameplayNetMessage.Kind.REVOKE, id, definition)
-
-
-func _author(
-	kind: GameplayNetMessage.Kind, id: GameplayNetEntityId, definition: Resource
-) -> bool:
-	if not GameplayNetAuthority.may_author(role):
-		return false
-	var named: GameplayNetDefinitionId = registry.register_definition(definition)
-	if not named.is_valid() or registry.asc_for(id) == null:
-		return false
-
-	var message: GameplayNetMessage = GameplayNetMessage.of(kind, id)
-	message.definition = named
-	publish(message)
-	return true
+	return activation.revoke(id, definition)
 #endregion
 
 
 #region What a client asks for
 ## Ask to activate, or run it, or neither - whichever the grant's policy says.
-##
-## Answers what was done rather than whether it worked, because "run it here"
-## and "ask and wait" are both success and a caller that could not tell them
-## apart would have to guess whether anything had happened yet.
+## Lives in `GameplayNetActivationRuntime`; this is the name a caller knows.
 func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuthority.Start:
-	var spec_policy: GameplayAbility.NetExecutionPolicy = (
-		GameplayNetAbilityPolicy.execution_of(definition)
-	)
-	var decided: GameplayNetAuthority.Start = (
-		GameplayNetAuthority.authority_start(spec_policy) if is_authority()
-		else GameplayNetAuthority.client_start(spec_policy)
-	)
-	if decided == GameplayNetAuthority.Start.RUN_NOW or decided == GameplayNetAuthority.Start.REFUSED:
-		return decided
-
-	var id: GameplayNetEntityId = registry.entity_for(asc)
-	var named: GameplayNetDefinitionId = registry.register_definition(definition)
-	if not id.is_valid() or not named.is_valid():
-		return GameplayNetAuthority.Start.REFUSED
-
-	var asking: GameplayNetMessage = GameplayNetMessage.of(
-		GameplayNetMessage.Kind.ACTIVATION_REQUEST, id
-	)
-	asking.definition = named
-	# An ability that replicates its input directly does not ask to be
-	# activated. The press crosses instead and the authority decides what
-	# activating it means, which is the only arrangement in which letting go
-	# can end the run the press started.
-	if GameplayNetAbilityPolicy.replicates_input_directly(definition):
-		requests.press(asc, id, definition)
-		return decided
-	# A request carries a key whichever way it was started. The predicting
-	# client needs it to unwind by; the waiting one needs it because the
-	# answer has to name which ask it is answering, and a client with two in
-	# flight cannot tell them apart otherwise.
-	asking.prediction_key = journal.next_key(peer)
-	# A guess this machine is about to act on gets its window opened here, so
-	# that a game predicting under it records what it did without first
-	# having to ask which guess it was. Whichever answer arrives closes it.
-	#
-	# One at a time: a second predicted activation while the first is still
-	# in flight is refused a window and names its own key on each operation
-	# instead, which is the same thing said the longer way.
-	if decided == GameplayNetAuthority.Start.PREDICT_AND_ASK:
-		journal.open_window(asking.prediction_key)
-	publish(asking)
-	return decided
+	return activation.start(asc, definition)
 
 
 ## Letting go of an ability that replicates its input directly.
@@ -447,19 +437,42 @@ func send_input(
 
 
 #region What arrives
-## Act on a message, or say why not.
+## Act on a message that arrived with nobody vouching for who sent it.
 ##
+## The direct-call door every test in this addon has always used: a caller
+## that already knows which machine is which - because it is holding both
+## runtimes itself - carries a message across without a transport, and there
+## is nothing here for a transport to have told this machine. Real delivery
+## goes through `receive_from_peer` instead, which is the one that checks.
+func receive(message: GameplayNetMessage) -> bool:
+	return _receive(message, GameplayNetRegistry.NO_PEER)
+
+
+## Act on a message this machine's own transport says arrived from `from_peer`.
+##
+## The door a real packet reaches. `from_peer` is the one fact in this call a
+## sender cannot forge - a socket does not let the far side claim to be
+## somebody else - so it is what an asking message's own claims are checked
+## against, rather than the other way round. `receive()` is the same door with
+## nothing to check against, and exists for the callers that are the transport.
+func receive_from_peer(message: GameplayNetMessage, from_peer: int) -> bool:
+	return _receive(message, from_peer)
+
+
 ## One door, so every refusal is in one place and none of them is a check
 ## somebody remembered to write at a call site. Answers whether it was acted
 ## on; a refusal is announced through `message_refused` rather than returned in
 ## detail, because a caller carrying messages has nothing useful to do with the
 ## reason and a log does.
-func receive(message: GameplayNetMessage) -> bool:
+func _receive(message: GameplayNetMessage, from_peer: int) -> bool:
 	if message == null or not message.is_complete():
 		_refuse(message, REASON_INCOMPLETE)
 		return false
 	if not GameplayNetAuthority.accepts(role, message):
 		_refuse(message, REASON_WRONG_DIRECTION)
+		return false
+	if not _identified(message, from_peer):
+		_refuse(message, REASON_PEER_MISMATCH)
 		return false
 
 	if message.is_state():
@@ -470,10 +483,47 @@ func receive(message: GameplayNetMessage) -> bool:
 		_refuse(message, REASON_ALREADY_APPLIED)
 		return false
 
-	if not _act_on(message):
+	if not _act_on(message, from_peer):
 		return false
 	_applied[seen] = true
+	var carried: Array = _applied_by_entity.get(message.entity.value, [])
+	carried.append(seen)
+	_applied_by_entity[message.entity.value] = carried
 	return true
+
+
+## Whether this message is who it claims to be, against the one thing its own
+## content cannot lie about.
+##
+## Skipped outright when nobody is vouching for a sender - `from_peer` is
+## `NO_PEER` for every direct call this addon's own suite makes, and for those
+## the ownership rules below are the check, exercised without a transport in
+## the loop at all. Checked only at the authority: a client hears grants and
+## readings about entities it may not own at all, and REPLICATE_YES already
+## restricts what a client is told about somebody else's run.
+##
+## Two questions, both answered against `from_peer` rather than against
+## anything the message says about itself. A prediction key names the peer
+## that minted it, and a key naming somebody else is a client asking on a
+## stranger's guess. Ownership is checked for every kind a client asks the
+## authority for, on top of that and not instead of it: a well-formed key for
+## this peer's own earlier guess about somebody else's character is still
+## somebody else's character.
+##
+## Not asked of an activation request: that kind already answers wrong-owner
+## and forged-key requests with an explicit `ACTIVATION_REJECT`, in
+## `_why_not`, which is where a client's guess is unwound from - a request
+## silently dropped here instead would leave that guess waiting for ever.
+func _identified(message: GameplayNetMessage, from_peer: int) -> bool:
+	if from_peer == GameplayNetRegistry.NO_PEER or not is_authority():
+		return true
+	if message.kind == GameplayNetMessage.Kind.ACTIVATION_REQUEST:
+		return true
+	if not GameplayNetAuthority.ASKED_OF_THE_AUTHORITY.has(message.kind) and message.kind != GameplayNetMessage.Kind.GAMEPLAY_EVENT:
+		return true
+	if message.is_predicted() and message.prediction_key.peer != from_peer:
+		return false
+	return registry.is_owned_by(message.entity, from_peer)
 
 
 ## A reading of an entity's state, written on if it is news.
@@ -487,7 +537,7 @@ func receive(message: GameplayNetMessage) -> bool:
 ## changed, and a peer with nothing for it to have changed from would apply
 ## half a character and believe it had all of one. That is the late joiner,
 ## and the answer is that it is sent a snapshot first.
-func _act_on(message: GameplayNetMessage) -> bool:
+func _act_on(message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER) -> bool:
 	var id: GameplayNetEntityId = message.entity
 	if registry.asc_for(id) == null:
 		_refuse(message, REASON_UNKNOWN_ENTITY)
@@ -497,7 +547,7 @@ func _act_on(message: GameplayNetMessage) -> bool:
 		GameplayNetMessage.Kind.GRANT, GameplayNetMessage.Kind.REVOKE:
 			return _announce_grant(message)
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST:
-			return _honour_request(message)
+			return activation.honour_request(message, from_peer)
 		GameplayNetMessage.Kind.ACTIVATION_CONFIRM:
 			journal.accept(message.prediction_key)
 			activation_answered.emit(message.prediction_key, message.activation, true)
@@ -507,7 +557,7 @@ func _act_on(message: GameplayNetMessage) -> bool:
 			activation_answered.emit(message.prediction_key, message.activation, false)
 			return true
 		GameplayNetMessage.Kind.BATCH:
-			return batching.honour(message)
+			return batching.honour(message, from_peer)
 		GameplayNetMessage.Kind.TARGET_DATA:
 			return requests.honour_target_data(message)
 		GameplayNetMessage.Kind.GENERIC_CONFIRM:
@@ -536,67 +586,6 @@ func _announce_grant(message: GameplayNetMessage) -> bool:
 	else:
 		ability_revoked_by_authority.emit(message.entity, definition)
 	return true
-
-
-func _honour_request(message: GameplayNetMessage) -> bool:
-	var definition: Resource = registry.definition_for(message.definition)
-	if definition == null:
-		_refuse(message, REASON_UNKNOWN_DEFINITION)
-		return false
-
-	var asking: int = (
-		message.prediction_key.peer if message.is_predicted()
-		else registry.owner_of(message.entity)
-	)
-	var refusal: StringName = _why_not(message, asking, definition)
-	if refusal != &"":
-		_refuse(message, refusal)
-		_answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
-		return false
-	_answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
-	activation_requested.emit(message.entity, definition, message.prediction_key)
-	return true
-
-
-## Why this request will not be honoured, or nothing when it will.
-##
-## Both refusals are answered rather than dropped in silence. The ordinary
-## reason a well-formed request is refused is that something moved between
-## the asking and the arrival - a character changed hands, a grant was
-## revoked - and the client that asked is holding a guess it needs to unwind.
-## Saying nothing would leave it holding that guess for ever.
-func _why_not(
-	message: GameplayNetMessage, asking: int, definition: Resource
-) -> StringName:
-	if not registry.is_owned_by(message.entity, asking):
-		return REASON_NOT_OWNED
-	var where: GameplayAbility.NetExecutionPolicy = (
-		GameplayNetAbilityPolicy.execution_of(definition)
-	)
-	if not GameplayNetAuthority.honours_request(true, where):
-		return REASON_POLICY
-	# And what this ability accepts from somebody else, which is a different
-	# question from where it runs.
-	if not GameplayNetAuthority.accepts_remote_start(
-		GameplayNetAbilityPolicy.security_of(definition)
-	):
-		return REASON_POLICY
-	return &""
-
-
-## Say yes or no to a request, naming the run and the guess it answers.
-##
-## The key is echoed rather than looked up: the machine that asked is the
-## one holding the journal, and an answer that did not name the guess would
-## leave a client with two casts in flight unwinding the wrong one.
-func _answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> void:
-	var id: GameplayNetEntityId = asked.entity
-	_runs[id.value] = _runs.get(id.value, 0) + 1
-	var answer: GameplayNetMessage = GameplayNetMessage.of(kind, id)
-	answer.activation = GameplayNetActivationId.of(id, _runs[id.value])
-	answer.definition = asked.definition
-	answer.prediction_key = asked.prediction_key
-	publish(answer)
 
 
 ## What makes two messages the same message.

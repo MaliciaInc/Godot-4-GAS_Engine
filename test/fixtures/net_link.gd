@@ -70,13 +70,20 @@ func leave(runtime: GameplayNetworkRuntime) -> void:
 	_machines.erase(runtime)
 
 
+## Who sent each waiting message, in the same order, so a reorder or a
+## duplicate carries the right sender along with it rather than silently
+## losing whose packet it was.
+var _senders: Array[int] = []
+
+
 ## Take a message from one machine. Delivered now, or held for `flush()`.
-func _carry(message: GameplayNetMessage, _from: GameplayNetworkRuntime) -> void:
+func _carry(message: GameplayNetMessage, from: GameplayNetworkRuntime) -> void:
 	if drops_next > 0:
 		drops_next -= 1
 		dropped += 1
 		return
 	_waiting.append(message)
+	_senders.append(from.peer if from != null else GameplayNetRegistry.NO_PEER)
 	if not holds:
 		flush()
 
@@ -84,7 +91,9 @@ func _carry(message: GameplayNetMessage, _from: GameplayNetworkRuntime) -> void:
 ## Hand over everything that is waiting, and say how many were handed over.
 func flush() -> int:
 	var carried: Array[GameplayNetMessage] = _waiting.duplicate()
+	var senders: Array[int] = _senders.duplicate()
 	_waiting.clear()
+	_senders.clear()
 
 	var order: Array[int] = []
 	for index: int in carried.size():
@@ -94,9 +103,9 @@ func flush() -> int:
 
 	var handed: int = 0
 	for index: int in order:
-		handed += _hand(carried[index])
+		handed += _hand(carried[index], senders[index])
 		if duplicates:
-			handed += _hand(carried[index])
+			handed += _hand(carried[index], senders[index])
 	return handed
 
 
@@ -113,7 +122,7 @@ func flush() -> int:
 ## than handed over as the object it already was: a sender that put an
 ## incomplete message on a wire has a bug, and the far side receiving one
 ## anyway is that bug going unnoticed.
-func _hand(message: GameplayNetMessage) -> int:
+func _hand(message: GameplayNetMessage, from_peer: int) -> int:
 	var packet: PackedByteArray = GameplayNetCodec.encode(message)
 	if packet.is_empty():
 		unsendable += 1
@@ -121,7 +130,7 @@ func _hand(message: GameplayNetMessage) -> int:
 
 	var handed: int = 0
 	for machine: GameplayNetworkRuntime in _machines:
-		machine.receive(GameplayNetCodec.decode(packet))
+		machine.receive_from_peer(GameplayNetCodec.decode(packet), from_peer)
 		delivered += 1
 		handed += 1
 	return handed

@@ -100,7 +100,9 @@ func flush() -> bool:
 ## the members are halves of one thing. A batch that said it is not atomic
 ## keeps going: its members are independent, and one being refused says nothing
 ## about the others.
-func honour(message: GameplayNetMessage) -> bool:
+func honour(
+	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER
+) -> bool:
 	var atomic: bool = message.payload.get(GameplayNetMessage.ATOMIC_KEY, true) == true
 	var batch: GameplayNetBatch = GameplayNetBatch.from_wire(
 		message.payload.get(GameplayNetMessage.BATCH_KEY, []), atomic
@@ -110,13 +112,13 @@ func honour(message: GameplayNetMessage) -> bool:
 		return false
 
 	for member: GameplayNetMessage in batch.messages:
-		if not would_accept(member):
+		if not would_accept(member, from_peer):
 			net._refuse(message, GameplayNetBatch.REASON_MEMBER_REFUSED)
 			return false
 
 	var applied: int = 0
 	for member: GameplayNetMessage in batch.messages:
-		if net.receive(member):
+		if net.receive_from_peer(member, from_peer):
 			applied += 1
 		elif batch.atomic:
 			# What is already applied stays: undoing an application is what the
@@ -133,9 +135,13 @@ func honour(message: GameplayNetMessage) -> bool:
 ## is it travelling the way its kind travels, and is it about somebody this
 ## machine knows. Asked separately so that a batch can ask them of every member
 ## before applying the first.
-func would_accept(message: GameplayNetMessage) -> bool:
+func would_accept(
+	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER
+) -> bool:
 	if message == null or not message.is_complete():
 		return false
 	if not GameplayNetAuthority.accepts(net.role, message):
+		return false
+	if not net._identified(message, from_peer):
 		return false
 	return net.registry.asc_for(message.entity) != null

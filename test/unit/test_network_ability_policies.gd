@@ -297,9 +297,9 @@ func test_a_press_crosses_for_an_ability_that_replicates_its_input() -> void:
 	var scene: PackedScene = _authored(
 		GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER, false, true
 	)
-	asc.give_ability(scene, 1.0, A_SLOT)
+	bench.client_asc().give_ability(scene, 1.0, A_SLOT)
 
-	client.start(asc, scene)
+	client.start(bench.client_asc(), scene)
 
 	assert_eq(sent.size(), 1, "one message left")
 	assert_eq(sent[0].kind, GameplayNetMessage.Kind.INPUT_PRESSED, "and it is the press")
@@ -314,12 +314,14 @@ func test_letting_go_sends_the_release_only_where_the_input_crosses() -> void:
 		GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER, false, true
 	)
 	var ordinary: PackedScene = _authored(GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER)
-	asc.give_ability(crossing, 1.0, A_SLOT)
+	bench.client_asc().give_ability(crossing, 1.0, A_SLOT)
 
-	assert_false(client.release(asc, ordinary), "an ordinary ability has no release to send")
+	assert_false(
+		client.release(bench.client_asc(), ordinary), "an ordinary ability has no release to send"
+	)
 	assert_eq(sent.size(), 0, "so nothing left")
 
-	assert_true(client.release(asc, crossing), "and this one does")
+	assert_true(client.release(bench.client_asc(), crossing), "and this one does")
 	assert_eq(sent.size(), 1, "one message left")
 	assert_eq(sent[0].kind, GameplayNetMessage.Kind.INPUT_RELEASED, "and it is the release")
 
@@ -328,7 +330,7 @@ func test_letting_go_sends_the_release_only_where_the_input_crosses() -> void:
 func test_an_ordinary_ability_still_asks_to_be_activated() -> void:
 	var scene: PackedScene = _authored(GameplayAbility.NetSecurityPolicy.CLIENT_OR_SERVER)
 
-	client.start(asc, scene)
+	client.start(bench.client_asc(), scene)
 
 	assert_eq(sent.size(), 1, "one message left")
 	assert_eq(sent[0].kind, GameplayNetMessage.Kind.ACTIVATION_REQUEST, "and it is the request")
