@@ -265,33 +265,49 @@ func empty_point() -> Vector2:
 ## A copy of an ability, opened for editing.
 ##
 ## Only the class's own name comes off `class_name X extends Y` - never the
-## whole line. The two are one line in every ability this game has, so an
-## earlier version of this that dropped the line entire dropped `extends Y`
-## with it: the copy stopped being a `GameplayAbility` at all, and everything
-## the base class gives an ability - `owner_asc`, `commit_ability()`,
-## `wait_delay()` - read as undeclared. Whatever decorates the class - an
-## `@abstract` sitting on the line above - is left exactly where it was,
-## still decorating whatever the class declaration becomes: dropping the
-## whole `class_name` line dropped the name but not the annotation above it,
-## which then decorated whatever the file declared next - for `BattlerAbility`
-## that is `enum Scope`, a few lines down, and the parser blamed the enum for
-## an annotation that was never about it: "Annotation '@abstract' cannot be
-## applied to a enum". A copy that kept the class's name would declare a
-## global class the original already holds, and Godot refuses the second one
-## - which has nothing to do with the Composer and would fail every check
-## that asks whether what was written still compiles. The body, which is the
-## part being edited, is untouched.
+## whole line. The two are one line in every ability this game has, so a
+## version of this that dropped the line entire dropped `extends Y` with it:
+## the copy stopped being a `GameplayAbility` at all, and everything the base
+## class gives an ability - `owner_asc`, `commit_ability()`, `wait_delay()` -
+## read as undeclared. Whatever decorates the class - an `@abstract` sitting
+## on the line above - is left exactly where it was, still decorating
+## whatever the class declaration becomes: dropping the whole `class_name`
+## line dropped the name but not the annotation above it, which then
+## decorated whatever the file declared next - for `BattlerAbility` that is
+## `enum Scope`, a few lines down, and the parser blamed the enum for an
+## annotation that was never about it: "Annotation '@abstract' cannot be
+## applied to a enum".
+##
+## The name that comes off is also scrubbed from the rest of the body,
+## everywhere it names the class itself - `BattlerAbility.Scope`, in the
+## ability this bit exists for. An anonymous copy's own `enum Scope` is a
+## different type than the named original's, identical members and all, and
+## a self-reference by the name that no longer exists resolves against the
+## wrong one: "Cannot assign a value of type ...Scope as BattlerAbility.Scope".
+## The bare reference the anonymous class already means by `Scope` alone is
+## exactly what a copy of it should mean by the qualified spelling too, so
+## the qualifier is the only part removed - not a rewrite of what the line
+## says, the same adjustment already made to its own declaration.
+##
+## A copy that kept the class's name would declare a global class the
+## original already holds, and Godot refuses the second one - which has
+## nothing to do with the Composer and would fail every check that asks
+## whether what was written still compiles.
 func open_copy(from: String, into: String) -> String:
+	var self_name: String = ""
 	var kept: PackedStringArray = PackedStringArray()
 	for line: String in FileAccess.get_file_as_string(from).split("
 "):
 		if line.begins_with("class_name "):
 			var extends_at: int = line.find(" extends ")
+			self_name = line.trim_prefix("class_name ").split(" ")[0]
 			kept.append(line.substr(extends_at + 1) if extends_at >= 0 else "")
 		else:
 			kept.append(line)
 	var source: String = "
 ".join(kept)
+	if not self_name.is_empty():
+		source = source.replace(self_name + ".", "")
 	var out: FileAccess = FileAccess.open(into, FileAccess.WRITE)
 	out.store_string(source)
 	out.close()
