@@ -30,7 +30,7 @@ about.
 |---|---|---|
 | `UE_VERIFIED` | **0** | no Unreal Engine 5.7.4 has been run against this repository |
 | `ENGINE_EXTENSION` | 3 | below |
-| `EXPLICIT_DEVIATION` | 2 | below |
+| `EXPLICIT_DEVIATION` | 3 | below |
 | `LOCALLY_ASSERTED` | everything else | 66,000-odd assertions, none of them a comparison |
 
 Zero is the honest number and it is not zero work. The ten scenarios the phase
@@ -62,6 +62,7 @@ different one.
 |---|---|---|
 | `factor_in_stack_count` defaults to false; UE folds stack count in by default | `test/unit/test_gameplay_asset_validator.gd::test_a_stacking_effect_that_never_answered_the_stack_question_is_said_out_loud` | changing the default would rebalance every effect already authored against it. The validator says so out loud under the `UE_5_7` profile rather than the default being changed under somebody's project. |
 | Two aggregation profiles, where UE has one | `test/unit/test_ue_aggregate_algebra.gd::test_a_stack_scales_a_magnitude_by_what_its_operation_means` | `GODOT_NATIVE` predates the reference work and is what existing projects are balanced against. `UE_5_7` is the reference's arithmetic, selectable per project, and the README says switching rebalances a game. |
+| `NON_INSTANCED` gets a fresh Node per activation; UE's runs on the ability's shared class default object | `test/unit/test_explicit_ability_lifecycle.gd::test_two_non_instanced_activations_share_nothing` | Godot has no class-default-object equivalent, and `GameplayAbility` stores its actor and spec on the instance (`owner_asc`, `current_spec`) rather than threading them through every call the way UE's CDO methods do - sharing one Node across concurrent, unrelated owners would hand each one the other's fields, which is the exact bug the policy exists to prevent. The Godot-side answer keeps the one property `NonInstanced` is actually for - no state survives past the activation it belongs to, and nothing is shared between concurrent ones - by giving each activation a Node of its own that is never adopted as the spec's instance, rather than by literally sharing one object. |
 
 ## What this means for FASE 6
 
