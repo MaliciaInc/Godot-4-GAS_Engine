@@ -96,14 +96,20 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 	# client needs it to unwind by; the waiting one needs it because the
 	# answer has to name which ask it is answering, and a client with two in
 	# flight cannot tell them apart otherwise.
-	asking.prediction_key = net.journal.next_key(net.peer)
+	#
+	# Nested under whatever this machine is already predicting, when it is
+	# predicting anything: an activation asked for while an earlier guess is
+	# still waiting on its own answer is a guess made because of that one, and
+	# `next_key_in_window` is what makes the parent explicit rather than
+	# leaving the two guesses looking unrelated (GAP-02) - which matters the
+	# moment the outer one comes back rejected, since rejecting it unwinds
+	# whatever stood on it too.
+	asking.prediction_key = net.journal.next_key_in_window(net.peer)
 	# A guess this machine is about to act on gets its window opened here, so
 	# that a game predicting under it records what it did without first
-	# having to ask which guess it was. Whichever answer arrives closes it.
-	#
-	# One at a time: a second predicted activation while the first is still
-	# in flight is refused a window and names its own key on each operation
-	# instead, which is the same thing said the longer way.
+	# having to ask which guess it was. Whichever answer arrives closes it -
+	# in whatever order answers actually arrive in, not necessarily the order
+	# the guesses were opened in.
 	if decided == GameplayNetAuthority.Start.PREDICT_AND_ASK:
 		net.journal.open_window(asking.prediction_key)
 	net.publish(asking)

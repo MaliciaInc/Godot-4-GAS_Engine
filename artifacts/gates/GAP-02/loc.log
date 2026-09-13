@@ -1,0 +1,27 @@
+RESULT: PASS
+stage:      loc
+command:    python tooling\gates\run_gate.py loc artifacts\gates\GAP-02
+started:    2026-09-13T03:02:52.4502154Z
+ended:      2026-09-13T03:02:53.9248635Z
+duration_s: 1.475
+exit_code:  0
+
+--- stdout ---
+# LOC and Structure Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 701
+- Blocking findings: 0
+- Scan issues: 0
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

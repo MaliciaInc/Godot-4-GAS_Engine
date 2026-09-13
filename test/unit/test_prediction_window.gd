@@ -89,21 +89,71 @@ func test_an_operation_that_names_its_own_guess_keeps_it() -> void:
 	assert_eq(journal.under(separate).size(), 1, "and it is still its own")
 
 
-## A second window is refused, and the first is left open.
+## A second window nests inside the first rather than being refused.
 ##
-## Two boundaries around one thing is a boundary nobody can close. Refusing
-## here is the caller finding out now, rather than a rejection later unwinding
-## half of what it should have.
-func test_a_second_window_is_refused_and_the_first_stays_open() -> void:
-	var other: GameplayPredictionKey = journal.next_key(OWNING_PEER)
-	assert_true(journal.open_window(key), "the first opened")
+## A guess predicted while an earlier one is still waiting on its own answer
+## is a guess made because of that one - GAP-02 - and what follows while both
+## are open belongs to the innermost, not to whichever opened first.
+func test_a_second_window_nests_inside_the_first() -> void:
+	assert_true(journal.open_window(key), "the outer opened")
+	var inner: GameplayPredictionKey = journal.next_key_in_window(OWNING_PEER)
+	assert_true(journal.open_window(inner), "and a second nests rather than being refused")
 
-	assert_false(journal.open_window(other), "and the second did not")
 	journal.record(GameplayPredictionOperation.cost(null, MANA, 10.0))
 
-	assert_eq(journal.under(key).size(), 1, "what followed is still the first's")
-	assert_false(journal.close_window(other), "and the other cannot close it")
-	assert_true(journal.close_window(key), "the one that opened it can")
+	assert_eq(journal.under(key).size(), 1, "the outer stands on nothing else, but owns what stands on it")
+	assert_eq(journal.under(inner).size(), 1, "and the operation itself is the inner's own")
+	assert_true(journal.close_window(inner), "the inner closes")
+	assert_eq(journal.current_window(), key, "and the outer is current again")
+	assert_true(journal.close_window(key), "then the outer closes too")
+
+
+## Windows answer in whichever order their own round trips finish in, not
+## necessarily the order they opened in - and the inner is unaffected by the
+## outer closing first.
+func test_an_outer_window_can_close_before_the_inner_it_is_standing_under() -> void:
+	journal.open_window(key)
+	var inner: GameplayPredictionKey = journal.next_key_in_window(OWNING_PEER)
+	journal.open_window(inner)
+
+	assert_true(journal.close_window(key), "the outer's own answer arrived first")
+	assert_eq(journal.current_window(), inner, "the inner is still open, and still current")
+	journal.record(GameplayPredictionOperation.cost(null, MANA, 5.0))
+	assert_eq(journal.under(inner).size(), 1, "and still where new work attributes")
+	assert_true(journal.close_window(inner), "and it closes on its own answer, same as ever")
+
+
+## A key that was never opened cannot close anything, whether or not
+## something else is open.
+func test_a_key_that_was_never_opened_cannot_close_anything() -> void:
+	var stranger: GameplayPredictionKey = journal.next_key(OWNING_PEER)
+	assert_true(journal.open_window(key), "the real one opened")
+
+	assert_false(journal.close_window(stranger), "the stranger closes nothing")
+	assert_eq(journal.current_window(), key, "and the real one is still open")
+	assert_true(journal.close_window(key), "which closes on its own key, same as ever")
+
+
+## Rejecting an outer guess reverses what a guess nested under it did too,
+## even though the inner's own window is still open and its own answer has
+## not arrived yet.
+##
+## This is the whole point of nesting one window inside another rather than
+## refusing the second: what the inner did was only ever justified by the
+## outer being right, and the outer turning out wrong takes it with it.
+func test_rejecting_an_outer_guess_also_reverses_what_a_nested_one_did() -> void:
+	journal.open_window(key)
+	asc.set_attribute_base(MANA, 70.0)
+	journal.record(GameplayPredictionOperation.cost(null, MANA, 30.0))
+
+	var inner: GameplayPredictionKey = journal.next_key_in_window(OWNING_PEER)
+	journal.open_window(inner)
+	asc.set_attribute_base(MANA, 50.0)
+	journal.record(GameplayPredictionOperation.cost(null, MANA, 20.0))
+
+	assert_eq(journal.reject(key, asc), 2, "both the outer's own spend and the nested one's")
+	assert_almost_eq(asc.get_attribute_base(MANA), 100.0, 0.001, "both refunded")
+	assert_eq(journal.under(inner).size(), 0, "nothing is left owed under the inner either")
 
 
 ## A window closes itself when the guess it was open under is answered.

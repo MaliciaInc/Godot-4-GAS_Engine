@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: 14fcdd565e440b74dc747d3fba40fbf8caa3991dfcc41aef0caf53debff55987
+GUT full suite res://test/unit: 201 scripts, 2240 tests, 2240 passing, 66453 asserts, 0 failures (re-stamped: README.md prediction-window limitation updated, no .gd change)

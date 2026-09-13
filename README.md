@@ -289,7 +289,11 @@ a cue, a tag with the counts either side of it, and an animation with the
 ownership claim taken on its surface. Each can be undone from what the operation
 itself remembers. `open_window()` and `close_window()` make the boundary a
 refusal unwinds explicit, and a refused guess comes off newest first, once,
-however many times the refusal arrives.
+however many times the refusal arrives. A guess predicted while an earlier one
+is still waiting on its own answer nests inside it rather than being refused a
+window - `next_key_in_window()` stands the new one on whichever is open - so
+rejecting the outer takes what stood on it with it, in whatever order the two
+answers actually arrive in.
 
 **Not predicted, deliberately.** A periodic tick, whose count is a clock the two
 machines do not share. An arbitrary execution, because nothing wrote down the
@@ -307,8 +311,6 @@ refuses them rather than guessing.
 - The wire is JSON. It is readable, debuggable and portable across builds, and
   it is not compact. A project counting bytes should implement
   `GameplayNetTransport` over its own encoding.
-- One prediction window is open at a time. A second predicted activation while
-  the first is still in flight names its own key on each operation instead.
 - There is no interest management, no delta compression and no client-side
   interpolation. Which entities a peer hears about is the game's decision, made
   by choosing when to send.

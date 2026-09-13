@@ -5,8 +5,8 @@
   "client_exit": 0,
   "server_steps": [
     "listening on port 47921",
-    "attached the hero as entity 1 owned by peer 977981724, naming 3 abilities",
-    "granted 3 abilities to peer 977981724",
+    "attached the hero as entity 1 owned by peer 786082277, naming 3 abilities",
+    "granted 3 abilities to peer 786082277",
     "sent the opening snapshot",
     "accepted a request for Ability.Sample.Strike",
     "accepted a request for Ability.Sample.Slam",
@@ -15,8 +15,8 @@
   ],
   "client_steps": [
     "connecting to 127.0.0.1:47921",
-    "attached the hero as entity 1 owned by peer 977981724, naming 3 abilities",
-    "connected as peer 977981724",
+    "attached the hero as entity 1 owned by peer 786082277, naming 3 abilities",
+    "connected as peer 786082277",
     "told about 3 grants",
     "read the opening state",
     "predicted a strike (PREDICT_AND_ASK) and asked",

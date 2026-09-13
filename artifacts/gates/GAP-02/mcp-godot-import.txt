@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: 14fcdd565e440b74dc747d3fba40fbf8caa3991dfcc41aef0caf53debff55987
+godot --headless --path . --import: clean, project.godot restored after (re-stamped: README.md prediction-window limitation updated)
