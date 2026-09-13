@@ -261,7 +261,14 @@ function Invoke-Verification {
         @{ Stage = 'parity-receipts'
            Arguments = @('tooling/parity_receipt.py', '--all') },
         @{ Stage = 'parity-receipt-self-test'
-           Arguments = @('tooling/parity_receipt.py', '--self-test') }
+           Arguments = @('tooling/parity_receipt.py', '--self-test') },
+        # AUD-01 / OPS-01: the certification docs are generated from
+        # artifacts/parity/f6_result.json and must go on agreeing with it and
+        # with the goldens. Added here rather than left to be run by hand,
+        # which is exactly how GATE_F6_5.md and UE_PARITY_MATRIX_F6.md came
+        # to disagree about the same commit in the first place.
+        @{ Stage = 'certification-consistency'
+           Arguments = @('tooling/certification_consistency.py') }
     ) + (Get-GateStages -ReceiptDirectory $ReceiptDirectory)
 
     foreach ($stage in $stages) {

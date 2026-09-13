@@ -530,6 +530,34 @@
       {
         "literal": "--self-test",
         "reason": "The same, for the checker's own self-test: named in the Python that reads it and spelled again in the PowerShell that runs it. Two languages, one flag."
+      },
+      {
+        "literal": "*.json",
+        "reason": "tooling/parity_diff.py globs the goldens by it and tooling/certification_consistency.py globs the same directory by it independently - the same extension, not a value either script chose."
+      },
+      {
+        "literal": "CLOSED",
+        "reason": "tooling/traceability.py's per-finding status and tooling/certification_consistency.py's overall certification status are two different axes that happen to use the same English word for settled - not one vocabulary either script owns on the other's behalf."
+      },
+      {
+        "literal": "BLOCKED",
+        "reason": "The same pairing as CLOSED, for the other end of it: traceability.py's per-finding STOPPED and certification_consistency.py's own status check share the word without sharing the axis."
+      },
+      {
+        "literal": "evidence",
+        "reason": "The goldens' own JSON field name, read by tooling/parity_diff.py and tooling/certification_consistency.py independently - both against the same file shape, neither owning a schema module to import the key from."
+      },
+      {
+        "literal": "FAULT: %s",
+        "reason": "The print convention this family of consistency checkers shares - traceability.py and certification_consistency.py both report what is wrong this way - without a shared reporting module to own the format string."
+      },
+      {
+        "literal": "HEAD",
+        "reason": "tooling/seal_policy.py reads the current commit by it; tooling/certification_consistency.py checks a stored commit is an ancestor of it. Two unrelated git invocations naming the same ref."
+      },
+      {
+        "literal": "status",
+        "reason": "tooling/strict_typing_pass.py's CLI subcommand and tooling/certification_consistency.py's certification-state field share the five letters and nothing else."
       }
     ],
     "allow_globs": [],

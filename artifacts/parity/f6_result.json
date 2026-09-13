@@ -1,0 +1,25 @@
+{
+	"tested_commit": "010d257278c62b1f4fa0c80db2039a58989fccc8",
+	"ue_version": "5.7.4",
+	"ue_changelist": "51494982",
+	"ue_runner": "tools/ue_reference/harness/run_scenarios.py",
+	"run_date": "2026-09-11",
+	"scenario_count": 10,
+	"verified_count": 10,
+	"numeric_mismatches": 0,
+	"trace_mismatches": 0,
+	"declared_deviations": 1,
+	"stop_code": null,
+	"status": "CLOSED",
+	"findings": {
+		"D-07": "CLOSED",
+		"D-08": "CLOSED",
+		"D-11": "CLOSED"
+	},
+	"results_file": "artifacts/parity/results/ue_reference_run.json",
+	"generated_docs": [
+		"artifacts/parity/UE_REFERENCE_F6.md",
+		"artifacts/parity/UE_PARITY_MATRIX_F6.md",
+		"artifacts/parity/GATE_F6_5.md"
+	]
+}

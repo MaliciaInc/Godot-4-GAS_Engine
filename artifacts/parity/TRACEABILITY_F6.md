@@ -6,12 +6,7 @@ changes this and is checked rather than silently disagreeing.
 
 - Findings: **33** (11 defects, 22 gaps)
 - Owners: one each, and no finding owned twice.
-- Verdict: **FAIL**
-
-## What is wrong
-
-- D-08 is BLOCKED in GATE_F6_5.md - a stop, and the phase stays open
-- D-11 is BLOCKED in GATE_F6_5.md - a stop, and the phase stays open
+- Verdict: **PASS**
 
 ## Every finding, and who closed it
 
@@ -24,10 +19,10 @@ changes this and is checked rather than silently disagreeing.
 | D-05 | F6.0.6 | — | CLOSED | GATE_F6_0.md |
 | D-06 | F6.0.7 | — | CLOSED | GATE_F6_0.md |
 | D-07 | F6.5.1 | F6.5.2 | CLOSED | GATE_F6_5.md |
-| D-08 | F6.5.3 | — | BLOCKED | GATE_F6_5.md |
+| D-08 | F6.5.3 | — | CLOSED | GATE_F6_5.md |
 | D-09 | F6.0.8 | — | CLOSED | GATE_F6_0.md |
 | D-10 | F6.0.2 | — | CLOSED | GATE_F6_0.md |
-| D-11 | F6.5.3 | — | BLOCKED | GATE_F6_5.md |
+| D-11 | F6.5.3 | — | CLOSED | GATE_F6_5.md |
 | G-01 | F6.1.1 | — | CLOSED | GATE_F6_1.md |
 | G-02 | F6.1.2 | — | CLOSED | GATE_F6_1.md |
 | G-03 | F6.1.3 | F6.6.3 | CLOSED | GATE_F6_1.md |

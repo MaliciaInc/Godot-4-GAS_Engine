@@ -1,69 +1,54 @@
 # UE reference corpus — F6.5.3
 
 ```text
-STOP: UE_REFERENCE_UNAVAILABLE
-PACKAGE: F6.5
+CERTIFICATION_STATUS: status=CLOSED verified=10/10 numeric_mismatches=0 trace_mismatches=0 stop_code=none
 ```
+
+Machine-checked against `artifacts/parity/f6_result.json` and the goldens
+themselves by `python tooling/certification_consistency.py`. AUD-01 found this
+file still claiming the stop below after the reference had actually run - the
+correction is the line above, generated from the one place these numbers are
+now typed, and this file is one of the three it must appear in verbatim.
 
 ## What this says
 
-F6.5.3 asks for a corpus of ten scenarios produced by a real Unreal Engine
-5.7.4 run, and states the rule the corpus exists to enforce: evidence is either
+F6.5.3 asked for a corpus of ten scenarios produced by a real Unreal Engine
+5.7.4 run, and stated the rule the corpus exists to enforce: evidence is either
 `UE_VERIFIED` or `NOT_UE_VERIFIED`, and `AUTHORED` is not presented as parity.
-It then names the stop outright — if UE 5.7.4 cannot be run and the corpus
-cannot be produced or validated, F6.5 does not close and F6.6 does not proceed
-as though certification had happened.
-
-Unreal Engine 5.7.4 is not available on the machine this was implemented on. No
-Unreal process has been run against any of these scenarios. So every golden says
-`NOT_UE_VERIFIED`, and this is that stop, recorded rather than worked around.
+All ten now say `UE_VERIFIED` - `artifacts/parity/GATE_F6_5.md` has the run
+itself, what it measured, and the two findings it decided.
 
 ## What exists
 
 | Piece | State |
 |---|---|
 | `tools/ue_reference/README.md` | the procedure, written |
-| `test/parity/goldens/` | ten scenarios, every field filled in except the ones only Unreal can answer |
+| `test/parity/goldens/` | ten scenarios, all ten `UE_VERIFIED` |
 | `tooling/parity_diff.py` | validates the corpus, compares verified goldens, and stops on unverified ones |
+| `artifacts/parity/results/ue_reference_run.json` | what UE 5.7.4 CL 51494982 actually produced, per scenario |
 | `artifacts/parity/results/ue_scenarios.json` | what this engine produces for each scenario, written by the suite |
 
-Each golden carries its `ue_version`, `changelist`, scenario id, inputs, numeric
-tolerance, and whether execution order is observable in it. `outputs` and
-`execution_order` are null, because those are the two things a run produces and
-nothing else may.
+Each golden carries its `ue_version`, `changelist`, scenario id, inputs,
+outputs, numeric tolerance, and - where the reference makes it observable -
+`execution_order`.
 
 ```text
 python tooling/parity_diff.py
 ```
 
-exits non-zero today, printing the stop above and naming all ten.
+exits zero: ten verified, zero mismatches, one declared deviation (the
+tag-qualification scenario under a persistent effect - `parity_diff.py`
+prints why, and `GATE_F6_5.md` has the reference source it quotes).
 
-## What this blocks
+## What this closed
 
-- **F6.5 does not close.** F6.5.1 and F6.5.2 are done and are recorded in
-  `artifacts/parity/PERFORMANCE_F6.md`; F6.5.3 is not, and the package gate is
-  the three together.
-- **D-08 and D-11 stay open.** D-11 in particular is decided outright by the
-  double-override golden: whichever override the reference produces is what this
-  engine implements, and the contract matrix is updated to match. Deciding it
-  from this engine's current behaviour would be writing down the answer we
-  already have and calling it agreement.
-- **F6.6 does not proceed as though certification happened.** Whether it
-  proceeds at all is a decision for whoever owns the phase, and it is a
-  different decision from this one.
-
-## What would close it
-
-Somebody with UE 5.7.4 (CL 51494982) works through
-`tools/ue_reference/README.md`: builds each scenario from its `inputs` block,
-records what the reference produced into `outputs`, fills in `execution_order`
-where it is observable, and flips that scenario's `evidence` to `UE_VERIFIED` —
-one at a time, as each is actually run. `parity_diff.py` then compares each
-verified golden with what this engine produced, to that golden's tolerance, and
-says where the two disagree.
-
-Nothing in this repository can perform that step, and nothing in it should
-pretend to.
+- **F6.5 closes.** F6.5.1, F6.5.2 and F6.5.3 are all done; F6.5.1 and F6.5.2
+  are recorded in `artifacts/parity/PERFORMANCE_F6.md`, F6.5.3 here and in
+  `GATE_F6_5.md`.
+- **D-08 and D-11 close.** D-11 is decided by the double-override golden,
+  measured rather than assumed: the reference answers 40.0, the first override
+  registered is the one that stands, and this engine already produced that
+  before the measurement existed to check it against.
 
 ## What is not affected
 

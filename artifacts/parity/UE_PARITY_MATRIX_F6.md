@@ -1,7 +1,19 @@
 # UE parity matrix — FASE 6
 
 Baseline GAS_Engine: `b5f4f3b`.
-Reference: Unreal Engine 5.7.4, CL 51494982 — **not run**.
+Reference: Unreal Engine 5.7.4, CL 51494982 — **run 2026-09-11**, ten of ten
+scenarios, zero mismatches — `artifacts/parity/GATE_F6_5.md`.
+
+```text
+CERTIFICATION_STATUS: status=CLOSED verified=10/10 numeric_mismatches=0 trace_mismatches=0 stop_code=none
+```
+
+Machine-checked against `artifacts/parity/f6_result.json` by
+`python tooling/certification_consistency.py`. AUD-01 found this matrix
+still declaring the run below **not run** at the same commit `GATE_F6_5.md`
+already recorded it on - the line above is the correction, generated from
+the one place these numbers are now typed rather than repeated by hand in
+every file that mentions them.
 
 The phase document asks this matrix to distinguish three states, and the reason
 is the one thing this file is for: a behaviour that mirrors the reference and
@@ -28,19 +40,23 @@ about.
 
 | State | Count | Why |
 |---|---|---|
-| `UE_VERIFIED` | **0** | no Unreal Engine 5.7.4 has been run against this repository |
+| `UE_VERIFIED` | **10** | Unreal Engine 5.7.4 CL 51494982 ran against all ten scenarios the phase names, 2026-09-11 |
 | `ENGINE_EXTENSION` | 3 | below |
 | `EXPLICIT_DEVIATION` | 3 | below |
-| `LOCALLY_ASSERTED` | everything else | 66,000-odd assertions, none of them a comparison |
+| `LOCALLY_ASSERTED` | everything else | 66,000-odd assertions; the ten above are the only ones that are also a comparison |
 
-Zero is the honest number and it is not zero work. The ten scenarios the phase
+Ten is the measured number, not an authored one. The ten scenarios the phase
 names are written, in the shape a comparison needs, under
-`test/parity/goldens/` — and every one of them says `NOT_UE_VERIFIED`, which is
-what `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word`
-checks. What this engine produces for those scenarios is written where a diff
-would read it, by `test/unit/test_ue_reference_production.gd::test_what_this_engine_produces_is_written_where_the_diff_reads_it`.
-The missing half is the reference's outputs, and `tools/ue_reference/README.md`
-says exactly what to run to get them.
+`test/parity/goldens/` — and every one of them now says `UE_VERIFIED`, which is
+what `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces`
+checks; `test/unit/test_ue_reference_corpus.gd::test_every_golden_says_everything_and_invents_no_third_word`
+still holds, since `UE_VERIFIED` is one of the same two words `AUTHORED` was
+never allowed to be a third of. What this engine produces for those scenarios
+is written where a diff would read it, by
+`test/unit/test_ue_reference_production.gd::test_what_this_engine_produces_is_written_where_the_diff_reads_it`,
+and `tooling/parity_diff.py` compares the two: zero numeric mismatches, one
+declared deviation. `artifacts/parity/GATE_F6_5.md` has the run itself and
+what closed the two findings that were waiting on it.
 
 ## The extensions
 
@@ -66,11 +82,13 @@ different one.
 
 ## What this means for FASE 6
 
-The phase document's own rule: `BLOCKED` is a STOP and the phase stays open.
-D-08 and D-11 are blocked — `artifacts/parity/GATE_F6_5.md` — so **FASE 6 is
-not closed**, and no part of this repository claims otherwise. Every other
-finding is closed, every package gate is green, and the two-process transport
-runs; what is missing is a comparison nobody here can make.
+D-08 and D-11 are closed — `artifacts/parity/GATE_F6_5.md` has the run that
+closed them, 2026-09-11. Every finding the phase names is closed, every
+package gate is green, and the two-process transport runs.
 
-`python tooling/traceability.py` exits non-zero while that is true, which is
-the intended behaviour rather than a bug in it.
+`python tooling/traceability.py` exits zero, and
+`python tooling/certification_consistency.py` checks that this file,
+`UE_REFERENCE_F6.md` and `GATE_F6_5.md` all still agree with
+`artifacts/parity/f6_result.json` and with the goldens - the check AUD-01
+asked for, so the three of them cannot quietly drift apart again the way they
+already had once.

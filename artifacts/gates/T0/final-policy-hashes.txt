@@ -4,14 +4,15 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# parity_diff: the declared-deviation line names the scenario and says it deviates on purpose, rather than sharing a bare '%s: %s' with engine_evidence.
+# AUD-01/OPS-01 follow-up: certification_consistency.py imports UE_VERIFIED from parity_diff.py instead of redeclaring it, and .quality-gates.json allowlists the remaining coincidental literals the new script shares with unrelated tools (evidence, HEAD, status, CLOSED, BLOCKED, *.json, FAULT: %s), closing the magic-string gate findings the new file introduced.
 #
 # python: 3.14.6
-# date-utc: 2026-09-12T03:11:22Z
-# commit-previo: 010d257278c62b1f4fa0c80db2039a58989fccc8
-# files: 28
-966bfa6ca1dcb6b52771f8ac669c6569d066abdce3ed52f653e391ed38aad243  tooling/.quality-gates.json
+# date-utc: 2026-09-13T03:21:39Z
+# commit-previo: c730f277775fa03172c8898d582a754872dd7280
+# files: 29
+a8bbbdfdcb86985113d2a20428f22a5f7352c1f5a304613e1856ab020079d99b  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
+3b93d7504e4df50fe80871866484ec61fd62b9ad8c2c946fe2622552c65c8a4b  tooling/certification_consistency.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
@@ -37,4 +38,4 @@ df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/projec
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
 f976ddf43f3625859bdcfc2e1be041eea3124fd4b9394ec35b426eea84cec907  tooling/traceability.py
-8e96b64d0518435df589d220726fd70d891be2e787af2853611a670d4ade5978  tooling/verify.ps1
+cfce0d6c137d4a9b821ac93429e946452352e68dd6e92524a01daf13e9164fda  tooling/verify.ps1

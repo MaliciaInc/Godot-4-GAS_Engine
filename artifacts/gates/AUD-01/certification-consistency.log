@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      certification-consistency
+command:    python tooling/certification_consistency.py
+started:    2026-09-13T03:23:27.0106832Z
+ended:      2026-09-13T03:23:27.1164348Z
+duration_s: 0.106
+exit_code:  0
+
+--- stdout ---
+CERTIFICATION_CONSISTENCY: PASS CERTIFICATION_STATUS: status=CLOSED verified=10/10 numeric_mismatches=0 trace_mismatches=0 stop_code=none
+
+--- stderr ---
+

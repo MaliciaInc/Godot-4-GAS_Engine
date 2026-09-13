@@ -1,0 +1,27 @@
+RESULT: PASS
+stage:      loc
+command:    python tooling\gates\run_gate.py loc artifacts\gates\AUD-01
+started:    2026-09-13T03:23:27.1183372Z
+ended:      2026-09-13T03:23:28.5502708Z
+duration_s: 1.432
+exit_code:  0
+
+--- stdout ---
+# LOC and Structure Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 702
+- Blocking findings: 0
+- Scan issues: 0
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

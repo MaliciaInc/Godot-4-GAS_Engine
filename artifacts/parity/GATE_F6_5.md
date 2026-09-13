@@ -1,14 +1,22 @@
 # Gate F6.5 — receipt
 
 Package: F6.5 (F6.5.1 through F6.5.3), covering D-07, D-08 and D-11.
-Baseline GAS_Engine: `a0bc379`.
-Reference: Unreal Engine 5.7.4, CL 51494982 — **not run**, which is what this
-receipt is mostly about.
+Baseline GAS_Engine: `a0bc379`. Reference ran at `010d257`.
+Reference: Unreal Engine 5.7.4, CL 51494982 — **ran 2026-09-11**.
 
-Two of the three tasks closed. The third cannot, on this machine, and the phase
-document says what that means: `BLOCKED` is a STOP and the package stays open.
-This receipt exists so the STOP is written down rather than being the absence
-of a file.
+```text
+CERTIFICATION_STATUS: status=CLOSED verified=10/10 numeric_mismatches=0 trace_mismatches=0 stop_code=none
+```
+
+Machine-checked against `artifacts/parity/f6_result.json` by
+`python tooling/certification_consistency.py`.
+
+All three tasks closed. This receipt used to say the third could not close on
+this machine, and left that STOP written down for whoever read it next rather
+than letting it be the absence of a file - "D-08 and D-11, and why they are
+blocked" below is that record, kept because the wrong turn (a blocker recorded
+as "the engine is missing" that was not) is exactly the kind of thing worth
+being able to still read after it stops being true.
 
 ```text
 python tooling/parity_receipt.py artifacts/parity/GATE_F6_5.md
@@ -128,12 +136,16 @@ declared deviations: 1
 ```
 
 
-## D-08 and D-11, and why they are blocked
+## D-08 and D-11, and why they were blocked
 
 The corpus under `test/parity/goldens/` carries ten scenarios in the shape the
-phase names, and every one of them says `NOT_UE_VERIFIED`. That is the honest
-state: the numbers in them were derived from this engine and from the
-reference's documentation, and neither is a reference having been run.
+phase names. At the time this section was written, every one of them said
+`NOT_UE_VERIFIED` — that was the honest state then: the numbers in them were
+derived from this engine and from the reference's documentation, and neither
+was a reference having been run. "The reference ran, 2026-09-11" above is what
+changed it; every scenario now says `UE_VERIFIED`, and what follows is why it
+took as long as it did to get there rather than a description of where things
+still stand.
 
 **Correction, 2026-09-11.** This receipt said "Unreal Engine 5.7.4 is not
 installed on this machine". That was not measured, and it was false: UE 5.7.4
@@ -153,22 +165,24 @@ Python plugin gets as far as building modifiers exactly and then dies on
 `InitAbilityActorInfo` is not a `UFUNCTION` - which is why the harness has a
 C++ module at all, and that module compiles.
 
-Installing the .NET Framework 4.8 SDK closes all three at once. The engine
-install was deliberately left unmodified.
+Installing the .NET Framework 4.8 SDK closed all three at once. The engine
+install was deliberately left unmodified otherwise.
 
-The phase forbids inventing the outputs. So:
+The phase forbade inventing the outputs while none of this was done. So, until
+it was:
 
-- `tooling/parity_diff.py` refuses to compare and exits non-zero, which is the
-  STOP rather than a failure of the engine;
-- `tools/ue_reference/README.md` says exactly what has to be run and where the
-  output goes;
-- nothing anywhere calls these numbers parity —
-  `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces`.
+- `tooling/parity_diff.py` refused to compare and exited non-zero, which was
+  the STOP rather than a failure of the engine;
+- `tools/ue_reference/README.md` said exactly what had to be run and where the
+  output went;
+- nothing anywhere called these numbers parity —
+  `test/unit/test_ue_reference_corpus.gd::test_a_verified_golden_carries_what_a_run_produces`
+  still checks that a golden claiming `UE_VERIFIED` carries what a run
+  produces, now that ten of them do.
 
-Both findings close the moment a real 5.7.4 produces
-`artifacts/parity/results/ue_scenarios.json` and the goldens are re-stamped
-`UE_VERIFIED`. Until then F6.5 is open, and F6 is not closeable — which is the
-phase document's own rule and not a judgement made here.
+Both findings closed once the .NET SDK went in, the harness ran, and
+`artifacts/parity/results/ue_reference_run.json` and the ten re-stamped
+goldens were the result - "The reference ran, 2026-09-11", above.
 
 The work after this package proceeded on an explicit decision to carry the STOP
 forward rather than to stop the phase on it. That decision is recorded here
