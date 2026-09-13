@@ -197,6 +197,8 @@ func test_an_aim_naming_somebody_who_is_not_here_is_unknown() -> void:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.TARGET_DATA, entity
 	)
+	message.activation = _the_activation()
+	message.prediction_key = _the_key()
 	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = (
 		GameplayTargetDataTranslator.to_wire(aimed, elsewhere)
 	)
@@ -214,6 +216,8 @@ func test_something_that_is_not_an_aim_is_invalid() -> void:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.TARGET_DATA, entity
 	)
+	message.activation = _the_activation()
+	message.prediction_key = _the_key()
 	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = {"nonsense": true}
 
 	assert_false(authority.receive(message), "it was refused")
@@ -313,16 +317,33 @@ func test_an_input_naming_an_unknown_definition_is_refused() -> void:
 
 
 #region Getting there
+## The run every aim in this file is for. One activation is enough here - the
+## suite is about the three ways an aim itself can be wrong, not about
+## AUD-09's own routing between two concurrent ones, which
+## `test_network_peer_identity.gd` covers.
+func _the_activation() -> GameplayNetActivationId:
+	return GameplayNetActivationId.of(entity, 1)
+
+
+## The guess every aim in this file rides on. One is enough for the same
+## reason one activation is: this suite is about how an aim itself can be
+## wrong, not about whose guess it was.
+func _the_key() -> GameplayPredictionKey:
+	return GameplayPredictionKey.of(OWNING_PEER, 1)
+
+
 ## A provider previewing on this entity, so an aim has something to answer.
 ##
 ## Through a running ability rather than registered directly, because that is
 ## the only way a provider is ever previewing: the runtime finds them by asking
 ## every live ability what it is aiming with, and a provider nobody is aiming
-## with is not waiting for anything.
+## with is not waiting for anything. Claimed under `_the_activation()`, the
+## same run every message built here names.
 func _aiming() -> GameplayLocationProvider3D:
 	var provider: GameplayLocationProvider3D = GameplayLocationProvider3D.new()
 	provider.max_range = 0.0
 	aimer.aim_with(provider)
+	provider.claim(_the_activation())
 	return provider
 
 
@@ -332,6 +353,8 @@ func _an_aim_at(spot: Vector3) -> GameplayNetMessage:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.TARGET_DATA, entity
 	)
+	message.activation = _the_activation()
+	message.prediction_key = _the_key()
 	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = (
 		GameplayTargetDataTranslator.to_wire(data, authority.registry)
 	)

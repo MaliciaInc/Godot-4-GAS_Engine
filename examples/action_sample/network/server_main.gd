@@ -119,10 +119,15 @@ func _on_peer_connected(id: int) -> void:
 ##
 ## Aimed at the first dummy for a strike, and left to its own aiming for the
 ## slam - which is the whole point of the slam being here: the authority starts
-## a provider, the client's aim arrives as target data, and the provider it is
-## handed to is the authority's own.
+## a provider, claims it under the run it just named, and the client's aim
+## arrives as target data addressed to that same run (AUD-09) - never to
+## "whichever provider happens to be waiting", which stops being one answer
+## the moment a second ability is aiming at once.
 func _on_request_accepted(
-	_entity: GameplayNetEntityId, definition: Resource, _key: GameplayPredictionKey
+	_entity: GameplayNetEntityId,
+	definition: Resource,
+	_key: GameplayPredictionKey,
+	activation: GameplayNetActivationId
 ) -> void:
 	var tag: StringName = _tag_of(definition)
 	session.say("accepted a request for %s" % tag)
@@ -131,6 +136,7 @@ func _on_request_accepted(
 			session.world.hero.strike(session.world.dummies[0])
 		SampleGroundSlam.TAG:
 			session.world.hero.aim_slam()
+			session.claim_current_aim(activation)
 		_:
 			# Nothing else in this sample is a client's to ask for, and the rules
 			# refused it before this was ever called.

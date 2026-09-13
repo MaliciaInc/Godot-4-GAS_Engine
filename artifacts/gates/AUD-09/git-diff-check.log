@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      git-diff-check
+command:    git diff --check
+started:    2026-09-13T02:42:30.8165699Z
+ended:      2026-09-13T02:42:30.8480868Z
+duration_s: 0.032
+exit_code:  0
+
+--- stdout ---
+
+--- stderr ---
+warning: in the working copy of 'artifacts/gates/F6.6/multiplayer-sample.json', CRLF will be replaced by LF the next time Git touches it
+

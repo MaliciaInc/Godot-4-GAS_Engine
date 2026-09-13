@@ -17,6 +17,7 @@ extends GutTest
 
 const Fixture = preload("res://test/fixtures/asc_fixture.gd")
 const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
+const Probe = preload("res://test/fixtures/probe_ability.gd")
 
 const SERVER_PEER: int = 1
 const ATTACKER_PEER: int = 2
@@ -166,11 +167,13 @@ func test_the_named_peer_asking_for_its_own_entity_is_still_accepted() -> void:
 ## proved by the refusal being about identity rather than about there being
 ## nothing to aim at.
 func test_an_aim_for_somebody_elses_entity_is_refused_before_a_provider_is_asked() -> void:
-	_everywhere(VICTIM_ENTITY, VICTIM_PEER)
+	var id: GameplayNetEntityId = _everywhere(VICTIM_ENTITY, VICTIM_PEER)
 	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
 	data.append_location(Vector3.ZERO)
 
-	attacker.send_target_data(GameplayNetEntityId.of(VICTIM_ENTITY), data)
+	attacker.send_target_data(
+		id, data, GameplayNetActivationId.of(id, 1), GameplayPredictionKey.of(ATTACKER_PEER, 1)
+	)
 	link.drain()
 
 	assert_true(
@@ -317,4 +320,68 @@ func test_a_direct_call_with_no_transport_is_unaffected() -> void:
 
 	assert_true(server.receive(forged), "a direct call names no sender to check")
 	assert_eq(confirmed.size(), 1)
+#endregion
+
+
+#region AUD-09: routed by activation, not by whichever provider is first
+## Two abilities on one entity, each aiming at once. An aim naming the second
+## one's run reaches the second provider and never the first, which is the
+## case "whichever provider is waiting" cannot tell apart at all.
+func test_an_aim_reaches_the_provider_claimed_for_its_own_run_and_not_the_other() -> void:
+	var id: GameplayNetEntityId = _everywhere(ATTACKER_ENTITY, ATTACKER_PEER)
+	var owner_asc: AbilitySystemComponent = server.registry.asc_for(id)
+
+	var spec_a: GameplayAbilitySpec = AbilityFactory.give(owner_asc, Probe.build(&"Ability.AimA"))
+	var running_a: ProbeAbility = spec_a.per_actor_instance as ProbeAbility
+	running_a.is_active = true
+	var provider_a: GameplayLocationProvider3D = GameplayLocationProvider3D.new()
+	running_a.aim_with(provider_a)
+	provider_a.claim(GameplayNetActivationId.of(id, 1))
+
+	var spec_b: GameplayAbilitySpec = AbilityFactory.give(owner_asc, Probe.build(&"Ability.AimB"))
+	var running_b: ProbeAbility = spec_b.per_actor_instance as ProbeAbility
+	running_b.is_active = true
+	var provider_b: GameplayLocationProvider3D = GameplayLocationProvider3D.new()
+	running_b.aim_with(provider_b)
+	var activation_b: GameplayNetActivationId = GameplayNetActivationId.of(id, 2)
+	provider_b.claim(activation_b)
+
+	var heard_a: Array[GameplayAbilityTargetData] = []
+	var heard_b: Array[GameplayAbilityTargetData] = []
+	provider_a.confirmed.connect(func(d: GameplayAbilityTargetData) -> void: heard_a.append(d))
+	provider_b.confirmed.connect(func(d: GameplayAbilityTargetData) -> void: heard_b.append(d))
+
+	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
+	data.append_location(Vector3(3.0, 0.0, 0.0))
+	attacker.send_target_data(id, data, activation_b, GameplayPredictionKey.of(ATTACKER_PEER, 2))
+	link.drain()
+
+	assert_eq(heard_a.size(), 0, "the first provider never heard it")
+	assert_eq(heard_b.size(), 1, "the aim named the second run and reached the second provider")
+
+
+## An aim naming a run nobody claimed a provider for is refused as its own
+## kind of wrong - not "nothing is aiming" and not "the aim itself is bad".
+func test_an_aim_for_a_run_nobody_claimed_is_refused_as_activation_unknown() -> void:
+	var id: GameplayNetEntityId = _everywhere(ATTACKER_ENTITY, ATTACKER_PEER)
+	var owner_asc: AbilitySystemComponent = server.registry.asc_for(id)
+	var spec: GameplayAbilitySpec = AbilityFactory.give(owner_asc, Probe.build(&"Ability.AimC"))
+	var running: ProbeAbility = spec.per_actor_instance as ProbeAbility
+	running.is_active = true
+	var provider: GameplayLocationProvider3D = GameplayLocationProvider3D.new()
+	running.aim_with(provider)
+	provider.claim(GameplayNetActivationId.of(id, 1))
+
+	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
+	data.append_location(Vector3.ZERO)
+	attacker.send_target_data(
+		id, data, GameplayNetActivationId.of(id, 99), GameplayPredictionKey.of(ATTACKER_PEER, 9)
+	)
+	link.drain()
+
+	assert_true(refusals.has(GameplayNetworkRuntime.REASON_ACTIVATION_UNKNOWN))
+	assert_false(
+		refusals.has(GameplayNetworkRuntime.REASON_TARGET_UNREACHABLE),
+		"something is aiming here - just not under the run this aim named"
+	)
 #endregion

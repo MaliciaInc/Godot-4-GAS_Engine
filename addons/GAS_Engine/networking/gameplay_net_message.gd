@@ -190,7 +190,17 @@ func is_complete() -> bool:
 		Kind.TARGET_DATA:
 			# An aim with nothing in it is a caller that forgot to aim, and
 			# acting on it would be the authority validating an empty claim.
-			return payload.has(TARGET_DATA_KEY)
+			# The run it is for is required too - AUD-09 - because without it
+			# routing an aim can only mean "whichever provider is waiting
+			# first", which is a different provider whenever two are. The key
+			# is required for the same reason a request's is: it is what
+			# `_identified()` checks an aim's claimed sender against, and an
+			# aim that carried none would cross that check for free.
+			return (
+				payload.has(TARGET_DATA_KEY)
+				and activation != null and activation.is_valid()
+				and prediction_key != null and prediction_key.is_valid()
+			)
 		Kind.GAMEPLAY_EVENT:
 			return payload.has(EVENT_KEY)
 		Kind.INPUT_PRESSED, Kind.INPUT_RELEASED:

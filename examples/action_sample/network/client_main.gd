@@ -149,24 +149,17 @@ func _strike() -> void:
 	session.say("predicted a strike (%s) and asked" % GameplayNetAuthority.Start.keys()[decided])
 
 
-## Aim the slam, and send where it was aimed.
+## Predict the slam, and ask.
 ##
-## The aim travels as target data rather than as an activation with a position
-## in it: the authority has its own provider waiting, and what it validates is
-## the spot against that provider rather than a number a client attached to a
-## request.
+## The aim itself waits for the answer this time (AUD-09): a `TARGET_DATA`
+## names the run it is for, and this machine has no run to name until the
+## authority's own confirm carries one back. `_after_aim` is where the actual
+## aiming and sending happen, once it does.
 func _aim() -> void:
 	var scene: Resource = session.definition_tagged(SampleGroundSlam.TAG)
 	session.network.start(session.world.hero.asc, scene)
-	session.world.hero.aim_slam()
-
-	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
-	data.append_location(AIMED_AT)
-	session.network.send_target_data(
-		GameplayNetEntityId.of(SampleNetSession.HERO), data
-	)
 	step = Step.AIM_ANSWER
-	session.say("aimed the slam at %v and sent it" % AIMED_AT)
+	session.say("predicted a slam and asked")
 
 
 ## Predict something this client is not allowed to start, and spend on it.
@@ -193,13 +186,13 @@ func _guess_wrong() -> void:
 
 ## The authority answered one of the guesses.
 func _on_answered(
-	_key: GameplayPredictionKey, _activation: GameplayNetActivationId, accepted: bool
+	key: GameplayPredictionKey, activation: GameplayNetActivationId, accepted: bool
 ) -> void:
 	match step:
 		Step.STRIKE_ANSWER:
 			_after_strike(accepted)
 		Step.AIM_ANSWER:
-			_after_aim(accepted)
+			_after_aim(accepted, activation, key)
 		Step.REFUSAL:
 			_after_refusal(accepted)
 		_:
@@ -214,11 +207,27 @@ func _after_strike(accepted: bool) -> void:
 	_aim()
 
 
-func _after_aim(accepted: bool) -> void:
+## The slam was accepted, and `activation` names the run - the one thing this
+## machine could not have put on a `TARGET_DATA` before now. Aim locally,
+## claim the provider that started under that same run, and send where it was
+## aimed addressed to it (AUD-09), on the same key the aim's own request was
+## just accepted under - the one `_on_answered` was told and this machine has
+## no other copy of once the journal's window over it has closed.
+func _after_aim(
+	accepted: bool, activation: GameplayNetActivationId, key: GameplayPredictionKey
+) -> void:
 	if not accepted:
 		_stop("the aim was refused")
 		return
-	session.say("the aim was accepted and validated")
+	session.world.hero.aim_slam()
+	session.claim_current_aim(activation)
+
+	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
+	data.append_location(AIMED_AT)
+	session.network.send_target_data(
+		GameplayNetEntityId.of(SampleNetSession.HERO), data, activation, key
+	)
+	session.say("the aim was accepted; sent where it was aimed at %v" % AIMED_AT)
 	_guess_wrong()
 
 

@@ -127,8 +127,8 @@ func honour_request(
 		net._refuse(message, refusal)
 		answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
 		return false
-	answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
-	net.activation_requested.emit(message.entity, definition, message.prediction_key)
+	var assigned: GameplayNetActivationId = answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
+	net.activation_requested.emit(message.entity, definition, message.prediction_key, assigned)
 	return true
 
 
@@ -182,11 +182,14 @@ func _why_not(
 
 
 ## Say yes or no to a request, naming the run and the guess it answers.
+## Answers with the run it just named, so a caller reacting to
+## `activation_requested` can claim a target provider under the same id
+## `honour_target_data` will later look an aim up by - AUD-09.
 ##
 ## The key is echoed rather than looked up: the machine that asked is the
 ## one holding the journal, and an answer that did not name the guess would
 ## leave a client with two casts in flight unwinding the wrong one.
-func answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> void:
+func answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> GameplayNetActivationId:
 	var id: GameplayNetEntityId = asked.entity
 	_runs[id.value] = _runs.get(id.value, 0) + 1
 	var made: GameplayNetMessage = GameplayNetMessage.of(kind, id)
@@ -194,4 +197,5 @@ func answer(kind: GameplayNetMessage.Kind, asked: GameplayNetMessage) -> void:
 	made.definition = asked.definition
 	made.prediction_key = asked.prediction_key
 	net.publish(made)
+	return made.activation
 #endregion

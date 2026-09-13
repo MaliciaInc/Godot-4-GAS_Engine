@@ -102,6 +102,19 @@ func open(as_server: bool, address: String, port: int) -> bool:
 	return true
 
 
+## The provider whichever ability this process just started aiming with,
+## claimed under the network run that started it (AUD-09) - so an aim
+## `TARGET_DATA` names later finds this provider by that run and not by
+## "whichever happens to be waiting", which both halves of this sample would
+## otherwise be relying on. Both halves call this the same way: right after
+## starting the one ability this sample ever aims, there is exactly one
+## provider previewing, so the first is the right one.
+func claim_current_aim(activation: GameplayNetActivationId) -> void:
+	for provider: GameplayTargetProvider in world.hero.asc.ability_runtime.queries.previewing_providers():
+		provider.claim(activation)
+		return
+
+
 ## Bind this process's hero to the shared entity id, and name its abilities.
 ##
 ## Both processes do this, with the same id and the same owning peer, and both

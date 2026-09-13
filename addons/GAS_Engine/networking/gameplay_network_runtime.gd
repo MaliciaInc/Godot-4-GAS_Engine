@@ -66,8 +66,16 @@ signal activation_replicated(
 ## the game acts on it, exactly the way a client acts on the answer to its own
 ## guess. Without this the authority says yes to a request and then nothing
 ## happens on the machine that said it, which reads as a dropped packet.
+##
+## `activation` names this run - AUD-09 - so a game that starts an ability
+## aiming here can claim its own provider under it: `TARGET_DATA` is routed by
+## activation, not by "whichever provider is waiting first", and a provider
+## nobody claimed one for cannot be reached at all.
 signal activation_requested(
-	entity: GameplayNetEntityId, definition: Resource, key: GameplayPredictionKey
+	entity: GameplayNetEntityId,
+	definition: Resource,
+	key: GameplayPredictionKey,
+	activation: GameplayNetActivationId
 )
 
 ## A reading of an entity's state was written onto it. Carries the state as
@@ -105,6 +113,13 @@ const REASON_PEER_MISMATCH: StringName = &"peer_mismatch"
 const REASON_TARGET_UNKNOWN: StringName = &"target_unknown"
 const REASON_TARGET_UNREACHABLE: StringName = &"target_unreachable"
 const REASON_TARGET_INVALID: StringName = &"target_invalid"
+
+## AUD-09. An aim named a run this machine is not waiting on - either it never
+## ran, it already ended, or nobody here ever claimed a provider under it. A
+## different refusal from `REASON_TARGET_UNREACHABLE`: that one is "nothing on
+## this entity is aiming at all"; this one is "something is, and it is not
+## the run this aim named".
+const REASON_ACTIVATION_UNKNOWN: StringName = &"activation_unknown"
 
 ## Which peer a client talks to. Godot's own convention, and the only peer a
 ## client is entitled to say anything to.
