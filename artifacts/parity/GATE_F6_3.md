@@ -37,7 +37,7 @@ owns replicating an aim rather than taking one, and nothing here claims it.
 
 ## The walk
 
-`test/unit/test_gate_f6_3_targeting_walk.gd::test_the_whole_targeting_contract_walks_from_a_spot_to_three_victims`
+`test/unit/test_targeting_to_three_victims_walk.gd::test_the_whole_targeting_contract_walks_from_a_spot_to_three_victims`
 
 One aim end to end: a person points at the ground, a reticle follows the spot,
 the component's generic confirm takes it, a preset turns the place into

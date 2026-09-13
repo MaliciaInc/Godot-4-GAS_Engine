@@ -28,9 +28,9 @@ python tooling/parity_receipt.py artifacts/parity/GATE_F6_6.md
 |---|---|---|
 | D-01 the README's networking section described an engine this is not | CLOSED | `test/unit/test_readme_quick_start.gd::test_the_readme_describes_the_final_network_contract` |
 | D-04 nothing said which machine an ability runs on | CLOSED | `test/unit/test_network_ability_policies.gd::test_the_execution_policy_does_not_decide_what_the_authority_accepts` |
-| D-05 an authority that accepted a request did nothing about it | CLOSED | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
+| D-05 an authority that accepted a request did nothing about it | CLOSED | `test/unit/test_real_transport_conditions_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
 | G-08 replication, security and input policies per ability | CLOSED | `test/unit/test_network_ability_policies.gd::test_a_remote_request_is_asked_of_the_security_policy` |
-| G-17 wire, transport, per-entity mode, batching, target and event messages | CLOSED | `test/unit/test_gate_f6_6_real_transport.gd::test_a_message_crosses_as_bytes_and_arrives_whole` |
+| G-17 wire, transport, per-entity mode, batching, target and event messages | CLOSED | `test/unit/test_real_transport_conditions_walk.gd::test_a_message_crosses_as_bytes_and_arrives_whole` |
 
 D-04 and D-05 were closed by F6.0.5 and F6.0.6 and are named again here because
 F6.6 is where they became answerable across two machines rather than within one.
@@ -46,20 +46,20 @@ two columns differ in the transport and in nothing else.
 
 | # | Case | Over NetLink | Over GameplayNetTransportMultiplayer |
 |---|---|---|---|
-| 0 | the wire carries bytes | `test/unit/test_gate_f5_5_network_walk.gd::test_case_zero_the_wire_carries_bytes_and_nothing_else` | `test/unit/test_gate_f6_6_real_transport.gd::test_a_message_crosses_as_bytes_and_arrives_whole` |
-| 1 | listen server + 2 clients | `test/unit/test_gate_f5_5_network_walk.gd::test_case_one_a_listen_server_owns_a_character_and_still_authors` | `test/unit/test_gate_f6_6_real_transport.gd::test_case_one_a_grant_from_the_authority_reaches_both_clients` |
-| 2 | a client does not author | `test/unit/test_gate_f5_5_network_walk.gd::test_case_two_a_dedicated_server_owns_nobody` | `test/unit/test_gate_f6_6_real_transport.gd::test_case_two_a_grant_a_client_invented_is_refused` |
-| 3 | latency | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
-| 4 | duplicate packet | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
-| 5 | reordered packet | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
-| 6 | dropped request retry | `test/unit/test_gate_f5_5_network_walk.gd::test_case_six_a_dropped_request_is_asked_again_and_answered_once` | NetLink only — see below |
-| 7 | predicted accepted | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
-| 8 | predicted rejected | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_eight_and_ten_a_refused_guess_takes_its_cooldown_with_it` | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_eight_and_ten_a_refused_guess_is_answered_no` |
-| 9 | no double cost | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
-| 10 | no duplicate cooldown | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_eight_and_ten_a_refused_guess_takes_its_cooldown_with_it` | `test/unit/test_gate_f6_6_real_transport.gd::test_cases_eight_and_ten_a_refused_guess_is_answered_no` |
-| 11 | no ghost cue | `test/unit/test_gate_f5_5_network_walk.gd::test_case_eleven_a_refused_guess_leaves_no_cue_playing` | NetLink only — see below |
-| 12 | late join | `test/unit/test_gate_f5_5_network_walk.gd::test_case_twelve_a_late_joiner_is_caught_up_before_it_is_kept_up` | `test/unit/test_gate_f6_6_real_transport.gd::test_case_twelve_a_late_joiner_is_caught_up_with_a_snapshot` |
-| 13 | respawn / avatar swap | `test/unit/test_gate_f5_5_network_walk.gd::test_case_thirteen_a_respawn_keeps_the_grants_and_the_state` | NetLink only — see below |
+| 0 | the wire carries bytes | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_zero_the_wire_carries_bytes_and_nothing_else` | `test/unit/test_real_transport_conditions_walk.gd::test_a_message_crosses_as_bytes_and_arrives_whole` |
+| 1 | listen server + 2 clients | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_one_a_listen_server_owns_a_character_and_still_authors` | `test/unit/test_real_transport_conditions_walk.gd::test_case_one_a_grant_from_the_authority_reaches_both_clients` |
+| 2 | a client does not author | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_two_a_dedicated_server_owns_nobody` | `test/unit/test_real_transport_conditions_walk.gd::test_case_two_a_grant_a_client_invented_is_refused` |
+| 3 | latency | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
+| 4 | duplicate packet | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
+| 5 | reordered packet | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading` | NetLink only — see below |
+| 6 | dropped request retry | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_six_a_dropped_request_is_asked_again_and_answered_once` | NetLink only — see below |
+| 7 | predicted accepted | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` | `test/unit/test_real_transport_conditions_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
+| 8 | predicted rejected | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_eight_and_ten_a_refused_guess_takes_its_cooldown_with_it` | `test/unit/test_real_transport_conditions_walk.gd::test_cases_eight_and_ten_a_refused_guess_is_answered_no` |
+| 9 | no double cost | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` | `test/unit/test_real_transport_conditions_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_answered` |
+| 10 | no duplicate cooldown | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_eight_and_ten_a_refused_guess_takes_its_cooldown_with_it` | `test/unit/test_real_transport_conditions_walk.gd::test_cases_eight_and_ten_a_refused_guess_is_answered_no` |
+| 11 | no ghost cue | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_eleven_a_refused_guess_leaves_no_cue_playing` | NetLink only — see below |
+| 12 | late join | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_twelve_a_late_joiner_is_caught_up_before_it_is_kept_up` | `test/unit/test_real_transport_conditions_walk.gd::test_case_twelve_a_late_joiner_is_caught_up_with_a_snapshot` |
+| 13 | respawn / avatar swap | `test/unit/test_network_conditions_end_to_end_walk.gd::test_case_thirteen_a_respawn_keeps_the_grants_and_the_state` | NetLink only — see below |
 
 ### Why five cases are NetLink only, and what covers them instead
 
@@ -138,7 +138,7 @@ test/unit/test_network_sync_point.gd
 test/unit/test_prediction_journal.gd
 test/unit/test_prediction_window.gd
 test/unit/test_gameplay_cue_effects.gd
-test/unit/test_gate_f5_5_network_walk.gd
-test/unit/test_gate_f6_6_real_transport.gd
+test/unit/test_network_conditions_end_to_end_walk.gd
+test/unit/test_real_transport_conditions_walk.gd
 test/integration/test_network_two_processes.gd
 ```

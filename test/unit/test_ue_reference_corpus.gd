@@ -85,8 +85,8 @@ func after_each() -> void:
 
 
 #region The corpus
-## Every scenario the phase names is there, and nothing else is.
-func test_the_corpus_is_the_ten_scenarios_the_phase_names() -> void:
+## Every named scenario is there, and nothing else is.
+func test_the_corpus_is_exactly_the_ten_named_scenarios() -> void:
 	var found: Array[String] = []
 	for name: String in DirAccess.get_files_at(GOLDENS):
 		if name.ends_with(".json"):

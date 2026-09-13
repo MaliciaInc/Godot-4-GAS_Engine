@@ -301,11 +301,11 @@ func _verdicts() -> Dictionary[String, String]:
 #endregion
 
 
-## Every target the phase set, and whether the measurement met it.
+## Every named target, and whether the measurement met it.
 ##
 ## The word is derived here and compared with the receipt, so the receipt cannot
-## say "met" about a number that does not. What each target is, is the phase
-## document's table, written out as the predicate that answers it.
+## say "met" about a number that does not. What each target is, is this file's
+## own table, written out as the predicate that answers it.
 ##
 ##     [the key, whether the measurement meets its target]
 func _target_verdicts() -> Dictionary[String, bool]:
@@ -322,7 +322,7 @@ func _target_verdicts() -> Dictionary[String, bool]:
 	}
 
 
-func test_every_target_the_phase_set_has_the_verdict_the_measurement_gives() -> void:
+func test_every_named_target_has_the_verdict_the_measurement_gives() -> void:
 	var written: Dictionary[String, String] = _verdicts()
 	var derived: Dictionary[String, bool] = _target_verdicts()
 

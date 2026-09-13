@@ -51,7 +51,7 @@ Pieces that pass separately can still be wrong together. The gate scenario the
 phase document specifies runs all of them on one character, in order, and ends
 by proving the component is exactly what it was before the loadout went on.
 
-`test/unit/test_gate_f6_1_ability_contract_walk.gd::test_the_whole_ability_contract_walks_and_leaves_nothing_behind`
+`test/unit/test_ability_loadout_contract_walk.gd::test_the_whole_ability_contract_walks_and_leaves_nothing_behind`
 
 ## Two things found while auditing this package, and fixed here
 

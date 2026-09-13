@@ -1,5 +1,5 @@
-## F6.4's gate: one effect authored, aimed and watched, using every piece the
-## package added and nothing else.
+## One effect authored, aimed and watched, using the whole of the authoring
+## surface and nothing else.
 ##
 ## Each piece has its own tests. This exists because pieces that pass separately
 ## can still be wrong together: an editor that writes a modifier the runtime

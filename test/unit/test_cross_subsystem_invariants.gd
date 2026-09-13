@@ -1,4 +1,4 @@
-## Cross-subsystem invariants Phase 3 must not disturb.
+## Cross-subsystem invariants no single-subsystem change may disturb.
 ##
 ## Every single-subsystem invariant this task's document lists already has an
 ## owner - the canonical formula in test_attribute_aggregation.gd, clamps in

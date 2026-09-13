@@ -1,5 +1,5 @@
-## F6.1's gate: one character, one loadout, and every contract the package added
-## used the way a game would use it.
+## One character, one loadout, and every ability contract used the way a game
+## would use it.
 ##
 ## Each piece has its own tests. This exists because pieces that pass separately
 ## can still be wrong together: a trigger that cancels an ability while a task is

@@ -1,6 +1,6 @@
-# F6.5 performance certification
+# Indexed search performance certification
 
-Written by `test/unit/test_f6_performance_certification.gd` on every
+Written by `test/unit/test_indexed_search_performance_certification.gd` on every
 suite run. Microseconds, on the machine named below: a number here is a
 fact about that machine and nothing in the suite fails for it. What the
 suite does fail for is structural and is in the table after this one.
@@ -22,15 +22,15 @@ suite does fail for is structural and is in the table after this one.
 
 | load | scale | runs | p50 us | p95 us | p99 us | objects left |
 |---|---|---|---|---|---|---|
-| apply effects | 100 | 5 | 36770.0 | 37217.0 | 37217.0 | 0 |
-| apply effects | 1000 | 5 | 365449.0 | 368154.0 | 368154.0 | 0 |
-| apply effects | 10000 | 5 | 3837420.0 | 6139930.0 | 6139930.0 | 0 |
-| grant abilities | 10 | 5 | 717.0 | 829.0 | 829.0 | 50 |
-| grant abilities | 100 | 5 | 8140.0 | 8350.0 | 8350.0 | 500 |
-| grant abilities | 1000 | 5 | 162168.0 | 169994.0 | 169994.0 | 5000 |
-| tag lookups | 10000 | 5 | 6603.0 | 6727.0 | 6727.0 | 0 |
-| tag-change reevaluations | 1000 | 5 | 235727.0 | 242156.0 | 242156.0 | 0 |
-| stack candidate searches | 1000 | 5 | 1757.0 | 1792.0 | 1792.0 | 0 |
+| apply effects | 100 | 5 | 47055.0 | 51231.0 | 51231.0 | 0 |
+| apply effects | 1000 | 5 | 440388.0 | 466555.0 | 466555.0 | 0 |
+| apply effects | 10000 | 5 | 4423724.0 | 4488456.0 | 4488456.0 | 0 |
+| grant abilities | 10 | 5 | 939.0 | 1390.0 | 1390.0 | 50 |
+| grant abilities | 100 | 5 | 10050.0 | 11391.0 | 11391.0 | 500 |
+| grant abilities | 1000 | 5 | 175133.0 | 182801.0 | 182801.0 | 5000 |
+| tag lookups | 10000 | 5 | 7054.0 | 7519.0 | 7519.0 | 0 |
+| tag-change reevaluations | 1000 | 5 | 282447.0 | 296114.0 | 296114.0 | 0 |
+| stack candidate searches | 1000 | 5 | 2201.0 | 3121.0 | 3121.0 | 0 |
 
 ## What the suite actually fails for
 
@@ -44,4 +44,4 @@ counts are the same on every machine:
   tag or an ancestor of it;
 - a thousand applications and removals leave the index holding nothing.
 
-`test/unit/test_f6_performance_certification.gd::test_the_stack_search_does_not_grow_with_the_crowd`
+`test/unit/test_indexed_search_performance_certification.gd::test_the_stack_search_does_not_grow_with_the_crowd`

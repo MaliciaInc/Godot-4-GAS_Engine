@@ -1,5 +1,5 @@
-## F6.2's gate: one hit, authored the way the phase says a hit is authored, with
-## every piece the package added doing its job in the same application.
+## One hit, authored the ordinary way a hit is authored, with every one of its
+## pieces doing its job in the same application.
 ##
 ## Each piece has its own tests. This exists because pieces that pass separately
 ## can still be wrong together: a scoped modifier that leaks into the aggregate
@@ -26,9 +26,9 @@ var asc: AbilitySystemComponent = null
 var manager: CueManagerScript = null
 
 
-## A target that hears about its own cues, which is the interface half of
-## F6.2.7: the binding plays AND the target is told, never one instead of the
-## other.
+## A target that hears about its own cues, which is the interface half of the
+## binding contract: the binding plays AND the target is told, never one
+## instead of the other.
 class ListeningOwner extends Node3D:
 	var heard: Array[StringName] = []
 

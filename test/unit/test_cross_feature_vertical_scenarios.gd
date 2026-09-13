@@ -1,5 +1,5 @@
-## Fase 3 closure: the five vertical scenarios the phase document's own
-## "Final regression suite" section names, plus its seeded stress sequence.
+## The five vertical scenarios this suite's own regression list names, plus its
+## seeded stress sequence.
 ##
 ## Every feature these scenarios touch already has its own unit suite - this
 ## file exists only to prove the SEAMS between features hold, the same

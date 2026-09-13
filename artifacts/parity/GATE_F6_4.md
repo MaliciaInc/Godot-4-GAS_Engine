@@ -65,7 +65,7 @@ G-18's overlay and G-20's commands are both here; F6.6 owns nothing of either.
 
 ## The walk
 
-`test/unit/test_gate_f6_4_authoring_walk.gd::test_the_whole_authoring_contract_walks_from_an_empty_effect_to_an_aimed_area`
+`test/unit/test_effect_authoring_session_walk.gd::test_the_whole_authoring_contract_walks_from_an_empty_effect_to_an_aimed_area`
 
 One authoring session end to end: an effect authored in one action, its
 attribute chosen from what the project declares - and the misspelling of it
@@ -162,4 +162,4 @@ a debug surface works outside the editor, and a modifier row takes one authoring
 action rather than four. F6.4.7 writes a verdict against every target the phase
 set, derived from the measurement rather than from anybody's reading of it.
 
-`test/unit/test_authoring_friction.gd::test_every_target_the_phase_set_has_the_verdict_the_measurement_gives`
+`test/unit/test_authoring_friction.gd::test_every_named_target_has_the_verdict_the_measurement_gives`

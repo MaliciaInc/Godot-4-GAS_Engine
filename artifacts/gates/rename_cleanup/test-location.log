@@ -1,0 +1,28 @@
+RESULT: PASS
+stage:      test-location
+command:    python tooling\gates\run_gate.py test-location artifacts\gates\rename_cleanup
+started:    2026-09-13T00:16:56.4013958Z
+ended:      2026-09-13T00:16:57.6676832Z
+duration_s: 1.266
+exit_code:  0
+
+--- stdout ---
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 697
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 268
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

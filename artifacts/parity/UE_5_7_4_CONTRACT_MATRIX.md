@@ -53,12 +53,12 @@ message.
 |---|---|---|
 | Runtime correctness | COMPLETE | `test/unit/test_parity_corpus.gd::test_godot_agrees_with_the_reference_on_every_case` |
 | Attribute aggregation | EXPLICIT_DEVIATION | `test/unit/test_parity_corpus.gd::test_godot_agrees_with_the_reference_on_every_case` — see 1 |
-| Ability lifecycle/commit | COMPLETE | `test/unit/test_gate_f5_3_authoring_walk.gd::test_steps_four_to_six_configure_grant_and_run` |
+| Ability lifecycle/commit | COMPLETE | `test/unit/test_ability_authoring_end_to_end_walk.gd::test_steps_four_to_six_configure_grant_and_run` |
 | Specs/captures/stacking | EXPLICIT_DEVIATION | `test/unit/test_parity_corpus.gd::test_godot_agrees_with_the_reference_on_every_case` — see 1 |
 | Tags/events | COMPLETE | `test/unit/test_hierarchical_tag_counts.gd::test_the_exact_signal_still_reports_the_exact_count` |
-| Authoring/Composer | COMPLETE | `test/unit/test_gate_f5_3_authoring_walk.gd::test_steps_nine_and_ten_editing_saving_and_reopening_loses_nothing` |
-| Targeting/tasks/animation/cues | EXPLICIT_DEVIATION | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_one_previewing_confirming_and_cancelling` — see 2 and 3 |
-| Authority/replication/prediction | EXPLICIT_DEVIATION | `test/unit/test_gate_f5_5_network_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` — see 4, 5 and 6 |
+| Authoring/Composer | COMPLETE | `test/unit/test_ability_authoring_end_to_end_walk.gd::test_steps_nine_and_ten_editing_saving_and_reopening_loses_nothing` |
+| Targeting/tasks/animation/cues | EXPLICIT_DEVIATION | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_one_previewing_confirming_and_cancelling` — see 2 and 3 |
+| Authority/replication/prediction | EXPLICIT_DEVIATION | `test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_seven_and_nine_an_accepted_guess_is_paid_for_once` — see 4, 5 and 6 |
 | Performance/determinism certification | EXPLICIT_DEVIATION | `test/unit/test_performance_and_determinism.gd::test_every_workload_is_measured_at_every_scale` — see 7, 8 and 9 |
 | Distribution | COMPLETE | `artifacts/parity/DISTRIBUTION.md`, written by `tooling/distribution_check.py` — see 10 |
 
@@ -93,7 +93,7 @@ and the larger part of what those tests would check - every adverse condition is
 reachable here and deterministic, where over a real socket none of them are.
 Godot's own multiplayer plumbing is not covered, and this addon neither uses nor
 wraps it.
-`test/unit/test_gate_f5_5_network_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading`
+`test/unit/test_network_conditions_end_to_end_walk.gd::test_cases_three_to_five_a_misbehaving_wire_lands_the_newest_reading`
 
 **5. Effects replicate as readings, not as running effects.** Which effect, how
 many, how long is left in seconds and in turns, whether it is inhibited - for a

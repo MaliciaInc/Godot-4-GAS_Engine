@@ -48,7 +48,7 @@ playing one; nothing here claims that half.
 
 ## The walk
 
-`test/unit/test_gate_f6_2_authoring_walk.gd::test_the_whole_authoring_contract_walks_on_one_hit`
+`test/unit/test_effect_authoring_one_hit_walk.gd::test_the_whole_authoring_contract_walks_on_one_hit`
 
 One hit on one buffed character, with every piece of the package in the same
 application: a scoped modifier whose magnitude is the bonus part of the target's

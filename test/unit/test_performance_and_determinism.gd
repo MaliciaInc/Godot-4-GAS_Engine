@@ -50,7 +50,7 @@ const HEADER: String = (
 	+ "whole list. The immunity check was the expensive one - every application\n"
 	+ "asked every active effect whether it granted immunity, and almost none\n"
 	+ "of them do. What those cost is measured structurally rather than in\n"
-	+ "milliseconds by `test/unit/test_f6_performance_certification.gd`, and\n"
+	+ "milliseconds by `test/unit/test_indexed_search_performance_certification.gd`, and\n"
 	+ "written to `artifacts/parity/PERFORMANCE_F6.md`.\n"
 	+ "\n"
 	+ "| workload | scale | runs | p50 us | p95 us | p99 us | objects left |\n"

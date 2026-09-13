@@ -1,5 +1,5 @@
-## F6.3's gate: one aim, from pointing at the ground to the effect landing on
-## the three nearest enemies.
+## One aim, from pointing at the ground to the effect landing on the three
+## nearest enemies.
 ##
 ## Each piece has its own tests. This exists because pieces that pass separately
 ## can still be wrong together: a preset that drops the place the trace found, a

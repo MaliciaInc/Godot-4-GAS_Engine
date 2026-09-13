@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: 0ff150b6fb19ffed20fa84cf935d2e43d8c9827db3176d310da51dc006b43ead
+godot --headless --path . res://test/gut_headless_runner.tscn: no parse or script errors across the renamed tree

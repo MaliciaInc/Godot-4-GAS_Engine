@@ -1,13 +1,13 @@
-## Gate F5.4 — the ten cases, walked where they meet.
+## The ten cases where targeting, applying, animating and announcing meet.
 ##
 ## Aiming, applying, animating and announcing are four subsystems, and each has
 ## its own suite. What this file asks is the thing none of those can: that the
 ## seams between them hold. A target chosen by a person, applied to two victims,
 ## animated by a task somebody else takes over, and announced by a cue that
-## nobody bound - one road, and every place the phase names a case is a place
-## the road has actually broken.
+## nobody bound - one road, and every case below is a place the road has
+## actually broken.
 ##
-## Each test is one of the ten cases the phase lists, in its order.
+## Each test is one of the ten cases, in the order they were found in.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest

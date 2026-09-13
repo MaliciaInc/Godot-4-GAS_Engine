@@ -1,19 +1,21 @@
-## Gate F6.6 — the same conversation, over the transport a game actually uses.
+## The same conversation as the network-conditions walk, over the transport a
+## game actually uses.
 ##
-## The F5.5 walk runs over `NetLink`, which is the right fixture for what it
-## checks: a wire that can be told to repeat, reorder, lose and delay is not
-## something a socket will do on request. What NetLink cannot say is whether
-## `GameplayNetTransportMultiplayer` works, because it is not in the path.
+## `test_network_conditions_end_to_end_walk.gd` runs over `NetLink`, which is
+## the right fixture for what it checks: a wire that can be told to repeat,
+## reorder, lose and delay is not something a socket will do on request. What
+## NetLink cannot say is whether `GameplayNetTransportMultiplayer` works,
+## because it is not in the path.
 ##
-## So the second column of the gate table is here: real `SceneMultiplayer`
-## instances, the real transport class, the real codec, and a MultiplayerPeer
-## that is a dictionary instead of a port. Everything above the socket is what
-## a game runs; the socket itself is the two-process sample's job, and this file
-## says so rather than claiming to be one.
+## So the second column is here: real `SceneMultiplayer` instances, the real
+## transport class, the real codec, and a MultiplayerPeer that is a dictionary
+## instead of a port. Everything above the socket is what a game runs; the
+## socket itself is the two-process sample's job, and this file says so rather
+## than claiming to be one.
 ##
-## What is checked is the same set of outcomes the walk checks, case by case,
-## and the cases are named after it: who may author, what a client may ask for,
-## what an answer does to a guess, and what a late joiner is told.
+## What is checked is the same set of outcomes the other walk checks, case by
+## case, and the cases are named after it: who may author, what a client may
+## ask for, what an answer does to a guess, and what a late joiner is told.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest

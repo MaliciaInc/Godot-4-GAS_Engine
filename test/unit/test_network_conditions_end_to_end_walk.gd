@@ -1,12 +1,12 @@
-## Gate F5.5 — the thirteen cases, over a wire that misbehaves.
+## The thirteen cases where the network layer meets a wire that misbehaves.
 ##
 ## Three machines in one process and a link between them that can be told to
 ## repeat, reorder, lose and delay. None of those are reachable from a suite
 ## that hands messages straight across, and every one of them is a thing a real
 ## socket does without being asked.
 ##
-## Each test is one of the thirteen the phase lists, in its order. What they
-## have in common is the shape of the failure they guard: something arrives
+## Each test is one of the thirteen cases, in the order they were found in.
+## What they have in common is the shape of the failure they guard: something arrives
 ## twice, or late, or not at all, and the character ends up paying twice,
 ## holding a cooldown for a cast that never happened, or watching a cue for an
 ## ability that was refused.

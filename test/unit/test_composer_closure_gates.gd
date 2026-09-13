@@ -85,7 +85,7 @@ const REQUIRED_NOW: Array[String] = [
 ]
 
 
-func test_every_class_this_phase_adds_is_declared() -> void:
+func test_every_class_required_here_is_declared() -> void:
 	var declared: Dictionary[String, String] = ComposerSourceScan.declared_classes()
 	assert_gt(REQUIRED_NOW.size(), 0, "there are classes to require")
 

@@ -20,16 +20,16 @@ python tooling/parity_receipt.py artifacts/parity/GATE_F5_4.md
 
 | # | Case | At the seam | On its own |
 |---|---|---|---|
-| 1 | target preview + confirm + cancel | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_one_previewing_confirming_and_cancelling` | `test/unit/test_target_provider_lifecycle.gd::test_a_provider_ends_exactly_once`, `test/unit/test_target_provider_lifecycle.gd::test_what_a_provider_confirms_reaches_the_ability` |
-| 2 | target destroyed during preview | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_two_a_target_destroyed_during_the_preview_is_not_confirmed` | `test/unit/test_target_provider_lifecycle.gd::test_a_target_that_dies_during_the_preview_is_gone_from_the_next_one` |
-| 3 | two colliders on one target are one | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_three_two_hits_on_one_actor_are_one_target` | `test/unit/test_targeting_3d.gd::test_one_actor_with_two_shapes_arrives_once`, `test/unit/test_targeting_2d.gd::test_one_actor_with_two_shapes_arrives_once` |
-| 4 | an area effect does not contaminate hits | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_four_an_area_effect_does_not_contaminate_hits` | `test/unit/test_context_per_target.gd::test_an_area_effect_never_tells_one_victim_about_the_other`, `test/unit/test_context_per_target.gd::test_each_victim_is_told_about_itself` |
-| 5 | channel cancel | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_five_cancelling_a_channel_releases_its_tasks_and_its_aiming` | `test/unit/test_target_provider_lifecycle.gd::test_an_ability_that_ends_calls_off_its_providers`, `test/unit/test_ability_tasks.gd::test_cleanup_cancels_every_task` |
-| 6 | animation replaced becomes interrupted | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_six_a_replaced_animation_interrupts_the_task_that_owned_it` | `test/unit/test_animation_ownership.gd::test_another_animation_starting_interrupts_it`, `test/unit/test_animation_ownership.gd::test_losing_the_claim_interrupts_it_on_the_next_tick` |
-| 7 | movement cancel | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_seven_a_cancelled_move_stops_where_it_was` | `test/unit/test_new_ability_task_behaviour.gd::test_a_cancelled_move_leaves_the_body_where_it_got_to` |
-| 8 | parent cue fallback | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_eight_a_cue_falls_back_to_its_parent` | `test/unit/test_cue_hierarchy.gd::test_a_request_nobody_bound_falls_back_up_the_family`, `test/unit/test_cue_hierarchy.gd::test_a_silenced_branch_stops_the_walk_before_its_parent` |
-| 9 | persistent cue purge | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_nine_removing_an_effect_purges_its_persistent_cue` | `test/unit/test_gameplay_cue_effects.gd::test_removing_the_effect_pools_the_persistent_cue_exactly_once`, `test/unit/test_gameplay_cue_effects.gd::test_cleanup_ends_persistent_cues_exactly_once` |
-| 10 | pooling with no residual state | `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_ten_a_reused_cue_carries_nothing_of_the_previous_one` | `test/unit/test_cue_hierarchy.gd::test_a_pooled_cue_holds_nothing_from_its_last_run`, `test/unit/test_cue_hierarchy.gd::test_a_reused_cue_answers_with_the_new_run` |
+| 1 | target preview + confirm + cancel | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_one_previewing_confirming_and_cancelling` | `test/unit/test_target_provider_lifecycle.gd::test_a_provider_ends_exactly_once`, `test/unit/test_target_provider_lifecycle.gd::test_what_a_provider_confirms_reaches_the_ability` |
+| 2 | target destroyed during preview | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_two_a_target_destroyed_during_the_preview_is_not_confirmed` | `test/unit/test_target_provider_lifecycle.gd::test_a_target_that_dies_during_the_preview_is_gone_from_the_next_one` |
+| 3 | two colliders on one target are one | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_three_two_hits_on_one_actor_are_one_target` | `test/unit/test_targeting_3d.gd::test_one_actor_with_two_shapes_arrives_once`, `test/unit/test_targeting_2d.gd::test_one_actor_with_two_shapes_arrives_once` |
+| 4 | an area effect does not contaminate hits | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_four_an_area_effect_does_not_contaminate_hits` | `test/unit/test_context_per_target.gd::test_an_area_effect_never_tells_one_victim_about_the_other`, `test/unit/test_context_per_target.gd::test_each_victim_is_told_about_itself` |
+| 5 | channel cancel | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_five_cancelling_a_channel_releases_its_tasks_and_its_aiming` | `test/unit/test_target_provider_lifecycle.gd::test_an_ability_that_ends_calls_off_its_providers`, `test/unit/test_ability_tasks.gd::test_cleanup_cancels_every_task` |
+| 6 | animation replaced becomes interrupted | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_six_a_replaced_animation_interrupts_the_task_that_owned_it` | `test/unit/test_animation_ownership.gd::test_another_animation_starting_interrupts_it`, `test/unit/test_animation_ownership.gd::test_losing_the_claim_interrupts_it_on_the_next_tick` |
+| 7 | movement cancel | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_seven_a_cancelled_move_stops_where_it_was` | `test/unit/test_new_ability_task_behaviour.gd::test_a_cancelled_move_leaves_the_body_where_it_got_to` |
+| 8 | parent cue fallback | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_eight_a_cue_falls_back_to_its_parent` | `test/unit/test_cue_hierarchy.gd::test_a_request_nobody_bound_falls_back_up_the_family`, `test/unit/test_cue_hierarchy.gd::test_a_silenced_branch_stops_the_walk_before_its_parent` |
+| 9 | persistent cue purge | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_nine_removing_an_effect_purges_its_persistent_cue` | `test/unit/test_gameplay_cue_effects.gd::test_removing_the_effect_pools_the_persistent_cue_exactly_once`, `test/unit/test_gameplay_cue_effects.gd::test_cleanup_ends_persistent_cues_exactly_once` |
+| 10 | pooling with no residual state | `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_ten_a_reused_cue_carries_nothing_of_the_previous_one` | `test/unit/test_cue_hierarchy.gd::test_a_pooled_cue_holds_nothing_from_its_last_run`, `test/unit/test_cue_hierarchy.gd::test_a_reused_cue_answers_with_the_new_run` |
 
 ## What changed in the engine while this was closed
 
@@ -60,7 +60,7 @@ than a feature:
   during the aiming reached the ability. A freed Node compares equal to null in
   Godot, so a caller skipping nulls was already skipping it and a caller
   counting them was being told an ability hit one more thing than it did.
-  `test/unit/test_gate_f5_4_targeting_walk.gd::test_case_two_a_target_destroyed_during_the_preview_is_not_confirmed`
+  `test/unit/test_targeting_lifecycle_end_to_end_walk.gd::test_case_two_a_target_destroyed_during_the_preview_is_not_confirmed`
 
 ## Deviations
 

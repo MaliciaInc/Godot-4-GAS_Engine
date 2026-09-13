@@ -1,4 +1,4 @@
-## What F6.5's indices cost and what they saved, at the loads the phase names,
+## What the effect indices cost and what they saved, at the loads named below,
 ## on whatever machine ran it.
 ##
 ## Two kinds of number, and only one of them is a gate. The structural
@@ -8,7 +8,7 @@
 ## milliseconds is how a suite comes to fail on somebody's laptop and be
 ## switched off.
 ##
-## The phase document names this file `test/performance/`. It lives in
+## This suite is specified to live at `test/performance/`. It lives in
 ## `test/unit/` because that is the directory the headless runner runs, and its
 ## collection guard counts test scripts in one directory on purpose - a
 ## certification that never ran would certify nothing.
@@ -23,7 +23,7 @@ const Probe = preload("res://test/fixtures/probe_ability.gd")
 
 const RECEIPT: String = "res://artifacts/parity/PERFORMANCE_F6.md"
 
-## The loads the phase names, at the sizes it names them.
+## The loads named below, at the sizes named for them.
 const EFFECT_SCALES: Array[int] = [100, 1000, 10000]
 const ABILITY_SCALES: Array[int] = [10, 100, 1000]
 const TAG_LOOKUPS: int = 10000
@@ -57,7 +57,7 @@ func after_each() -> void:
 #region What is asserted
 ## The stack search does not grow with what is already on the character.
 ##
-## The closing criterion the phase states outright: not a number on a laptop,
+## The closing criterion stated outright: not a number on a laptop,
 ## but the linear growth gone. Measured at three scales two orders of magnitude
 ## apart - if the search were still reading the list, the count would grow with
 ## it.
@@ -109,12 +109,12 @@ func test_churn_leaves_no_bucket_behind() -> void:
 
 
 #region What is recorded
-## Every load the phase names, timed and written down.
+## Every load named above, timed and written down.
 ##
 ## Nothing here fails for a time. What it fails for is a measurement it could
 ## not take, which is the only thing about a benchmark a suite can honestly
 ## assert.
-func test_every_load_the_phase_names_is_measured_and_recorded() -> void:
+func test_every_load_named_above_is_measured_and_recorded() -> void:
 	var rows: Array[String] = []
 	for scale: int in EFFECT_SCALES:
 		rows.append(_timed("apply effects", scale, _applying.bind(scale)))
@@ -286,9 +286,9 @@ func _header() -> String:
 	var mebibytes: int = int(str(physical)) / (1024 * 1024)
 	var godot: Variant = Engine.get_version_info().get("string", "")
 	return (
-		"# F6.5 performance certification\n"
+		"# Indexed search performance certification\n"
 		+ "\n"
-		+ "Written by `test/unit/test_f6_performance_certification.gd` on every\n"
+		+ "Written by `test/unit/test_indexed_search_performance_certification.gd` on every\n"
 		+ "suite run. Microseconds, on the machine named below: a number here is a\n"
 		+ "fact about that machine and nothing in the suite fails for it. What the\n"
 		+ "suite does fail for is structural and is in the table after this one.\n"
@@ -328,7 +328,7 @@ func _footer() -> String:
 		+ "  tag or an ancestor of it;\n"
 		+ "- a thousand applications and removals leave the index holding nothing.\n"
 		+ "\n"
-		+ "`test/unit/test_f6_performance_certification.gd::"
+		+ "`test/unit/test_indexed_search_performance_certification.gd::"
 		+ "test_the_stack_search_does_not_grow_with_the_crowd`\n"
 	)
 #endregion
