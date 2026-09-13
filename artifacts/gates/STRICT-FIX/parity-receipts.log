@@ -1,0 +1,32 @@
+RESULT: PASS
+stage:      parity-receipts
+command:    python tooling/parity_receipt.py --all
+started:    2026-09-13T03:32:59.4735596Z
+ended:      2026-09-13T03:32:59.6189833Z
+duration_s: 0.145
+exit_code:  0
+
+--- stdout ---
+PARITY_RECEIPT_PASS artifacts\parity\AUTHORING_UX.md
+PARITY_RECEIPT_PASS artifacts\parity\CLOSURE_F6.md
+PARITY_RECEIPT_PASS artifacts\parity\DISTRIBUTION.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F5_2.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F5_3.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F5_4.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F5_5.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_0.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_1.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_2.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_3.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_4.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_5.md
+PARITY_RECEIPT_PASS artifacts\parity\GATE_F6_6.md
+PARITY_RECEIPT_PASS artifacts\parity\PERFORMANCE_F6.md
+PARITY_RECEIPT_PASS artifacts\parity\TRACEABILITY_F6.md
+PARITY_RECEIPT_PASS artifacts\parity\UE_5_7_4_CONTRACT_MATRIX.md
+PARITY_RECEIPT_PASS artifacts\parity\UE_PARITY_MATRIX_F6.md
+PARITY_RECEIPT_PASS artifacts\parity\UE_REFERENCE_F6.md
+PARITY_RECEIPTS: PASS 19 receipts
+
+--- stderr ---
+

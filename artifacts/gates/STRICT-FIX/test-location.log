@@ -1,0 +1,28 @@
+RESULT: PASS
+stage:      test-location
+command:    python tooling\gates\run_gate.py test-location artifacts\gates\STRICT-FIX
+started:    2026-09-13T03:33:01.2838604Z
+ended:      2026-09-13T03:33:02.4794111Z
+duration_s: 1.196
+exit_code:  0
+
+--- stdout ---
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 702
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 271
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

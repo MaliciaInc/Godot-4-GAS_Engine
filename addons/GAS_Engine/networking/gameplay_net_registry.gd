@@ -91,8 +91,7 @@ func register_entity(
 	var taken: AbilitySystemComponent = _asc_by_entity.get(id.value)
 	if taken != null and taken != asc:
 		return false
-	var named: Variant = _entity_by_asc.get(asc)
-	if named != null and int(named) != id.value:
+	if _entity_by_asc.has(asc) and _entity_by_asc[asc] != id.value:
 		return false
 	if taken == asc:
 		if owner_of(id) != owner_peer:

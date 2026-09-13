@@ -1,0 +1,13 @@
+RESULT: PASS
+stage:      parity-receipt-self-test
+command:    python tooling/parity_receipt.py --self-test
+started:    2026-09-13T03:32:59.6211393Z
+ended:      2026-09-13T03:32:59.7063873Z
+duration_s: 0.085
+exit_code:  0
+
+--- stdout ---
+PARITY_RECEIPT_SELF_TEST_PASS 4 cases
+
+--- stderr ---
+
