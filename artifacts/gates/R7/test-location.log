@@ -1,0 +1,28 @@
+RESULT: PASS
+stage:      test-location
+command:    python tooling\gates\run_gate.py test-location artifacts\gates\R7
+started:    2026-09-13T06:33:03.0578489Z
+ended:      2026-09-13T06:33:04.1073728Z
+duration_s: 1.050
+exit_code:  0
+
+--- stdout ---
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 703
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 272
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

@@ -94,17 +94,29 @@ func _message(
 
 
 ## Write a reading of an entity onto it, if it is news.
-func apply(message: GameplayNetMessage) -> bool:
+##
+## `commit` false asks the same three questions - a known entity, a sequence
+## newer than the last one written, a delta with a snapshot under it - and
+## writes nothing - R7-01. A state reading can reach a batch the same way any
+## other message does, through `publish()`, and `would_apply` needs its
+## answer settled before an atomic batch applies anything, not discovered by
+## trying it after something else in the same batch already has.
+func apply(message: GameplayNetMessage, commit: bool = true) -> bool:
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	if asc == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_ENTITY)
+		if commit:
+			net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_ENTITY)
 		return false
 	if message.sequence <= _applied_sequence.get(message.entity.value, 0):
-		net._refuse(message, GameplayNetworkRuntime.REASON_OUT_OF_ORDER)
+		if commit:
+			net._refuse(message, GameplayNetworkRuntime.REASON_OUT_OF_ORDER)
 		return false
 	if message.state.is_delta() and not _applied_sequence.has(message.entity.value):
-		net._refuse(message, GameplayNetworkRuntime.REASON_NOTHING_TO_UPDATE)
+		if commit:
+			net._refuse(message, GameplayNetworkRuntime.REASON_NOTHING_TO_UPDATE)
 		return false
+	if not commit:
+		return true
 
 	GameplayNetReplication.apply(message.state, asc)
 	_applied_sequence[message.entity.value] = message.sequence

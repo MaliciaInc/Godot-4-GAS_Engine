@@ -41,6 +41,24 @@ var _counted: int = 0
 ## have hidden that the two were ever related.
 var _window_stack: Array[GameplayPredictionKey] = []
 
+## Which entity a window was opened for, keyed by `_encode` - R7-03. An entity
+## id is reused the moment it is detached and re-attached to somebody else,
+## and a key on its own is a peer and a number: nothing about it says which
+## character predicted it, so a reject arriving for that id after the reuse
+## had nothing here to tell it from the new occupant's own debt. Recorded at
+## `open_window` rather than derived from the key's parent chain, because a
+## nested window's parent is whichever guess this peer happened to have open
+## when it started predicting the next one, not necessarily a guess about the
+## same entity - the chain is a rollback dependency, not an ownership one.
+var _entity_by_key: Dictionary[String, int] = {}
+
+
+## Two ints, the same shape `_fingerprint` elsewhere in this addon uses for
+## the same reason: a peer counts its own guesses from one, so the number
+## alone is not the guess.
+static func _encode(key: GameplayPredictionKey) -> String:
+	return "%d:%d" % [key.peer, key.value]
+
 
 ## The next key for this peer, standing on `parent` when it stands on anything.
 func next_key(peer: int, parent: GameplayPredictionKey = null) -> GameplayPredictionKey:
@@ -75,10 +93,17 @@ func next_key_in_window(peer: int) -> GameplayPredictionKey:
 ## here adds is only that later work attributes to the new, innermost guess
 ## until it closes - not that the two guesses become related, which the key
 ## itself already made true.
-func open_window(key: GameplayPredictionKey) -> bool:
+##
+## `entity` is optional and remembered for `forget_entity` alone - R7-03. A
+## caller with no entity to name (this addon's own suite predicting nothing
+## in particular) gets exactly today's behaviour: a window nothing will ever
+## be asked to forget by id.
+func open_window(key: GameplayPredictionKey, entity: GameplayNetEntityId = null) -> bool:
 	if key == null or not key.is_valid():
 		return false
 	_window_stack.append(key)
+	if entity != null and entity.is_valid():
+		_entity_by_key[_encode(key)] = entity.value
 	return true
 
 
@@ -98,6 +123,7 @@ func close_window(key: GameplayPredictionKey) -> bool:
 	for index: int in range(_window_stack.size()):
 		if _window_stack[index].same_as(key):
 			_window_stack.remove_at(index)
+			_entity_by_key.erase(_encode(key))
 			return true
 	return false
 
@@ -177,6 +203,49 @@ func _forget(
 	close_window(key)
 
 
+## Forget one entity's debt: its pending operations, its open windows, and
+## which keys were ever its own - R7-03.
+##
+## An entity id is reused the moment it is detached and re-attached to
+## somebody else, and a key on its own is a peer and a number - nothing about
+## it says which character predicted it. Without this, a guess this entity
+## made and never heard back on stayed in the journal under its old id, and a
+## late answer arriving after the id had a new occupant unwound - or looked
+## for something to put back on - whoever that occupant now was rather than
+## whoever actually made the guess. Called from `detach()`'s purge, the way
+## `registry.forget_entity` and `activation.forget` already forget everything
+## else this runtime keeps per entity.
+##
+## Only keys this entity's own windows were opened under - direct
+## registration, not the parent chain a nested window stands on. A window
+## nested under this entity's guess is answering for whichever entity it was
+## itself opened for, which can be a different one: the chain is a rollback
+## dependency between guesses, not a claim that they are about the same
+## character.
+func forget_entity(entity: GameplayNetEntityId) -> void:
+	if entity == null or not entity.is_valid():
+		return
+	var mine: Array[String] = []
+	for encoded: String in _entity_by_key:
+		if _entity_by_key[encoded] == entity.value:
+			mine.append(encoded)
+	if mine.is_empty():
+		return
+
+	var kept: Array[GameplayPredictionOperation] = []
+	for operation: GameplayPredictionOperation in _written:
+		if not mine.has(_encode(operation.key)):
+			kept.append(operation)
+	_written = kept
+
+	for index: int in range(_window_stack.size() - 1, -1, -1):
+		if mine.has(_encode(_window_stack[index])):
+			_window_stack.remove_at(index)
+
+	for encoded: String in mine:
+		_entity_by_key.erase(encoded)
+
+
 ## How much this machine still owes an answer on.
 func size() -> int:
 	return _written.size()
@@ -189,3 +258,4 @@ func is_empty() -> bool:
 func clear() -> void:
 	_written.clear()
 	_window_stack.clear()
+	_entity_by_key.clear()

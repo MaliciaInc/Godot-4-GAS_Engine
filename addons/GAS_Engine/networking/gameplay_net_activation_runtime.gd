@@ -110,8 +110,14 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 	# having to ask which guess it was. Whichever answer arrives closes it -
 	# in whatever order answers actually arrive in, not necessarily the order
 	# the guesses were opened in.
+	#
+	# Opened with the entity it is for - R7-03 - so a detach can find and
+	# forget exactly this guess if the answer never comes: an id reused for a
+	# different character before a late reject arrives must not have that
+	# reject unwind the new occupant's own debt, or find none and do nothing
+	# where there was something to put back.
 	if decided == GameplayNetAuthority.Start.PREDICT_AND_ASK:
-		net.journal.open_window(asking.prediction_key)
+		net.journal.open_window(asking.prediction_key, id)
 	net.publish(asking)
 	return decided
 #endregion
@@ -120,19 +126,31 @@ func start(asc: AbilitySystemComponent, definition: Resource) -> GameplayNetAuth
 #region What arrives
 ## An activation request, judged and answered - the request kind's own
 ## handler, called from `GameplayNetworkRuntime._act_on`.
+##
+## `apply` false asks whether this request would be confirmed and answers
+## nobody either way - R7-01. A batch's atomic promise needs that answer
+## settled for every member before any of them is honoured, and answering it
+## by actually confirming or rejecting would be the thing the promise exists
+## to prevent: a request judged mid-batch that turns out to sit next to a
+## member the batch as a whole cannot honour.
 func honour_request(
-	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER
+	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER,
+	apply: bool = true
 ) -> bool:
 	var definition: Resource = net.registry.definition_for(message.definition)
 	if definition == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_DEFINITION)
+		if apply:
+			net._refuse(message, GameplayNetworkRuntime.REASON_UNKNOWN_DEFINITION)
 		return false
 
 	var refusal: StringName = _why_not(message, from_peer, definition)
 	if refusal != &"":
-		net._refuse(message, refusal)
-		answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
+		if apply:
+			net._refuse(message, refusal)
+			answer(GameplayNetMessage.Kind.ACTIVATION_REJECT, message)
 		return false
+	if not apply:
+		return true
 	var assigned: GameplayNetActivationId = answer(GameplayNetMessage.Kind.ACTIVATION_CONFIRM, message)
 	net.activation_requested.emit(message.entity, definition, message.prediction_key, assigned)
 	return true

@@ -70,6 +70,34 @@ func test_set_owner_on_nobody_is_refused() -> void:
 #endregion
 
 
+#region R7-04: clear() forgets the same things forget_entity() does
+## `clear()` is every entity's `forget_entity()` at once, and a mode a
+## registry remembered before being cleared must not survive being cleared
+## any more than a single entity's own mode survives being detached - a
+## registry cleared and reused (this addon's own suite does exactly that,
+## constructing one bare rather than through a runtime) is otherwise the
+## same reused-id problem AUD-05 closed for `detach()`, just reached from
+## `clear()` instead.
+func test_clear_forgets_a_replication_mode_the_way_forget_entity_does() -> void:
+	var registry: GameplayNetRegistry = GameplayNetRegistry.new()
+	var id: GameplayNetEntityId = GameplayNetEntityId.of(1)
+	var first: AbilitySystemComponent = _asc("Cleared First")
+	registry.register_entity(id, first, OWNING_PEER)
+	registry.set_replication_mode(id, GameplayNetReplication.Mode.MINIMAL)
+
+	registry.clear()
+
+	var second: AbilitySystemComponent = _asc("Cleared Second")
+	registry.register_entity(id, second, OTHER_PEER)
+
+	assert_eq(
+		registry.replication_mode_for(id, GameplayNetReplication.Mode.FULL),
+		GameplayNetReplication.Mode.FULL,
+		"the new registration follows the caller's own default, not the cleared one's opinion"
+	)
+#endregion
+
+
 #region AUD-04: one component, one runtime
 ## A second runtime cannot take over a component the first still holds.
 func test_a_second_runtime_cannot_attach_what_the_first_already_holds() -> void:
@@ -269,6 +297,66 @@ func test_a_new_owners_first_guess_is_not_mistaken_for_the_last_owners() -> void
 		runtime.receive(second),
 		"the new owner's own first guess, not a repeat of the old owner's"
 	)
+	runtime.dispose()
+#endregion
+
+
+#region R7-03: detach forgets this entity's own pending predictions too
+## A guess predicted by whoever an id names, forgotten when that id is
+## detached, so a reject that arrives after the id has a new occupant
+## neither unwinds the new occupant's state nor finds a debt that was never
+## the new occupant's to owe.
+##
+## `GameplayNetRegistry.forget_entity`, `state.forget` and `activation.forget`
+## already did this for the run counter, the replication cache and the
+## anti-replay fingerprints; the prediction journal did not, because nothing
+## in it named which entity a key was ever for. A prediction key is a peer
+## and a number, so a reject naming the old key after the id has a second
+## occupant resolves `registry.asc_for(entity)` to that occupant and reverses
+## whatever it finds under the key against them - the first occupant's debt,
+## paid out of the second occupant's pocket, unless the debt itself is gone.
+func test_detach_forgets_a_pending_prediction_so_a_late_reject_cannot_reach_the_next_occupant() -> void:
+	const MANA: StringName = &"mana"
+	var runtime: GameplayNetworkRuntime = GameplayNetworkRuntime.new()
+	runtime.role = GameplayNetAuthority.Role.CLIENT
+	runtime.peer = OWNING_PEER
+	var id: GameplayNetEntityId = GameplayNetEntityId.of(1)
+	var scene: PackedScene = AbilityFactory.net_ability(
+		GameplayAbility.NetExecutionPolicy.LOCAL_PREDICTED, "res://test_only/lifecycle_debt_probe.tscn"
+	)
+
+	var first_owner: AbilitySystemComponent = _asc("Predicted First")
+	runtime.attach(first_owner, id, OWNING_PEER)
+	first_owner.set_attribute_base(MANA, 100.0)
+
+	var decided: GameplayNetAuthority.Start = runtime.start(first_owner, scene)
+	assert_eq(
+		decided, GameplayNetAuthority.Start.PREDICT_AND_ASK,
+		"a guess was actually predicted, with a window open on it"
+	)
+	var predicted_key: GameplayPredictionKey = runtime.journal.current_window()
+	assert_not_null(predicted_key, "there is a window to lose track of")
+	runtime.journal.record(GameplayPredictionOperation.cost(null, MANA, 30.0))
+	first_owner.set_attribute_base(MANA, 70.0)
+
+	runtime.detach(first_owner)
+
+	var second_owner: AbilitySystemComponent = _asc("Second, Same Id")
+	runtime.attach(second_owner, id, OWNING_PEER)
+	second_owner.set_attribute_base(MANA, 100.0)
+
+	var late_reject: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.ACTIVATION_REJECT, id
+	)
+	late_reject.activation = GameplayNetActivationId.of(id, 1)
+	late_reject.prediction_key = predicted_key
+	runtime.receive(late_reject)
+
+	assert_almost_eq(
+		second_owner.get_attribute_base(MANA), 100.0, 0.001,
+		"the late reject found nothing of the first owner's debt to put back onto the new one"
+	)
+	assert_eq(runtime.journal.size(), 0, "and the journal holds nothing under that key either")
 	runtime.dispose()
 #endregion
 

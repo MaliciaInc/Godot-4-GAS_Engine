@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# AUD-01/OPS-01 follow-up: certification_consistency.py imports UE_VERIFIED from parity_diff.py instead of redeclaring it, and .quality-gates.json allowlists the remaining coincidental literals the new script shares with unrelated tools (evidence, HEAD, status, CLOSED, BLOCKED, *.json, FAULT: %s), closing the magic-string gate findings the new file introduced.
+# R7-02/R7-01 raise three per-file LOC caps for the genuine new capability each finding's fix required: ability_system_component.gd (1300 -> 1310), gameplay_attribute_runtime.gd (620 -> 660), gameplay_network_runtime.gd (640 -> 680). Each raise's own reason is appended to that file's existing allowlist entry.
 #
 # python: 3.14.6
-# date-utc: 2026-09-13T03:21:39Z
-# commit-previo: c730f277775fa03172c8898d582a754872dd7280
+# date-utc: 2026-09-13T06:19:17Z
+# commit-previo: 01eeb7487b41d4f28ee37c726bdc455d52f5166f
 # files: 29
-a8bbbdfdcb86985113d2a20428f22a5f7352c1f5a304613e1856ab020079d99b  tooling/.quality-gates.json
+421695f9224a47005af18d18f98d304ec0591d36305d860565f4fc9bca6a3cbf  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
 3b93d7504e4df50fe80871866484ec61fd62b9ad8c2c946fe2622552c65c8a4b  tooling/certification_consistency.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py

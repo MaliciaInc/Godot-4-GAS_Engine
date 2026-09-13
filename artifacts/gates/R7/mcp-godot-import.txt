@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: a1199084d0896f2259f80705dec108c946dc7b5c4c9cd087c0cbccc64533da35
+godot --headless --path . --import: clean, no SCRIPT ERROR/parse errors after R7-01..R7-04 fixes (batch atomicity, replicated-attribute signal correctness, journal entity purge on detach, registry clear() completeness).

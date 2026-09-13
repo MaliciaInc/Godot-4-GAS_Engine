@@ -651,10 +651,15 @@ func get_attribute_up_to_channel(
 	return attributes.value_up_to_channel(attribute_name, through_channel)
 
 
-## For `GameplayNetReplication.apply()` only - see `AttributeData.write_current_from_replication`.
-## @composer
-func set_attribute_current_from_replication(attribute_name: StringName, value: float) -> void:
-	attributes.set_current_value_from_replication(attribute_name, value)
+## For `GameplayNetReplication.apply()` only - the authoritative jump, emitted at most once - R7-02. Not `@composer`.
+func apply_replicated_attribute(
+	attribute_name: StringName, has_base: bool, new_base: float, has_current: bool, new_current: float
+) -> void:
+	var mutation: AttributeMutationResult = attributes.apply_replicated_attribute(
+		attribute_name, has_base, new_base, has_current, new_current
+	)
+	if mutation != null and mutation.current_changed:
+		emit_attribute_changed(mutation, null)
 
 
 ## The one durable-mutation path for gameplay code. No gameplay code writes

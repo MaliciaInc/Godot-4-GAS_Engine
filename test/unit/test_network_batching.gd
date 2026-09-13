@@ -252,6 +252,86 @@ func test_atomicity_decides_what_happens_after_a_refused_member() -> void:
 		)
 		checked += 1
 	assert_eq(checked, rows.size(), "both kinds of batch were offered")
+
+
+## Builds and receives an atomic batch of a valid confirm followed by
+## `second`, and asserts the whole thing was refused with the confirm left
+## unapplied - the shape every case below shares, whatever makes `second`
+## the member that fails.
+func _assert_atomic_confirm_and_second_apply_neither(
+	second: GameplayNetMessage, why: String
+) -> void:
+	var confirmed: Array[bool] = []
+	authority.asc().generic_confirmed.connect(func() -> void: confirmed.append(true))
+
+	var batch: GameplayNetBatch = GameplayNetBatch.new()
+	batch.atomic = true
+	batch.messages = [
+		GameplayNetMessage.of(GameplayNetMessage.Kind.GENERIC_CONFIRM, authority.entity),
+		second,
+	]
+
+	assert_false(authority.runtime.receive(_wrapping(batch)), "the batch was refused whole")
+	assert_eq(confirmed.size(), 0, why)
+
+
+## The order the case above never puts in front of a reader: a member the
+## game would have applied, before the one it refuses - R7-01.
+##
+## The two passes over shape, direction and identity never applied anything,
+## so ordering them differently never mattered. What actually applies a
+## batch's members is a loop that stops at the first refusal, and stopping is
+## not undoing: everything before the stop was already done. `all or nothing`
+## promised by an atomic batch has to be settled before that loop starts, not
+## discovered by running it - and a case that always put the refused member
+## first could not tell a promise kept from a promise nobody tested.
+func test_atomicity_holds_even_when_the_refused_member_is_not_first() -> void:
+	_assert_atomic_confirm_and_second_apply_neither(
+		_a_request_for_nothing(), "the member ahead of the refusal did not stay applied"
+	)
+
+
+## A member identical to one this machine already applied, standalone, before
+## the batch even arrived.
+func test_atomicity_catches_a_member_already_applied_before_the_batch() -> void:
+	assert_true(
+		authority.runtime.receive(
+			GameplayNetMessage.of(GameplayNetMessage.Kind.GENERIC_CANCEL, authority.entity)
+		),
+		"the first copy of it, standalone, applied"
+	)
+	_assert_atomic_confirm_and_second_apply_neither(
+		GameplayNetMessage.of(GameplayNetMessage.Kind.GENERIC_CANCEL, authority.entity),
+		"the confirm did not stay applied either"
+	)
+
+
+## Two batch-mates that are the same message twice. Neither has applied yet
+## when the other is asked whether it would, so this is not the case above -
+## it is what a batch whose own two members duplicate each other does, which
+## `would_apply` alone cannot see: it only ever compares a member against
+## what an *earlier* message already applied, and two members of one batch
+## are both still unapplied at the moment either is asked.
+func test_atomicity_catches_a_duplicate_within_the_same_batch() -> void:
+	_assert_atomic_confirm_and_second_apply_neither(
+		GameplayNetMessage.of(GameplayNetMessage.Kind.GENERIC_CONFIRM, authority.entity),
+		"neither copy ran"
+	)
+
+
+## An aim that does not read as one at all, discovered only once something
+## tries to decode it - shape-checked, addressed, and owned by the peer that
+## sent it, and still not a thing `honour_target_data` can use.
+func test_atomicity_catches_an_aim_that_is_not_shaped_like_one() -> void:
+	var bad_aim: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.TARGET_DATA, authority.entity
+	)
+	bad_aim.activation = GameplayNetActivationId.of(authority.entity, 1)
+	bad_aim.prediction_key = GameplayPredictionKey.of(OWNING_PEER, 1)
+	bad_aim.payload[GameplayNetMessage.TARGET_DATA_KEY] = "not a dictionary"
+	_assert_atomic_confirm_and_second_apply_neither(
+		bad_aim, "the confirm did not stay applied either"
+	)
 #endregion
 
 

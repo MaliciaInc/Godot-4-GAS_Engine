@@ -275,5 +275,6 @@ func clear() -> void:
 	_asc_by_entity.clear()
 	_entity_by_asc.clear()
 	_owner_by_entity.clear()
+	_mode_by_entity.clear()
 	_definition_by_id.clear()
 	_net_effect_by_handle.clear()

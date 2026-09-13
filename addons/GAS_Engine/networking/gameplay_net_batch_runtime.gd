@@ -90,16 +90,26 @@ func flush() -> bool:
 	return finish()
 ## A batch, read whole and checked whole before any of it is applied.
 ##
-## Three passes rather than one loop, and the order is the point. The batch is
-## read - one unreadable member refuses all of it. Every member is then judged
-## for shape, direction and identity, with nothing applied yet: a batch whose
-## third message is addressed to somebody who is not here must not have applied
-## its first two. Only then is any of it applied.
+## The batch is read - one unreadable member refuses all of it. Every member
+## is then judged for shape, direction and identity, with nothing applied
+## yet: a batch whose third message is addressed to somebody who is not here
+## must not have applied its first two.
 ##
-## An atomic batch stops at the first member the game itself refuses, because
-## the members are halves of one thing. A batch that said it is not atomic
-## keeps going: its members are independent, and one being refused says nothing
-## about the others.
+## An atomic batch takes one more pass before any of that applying starts -
+## R7-01. The shallow judging above cannot see a duplicate, an unregistered
+## definition, an aim with no provider waiting, or anything else only the
+## game itself decides while acting on a message - which used to mean an
+## atomic batch found those out by trying, one member at a time, and left
+## whatever came before the one that failed applied. `all or nothing` cannot
+## be true of a loop that stops after doing some of it. So every member is
+## asked whether it would apply - `would_apply`, nothing committed - before
+## the loop that actually commits them runs at all: an atomic batch that
+## would fail partway now fails whole, at the point where nothing has
+## happened yet rather than the point where some of it already has.
+##
+## A batch that said it is not atomic skips that pass and keeps going after a
+## refusal exactly as it always did: its members are independent, and one
+## failing says nothing about the others.
 func honour(
 	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER
 ) -> bool:
@@ -116,14 +126,36 @@ func honour(
 			net._refuse(message, GameplayNetBatch.REASON_MEMBER_REFUSED)
 			return false
 
+	if batch.atomic:
+		# A fingerprint seen twice within this same batch is a duplicate
+		# `would_apply` cannot see on its own: it only checks a member
+		# against what an earlier message already applied, and two
+		# batch-mates are both still unapplied when each is asked. A state
+		# reading carries no fingerprint - it orders by sequence instead,
+		# which `would_apply` already asks `state.apply` about - so it is
+		# not tracked here.
+		var pending: Dictionary = {}
+		for member: GameplayNetMessage in batch.messages:
+			var seen: String = net._fingerprint(member)
+			var duplicate_in_batch: bool = not member.is_state() and pending.has(seen)
+			if duplicate_in_batch or not net.would_apply(member, from_peer):
+				net._refuse(message, GameplayNetBatch.REASON_MEMBER_REFUSED)
+				return false
+			if not member.is_state():
+				pending[seen] = true
+
 	var applied: int = 0
 	for member: GameplayNetMessage in batch.messages:
 		if net.receive_from_peer(member, from_peer):
 			applied += 1
 		elif batch.atomic:
-			# What is already applied stays: undoing an application is what the
-			# prediction journal is for, and this is the authority speaking. The
-			# rest of the batch does not happen.
+			# Provably unreached: every member of an atomic batch already
+			# passed `would_apply` above. Kept as a refusal and not an
+			# assertion, because that is a claim about today's checks
+			# agreeing with today's application, not a promise that every
+			# check ever added to either one will keep agreeing with the
+			# other - and a batch that somehow got here is exactly the case
+			# this whole pass exists to make impossible to reach quietly.
 			net._refuse(message, GameplayNetBatch.REASON_MEMBER_REFUSED)
 			return false
 	return applied > 0
