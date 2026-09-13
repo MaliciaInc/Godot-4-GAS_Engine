@@ -94,6 +94,7 @@ func test_an_activation_names_a_run_of_the_entity_it_is_about() -> void:
 		GameplayNetMessage.Kind.ACTIVATION_CONFIRM, _entity()
 	)
 	sent.activation = GameplayNetActivationId.of(_entity(), 9)
+	sent.prediction_key = GameplayPredictionKey.of(5, 11)
 
 	var back: GameplayNetMessage = _round_tripped(sent)
 

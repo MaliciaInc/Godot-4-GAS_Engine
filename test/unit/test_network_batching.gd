@@ -278,5 +278,6 @@ func _a_request_for_nothing() -> GameplayNetMessage:
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST, authority.entity
 	)
 	message.definition = GameplayNetDefinitionId.from_wire(4242)
+	message.prediction_key = GameplayPredictionKey.of(OWNING_PEER, 1)
 	return message
 #endregion

@@ -221,6 +221,7 @@ func test_a_message_going_the_wrong_way_is_not_acted_on() -> void:
 		GameplayNetMessage.Kind.ACTIVATION_REQUEST, GameplayNetEntityId.of(1)
 	)
 	request.definition = GameplayNetDefinitionId.of_path(COLLIDING_A)
+	request.prediction_key = GameplayPredictionKey.of(OWNING_PEER, 1)
 	var grant: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.GRANT, GameplayNetEntityId.of(1)
 	)

@@ -1,0 +1,28 @@
+RESULT: PASS
+stage:      test-location
+command:    python tooling\gates\run_gate.py test-location artifacts\gates\aud_batch2
+started:    2026-09-13T01:31:43.0680955Z
+ended:      2026-09-13T01:31:44.2770768Z
+duration_s: 1.209
+exit_code:  0
+
+--- stdout ---
+# Test Location Gate
+
+- Status: **PASS**
+- Project: `<repo>`
+- Source files scanned: 701
+- Blocking findings: 0
+- Scan issues: 0
+- Test files recognized: 271
+
+## Violations
+
+- None
+
+## Scan Issues
+
+- None
+
+--- stderr ---
+

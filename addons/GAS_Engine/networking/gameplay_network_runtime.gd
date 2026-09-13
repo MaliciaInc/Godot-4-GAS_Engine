@@ -593,12 +593,18 @@ func _announce_grant(message: GameplayNetMessage) -> bool:
 ## Everything that decides what acting on it would do, and nothing else: the
 ## same grant sent twice is one grant, and a request retried because its answer
 ## was lost is one request.
+##
+## A prediction key is a peer AND a number - AUD-07 - because each machine
+## counts its own guesses from one: peer 2's key 1 and peer 7's key 1 are two
+## different guesses, and a fingerprint that read only the number would let
+## the second collide with whatever the first had already done.
 func _fingerprint(message: GameplayNetMessage) -> String:
 	var parts: PackedStringArray = PackedStringArray([
 		str(message.kind),
 		str(message.entity.to_wire()),
 		str(message.definition.to_wire()) if message.definition != null else "",
 		str(message.activation.sequence) if message.activation != null else "",
+		str(message.prediction_key.peer) if message.prediction_key != null else "",
 		str(message.prediction_key.value) if message.prediction_key != null else "",
 	])
 	return "|".join(parts)

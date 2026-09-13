@@ -232,6 +232,47 @@ func test_disposing_the_runtime_clears_every_components_reference() -> void:
 	assert_null(two.network, "and so was the second")
 
 
+#region AUD-07: a duplicate is identified by the peer as well as the number
+## Ownership transferred through `set_owner()` is the case where this used to
+## matter for real: each peer counts its own guesses from one, so the new
+## owner's very first request can carry the same number the old owner's did -
+## and a fingerprint that read only the number would refuse the new owner's
+## first, entirely different request as a repeat of the old owner's.
+func test_a_new_owners_first_guess_is_not_mistaken_for_the_last_owners() -> void:
+	var runtime: GameplayNetworkRuntime = GameplayNetworkRuntime.new()
+	runtime.role = GameplayNetAuthority.Role.AUTHORITY
+	var id: GameplayNetEntityId = GameplayNetEntityId.of(1)
+	var scene: PackedScene = AbilityFactory.net_ability(
+		GameplayAbility.NetExecutionPolicy.LOCAL_PREDICTED, "res://test_only/replay_identity_probe.tscn"
+	)
+	runtime.registry.register_definition(scene)
+	var owner: AbilitySystemComponent = _asc("Transferred")
+	runtime.attach(owner, id, OWNING_PEER)
+
+	var first: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.ACTIVATION_REQUEST, id
+	)
+	first.definition = GameplayNetDefinitionId.of_resource(scene)
+	first.prediction_key = GameplayPredictionKey.of(OWNING_PEER, 1)
+	assert_true(runtime.receive(first), "the first owner's own first guess")
+
+	runtime.registry.set_owner(id, OTHER_PEER)
+	var second: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.ACTIVATION_REQUEST, id
+	)
+	second.definition = GameplayNetDefinitionId.of_resource(scene)
+	# The same number, from a different peer counting its own guesses from
+	# one - which is exactly the pair a fingerprint with no peer in it cannot
+	# tell apart.
+	second.prediction_key = GameplayPredictionKey.of(OTHER_PEER, 1)
+	assert_true(
+		runtime.receive(second),
+		"the new owner's own first guess, not a repeat of the old owner's"
+	)
+	runtime.dispose()
+#endregion
+
+
 ## Once disposed, this runtime is no longer listening to its own transport -
 ## a packet still arriving on the wire has nobody here to reach.
 func test_disposing_the_runtime_stops_listening_to_its_transport() -> void:

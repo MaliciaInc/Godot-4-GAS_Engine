@@ -162,18 +162,26 @@ func test_a_message_is_about_somebody() -> void:
 ## Checked at the boundary, so no reader finds the missing half in the middle
 ## of acting on it.
 ##
-##     [what it is, the kind, definition, run, state, whether that is enough]
+## An activation request, confirm and reject each need a prediction key too -
+## AUD-06 - and not only their own field: a request naming a definition but no
+## guess is one nobody could unwind, and an answer naming a run but not which
+## guess it answers is one a client with two casts in flight cannot use.
+##
+##     [what it is, the kind, definition, run, state, key, whether that is enough]
 func _completeness() -> Array:
 	return [
-		["a grant with its definition", GameplayNetMessage.Kind.GRANT, true, false, false, true],
-		["a grant with nothing to grant", GameplayNetMessage.Kind.GRANT, false, false, false, false],
-		["a request with its definition", GameplayNetMessage.Kind.ACTIVATION_REQUEST, true, false, false, true],
-		["a confirm with the run it confirms", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, true, false, true],
-		["a confirm with no run", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, false, false, false],
-		["a reject with the run it refuses", GameplayNetMessage.Kind.ACTIVATION_REJECT, false, true, false, true],
-		["a delta with a reading in it", GameplayNetMessage.Kind.STATE_DELTA, false, false, true, true],
-		["a delta with nothing to read", GameplayNetMessage.Kind.STATE_DELTA, false, false, false, false],
-		["a cue, which names only whose", GameplayNetMessage.Kind.CUE, false, false, false, true],
+		["a grant with its definition", GameplayNetMessage.Kind.GRANT, true, false, false, false, true],
+		["a grant with nothing to grant", GameplayNetMessage.Kind.GRANT, false, false, false, false, false],
+		["a request with its definition and its guess", GameplayNetMessage.Kind.ACTIVATION_REQUEST, true, false, false, true, true],
+		["a request with a definition but no guess to unwind", GameplayNetMessage.Kind.ACTIVATION_REQUEST, true, false, false, false, false],
+		["a confirm with the run and the guess it answers", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, true, false, true, true],
+		["a confirm with no run", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, false, false, true, false],
+		["a confirm with a run but no guess it answers", GameplayNetMessage.Kind.ACTIVATION_CONFIRM, false, true, false, false, false],
+		["a reject with the run and the guess it refuses", GameplayNetMessage.Kind.ACTIVATION_REJECT, false, true, false, true, true],
+		["a reject with a run but no guess it refuses", GameplayNetMessage.Kind.ACTIVATION_REJECT, false, true, false, false, false],
+		["a delta with a reading in it", GameplayNetMessage.Kind.STATE_DELTA, false, false, true, false, true],
+		["a delta with nothing to read", GameplayNetMessage.Kind.STATE_DELTA, false, false, false, false, false],
+		["a cue, which names only whose", GameplayNetMessage.Kind.CUE, false, false, false, false, true],
 	]
 
 
@@ -186,7 +194,8 @@ func test_a_message_carries_what_its_kind_requires() -> void:
 		var with_definition: bool = row[2]
 		var with_activation: bool = row[3]
 		var with_state: bool = row[4]
-		var enough: bool = row[5]
+		var with_key: bool = row[5]
+		var enough: bool = row[6]
 
 		var message: GameplayNetMessage = GameplayNetMessage.of(kind, GameplayNetEntityId.of(1))
 		if with_definition:
@@ -195,6 +204,8 @@ func test_a_message_carries_what_its_kind_requires() -> void:
 			message.activation = GameplayNetActivationId.of(GameplayNetEntityId.of(1), 1)
 		if with_state:
 			message.state = GameplayNetState.delta()
+		if with_key:
+			message.prediction_key = GameplayPredictionKey.of(2, 1)
 
 		assert_eq(message.is_complete(), enough, described)
 		checked += 1

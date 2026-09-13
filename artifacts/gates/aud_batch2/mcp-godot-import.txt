@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: a4d009555a0a9aff9e479bfe2b1fe0af6e9130e9ed15a9a2ab5e54ea90237b65
+godot --headless --path . --import: no parse or script errors
