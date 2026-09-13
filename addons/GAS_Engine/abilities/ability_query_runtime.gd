@@ -161,6 +161,21 @@ func previewing_providers(deaf: Array[GameplayAbility] = []) -> Array[GameplayTa
 	return waiting
 
 
+## The one previewing provider claimed for this network run, or null.
+##
+## Never "whichever is waiting first" - AUD-09 - because that answer stops
+## being right the moment a second ability is aiming at the same time. Only a
+## provider `claim()`ed for this exact activation answers; one nobody claimed
+## it for, or claimed for a different run, is not this aim's to reach.
+func provider_for_activation(activation: GameplayNetActivationId) -> GameplayTargetProvider:
+	if activation == null or not activation.is_valid():
+		return null
+	for provider: GameplayTargetProvider in previewing_providers():
+		if provider.claimed_activation != null and provider.claimed_activation.same_as(activation):
+			return provider
+	return null
+
+
 ## Every live instance whose grant does not hear a remote machine saying no.
 ##
 ## The list a cancel that arrived over a wire has to skip. Whether an

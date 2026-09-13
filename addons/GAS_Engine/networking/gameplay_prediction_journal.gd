@@ -24,14 +24,22 @@ var _written: Array[GameplayPredictionOperation] = []
 ## This machine's own count of guesses, so two of them are never one.
 var _counted: int = 0
 
-## The guess anything recorded right now belongs to, when one is open.
+## The guesses anything recorded right now belongs to, nearest first.
 ##
 ## A window is the boundary a rejection unwinds. Everything between the open
 ## and the close is one guess's doing, so a game that predicts five things
 ## does not have to carry the key through five call sites - and what a
 ## refusal has to take back is an unambiguous set, in the order it was
 ## written and no other.
-var _window: GameplayPredictionKey = null
+##
+## A stack rather than one key: a guess predicted while an earlier one is
+## still waiting on its answer is a guess made because of that one, not a
+## second, unrelated boundary competing for the same slot. Nesting it - with
+## `next_key_in_window` supplying the parent - is what lets rejecting the
+## outer guess take the inner one's doing with it, the same way rejecting any
+## key already takes what stands on it; refusing the second open would only
+## have hidden that the two were ever related.
+var _window_stack: Array[GameplayPredictionKey] = []
 
 
 ## The next key for this peer, standing on `parent` when it stands on anything.
@@ -42,41 +50,69 @@ func next_key(peer: int, parent: GameplayPredictionKey = null) -> GameplayPredic
 	return GameplayPredictionKey.of(peer, _counted)
 
 
-## Start attributing whatever happens next to this guess.
+## The innermost open window, or null when none is.
+func current_window() -> GameplayPredictionKey:
+	return null if _window_stack.is_empty() else _window_stack[-1]
+
+
+## The next key for `peer`, standing on whichever window is open right now -
+## or on nothing, when none is.
 ##
-## Answers whether it opened. A second one is refused rather than nested:
-## two boundaries around one thing is a boundary nobody can close, and the
-## caller finding out here is better than a rejection later unwinding half
-## of what it should have.
+## The convenience `next_key` itself does not give: a caller nesting a guess
+## inside another one wants the window it is nesting under supplied for it,
+## not remembered and passed back in by hand at every call site that predicts
+## while something else is still in flight.
+func next_key_in_window(peer: int) -> GameplayPredictionKey:
+	return next_key(peer, current_window())
+
+
+## Start attributing whatever happens next to this guess, nested inside
+## whichever window is already open.
+##
+## Answers whether it opened - always, for a valid key, now that a second one
+## nests rather than being refused. A key built by `next_key_in_window`
+## already stands on the window it is nesting inside of, so what pushing it
+## here adds is only that later work attributes to the new, innermost guess
+## until it closes - not that the two guesses become related, which the key
+## itself already made true.
 func open_window(key: GameplayPredictionKey) -> bool:
-	if key == null or not key.is_valid() or _window != null:
+	if key == null or not key.is_valid():
 		return false
-	_window = key
+	_window_stack.append(key)
 	return true
 
 
-## Stop. Answers whether this was the guess that was open.
+## Stop this window. Answers whether it was actually open.
 ##
-## By key rather than by nothing, because closing somebody else's window is
-## the same bug as never closing your own and is harder to see.
+## Found by identity rather than required to be innermost: each window is one
+## guess's own round trip to the authority, concurrent nested guesses answer
+## in whichever order their own network traffic happens to, and an outer
+## guess answered before the inner one it is standing under has nothing to
+## wait for - the inner is still exactly as open, and still `current_window`,
+## once the outer is gone. Only a key nothing here ever opened fails to be
+## found at all, which is the one shape closing somebody else's window ever
+## took.
 func close_window(key: GameplayPredictionKey) -> bool:
-	if _window == null or key == null or not _window.same_as(key):
+	if key == null:
 		return false
-	_window = null
-	return true
+	for index: int in range(_window_stack.size()):
+		if _window_stack[index].same_as(key):
+			_window_stack.remove_at(index)
+			return true
+	return false
 
 
 ## Write down one thing this machine did ahead of the answer.
 ##
-## An operation that names no guess of its own belongs to the open window,
-## which is what a window is for. One that names a guess keeps it: an
+## An operation that names no guess of its own belongs to the innermost open
+## window, which is what a window is for. One that names a guess keeps it: an
 ## operation deriving from a key inside somebody else's window is still that
 ## key's, and quietly re-parenting it would unwind it at the wrong time.
 func record(operation: GameplayPredictionOperation) -> void:
 	if operation == null:
 		return
-	if _window != null and (operation.key == null or not operation.key.is_valid()):
-		operation.key = _window
+	if operation.key == null or not operation.key.is_valid():
+		operation.key = current_window()
 	if operation.key == null or not operation.key.is_valid():
 		return
 	_written.append(operation)
@@ -152,4 +188,4 @@ func is_empty() -> bool:
 
 func clear() -> void:
 	_written.clear()
-	_window = null
+	_window_stack.clear()

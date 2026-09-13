@@ -65,10 +65,21 @@ var _effects_named: int = 0
 #region Entities
 ## Put a component under an id, owned by a peer.
 ##
-## Refuses an id that already names a different component. Re-registering the
-## same one is not a refusal: a peer told twice about an entity it already has
-## is an ordinary thing on a network, and treating it as an error would make
-## every retransmission an error.
+## Refuses an id that already names a different component, and refuses a
+## component that already answers to a different id - both directions of the
+## same bijection, and a hand-maintained check could only ever see the first
+## of them: nothing before this read `_entity_by_asc` back, so a second id for
+## one ASC quietly took over half the mapping and left the other half stale.
+## An entity told about is either both tables agreeing, or neither is written.
+##
+## Re-registering the same pair is not a refusal - a peer told twice about an
+## entity it already has is an ordinary thing on a network, and treating it as
+## an error would make every retransmission an error - but only when what is
+## being said about it has not changed. An owner or a replication mode that
+## has is a transfer, not a retransmission, and a transfer goes through
+## `set_owner()` or `set_replication_mode()`, which is where a caller that
+## meant one finds out whether it happened rather than having it happen
+## silently inside a call that looks like a repeat.
 func register_entity(
 	id: GameplayNetEntityId,
 	asc: AbilitySystemComponent,
@@ -80,12 +91,29 @@ func register_entity(
 	var taken: AbilitySystemComponent = _asc_by_entity.get(id.value)
 	if taken != null and taken != asc:
 		return false
+	if _entity_by_asc.has(asc) and _entity_by_asc[asc] != id.value:
+		return false
+	if taken == asc:
+		if owner_of(id) != owner_peer:
+			return false
+		if replication_mode != RUNTIME_DEFAULT and _mode_by_entity.get(id.value, RUNTIME_DEFAULT) != replication_mode:
+			return false
 
 	_asc_by_entity[id.value] = asc
 	_entity_by_asc[asc] = id.value
 	_owner_by_entity[id.value] = owner_peer
 	if replication_mode != RUNTIME_DEFAULT:
 		_mode_by_entity[id.value] = replication_mode
+	return true
+
+
+## Change who owns an entity already registered here. False for an id nobody
+## registered: setting ownership on an entity that names nothing is a mistake
+## worth learning about, the same reason `set_replication_mode` refuses one.
+func set_owner(id: GameplayNetEntityId, new_owner_peer: int) -> bool:
+	if id == null or not _asc_by_entity.has(id.value):
+		return false
+	_owner_by_entity[id.value] = new_owner_peer
 	return true
 
 
@@ -128,14 +156,28 @@ func clear_replication_mode(id: GameplayNetEntityId) -> bool:
 #endregion
 
 
+## Forget everything this registry itself knows about an entity: which
+## component it names, who owns it, and how much is said about it. Reused
+## under the same id afterward, the next occupant starts from nothing rather
+## than inheriting an opinion this registry formed about whoever had it before.
 func forget_entity(id: GameplayNetEntityId) -> void:
 	if id == null or not _asc_by_entity.has(id.value):
 		return
 	var asc: AbilitySystemComponent = _asc_by_entity[id.value]
 	_asc_by_entity.erase(id.value)
 	_owner_by_entity.erase(id.value)
+	_mode_by_entity.erase(id.value)
 	if asc != null:
 		_entity_by_asc.erase(asc)
+
+
+## Every component this registry currently names, for a runtime tearing itself
+## down that has to tell each one it is no longer theirs.
+func registered_ascs() -> Array[AbilitySystemComponent]:
+	var found: Array[AbilitySystemComponent] = []
+	for asc: AbilitySystemComponent in _asc_by_entity.values():
+		found.append(asc)
+	return found
 
 
 ## The component an id names here, or null when this machine has none.

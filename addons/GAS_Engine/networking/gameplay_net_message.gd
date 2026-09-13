@@ -166,15 +166,41 @@ func is_complete() -> bool:
 		Kind.GRANT, Kind.REVOKE:
 			return definition != null and definition.is_valid()
 		Kind.ACTIVATION_REQUEST:
-			return definition != null and definition.is_valid()
+			# A key is what says whose guess this is - AUD-06. Every request
+			# `GameplayNetActivationRuntime.start()` ever sends carries one,
+			# whichever way the ability was started, so requiring it here
+			# writes down a rule production code already keeps rather than
+			# relying on it staying true because nothing has tested otherwise.
+			return (
+				definition != null and definition.is_valid()
+				and prediction_key != null and prediction_key.is_valid()
+			)
 		Kind.ACTIVATION_CONFIRM, Kind.ACTIVATION_REJECT:
-			return activation != null and activation.is_valid()
+			# Both halves of what an answer is about: which run, and which
+			# guess it is the answer to. `GameplayNetActivationRuntime.answer()`
+			# always echoes the request's own key back, so an answer missing
+			# one names a run without saying which of a client's guesses it
+			# was ever an answer to.
+			return (
+				activation != null and activation.is_valid()
+				and prediction_key != null and prediction_key.is_valid()
+			)
 		Kind.STATE_SNAPSHOT, Kind.STATE_DELTA:
 			return state != null
 		Kind.TARGET_DATA:
 			# An aim with nothing in it is a caller that forgot to aim, and
 			# acting on it would be the authority validating an empty claim.
-			return payload.has(TARGET_DATA_KEY)
+			# The run it is for is required too - AUD-09 - because without it
+			# routing an aim can only mean "whichever provider is waiting
+			# first", which is a different provider whenever two are. The key
+			# is required for the same reason a request's is: it is what
+			# `_identified()` checks an aim's claimed sender against, and an
+			# aim that carried none would cross that check for free.
+			return (
+				payload.has(TARGET_DATA_KEY)
+				and activation != null and activation.is_valid()
+				and prediction_key != null and prediction_key.is_valid()
+			)
 		Kind.GAMEPLAY_EVENT:
 			return payload.has(EVENT_KEY)
 		Kind.INPUT_PRESSED, Kind.INPUT_RELEASED:

@@ -651,7 +651,14 @@ func get_attribute_up_to_channel(
 	return attributes.value_up_to_channel(attribute_name, through_channel)
 
 
-## The one durable-mutation path. No gameplay code writes `current_value`.
+## For `GameplayNetReplication.apply()` only - see `AttributeData.write_current_from_replication`.
+## @composer
+func set_attribute_current_from_replication(attribute_name: StringName, value: float) -> void:
+	attributes.set_current_value_from_replication(attribute_name, value)
+
+
+## The one durable-mutation path for gameplay code. No gameplay code writes
+## `current_value`.
 ## @composer
 func set_attribute_base(
 	attribute_name: StringName, new_base_value: float, source_spec: GameplayEffectSpec = null

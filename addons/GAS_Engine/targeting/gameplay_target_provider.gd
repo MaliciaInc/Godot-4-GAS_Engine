@@ -83,6 +83,24 @@ var ability: GameplayAbility = null
 ## for.
 var previewed: GameplayAbilityTargetData = null
 
+## Which network run this provider is waiting for an aim on behalf of, or
+## null when it is not standing in for a networked activation at all - AUD-09.
+##
+## Nothing sets this automatically: starting an ability is the game's own
+## business, and so is knowing which run just started it. A game that starts
+## an aiming ability because of `GameplayNetworkRuntime.activation_requested`
+## or its own `start()` calls `claim()` with the activation the network named,
+## and `honour_target_data` resolves an incoming aim by matching this rather
+## than by asking which provider happens to be waiting first - the difference
+## between one ability aiming and two.
+var claimed_activation: GameplayNetActivationId = null
+
+
+## Claim this provider for a network run, so an aim named for that run finds
+## this provider and not some other one waiting at the same time.
+func claim(activation: GameplayNetActivationId) -> void:
+	claimed_activation = activation
+
 
 ## Start choosing for `for_ability`.
 ##

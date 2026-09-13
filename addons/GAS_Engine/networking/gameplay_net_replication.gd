@@ -41,6 +41,7 @@ static func snapshot_of(
 
 	for name: StringName in asc.attributes.all_attribute_names():
 		state.attributes[name] = asc.get_attribute_base(name)
+		state.current_attributes[name] = asc.get_attribute_current(name)
 	for tag: StringName in asc.tags.active_tags():
 		state.tags[tag] = asc.tags.count_exact(tag)
 	for spec: GameplayAbilitySpec in asc.get_ability_specs():
@@ -110,6 +111,11 @@ static func delta_between(
 			before.attributes[name], after.attributes[name]
 		):
 			change.attributes[name] = after.attributes[name]
+	for name: StringName in after.current_attributes:
+		if not before.current_attributes.has(name) or not is_equal_approx(
+			before.current_attributes[name], after.current_attributes[name]
+		):
+			change.current_attributes[name] = after.current_attributes[name]
 	for tag: StringName in after.tags:
 		if before.tags.get(tag, 0) != after.tags[tag]:
 			change.tags[tag] = after.tags[tag]
@@ -178,6 +184,8 @@ static func apply(state: GameplayNetState, asc: AbilitySystemComponent) -> bool:
 
 	for name: StringName in state.attributes:
 		asc.set_attribute_base(name, state.attributes[name])
+	for name: StringName in state.current_attributes:
+		asc.set_attribute_current_from_replication(name, state.current_attributes[name])
 	for tag: StringName in state.tags:
 		_hold_exactly(asc, tag, state.tags[tag])
 	for tag: StringName in state.removed_tags:

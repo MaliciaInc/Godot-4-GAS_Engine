@@ -138,10 +138,11 @@ func _bare(
 	return message
 ## An aim a client made, checked before anything is done with it.
 ##
-## Three refusals, in the order a machine can answer them: a claim that does not
-## read as an aim at all, one naming somebody who is not here, and one no
-## provider of the kind that is waiting could have produced. Only then is it
-## handed over.
+## In the order a machine can answer them: a claim that does not read as an
+## aim at all, one naming somebody who is not here, one naming a run nobody
+## claimed a provider for - AUD-09, and never "whichever is waiting" once two
+## could be - and one no provider of the kind that is waiting could have
+## produced. Only then is it handed over.
 func honour_target_data(message: GameplayNetMessage) -> bool:
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
 	var carried: Variant = message.payload.get(GameplayNetMessage.TARGET_DATA_KEY, {})
@@ -164,9 +165,16 @@ func honour_target_data(message: GameplayNetMessage) -> bool:
 		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_UNKNOWN)
 		return false
 
-	var waiting: GameplayTargetProvider = _provider_waiting_on(asc)
+	var waiting: GameplayTargetProvider = asc.ability_runtime.queries.provider_for_activation(
+		message.activation
+	)
 	if waiting == null:
-		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_UNREACHABLE)
+		var anybody_aiming: bool = not asc.ability_runtime.queries.previewing_providers().is_empty()
+		net._refuse(
+			message,
+			GameplayNetworkRuntime.REASON_ACTIVATION_UNKNOWN if anybody_aiming
+			else GameplayNetworkRuntime.REASON_TARGET_UNREACHABLE
+		)
 		return false
 	if not waiting.validate_authoritative(aim, asc):
 		net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
@@ -199,17 +207,6 @@ static func _named_nobody(
 		) != 0:
 			return true
 	return false
-
-
-## Which provider on this entity is waiting for an aim.
-##
-## The first one previewing, because an ability aims one thing at a time: two
-## providers previewing at once is a game that started two aims, and answering
-## either with the other data is worse than refusing.
-static func _provider_waiting_on(asc: AbilitySystemComponent) -> GameplayTargetProvider:
-	for provider: GameplayTargetProvider in asc.ability_runtime.queries.previewing_providers():
-		return provider
-	return null
 
 
 ## An event a client sent, in the one shape events cross a wire in.
