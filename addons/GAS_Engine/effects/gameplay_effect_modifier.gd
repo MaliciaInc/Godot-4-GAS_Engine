@@ -21,7 +21,7 @@ enum Operation {
 	DIVIDE,
 	OVERRIDE,
 
-	## UE-compatible aggregator operations.
+	## Channel-folded aggregator operations.
 	MULTIPLY_ADDITIVE,
 	DIVIDE_ADDITIVE,
 	MULTIPLY_COMPOUND,

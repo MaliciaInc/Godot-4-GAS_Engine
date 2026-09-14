@@ -172,7 +172,7 @@ func test_scoped_modifiers_only_affect_the_execution() -> void:
 
 ## The stack is applied to an execution's numbers once, or not at all.
 ##
-## Under Unreal's contracts the engine multiplies by the stack count, and a
+## Under the channel-folded contracts the engine multiplies by the stack count, and a
 ## calculation that counted them itself says so. Both arms, because the flag
 ## only means anything against the behaviour it turns off.
 ##
@@ -188,7 +188,7 @@ func test_manual_stack_count_flag_prevents_the_automatic_second_factor(
 	var manual: bool = case[1]
 	var expected: float = case[2]
 
-	asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
+	asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.CHANNEL_FOLDED
 	CountedItsOwnStack.manual = manual
 
 	var effect: GameplayEffect = _with(CountedItsOwnStack.new())

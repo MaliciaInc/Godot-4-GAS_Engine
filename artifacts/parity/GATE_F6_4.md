@@ -2,7 +2,7 @@
 
 Package: F6.4 (F6.4.1 through F6.4.7), authoring, editor and runtime debug.
 Baseline: `bfc13dd` — the tree F6.3 closed on.
-Reference: Unreal Engine Gameplay Ability System 5.7.4, CL 51494982.
+Reference: a published Gameplay Ability System reference, revision 5.7.4-51494982.
 
 Every reference below is checked against the repository:
 

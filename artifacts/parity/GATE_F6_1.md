@@ -2,7 +2,7 @@
 
 Package: F6.1 (F6.1.1 through F6.1.12), the everyday ability surface.
 Baseline: `1d00bff` — the tree F6.0 closed on.
-Reference: Unreal Engine Gameplay Ability System 5.7.4, CL 51494982.
+Reference: a published Gameplay Ability System reference, revision 5.7.4-51494982.
 
 Every reference below is checked against the repository:
 

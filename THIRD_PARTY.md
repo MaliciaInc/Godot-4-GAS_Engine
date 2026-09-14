@@ -14,8 +14,9 @@ replaced, the name changed, and what is here is a different product.
 That origin is recorded because it is true, not because anything of it survives.
 Of the 24 script files in that project at that commit, **none is present in this
 tree**: not one is byte-identical, and the closest surviving resemblance is a
-class name plus two field names that GAS_Engine takes from Unreal's Gameplay
-Ability System - which is where the upstream project took them from as well.
+class name plus two field names that GAS_Engine takes from the wider Gameplay
+Ability System naming convention its own name refers to - which is where the
+upstream project took them from as well.
 
 Nothing in this repository is therefore governed by that project's terms. **Every
 file here that MaliciaInc wrote is licensed only under the GAS_Engine Community

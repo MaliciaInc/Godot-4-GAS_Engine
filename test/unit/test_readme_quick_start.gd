@@ -255,11 +255,11 @@ func test_the_readme_describes_the_final_network_contract() -> void:
 ## Two profiles ship and they are different arithmetic, not a setting on one
 ## formula. A README that prints only one of them leaves a reader who chose the
 ## other with numbers that look like a bug, so both formulas, the channels the
-## Unreal one folds over, and the warning that switching rebalances a game are
-## all load-bearing prose.
+## channel-folded one folds over, and the warning that switching rebalances a
+## game are all load-bearing prose.
 const AGGREGATION_MUST_APPEAR: Array[String] = [
 	"GODOT_NATIVE",
-	"UE_5_7",
+	"CHANNEL_FOLDED",
 	"MULTIPLY_ADDITIVE",
 	"DIVIDE_ADDITIVE",
 	"MULTIPLY_COMPOUND",

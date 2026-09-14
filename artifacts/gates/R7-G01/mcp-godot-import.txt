@@ -1,0 +1,3 @@
+RESULT: PASS
+SOURCE: 56e6dff10f8029f0b4fcca6c35af1222b4cd6635f4c121d145c5c0936c50c37f
+godot --headless --path . --import: clean after removing the UE certification machinery and renaming GameplayCompatibilityProfile.Mode.UE_5_7 to CHANNEL_FOLDED across the whole tree.

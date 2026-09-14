@@ -226,9 +226,9 @@ func test_an_empty_cost_row_is_reported() -> void:
 ## on which arithmetic the entity applying it composes by. Both are warnings:
 ## each configuration is legal, and only one of them surprises somebody who
 ## came from the reference.
-func _unreal_profile() -> GameplayCompatibilityProfile:
+func _channel_folded_profile() -> GameplayCompatibilityProfile:
 	var profile: GameplayCompatibilityProfile = GameplayCompatibilityProfile.new()
-	profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
+	profile.mode = GameplayCompatibilityProfile.Mode.CHANNEL_FOLDED
 	return profile
 
 
@@ -239,25 +239,25 @@ func _codes(findings: Array[Result]) -> Array:
 	return codes
 
 
-func test_a_legacy_multiply_under_the_unreal_profile_is_said_out_loud() -> void:
+func test_a_legacy_multiply_under_the_channel_folded_profile_is_said_out_loud() -> void:
 	var effect: GameplayEffect = Factory.infinite(
 		[Factory.multiply(ATTACK, 1.5)] as Array[GameplayEffectModifier]
 	)
 
 	assert_false(
 		_codes(Validator.validate_effect(effect)).has(
-			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
+			Result.Code.LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE
 		),
 		"with no profile in front of it there is no question to answer"
 	)
 
-	var findings: Array[Result] = Validator.validate_effect(effect, _unreal_profile())
+	var findings: Array[Result] = Validator.validate_effect(effect, _channel_folded_profile())
 	assert_true(
-		_codes(findings).has(Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE),
+		_codes(findings).has(Result.Code.LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE),
 		"and under the profile that gives the name a second meaning, there is"
 	)
 	for finding: Result in findings:
-		if finding.code == Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE:
+		if finding.code == Result.Code.LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE:
 			assert_eq(finding.severity, Result.Severity.WARNING, "it is not an error")
 
 
@@ -270,7 +270,7 @@ func test_a_stacking_effect_that_never_answered_the_stack_question_is_said_out_l
 	)
 
 	assert_true(
-		_codes(Validator.validate_effect(stacking, _unreal_profile())).has(
+		_codes(Validator.validate_effect(stacking, _channel_folded_profile())).has(
 			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
 		),
 		"the reference scales by the stack and this engine does not"
@@ -286,7 +286,7 @@ func test_answering_the_stack_question_ends_it() -> void:
 	)
 
 	assert_false(
-		_codes(Validator.validate_effect(stacking, _unreal_profile())).has(
+		_codes(Validator.validate_effect(stacking, _channel_folded_profile())).has(
 			Result.Code.STACKING_WITHOUT_STACK_COUNT_ANSWER
 		),
 		"answered on purpose is not a warning"
@@ -308,7 +308,7 @@ func _quiet_cases() -> Array:
 					)
 				] as Array[GameplayEffectModifier]
 			),
-			Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE,
+			Result.Code.LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE,
 		],
 		[
 			"nothing that stacks",
@@ -326,7 +326,7 @@ func test_an_effect_with_nothing_to_answer_is_left_alone(
 	var never: Result.Code = case[2]
 
 	assert_false(
-		_codes(Validator.validate_effect(effect, _unreal_profile())).has(never),
+		_codes(Validator.validate_effect(effect, _channel_folded_profile())).has(never),
 		"%s: nothing to warn about" % described
 	)
 #endregion

@@ -1,10 +1,9 @@
 ## Base for one orthogonal piece of a GameplayEffect's behaviour: an
 ## authoring-time definition, never per-application state.
 ##
-## Mirrors the problem Unreal 5.8's UGameplayEffectComponent solves - stop
-## growing GameplayEffect as one bag of unrelated flags - with Resources and
-## Godot-native lifecycle instead. A component never stores what happened
-## during one application; that lives in GameplayEffectSpec,
+## Solves the problem of GameplayEffect growing into one bag of unrelated
+## flags, with Resources and Godot-native lifecycle. A component never stores
+## what happened during one application; that lives in GameplayEffectSpec,
 ## ActiveGameplayEffect, or a typed GameplayEffectComponentState tracked by
 ## component index. The same component Resource can appear on the same
 ## effect twice, and two applications share one definition but never one

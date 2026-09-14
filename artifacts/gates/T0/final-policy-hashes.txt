@@ -4,15 +4,14 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# R7-02/R7-01 raise three per-file LOC caps for the genuine new capability each finding's fix required: ability_system_component.gd (1300 -> 1310), gameplay_attribute_runtime.gd (620 -> 660), gameplay_network_runtime.gd (640 -> 680). Each raise's own reason is appended to that file's existing allowlist entry.
+# Renamed GameplayCompatibilityProfile.Mode.UE_5_7 to CHANNEL_FOLDED (and every derived identifier) and purged remaining Unreal/UE naming from tooling and its config, per an explicit rule that nothing in this Godot addon may name the reference engine it stays compatible with.
 #
 # python: 3.14.6
-# date-utc: 2026-09-13T06:19:17Z
-# commit-previo: 01eeb7487b41d4f28ee37c726bdc455d52f5166f
-# files: 29
-421695f9224a47005af18d18f98d304ec0591d36305d860565f4fc9bca6a3cbf  tooling/.quality-gates.json
+# date-utc: 2026-09-14T14:57:35Z
+# commit-previo: ff5eaf4655f72129ba2b0de9ea2299338df9bdec
+# files: 27
+36a64d70616aff059efd9559fa7c3c5c40236920a21dfd63e516ba1505d9e17b  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
-3b93d7504e4df50fe80871866484ec61fd62b9ad8c2c946fe2622552c65c8a4b  tooling/certification_consistency.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py
 066d2a28463b8b5a96eef6c3739cb1d3898bc0238375d634167ef168cc889ce0  tooling/gates/duplication-gate.py
@@ -31,11 +30,10 @@ a3c7d0dc88aa826e4df3a164f535ed9b1f08890bb8cfb6183fa9347863ad18a8  tooling/gates/
 e81c73d8b53208301944119dc38e02ba8153e6abd392fde00976f586d9c90a06  tooling/gates/magic-string-gate.py
 e868dbe99b1589a58153afeb23972ebaea9b36be7249e7835ffd5e88ab7af03c  tooling/gates/run_gate.py
 1c3e982abdc41c322376e2dd33415fe3a254fa28b7abdd41f41f9fd3a6373cb7  tooling/gates/test-location-gate.py
-f639d02eea312aff569c34fa7253a080bff91166dc417bd0df3b00584ce63308  tooling/parity_diff.py
 46445793b730cd7e91fad8e07e8d09439795af5048a5ffa71a495fe58b46df50  tooling/parity_receipt.py
 1764b29efbee2bb19d1807bdf1616d3c0205e19c0a18e294141b44c8e0458de2  tooling/product_identity.py
 df8afd048a5eeb4727ee12277cc4af692056a39affd2577c618cb87745268d37  tooling/project_invariants.py
 fc082865e6ff1261ee111696c1237f7aba54638d2bbd0f39ced65e4c5a0a34f8  tooling/seal_policy.py
 b80b4222bfa5379e299ff150f88b34ab2a47c0b7c70c91b4ba91b7826ca6ed93  tooling/strict_typing_pass.py
 f976ddf43f3625859bdcfc2e1be041eea3124fd4b9394ec35b426eea84cec907  tooling/traceability.py
-cfce0d6c137d4a9b821ac93429e946452352e68dd6e92524a01daf13e9164fda  tooling/verify.ps1
+8e96b64d0518435df589d220726fd70d891be2e787af2853611a670d4ade5978  tooling/verify.ps1

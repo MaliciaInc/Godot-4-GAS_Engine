@@ -3,7 +3,7 @@
 Package: F6.0 (F6.0.1 through F6.0.9), the corrections that come before any
 surface is widened.
 Baseline: `6ed67750110b1cf194b799c8cb0dad8273f6e8bb`.
-Reference: Unreal Engine Gameplay Ability System 5.7.4, CL 51494982.
+Reference: a published Gameplay Ability System reference, revision 5.7.4-51494982.
 
 Every reference below is checked against the repository:
 
@@ -15,9 +15,9 @@ python tooling/parity_receipt.py artifacts/parity/GATE_F6_0.md
 
 | Finding | State | Evidence |
 |---|---|---|
-| D-02 legacy `MULTIPLY`/`DIVIDE` compound under the Unreal profile | CLOSED | `test/unit/test_ue_aggregate_algebra.gd::test_the_legacy_multiply_name_folds_the_way_the_reference_folds_it` |
-| D-02, the other profile is untouched | CLOSED | `test/unit/test_ue_aggregate_algebra.gd::test_the_legacy_multiply_name_still_compounds_under_godot_native` |
-| D-02, stack scaling agrees with the fold | CLOSED | `test/unit/test_ue_aggregate_algebra.gd::test_a_stack_scales_a_magnitude_by_what_its_operation_means` |
+| D-02 legacy `MULTIPLY`/`DIVIDE` compound under the channel-folded profile | CLOSED | `test/unit/test_channel_folded_aggregate_algebra.gd::test_the_legacy_multiply_name_folds_the_way_the_reference_folds_it` |
+| D-02, the other profile is untouched | CLOSED | `test/unit/test_channel_folded_aggregate_algebra.gd::test_the_legacy_multiply_name_still_compounds_under_godot_native` |
+| D-02, stack scaling agrees with the fold | CLOSED | `test/unit/test_channel_folded_aggregate_algebra.gd::test_a_stack_scales_a_magnitude_by_what_its_operation_means` |
 | D-03 `EXECUTE_IMMEDIATELY_ON_UNINHIBIT` skipped a short inhibition | CLOSED | `test/unit/test_periodic_effects.gd::test_uninhibiting_executes_even_when_no_tick_was_missed` |
 | D-04 unfalsifiable validity guard on PER_EXECUTION release | CLOSED | `test/unit/test_ability_instancing.gd::test_a_per_execution_instance_is_retired_exactly_once` |
 | D-05 Composer getters could hand back a freed child | CLOSED | `test/unit/test_composer_chrome.gd::test_a_screen_whose_children_are_gone_answers_null` |

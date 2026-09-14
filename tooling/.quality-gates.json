@@ -45,7 +45,7 @@
       {
         "glob": "addons/GAS_Engine/effects/gameplay_effect_evaluator.gd",
         "max_lines": 590,
-        "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount. F5.2.3 (G04/G05/G15) adds two things the evaluator is the only place that can do. A modifier may now carry its own source and target tag requirements - a condition on the one modifier rather than on the effect, so one effect can hit harder against the undead and normally against everything else without being authored twice - and this is where both sets of tags are known: the source's as the snapshot every other capture reads, the target's from the component being applied to. And a stacked magnitude is now scaled by what its operation means rather than by one rule for all of them, because doubling an override is meaningless. The arithmetic itself is in AttributeAggregateMath; what stayed here is the entry point the phase froze and the two questions that need the world. F5.2.4 (G06) makes affordability two questions rather than one. Unreal prices a cost against what an attribute is worth now; this engine has always priced against the durable base; on a buffed attribute those are different numbers, and a project that changed answer without asking would have every cost in it silently repriced. The profile chooses, and the two are written out rather than one being layered on the other - stacking them refuses under Unreal exactly the cases Unreal allows. F5.2.8 (G17) changes what an execution calculation is allowed to say and therefore what this file has to stage. A calculation could only answer with a dictionary of deltas, every entry an addition; it can now say which of two same-named attributes it meant, whether its number multiplies, what else to apply once its numbers exist, and whether any of it makes a sound. The deciding moved out into GameplayExecutionPipeline; what stayed is the staging, which is this file's whole job and which got harder in one specific way. An attribute written by both an execution and a standard modifier used to be refused outright, so neither pass had to know about the other. It is now one write in a defined order - the execution decides the base, the modifiers compose over what it decided - which costs the skip in _stage_execution_writes, the seed in _stage_modifier_base_mutations, and _composed_execution_base, which both of them fold through so there is one arithmetic rather than one per pass."
+        "reason": "GameplayEffectEvaluator resolves a whole application: every modifier, every capture, the execution calculations and the aggregate preflight, and it reports each refusal by its own status rather than by a boolean. F5.1.3 (B07) adds three lines to affordability. It compared what a cost asked to write against what the attribute set let through, which is the same answer twice on any set that does not clamp below zero: -10 written as -10 read as affordable, and the player was charged into debt. What can be paid is a question about the amount. F5.2.3 (G04/G05/G15) adds two things the evaluator is the only place that can do. A modifier may now carry its own source and target tag requirements - a condition on the one modifier rather than on the effect, so one effect can hit harder against the undead and normally against everything else without being authored twice - and this is where both sets of tags are known: the source's as the snapshot every other capture reads, the target's from the component being applied to. And a stacked magnitude is now scaled by what its operation means rather than by one rule for all of them, because doubling an override is meaningless. The arithmetic itself is in AttributeAggregateMath; what stayed here is the entry point the phase froze and the two questions that need the world. F5.2.4 (G06) makes affordability two questions rather than one. The channel-folded profile prices a cost against what an attribute is worth now; this engine has always priced against the durable base; on a buffed attribute those are different numbers, and a project that changed answer without asking would have every cost in it silently repriced. The profile chooses, and the two are written out rather than one being layered on the other - stacking them refuses under the channel-folded profile exactly the cases it allows. F5.2.8 (G17) changes what an execution calculation is allowed to say and therefore what this file has to stage. A calculation could only answer with a dictionary of deltas, every entry an addition; it can now say which of two same-named attributes it meant, whether its number multiplies, what else to apply once its numbers exist, and whether any of it makes a sound. The deciding moved out into GameplayExecutionPipeline; what stayed is the staging, which is this file's whole job and which got harder in one specific way. An attribute written by both an execution and a standard modifier used to be refused outright, so neither pass had to know about the other. It is now one write in a defined order - the execution decides the base, the modifiers compose over what it decided - which costs the skip in _stage_execution_writes, the seed in _stage_modifier_base_mutations, and _composed_execution_base, which both of them fold through so there is one arithmetic rather than one per pass."
       },
       {
         "glob": "addons/GAS_Engine/attributes/gameplay_attribute_runtime.gd",
@@ -530,34 +530,6 @@
       {
         "literal": "--self-test",
         "reason": "The same, for the checker's own self-test: named in the Python that reads it and spelled again in the PowerShell that runs it. Two languages, one flag."
-      },
-      {
-        "literal": "*.json",
-        "reason": "tooling/parity_diff.py globs the goldens by it and tooling/certification_consistency.py globs the same directory by it independently - the same extension, not a value either script chose."
-      },
-      {
-        "literal": "CLOSED",
-        "reason": "tooling/traceability.py's per-finding status and tooling/certification_consistency.py's overall certification status are two different axes that happen to use the same English word for settled - not one vocabulary either script owns on the other's behalf."
-      },
-      {
-        "literal": "BLOCKED",
-        "reason": "The same pairing as CLOSED, for the other end of it: traceability.py's per-finding STOPPED and certification_consistency.py's own status check share the word without sharing the axis."
-      },
-      {
-        "literal": "evidence",
-        "reason": "The goldens' own JSON field name, read by tooling/parity_diff.py and tooling/certification_consistency.py independently - both against the same file shape, neither owning a schema module to import the key from."
-      },
-      {
-        "literal": "FAULT: %s",
-        "reason": "The print convention this family of consistency checkers shares - traceability.py and certification_consistency.py both report what is wrong this way - without a shared reporting module to own the format string."
-      },
-      {
-        "literal": "HEAD",
-        "reason": "tooling/seal_policy.py reads the current commit by it; tooling/certification_consistency.py checks a stored commit is an ancestor of it. Two unrelated git invocations naming the same ref."
-      },
-      {
-        "literal": "status",
-        "reason": "tooling/strict_typing_pass.py's CLI subcommand and tooling/certification_consistency.py's certification-state field share the five letters and nothing else."
       }
     ],
     "allow_globs": [],
@@ -742,11 +714,6 @@
         "left": "addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:find_candidate",
         "right": "test/unit/test_effect_index_scaling.gd:_scanned",
         "reason": "An oracle is a copy on purpose. F6.5.1 replaced a walk over every active effect with a bucket lookup, and the only way to say the answer did not change is to keep the walk and compare the two over the same state - which means the oracle has to be the old implementation, written out, rather than something that calls the new one. An oracle that shared code with the thing it checks checks nothing. It lives in the test that uses it so that a reader sees both at once, and the pair is declared here rather than suppressed so that a duplication between two things that are NOT an implementation and its oracle still fails."
-      },
-      {
-        "left": "tools/ue_reference/harness/Source/UEParity.Target.cs:*",
-        "right": "tools/ue_reference/harness/Source/UEParityEditor.Target.cs:*",
-        "reason": "UnrealBuildTool discovers a target by finding exactly one file named <Target>.Target.cs declaring exactly one class named <Target>Target, and it requires one per target type. The game target and the editor target of the same project therefore have to be two files that differ in a class name and a TargetType and in nothing else - there is no shared base a project may put them in, and merging them means the build system cannot find either. Both are needed: the editor target is what the reference run uses once the .NET Framework SDK is installed, and the game target is what was used to prove the module compiles against real GAS without it."
       }
     ]
   }

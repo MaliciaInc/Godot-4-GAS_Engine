@@ -196,7 +196,7 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 				spec,
 				resolved.value,
 				contribution.operation,
-				owner_asc != null and owner_asc.uses_ue_5_7_contracts()
+				owner_asc != null and owner_asc.uses_channel_folded_contracts()
 			)
 			if effects != null:
 				effects.recompose_and_emit(spec)

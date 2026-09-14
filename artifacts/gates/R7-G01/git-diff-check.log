@@ -1,0 +1,12 @@
+RESULT: PASS
+stage:      git-diff-check
+command:    git diff --check
+started:    2026-09-14T15:02:48.5719178Z
+ended:      2026-09-14T15:02:48.6175440Z
+duration_s: 0.046
+exit_code:  0
+
+--- stdout ---
+
+--- stderr ---
+

@@ -1,5 +1,6 @@
 ## Versioned behavior profile for contracts that intentionally differ between
-## GAS_Engine's original Godot-native semantics and Unreal GAS.
+## GAS_Engine's original Godot-native semantics and the channel-folded
+## alternative.
 ##
 ## The profile is data. Runtimes ask it; no runtime invents its own definition
 ## of "compatible".
@@ -10,10 +11,10 @@ class_name GameplayCompatibilityProfile extends Resource
 
 enum Mode {
 	GODOT_NATIVE,
-	UE_5_7,
+	CHANNEL_FOLDED,
 }
 
 @export var mode: GameplayCompatibilityProfile.Mode = Mode.GODOT_NATIVE
 
-func is_ue_5_7() -> bool:
-	return mode == Mode.UE_5_7
+func is_channel_folded() -> bool:
+	return mode == Mode.CHANNEL_FOLDED

@@ -2,7 +2,7 @@
 
 Package: F5.5 (F5.5.1 through F5.5.7), covering G01 and G02.
 Baseline GAS_Engine: `0db4c24441184a67c1b9b606af6ce9d8ec6b917c`.
-Reference: Unreal Engine 5.7.4, CL 51494982.
+Reference: a published GAS reference, revision 5.7.4-51494982.
 
 The phase states this gate as thirteen multi-instance cases. Three machines in
 one process answer them, over a link that can be told to repeat, reorder, lose

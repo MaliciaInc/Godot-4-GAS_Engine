@@ -2,7 +2,7 @@
 
 Package: F6.3 (F6.3.1 through F6.3.4), targeting.
 Baseline: `1a28510` — the tree F6.2 closed on.
-Reference: Unreal Engine Gameplay Ability System 5.7.4, CL 51494982.
+Reference: a published Gameplay Ability System reference, revision 5.7.4-51494982.
 
 Every reference below is checked against the repository:
 

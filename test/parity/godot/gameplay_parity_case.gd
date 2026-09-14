@@ -11,10 +11,11 @@
 ## the right numbers by firing the wrong signals in the wrong order and handing
 ## out a different handle each time.
 ##
-## No Unreal process is run. The expectations are authored from the reference's
-## documented behaviour and stamped with the version they were taken from, which
-## is what makes them reviewable: a wrong expectation is a wrong sentence in a
-## file rather than an invisible disagreement with a binary nobody has.
+## No external engine process is run. The expectations are authored from the
+## reference's documented behaviour and stamped with the version they were
+## taken from, which is what makes them reviewable: a wrong expectation is a
+## wrong sentence in a file rather than an invisible disagreement with a
+## binary nobody has.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayParityCase extends RefCounted
@@ -22,7 +23,7 @@ class_name GameplayParityCase extends RefCounted
 ## Which reference this case was taken from. Stamped per case rather than per
 ## corpus: a case revised against a later reference has to say so, and a corpus
 ## with one version at the top would hide that.
-const REFERENCE: String = "Unreal Engine 5.7.4, CL 51494982"
+const REFERENCE: String = "Published GAS reference, revision 5.7.4-51494982"
 
 var id: StringName = &""
 var reference_version: String = REFERENCE

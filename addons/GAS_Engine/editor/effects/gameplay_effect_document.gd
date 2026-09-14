@@ -26,7 +26,7 @@ var path: String = ""
 
 ## Which contracts to validate against, when the project has said.
 ##
-## Some of what the engine refuses it refuses only under Unreal's contracts -
+## Some of what the engine refuses it refuses only under the channel-folded contracts -
 ## a stacking effect that never answered whether the count scales it is legal
 ## on the native profile and a warning on the other. An editor that guessed
 ## would be warning about the wrong things half the time.

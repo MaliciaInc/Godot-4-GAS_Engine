@@ -11,9 +11,9 @@
 ## to spend the resources the commit was about to take - so the answer from a
 ## moment ago is an answer about a world that has since moved.
 ##
-## And what "afforded" means differs by profile. Unreal prices against the
-## current value, this engine has always priced against the durable base, and on
-## a buffed attribute those are different numbers.
+## And what "afforded" means differs by profile. The channel-folded profile
+## prices against the current value, this engine has always priced against the
+## durable base, and on a buffed attribute those are different numbers.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
@@ -45,8 +45,8 @@ func after_each() -> void:
 
 
 #region Getting there
-func _use_unreal() -> void:
-	asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
+func _use_channel_folded() -> void:
+	asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.CHANNEL_FOLDED
 
 
 func _cost(amount: float) -> GameplayAbilityCost:
@@ -188,13 +188,14 @@ func test_a_commit_that_goes_through_pays_both_halves_once() -> void:
 
 
 #region What afforded means
-## A buff that raises the current value pays for a cost under Unreal, and not
-## under this engine's own rules.
+## A buff that raises the current value pays for a cost under the
+## channel-folded profile, and not under this engine's own rules.
 ##
-## Base 10, buffed to 60, cost 20. Unreal prices against what the attribute is
-## worth now and lets it through; Godot-native prices against the durable base
-## and refuses. Both rows are asserted, because a change that made them agree
-## would silently reprice every cost in somebody's game.
+## Base 10, buffed to 60, cost 20. The channel-folded profile prices against
+## what the attribute is worth now and lets it through; Godot-native prices
+## against the durable base and refuses. Both rows are asserted, because a
+## change that made them agree would silently reprice every cost in somebody's
+## game.
 func test_a_buff_pays_for_a_cost_under_one_profile_and_not_the_other() -> void:
 	asc.set_attribute_base(MANA, 10.0)
 	var buff: Array[GameplayEffectModifier] = [Factory.add(MANA, 50.0)]
@@ -209,19 +210,19 @@ func test_a_buff_pays_for_a_cost_under_one_profile_and_not_the_other() -> void:
 	)
 
 	before_each()
-	_use_unreal()
+	_use_channel_folded()
 	asc.set_attribute_base(MANA, 10.0)
 	var buffed: Array[GameplayEffectModifier] = [Factory.add(MANA, 50.0)]
 	Factory.apply(asc, Factory.infinite(buffed))
-	var unreally: ProbeAbility = _ready_to_commit(20.0)
+	var folded: ProbeAbility = _ready_to_commit(20.0)
 	assert_true(
-		unreally.check_cost().is_ok(), "Unreal prices against what it is worth now"
+		folded.check_cost().is_ok(), "the channel-folded profile prices against what it is worth now"
 	)
 
 
 ## And what neither profile allows is spending more than either number.
 func test_neither_profile_lets_an_ability_spend_what_is_not_there() -> void:
-	_use_unreal()
+	_use_channel_folded()
 	asc.set_attribute_base(MANA, 10.0)
 	var ability: ProbeAbility = _ready_to_commit(80.0)
 

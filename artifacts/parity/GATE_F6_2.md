@@ -2,7 +2,7 @@
 
 Package: F6.2 (F6.2.1 through F6.2.8), effects, magnitudes and presentation.
 Baseline: `cfdb63d` — the tree F6.1 closed on.
-Reference: Unreal Engine Gameplay Ability System 5.7.4, CL 51494982.
+Reference: a published Gameplay Ability System reference, revision 5.7.4-51494982.
 
 Every reference below is checked against the repository:
 
@@ -62,8 +62,8 @@ own cue, and an aura that stops when the effect behind it is removed.
 Both are recorded because a reader will otherwise wonder why the engine does
 something the reference does differently.
 
-- **An execution's numbers are scaled by the stack count only under Unreal's
-  contracts.** The reference multiplies; this engine never has, and a project on
+- **An execution's numbers are scaled by the stack count only under the
+  channel-folded contracts.** The reference multiplies; this engine never has, and a project on
   the native profile that started having its executions doubled would be a
   project whose damage changed under it. So the factor exists where parity is
   the contract, `stack_count_handled_manually` turns it off there, and the

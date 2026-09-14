@@ -72,11 +72,12 @@ func _reading_cases() -> Array:
 
 ## A reading of zero is still a reading, and the coefficients still compose.
 ##
-## Found by the UE 5.7.4 reference run: an unbuffed character has a bonus
-## magnitude of exactly zero, and `(0 + pre) * coefficient + post` is 5.0 with
-## the goldens' numbers - the reference said 5.0 and this engine said nothing
-## at all. Every other case in this file has a non-zero reading, so the whole
-## composition could be skipped on a zero and no test would have noticed.
+## Found by a real reference run, since retired: an unbuffed character has a
+## bonus magnitude of exactly zero, and `(0 + pre) * coefficient + post` is 5.0
+## with the reference's numbers - the reference said 5.0 and this engine said
+## nothing at all. Every other case in this file has a non-zero reading, so the
+## whole composition could be skipped on a zero and no test would have
+## noticed.
 func test_the_coefficients_compose_over_a_reading_of_zero() -> void:
 	var magnitude: GameplayAttributeBasedMagnitude = _over_source_attack()
 	magnitude.calculation = (
@@ -104,9 +105,9 @@ func test_the_coefficients_compose_over_a_reading_of_zero() -> void:
 ##
 ## Resolving one directly registers its captures by hand; applying an effect
 ## is supposed to do that for whoever authored it. Whether it does for the two
-## twins a bonus reading needs is a different question, and the UE 5.7.4
-## reference run is what asked it: the reference put health at 105 and this
-## engine left it at 100.
+## twins a bonus reading needs is a different question, and a real reference
+## run, since retired, is what asked it: the reference put health at 105 and
+## this engine left it at 100.
 func test_a_bonus_reading_reaches_the_attribute_when_the_effect_is_applied() -> void:
 	var magnitude: GameplayAttributeBasedMagnitude = (
 		GameplayAttributeBasedMagnitude.new()
@@ -175,8 +176,8 @@ func test_a_calculation_picks_which_reading_of_the_capture_is_taken(
 ## Two contributions on two channels, and a ceiling below the second, so the
 ## answer can only be right if the fold actually stopped where it was told.
 func test_up_to_channel_reads_the_attribute_before_the_later_channels() -> void:
-	source.asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
-	assert_true(source.asc.uses_ue_5_7_contracts(), "channels only exist on this profile")
+	source.asc.compatibility_profile.mode = GameplayCompatibilityProfile.Mode.CHANNEL_FOLDED
+	assert_true(source.asc.uses_channel_folded_contracts(), "channels only exist on this profile")
 	source.set_base(ATTACK, 100.0)
 
 	var early: GameplayEffectModifier = Factory.add(ATTACK, 10.0)

@@ -5,11 +5,11 @@
 ## What matters is that every case says all eleven things, and the runner
 ## refuses one that does not.
 ##
-## Every case is stamped with the reference version it was taken from. No Unreal
-## process is run: the expectations are authored from the reference's documented
-## behaviour, which is what makes them reviewable - a wrong expectation is a
-## wrong sentence in this file, rather than an invisible disagreement with a
-## binary nobody has.
+## Every case is stamped with the reference version it was taken from. No
+## external engine process is run: the expectations are authored from the
+## reference's documented behaviour, which is what makes them reviewable - a
+## wrong expectation is a wrong sentence in this file, rather than an
+## invisible disagreement with a binary nobody has.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayParityContracts extends RefCounted

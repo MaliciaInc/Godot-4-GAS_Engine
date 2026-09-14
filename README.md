@@ -404,7 +404,7 @@ followed by the last applicable override and the effective clamp. A base of
 `10`, an additive `+10` and a multiplier of `x2` resolve to `40`, not `30`, and
 two `+50%` buffs are worth `2.25x` because the products multiply.
 
-**`UE_5_7`** - Unreal's, folded once per evaluation channel, over channels `0`
+**`CHANNEL_FOLDED`** - folded once per evaluation channel, over channels `0`
 to `9`, each channel composing over the value the previous one produced:
 
 ```text

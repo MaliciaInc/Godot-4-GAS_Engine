@@ -2,7 +2,7 @@
 
 Package: F5.4 (F5.4.1 through F5.4.5), covering G20–G24.
 Baseline GAS_Engine: `0db4c24441184a67c1b9b606af6ce9d8ec6b917c`.
-Reference: Unreal Engine 5.7.4, CL 51494982.
+Reference: a published GAS reference, revision 5.7.4-51494982.
 
 The phase states this gate as ten cases. Each is a place where two subsystems
 meet — aiming and applying, applying and animating, animating and announcing —

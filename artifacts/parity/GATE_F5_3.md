@@ -2,7 +2,7 @@
 
 Package: F5.3 (F5.3.1 through F5.3.6), covering G25–G29 and part of G27/G30.
 Baseline GAS_Engine: `0db4c24441184a67c1b9b606af6ce9d8ec6b917c`.
-Reference: Unreal Engine 5.7.4, CL 51494982.
+Reference: a published GAS reference, revision 5.7.4-51494982.
 
 The phase states this gate as a UX scenario of eleven steps rather than as a
 list of cases. What answers it is the walk itself: one suite that goes from an

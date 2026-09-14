@@ -281,10 +281,10 @@ func test_the_editor_reports_what_the_engine_would_refuse() -> void:
 		[] as Array[GameplayEffectModifier]
 	)
 	document.adopt(stacking)
-	# The stack-count question is a warning under Unreal's contracts and
-	# nothing at all under the native ones, so the editor is told which.
+	# The stack-count question is a warning under the channel-folded contracts
+	# and nothing at all under the native ones, so the editor is told which.
 	document.profile = GameplayCompatibilityProfile.new()
-	document.profile.mode = GameplayCompatibilityProfile.Mode.UE_5_7
+	document.profile.mode = GameplayCompatibilityProfile.Mode.CHANNEL_FOLDED
 	document.set_stacking(GameplayEffect.StackingType.AGGREGATE_BY_TARGET, 0)
 
 	var said: Array[GameplayAssetValidationResult] = document.validation()

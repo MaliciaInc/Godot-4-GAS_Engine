@@ -40,8 +40,8 @@ var trigger_cues: bool = true
 ## Whether this calculation has already accounted for how many of the effect
 ## are on the target.
 ##
-## Only the Unreal profile multiplies an execution's numbers by the stack
-## count, because that is what the reference does; the native profile never
+## Only the channel-folded profile multiplies an execution's numbers by the
+## stack count, because that is what the reference does; the native profile never
 ## has and does not start. On that profile this flag is how a calculation
 ## that read `stack_count` itself says so - without it, a calculation that
 ## decided what two of it means would have the stack applied to its answer a

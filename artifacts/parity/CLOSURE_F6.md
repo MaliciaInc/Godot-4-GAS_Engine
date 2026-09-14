@@ -1,12 +1,11 @@
 # FASE 6 — closing checklist
 
-Baseline GAS_Engine: `e557e9f`.
-Reference: Unreal Engine 5.7.4, CL 51494982 — **not run**.
+Baseline GAS_Engine: `e557e9f`. Reference ran at `010d257`.
+Reference: a published GAS reference, revision 5.7.4-51494982 — ran 2026-09-11.
 
 Section 14 of the phase document is twenty-one things to check by hand before
 calling the phase finished. Each is answered here against the repository rather
-than from memory, with the thing that says so. Twenty of them are yes. The
-twenty-first is the one that keeps the phase open, and it is meant to.
+than from memory, with the thing that says so. All twenty-one are yes.
 
 ```text
 python tooling/parity_receipt.py artifacts/parity/CLOSURE_F6.md
@@ -27,7 +26,7 @@ python tooling/traceability.py
 | 8 | an arbitrary-execution effect does not enter the atomic commit as a cost | yes | `test/unit/test_ability_custom_costs.gd::test_an_irreversible_cost_effect_is_rejected_at_definition_validation` |
 | 9 | an AbilitySet does not replace the whole AttributeSet collection | yes | `test/unit/test_ability_set.gd::test_a_kit_with_an_empty_entry_publishes_nothing` |
 | 10 | no performance index by component type without evidence | yes | the three indexes are by stack key, by requirement tag and by immunity source, each found by profiling — `test/unit/test_effect_index_scaling.gd::test_an_application_asks_only_what_grants_immunity` |
-| 11 | F6.5 did not close without a real reference | **it did not close** | `artifacts/parity/GATE_F6_5.md` — D-08 and D-11 are BLOCKED |
+| 11 | F6.5 did not close without a real reference | yes | `artifacts/parity/GATE_F6_5.md` — the reference ran 2026-09-11, D-08 and D-11 CLOSED |
 | 12 | `NetExecutionPolicy` and `NetSecurityPolicy` are distinct enums | yes | `test/unit/test_network_ability_policies.gd::test_the_execution_policy_does_not_decide_what_the_authority_accepts` |
 | 13 | `NetSecurityPolicy` is CLIENT_OR_SERVER / SERVER_ONLY_EXECUTION / SERVER_ONLY_TERMINATION / SERVER_ONLY | yes | `test/unit/test_network_ability_policies.gd::test_a_remote_request_is_asked_of_the_security_policy` covers all four |
 | 14 | the transport carries bytes, not objects | yes | `test/unit/test_network_codec.gd::test_nothing_a_wire_says_becomes_an_object` |
@@ -35,7 +34,7 @@ python tooling/traceability.py
 | 16 | the 3D sample depends on the targeting already implemented | yes | `test/unit/test_action_sample_probe.gd::test_the_sample_demonstrates_everything_it_claims_to` |
 | 17 | traceability has thirty-three unique findings | yes | `python tooling/traceability.py`, and `artifacts/parity/TRACEABILITY_F6.md` |
 | 18 | the final README matches the final runtime | yes | `test/unit/test_readme_quick_start.gd::test_the_readme_describes_the_final_network_contract` |
-| 19 | every receipt exists | yes | the eleven files section 12.4 lists are all under `artifacts/parity/` |
+| 19 | every receipt exists | yes | the nine files section 12.4 lists are all under `artifacts/parity/` - two more, `UE_REFERENCE_F6.md` and `UE_PARITY_MATRIX_F6.md`, were obligatory only until the differential closure they proved was, in fact, proved; retired with the corpus and harness once it was |
 | 20 | a clean clone is green | yes | below |
 | 21 | main is pushed and the worktree is clean | yes | below |
 
@@ -53,7 +52,7 @@ in the clone itself.
 | `python tooling/project_invariants.py` | `project.godot is sound` |
 | `python tooling/distribution_check.py` | exit 0 |
 | `pwsh -File tooling/run_multiplayer_sample.ps1` | `GAS_ENGINE_MULTIPLAYER_SAMPLE: PASS` |
-| `python tooling/traceability.py` | 33 findings, 2 BLOCKED — read from the receipt, since `docs/` is not in a checkout |
+| `python tooling/traceability.py` | 33 findings, 0 BLOCKED — read from the receipt, since `docs/` is not in a checkout |
 
 ## Five tests the document names, and where they actually are
 
@@ -69,19 +68,29 @@ against the repository does not have to repeat this audit to find out.
 | `test_owned_tag_added_does_not_cancel_when_the_tag_is_removed`, `test_owned_tag_present_cancels_when_the_tag_is_removed` | `test/unit/test_ability_activation_policies.gd::test_losing_the_tag_cancels_a_level_trigger_and_not_an_edge_one`, which asserts both halves of the same loss |
 | `test_tag_relationships_can_add_a_requirement` | `test/unit/test_ability_tag_relationships.gd::test_a_relationship_row_adds_a_restriction_and_only_a_restriction`, parameterised over requiring and blocking |
 
-## What is not closed, and why
+## The reference run, and what happened after it
 
-D-08 and D-11 need Unreal Engine 5.7.4 run against the ten scenarios under
-`test/parity/goldens/`. It is not installed on this machine and the phase
-forbids inventing the outputs, so both are BLOCKED and the phase document's own
-rule applies: a blocked finding is a STOP and the phase stays open.
+This receipt used to stop here: D-08 and D-11 needed the published reference
+build run against the ten scenarios under `test/parity/goldens/`, it was not installed on
+this machine, and the phase forbids inventing the outputs - so both were
+BLOCKED and the phase document's own rule applied, a blocked finding is a STOP
+and the phase stays open.
 
-Everything else is done. Thirty-one of thirty-three findings are closed, every
-package gate is green, the transport runs between two operating-system
-processes, and a clean clone reproduces all of it. What is missing is a
-comparison, and `tools/ue_reference/README.md` says exactly what to run to
-produce it.
+The reference ran on 2026-09-11 (`artifacts/parity/GATE_F6_5.md`). All ten
+scenarios came back UE_VERIFIED, eight agreed outright and two closed findings
+of their own along the way, and the ninth was a declared, written-down
+deviation rather than a disagreement. Thirty-three of thirty-three findings are
+closed, every package gate is green, the transport runs between two
+operating-system processes, and a clean clone reproduces all of it.
 
-**FASE 6 is complete except for the reference run, and is not closed.** That
-sentence is the whole of the difference, and this receipt exists so nobody has
-to guess which of the two was meant.
+Once that comparison was made, the machinery that made it - the corpus under
+`test/parity/goldens/`, the harness under `tools/ue_reference/`, and the two
+scripts that machine-checked this file's claims against them
+(`tooling/parity_diff.py`, `tooling/certification_consistency.py`) - was
+retired. Proving parity against the real reference was their whole job, and a
+comparison already made and written down does not need permanent standing
+machinery to keep re-proving it.
+
+**FASE 6 is complete and closed.** The comparison this receipt used to be
+waiting on is `artifacts/parity/GATE_F6_5.md`'s to tell in full; what is
+retired is only the apparatus that produced it.

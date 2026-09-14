@@ -97,7 +97,7 @@ static func _evaluate_inner(request: Request) -> GameplayEffectEvaluationResult:
 		)
 
 	var writes: Array[AttributeModifierContribution] = GameplayExecutionPipeline.writes_of(
-		produced, request.application_order, spec.stack_count, _unreal_profile(request)
+		produced, request.application_order, spec.stack_count, _channel_folded_profile(request)
 	)
 	var modifier_targets: Array[StringName] = _modifier_attribute_names(spec)
 
@@ -234,9 +234,9 @@ static func _composed_execution_base(
 	# Which arithmetic this entity composes by is asked of the component every
 	# time rather than cached, for the reason GameplayAttributeRuntime gives:
 	# the profile is data somebody can change.
-	var unreal: bool = _unreal_profile(request)
+	var channel_folded: bool = _channel_folded_profile(request)
 	var folded: AttributeAggregateMath.Composed = GameplayExecutionPipeline.compose(
-		request.attributes, attribute_name, writes, unreal
+		request.attributes, attribute_name, writes, channel_folded
 	)
 	if not folded.is_ok():
 		result.status = folded.status
@@ -282,10 +282,10 @@ static func _stage_effect_mutation(
 ## to when the effect asks for it. Never applies to an execution
 ## calculation's own math - that reads spec.stack_count itself and decides.
 static func stack_scaled_value(
-	spec: GameplayEffectSpec, magnitude: float, unreal: bool = false
+	spec: GameplayEffectSpec, magnitude: float, channel_folded: bool = false
 ) -> float:
 	return stack_scaled_for(
-		spec, magnitude, GameplayEffectModifier.Operation.ADD, unreal
+		spec, magnitude, GameplayEffectModifier.Operation.ADD, channel_folded
 	)
 
 
@@ -294,28 +294,28 @@ static func stack_scaled_for(
 	spec: GameplayEffectSpec,
 	magnitude: float,
 	operation: GameplayEffectModifier.Operation,
-	unreal: bool = false
+	channel_folded: bool = false
 ) -> float:
 	if spec == null or spec.effect_def == null or not spec.effect_def.factor_in_stack_count:
 		return magnitude
 	return AttributeAggregateMath.stack_scaled(
-		magnitude, float(spec.stack_count), operation, unreal
+		magnitude, float(spec.stack_count), operation, channel_folded
 	)
 
 
 static func _stack_scaled_magnitude(
-	spec: GameplayEffectSpec, index: int, unreal: bool
+	spec: GameplayEffectSpec, index: int, channel_folded: bool
 ) -> float:
 	var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation, unreal)
+	return stack_scaled_for(spec, spec.get_magnitude(index), modifier.operation, channel_folded)
 
 
 ## Which arithmetic this request's entity composes by.
 ##
 ## Asked of the component every time rather than cached, for the reason
 ## GameplayAttributeRuntime gives: the profile is data somebody can change.
-static func _unreal_profile(request: Request) -> bool:
-	return request.owner_asc != null and request.owner_asc.uses_ue_5_7_contracts()
+static func _channel_folded_profile(request: Request) -> bool:
+	return request.owner_asc != null and request.owner_asc.uses_channel_folded_contracts()
 
 
 ## Every attribute a standard modifier writes to, without duplicates.
@@ -381,7 +381,7 @@ static func _build_contributions(
 		if not _qualifies(request, modifier):
 			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _channel_folded_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = modifier.attribute_name
@@ -482,7 +482,7 @@ static func _compose_for_attribute(
 		if modifier == null or modifier.attribute_name != attribute_name:
 			continue
 
-		var magnitude: float = _stack_scaled_magnitude(spec, index, _unreal_profile(request))
+		var magnitude: float = _stack_scaled_magnitude(spec, index, _channel_folded_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
 			result.error_attribute_name = attribute_name
@@ -553,11 +553,11 @@ static func can_afford(
 	if not evaluation.is_ok():
 		return false
 
-	var against_current: bool = asc.uses_ue_5_7_contracts()
+	var against_current: bool = asc.uses_channel_folded_contracts()
 	for staged: AttributeBaseMutation in evaluation.base_mutations:
 		if against_current:
-			# Unreal's question, and the whole question: does it fit in what the
-			# attribute is worth right now. The durable base is not what funds a
+			# The channel-folded question, and the whole question: does it fit in
+			# what the attribute is worth right now. The durable base is not what funds a
 			# cost there, so its sign says nothing about affordability.
 			if not _affordable_from_current(asc, staged):
 				return false
@@ -574,12 +574,12 @@ static func can_afford(
 
 ## Whether the charge fits in what the attribute is worth right now.
 ##
-## Unreal prices against the current value, this engine has always priced
-## against the durable base, and on a buffed attribute those are different
-## numbers: a shield that adds 50 mana is mana you can spend under one contract
-## and cannot under the other. Neither is wrong, and a project that changed
-## answer without asking would have every cost in it silently repriced - so the
-## profile decides, and the default keeps what a project already had.
+## The channel-folded profile prices against the current value, this engine
+## has always priced against the durable base, and on a buffed attribute those
+## are different numbers: a shield that adds 50 mana is mana you can spend
+## under one contract and cannot under the other. Neither is wrong, and a
+## project that changed answer without asking would have every cost silently
+## repriced - so the profile decides, and the default keeps what it had.
 static func _affordable_from_current(
 	asc: AbilitySystemComponent, staged: AttributeBaseMutation
 ) -> bool:

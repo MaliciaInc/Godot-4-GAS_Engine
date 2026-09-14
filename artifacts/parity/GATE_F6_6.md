@@ -2,7 +2,7 @@
 
 Package: F6.6 (F6.6.1 through F6.6.8), covering D-01, D-04, D-05 and G-08.
 Baseline GAS_Engine: `f4fce1da80f35004b9f32a7a463c62a8f8cd2df6`.
-Reference: Unreal Engine 5.7.4, CL 51494982 — not verified against a running
+Reference: a published GAS reference, revision 5.7.4-51494982 — not verified against a running
 copy, for the reason F6.5.3 records.
 
 F6.6 gave this addon a transport. Everything before it stopped at the seam:
