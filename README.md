@@ -334,22 +334,25 @@ there - invisible to every assertion in the suite, and plain the first time a
 game used the engine for real.
 
 So the engine is also driven through a complete integration: a turn-based RPG
-whose combat system is built on GAS_Engine and nothing else. An automated probe
-plays real battles from a fixed seed, through the same seams a player goes
-through, and records what the engine did at the top of every round.
+whose combat system is built on GAS_Engine and nothing else, on the
+`godot-open-rpg_GAS_Engine` branch. The addon is copied there from `main`
+unchanged, and each harness ends with a line a runner can read:
 
-| Checked | Observed |
+| Harness | What it holds GAS_Engine to |
 | --- | --- |
-| Attribute isolation | Three battlers built from one authored `AttributeSet`. Damaging one left it at `0/50` and the other two at `50/50`. |
-| Ability cost | Refused as `INSUFFICIENT_RESOURCES` while the resource was short, allowed on the round it arrived. |
-| Attribute clamping | A heal on a wounded battler stopped exactly at the ceiling instead of overflowing it. |
-| Downed targets | A defeated battler left the target set and could not be aimed at again. |
-| Cross-battle persistence | Authored resources were not written through. A second battle began from the authored values, not from the first battle's damage. |
-| Turn-based cooldown | Refused as `ON_COOLDOWN` for exactly the declared number of turns - including a round where the cost was affordable and the refusal stood - then allowed. |
+| `gas_probe` | Two arenas played from the game's real main scene, through the seams a player uses, to `combat_finished`. |
+| `gas_contract_probe` | Damage and overkill, a downed target refused, healing and its ceiling, a cost refused and a cost paid, a cooldown counted in turns, buffs stacking and withdrawn to exactly base, and a swing cancelled mid-cast - on real battlers, through the game's own `Battler.act()`. |
+| `composer_game_probe` | The game's abilities and the reference abilities read and printed back byte for byte, and an ability made through the Composer given to a battler and run. |
+| `gas_overlay_probe` | The runtime overlay over the game's own theme, while paused and with the watched battler freed. |
+| `dialogic_bridge_probe` | Real Dialogic timelines driving the bridge. |
+| `composer_harness`, `composer_smoke` | The Composer in a real window; the smoke with pushed mouse and keyboard input. |
+| `gas_editor_probe` | The Gameplay Effect panel and the Debugger tab inside a real editor, with the game running. |
 
-The engine emitted no errors across the run. The probe, the arenas and the
-transcript live on the `godot-open-rpg_GAS_Engine` branch, and the seed is
-recorded so a run can be repeated and disagreed with.
+A played fight is not reproducible round for round - accuracy is rolled off a
+stream whose draw order moves with the wall clock - so the battle probe asserts
+only that both arenas finish, and the contracts are held by the probe built for
+them. Every defect the branch found, and how `main` closed it, is in its
+`FINDINGS.md`.
 
 ## Design goals
 
@@ -526,6 +529,17 @@ Examples include waiting for:
 
 Ending or cancelling an ability cancels the tasks it owns, and each task completes exactly once.
 
+### Debugging
+
+Every entity can be looked at while the game runs, with nothing attached to it:
+
+- **`GasDebugOverlay`** draws one entity's attributes, active effects, abilities and tags over the game itself, so it also works away from the editor and while the game is paused;
+- **`GasDebugCommands`** answers console lines - `gas.list`, `gas.attributes Hero`, `gas.activate Hero Fireball` - as text, for whatever console the game already has;
+- **`GasDebugOptions`** switches costs and cooldowns off in debug builds, without touching an attribute or a tag;
+- in the editor, the **Debugger** dock gains a **GAS_Engine** tab for each running game: the same four pages, kept current while it runs, and each entity's events newest first - refused commits and activations included.
+
+Authored effects are checked by `GameplayAssetValidator`, and the **Gameplay Effect** bottom panel shows its findings for the effect it has open.
+
 ## Effect context
 
 `GameplayEffectContext` carries typed game metadata rather than an unrestricted dictionary.
@@ -595,7 +609,7 @@ An ability body is drawn when every line of it is one of these:
   `await` on the call itself does not wait (it takes the task and carries on),
   and the Output panel says so on that card;
 - `if` / `elif` / `else`;
-- `match`, over an enum;
+- `match`, with arms that are one name, one written-out value, or `_`;
 - `return`;
 - `super()`;
 - `pass`.

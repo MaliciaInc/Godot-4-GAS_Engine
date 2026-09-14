@@ -22,15 +22,15 @@ suite does fail for is structural and is in the table after this one.
 
 | load | scale | runs | p50 us | p95 us | p99 us | objects left |
 |---|---|---|---|---|---|---|
-| apply effects | 100 | 5 | 34857.0 | 35170.0 | 35170.0 | 0 |
-| apply effects | 1000 | 5 | 345297.0 | 345632.0 | 345632.0 | 0 |
-| apply effects | 10000 | 5 | 3503492.0 | 3518053.0 | 3518053.0 | 0 |
-| grant abilities | 10 | 5 | 659.0 | 685.0 | 685.0 | 50 |
-| grant abilities | 100 | 5 | 7301.0 | 7320.0 | 7320.0 | 500 |
-| grant abilities | 1000 | 5 | 137092.0 | 137792.0 | 137792.0 | 5000 |
-| tag lookups | 10000 | 5 | 6006.0 | 6053.0 | 6053.0 | 0 |
-| tag-change reevaluations | 1000 | 5 | 210386.0 | 211461.0 | 211461.0 | 0 |
-| stack candidate searches | 1000 | 5 | 1723.0 | 1755.0 | 1755.0 | 0 |
+| apply effects | 100 | 5 | 37573.0 | 38142.0 | 38142.0 | 0 |
+| apply effects | 1000 | 5 | 374060.0 | 379269.0 | 379269.0 | 0 |
+| apply effects | 10000 | 5 | 3783785.0 | 3804994.0 | 3804994.0 | 0 |
+| grant abilities | 10 | 5 | 684.0 | 913.0 | 913.0 | 50 |
+| grant abilities | 100 | 5 | 8142.0 | 8273.0 | 8273.0 | 500 |
+| grant abilities | 1000 | 5 | 147659.0 | 151091.0 | 151091.0 | 5000 |
+| tag lookups | 10000 | 5 | 6200.0 | 6423.0 | 6423.0 | 0 |
+| tag-change reevaluations | 1000 | 5 | 223239.0 | 224932.0 | 224932.0 | 0 |
+| stack candidate searches | 1000 | 5 | 1789.0 | 1895.0 | 1895.0 | 0 |
 
 ## What the suite actually fails for
 

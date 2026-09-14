@@ -95,7 +95,7 @@ A `GameplayAttributeCaptureDefinition` says which attribute to read, from whom, 
 | Field | Values |
 |---|---|
 | `actor` | `SOURCE` (the instigator's component) or `TARGET` (the component receiving the effect). |
-| `attribute_name` or `attribute` | The attribute, by name or by `GameplayAttributeRef`. |
+| `attribute` or `attribute_name` | The attribute, as a `GameplayAttributeRef` or by name. The reference wins when both are set, and a reference that names its set reads that set's attribute. |
 | `value` | `CURRENT` (default) or `BASE`. |
 | `policy` | `SNAPSHOT` freezes the value; `LIVE` reads it fresh every time it is asked. |
 
