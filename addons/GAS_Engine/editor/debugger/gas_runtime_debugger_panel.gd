@@ -5,7 +5,7 @@
 ## same GasDebugTable - fed from what the game sent rather than from a
 ## component, because the component is in another process and what arrived in
 ## the log is all the editor knows. The entities down the side are every one the
-## game is watching; the list under the table is what happened to the one
+## game is watching; the list beside the table is what happened to the one
 ## chosen, newest first.
 ##
 ## Draws only when told to. The plugin decides when, because it is the one that
