@@ -82,7 +82,7 @@ static func _profile_findings_for(
 	profile: GameplayCompatibilityProfile
 ) -> Array[Result]:
 	var findings: Array[Result] = []
-	if profile == null or not profile.is_ue_5_7():
+	if profile == null or not profile.is_channel_folded():
 		return findings
 	if (
 		modifier.operation == GameplayEffectModifier.Operation.MULTIPLY
@@ -92,7 +92,7 @@ static func _profile_findings_for(
 			Result.warning(
 				effect,
 				"modifiers[%d].operation" % index,
-				Result.Code.LEGACY_OPERATION_UNDER_UNREAL_PROFILE
+				Result.Code.LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE
 			)
 		)
 	return findings
@@ -103,7 +103,7 @@ static func _stacking_findings_for(
 	effect: GameplayEffect, profile: GameplayCompatibilityProfile
 ) -> Array[Result]:
 	var findings: Array[Result] = []
-	if profile == null or not profile.is_ue_5_7():
+	if profile == null or not profile.is_channel_folded():
 		return findings
 	if (
 		effect.stacking_type != GameplayEffect.StackingType.NONE

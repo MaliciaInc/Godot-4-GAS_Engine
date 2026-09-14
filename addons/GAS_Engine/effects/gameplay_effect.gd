@@ -68,8 +68,8 @@ enum PeriodInhibitionPolicy {
 ## Whether a periodic effect ticks the moment it is applied.
 ##
 ## Off by default, which is what this engine has always done: the first tick
-## comes one period later. Unreal ticks on application, and an effect that means
-## to says so.
+## comes one period later. Some references tick on application, and an effect
+## that means to says so.
 @export var execute_periodic_on_application: bool = false
 
 @export var period_inhibition_policy: GameplayEffect.PeriodInhibitionPolicy = PeriodInhibitionPolicy.SKIP_MISSED_TICKS

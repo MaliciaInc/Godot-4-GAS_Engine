@@ -66,10 +66,10 @@ func adjust(attribute_name: StringName, value: float) -> float:
 	var writes: Array[AttributeModifierContribution] = _writes_for(attribute_name)
 	if writes.is_empty():
 		return value
-	var unreal: bool = target_asc != null and target_asc.uses_ue_5_7_contracts()
+	var channel_folded: bool = target_asc != null and target_asc.uses_channel_folded_contracts()
 	var folded: AttributeAggregateMath.Composed = (
-		AttributeAggregateMath.unreal(value, attribute_name, writes)
-		if unreal
+		AttributeAggregateMath.channel_folded(value, attribute_name, writes)
+		if channel_folded
 		else AttributeAggregateMath.godot_native(value, attribute_name, writes)
 	)
 	return folded.value if folded.is_ok() else value

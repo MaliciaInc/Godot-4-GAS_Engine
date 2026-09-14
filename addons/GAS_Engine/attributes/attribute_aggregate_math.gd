@@ -2,14 +2,15 @@
 ##
 ## They are genuinely different arithmetic, not a setting on one formula, which
 ## is why both are written out. Two +50% buffs are worth 2.25x under the
-## Godot-native rules and 2.0x under Unreal's, and neither is a bug: one
-## multiplies the products, the other adds the bonuses and multiplies once.
-## A game that ships with the first and is told the second is "the fix" has had
-## every stat in it silently rebalanced.
+## Godot-native rules and 2.0x under the channel-folded ones, and neither is a
+## bug: one multiplies the products, the other adds the bonuses and multiplies
+## once. A game that ships with the first and is told the second is "the fix"
+## has had every stat in it silently rebalanced.
 ##
-## Unreal's also folds in passes. Each channel composes over what the last one
-## produced, which is what lets a game say "this multiplies the buffed value,
-## not the base" without every effect having to know about every other.
+## The channel-folded rules also fold in passes. Each channel composes over
+## what the last one produced, which is what lets a game say "this multiplies
+## the buffed value, not the base" without every effect having to know about
+## every other.
 ##
 ## Pure: it is handed a base and a list, and it returns a number or a reason it
 ## could not. Nothing here reads the world, so a fold can be run against
@@ -53,14 +54,14 @@ static func stack_scaled(
 	magnitude: float,
 	stacks: float,
 	operation: GameplayEffectModifier.Operation,
-	unreal: bool = false
+	channel_folded: bool = false
 ) -> float:
-	# Under the Unreal profile the legacy names are the additive arms, in the
-	# fold and therefore here as well. A stack has to scale the arm its
+	# Under the channel-folded profile the legacy names are the additive arms,
+	# in the fold and therefore here as well. A stack has to scale the arm its
 	# magnitude will be folded into, or the two disagree the first time a
 	# stacking effect is authored with the legacy spelling.
 	var arm: GameplayEffectModifier.Operation = operation
-	if unreal:
+	if channel_folded:
 		if operation == GameplayEffectModifier.Operation.MULTIPLY:
 			arm = GameplayEffectModifier.Operation.MULTIPLY_ADDITIVE
 		elif operation == GameplayEffectModifier.Operation.DIVIDE:
@@ -195,7 +196,7 @@ static func godot_native(
 				if _last_applied_beats(contribution, winner):
 					winner = contribution
 			_:
-				# The UE-only operations have no meaning in this arithmetic.
+				# The channel-folded-only operations have no meaning in this arithmetic.
 				# Refused rather than approximated: an effect authored for one
 				# profile and composed under the other must say so.
 				return Composed.failed(AttributeEvaluationResult.Status.INVALID_OPERATION)
@@ -222,7 +223,7 @@ static func _last_applied_beats(
 #endregion
 
 
-#region Unreal
+#region Channel-folded
 ## One pass per channel, each over what the last one produced.
 ##
 ##     ((value + AddBase) * MultiplyAdditive / DivideAdditive)
@@ -239,7 +240,7 @@ static func _last_applied_beats(
 ## what an attribute would be before the last channels ran needs. A ceiling
 ## rather than a second function: the arithmetic is the same arithmetic, and
 ## a copy of it that stopped sooner would be a second answer to drift from.
-static func unreal(
+static func channel_folded(
 	base: float,
 	attribute_name: StringName,
 	contributions: Array[AttributeModifierContribution],
@@ -299,7 +300,7 @@ static func _one_channel(
 				divide_additive += contribution.magnitude - 1.0
 			GameplayEffectModifier.Operation.MULTIPLY_COMPOUND:
 				multiply_compound *= contribution.magnitude
-			# Unreal's own legacy spellings. `Multiplicitive` and `Division` are
+			# The reference's own legacy spellings. `Multiplicitive` and `Division` are
 			# aliases of the additive arms there rather than compounding ones, so
 			# a modifier authored as MULTIPLY under this profile has to fold the
 			# way the reference folds a modifier by that name. Otherwise two x1.5
@@ -335,8 +336,8 @@ static func _one_channel(
 
 ## First eligible override wins, by the channel's own evaluation order: earlier
 ## application first, then lower modifier index. The opposite of the
-## Godot-native rule, deliberately - in Unreal an override claims the attribute
-## and later ones do not take it back.
+## Godot-native rule, deliberately - under the channel-folded profile an
+## override claims the attribute and later ones do not take it back.
 static func _first_eligible_beats(
 	candidate: AttributeModifierContribution, winner: AttributeModifierContribution
 ) -> bool:

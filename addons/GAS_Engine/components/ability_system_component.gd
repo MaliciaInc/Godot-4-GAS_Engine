@@ -24,10 +24,10 @@ signal tag_count_changed(tag: StringName, new_count: int)
 ## A tag's count reached zero and it was dropped.
 signal tag_removed(tag: StringName)
 
-## A tag, or anything under it, changed count. Unreal's AnyCountChange.
+## A tag, or anything under it, changed count.
 signal tag_or_child_count_changed(tag: StringName, new_count: int)
 
-## A tag, or anything under it, appeared or went away. Unreal's NewOrRemoved.
+## A tag, or anything under it, appeared or went away.
 signal tag_or_child_presence_changed(tag: StringName, present: bool)
 
 ## An attribute's effective value actually moved. Never emitted for a write that
@@ -161,7 +161,7 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 		if is_node_ready():
 			_adopt_attribute_sets()
 
-## When false - Unreal's default - this component works on its own deep copies
+## When false - the default - this component works on its own deep copies
 ## rather than on the authored resources. See `set_attribute_sets()` for what
 ## sharing them actually costs.
 @export var share_attributes: bool = false:
@@ -212,7 +212,8 @@ signal gameplay_effect_removal_finished(active_effect: ActiveGameplayEffect, rea
 ##
 ## The default stays GODOT_NATIVE, and has to: a phase cannot change what an
 ## existing project already does by being installed. A component only follows
-## Unreal's contract where they differ once somebody asks for it here.
+## the channel-folded contract where they differ once somebody asks for it
+## here.
 @export var compatibility_profile: GameplayCompatibilityProfile = GameplayCompatibilityProfile.new()
 #endregion
 
@@ -272,13 +273,13 @@ func _ready() -> void:
 	debug_channel.watch(self)
 
 
-## Whether this component answers by Unreal's contracts where they differ.
+## Whether this component answers by the channel-folded contracts where they differ.
 ##
 ## Asked by the runtimes rather than decided by them: two runtimes reading the
 ## same profile agree, and two runtimes each deciding what "compatible" means
 ## do not.
-func uses_ue_5_7_contracts() -> bool:
-	return compatibility_profile != null and compatibility_profile.is_ue_5_7()
+func uses_channel_folded_contracts() -> bool:
+	return compatibility_profile != null and compatibility_profile.is_channel_folded()
 
 
 ## The single handover: both exports above route here, so the sets and the

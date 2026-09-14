@@ -124,7 +124,7 @@ static func first_unresolved(
 ##
 ## Scaled by stack count only where the reference scales it.
 ##
-## Under Unreal's contracts an execution's numbers are multiplied by how many
+## Under the channel-folded contracts an execution's numbers are multiplied by how many
 ## of the effect are on the target, and a calculation that has already
 ## counted them says so with `stack_count_handled_manually`. The native
 ## profile has never scaled an execution and does not start: a calculation
@@ -134,11 +134,11 @@ static func writes_of(
 	produced: GameplayExecutionOutput,
 	application_order: int,
 	stack_count: int = 1,
-	unreal: bool = false
+	channel_folded: bool = false
 ) -> Array[AttributeModifierContribution]:
 	var factor: int = (
 		stack_count
-		if unreal and not produced.stack_count_handled_manually
+		if channel_folded and not produced.stack_count_handled_manually
 		else 1
 	)
 	var writes: Array[AttributeModifierContribution] = []
@@ -150,7 +150,7 @@ static func writes_of(
 		write.attribute_name = modifier.attribute.attribute_name
 		write.operation = modifier.operation
 		write.magnitude = AttributeAggregateMath.stack_scaled(
-			modifier.magnitude, factor, modifier.operation, unreal
+			modifier.magnitude, factor, modifier.operation, channel_folded
 		)
 		write.modifier_index = index
 		write.application_order = application_order
@@ -180,9 +180,9 @@ static func compose(
 	attributes: GameplayAttributeRuntime,
 	attribute_name: StringName,
 	writes: Array[AttributeModifierContribution],
-	unreal: bool
+	channel_folded: bool
 ) -> AttributeAggregateMath.Composed:
 	var base: float = attributes.get_base_value(attribute_name)
-	if unreal:
-		return AttributeAggregateMath.unreal(base, attribute_name, writes)
+	if channel_folded:
+		return AttributeAggregateMath.channel_folded(base, attribute_name, writes)
 	return AttributeAggregateMath.godot_native(base, attribute_name, writes)

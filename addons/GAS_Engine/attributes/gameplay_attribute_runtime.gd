@@ -324,7 +324,7 @@ func _compose(
 
 ## What this attribute would read if only the first channels had run.
 ##
-## Only the UE profile has channels at all: the native one is a single pass,
+## Only the channel-folded profile has channels at all: the native one is a single pass,
 ## so every channel ceiling answers the whole composition there. That is the
 ## honest answer rather than a refusal - a project on the native profile
 ## asking this is asking what the attribute is, and that is what it gets.
@@ -364,10 +364,10 @@ func _compose_from(
 	# for one would answer differently depending on who called it.
 	var policy: AttributeSet.AggregatorPolicy = policy_for(attribute_name)
 	var folded: AttributeAggregateMath.Composed = (
-		AttributeAggregateMath.unreal(
+		AttributeAggregateMath.channel_folded(
 			base, attribute_name, contributions, through_channel, policy
 		)
-		if _uses_unreal_algebra()
+		if _uses_channel_folded_algebra()
 		else AttributeAggregateMath.godot_native(
 			base, attribute_name, contributions, policy
 		)
@@ -388,9 +388,9 @@ func _compose_from(
 ## than cached: the profile is data somebody can change, and an aggregate that
 ## remembered the answer would keep composing by the old rules until something
 ## else happened to invalidate it.
-func _uses_unreal_algebra() -> bool:
+func _uses_channel_folded_algebra() -> bool:
 	var component: AbilitySystemComponent = owner_node as AbilitySystemComponent
-	return component != null and component.uses_ue_5_7_contracts()
+	return component != null and component.uses_channel_folded_contracts()
 ## Pure aggregate preflight. It never publishes or temporarily installs the
 ## candidate contributions in the live runtime.
 func validate_additional_contributions(

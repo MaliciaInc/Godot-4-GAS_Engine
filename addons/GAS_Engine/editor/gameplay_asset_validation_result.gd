@@ -25,10 +25,10 @@ enum Code {
 	ROOT_NOT_GAMEPLAY_ABILITY,
 	SCENE_MISSING,
 	## A modifier spelled MULTIPLY or DIVIDE while the resolved profile is
-	## UE_5_7, where those names mean the additive arms rather than the
+	## CHANNEL_FOLDED, where those names mean the additive arms rather than the
 	## compounding ones. It folds correctly; the author is told because the
 	## two arms produce different numbers and the name does not say which.
-	LEGACY_OPERATION_UNDER_UNREAL_PROFILE,
+	LEGACY_OPERATION_UNDER_CHANNEL_FOLDED_PROFILE,
 	## A modifier naming an attribute no attribute set in the project declares.
 	## It is a warning rather than an error because the catalogue knows what
 	## the project's scripts declare and a game may build an attribute
@@ -36,10 +36,11 @@ enum Code {
 	## nothing at all, and the first person to notice used to be whoever
 	## wondered why the effect had no effect.
 	UNDECLARED_ATTRIBUTE,
-	## A stacking effect under UE_5_7 that left factor_in_stack_count false.
-	## The reference includes the stack count by default and this engine
-	## does not, so an effect ported from there scales differently until
-	## somebody answers the question on purpose.
+	## A stacking effect under CHANNEL_FOLDED that left factor_in_stack_count
+	## false. The reference this profile agrees with includes the stack count
+	## by default and this engine does not, so an effect authored against that
+	## reference scales differently until somebody answers the question on
+	## purpose.
 	STACKING_WITHOUT_STACK_COUNT_ANSWER,
 }
 
