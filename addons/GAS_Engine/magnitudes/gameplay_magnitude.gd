@@ -25,6 +25,10 @@ func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
 ## the rest - the weather, the time of day, an inventory - as signals, because a
 ## dependency the engine cannot subscribe to is one it cannot honour.
 ##
+## Subscribed for as long as a lasting effect carries the modifier, and each
+## emission re-resolves its contribution. An instant effect resolves once and
+## has nothing to follow.
+##
 ## Empty by default: a magnitude that reads only attributes has nothing to add.
 func external_dependencies() -> Array[Signal]:
 	var none: Array[Signal] = []

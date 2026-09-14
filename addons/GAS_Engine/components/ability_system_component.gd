@@ -86,11 +86,13 @@ signal ability_activation_failed_with_tag(
 ## An ability was granted. The moment a handle starts naming something.
 signal ability_granted(handle: GameplayAbilityHandle)
 
-## An ability paid for itself and started its cooldowns, or did not.
+## An ability tried to pay for itself: every attempt, `result.status` saying
+## whether it paid and started its cooldowns or why it did not.
 ##
 ## The moment an activation becomes irreversible, and the one somebody debugging
 ## a cost asks about: it is where the resources went and where the cooldown
-## began, and a listener could see neither before.
+## began - or the reason neither happened - and a listener could see none of it
+## before.
 signal ability_committed(handle: GameplayAbilityHandle, result: AbilityCommitResult)
 
 ## A one-shot cue was played on this entity.

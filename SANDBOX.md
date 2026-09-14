@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `4bbfca0`, with `gas_engine/` re-rendered here |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `9a26ef6`, with `gas_engine/` re-rendered here |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -94,7 +94,11 @@ The base game is MIT (GDQuest, 2018) - see `LICENSE`. Its third-party assets and
 their licences are listed in `CREDITS.md`. Both are preserved unchanged;
 redistribution here relies on them.
 
-`addons/GAS_Engine` is MIT, MaliciaInc - see `addons/GAS_Engine/LICENSE`.
+`addons/GAS_Engine` is MaliciaInc's GAS_Engine, under the GAS_Engine Community
+Use License 1.0: free to use unmodified, with modification reserved to a
+separate paid Commercial Modification License. Both are `LICENSE` and
+`COMMERCIAL-LICENSE.md` on the `main` branch of `MaliciaInc/Godot-4-GAS_Engine`,
+which is where the addon is copied from.
 `addons/dialogic` ships with the base game under its own licence.
 
 ## What runs here, and what only runs here
@@ -150,9 +154,13 @@ read:
 SMOKE_RESULT: PASS passed=89 failed=0
 ```
 
-Green at the re-deploy of `main`'s `4bbfca0`, as are the other seven: the four
+At the re-deploy of `main`'s `9a26ef6` the other seven are green: the four
 below at 47, 28, 16 and 34 checks, `composer_harness` at 58, and `gas_probe`
-with both arenas reaching `combat_finished`. The smoke was first green at `aad0cbc`. It was not, and the two checks that were red were the
+with both arenas reaching `combat_finished`. The smoke ran 87 of 89 there: its
+two paste checks were red because no Godot process on that machine could open
+the Windows clipboard at the time - a script that does nothing but read the
+clipboard failed the same way, and no Composer file changed in that deploy. See
+"Checked and not defects" in `FINDINGS.md`. The smoke was first green at `aad0cbc`. It was not, and the two checks that were red were the
 harness aiming at a card that was off the canvas rather than anything the engine
 did - see GAS-009 under "Checked and not defects", which is worth reading before
 writing up the next one.

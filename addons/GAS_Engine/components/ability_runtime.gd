@@ -558,15 +558,16 @@ func input_action_released(action: StringName) -> void:
 func _route_action(action: StringName, pressed: bool) -> void:
 	if action == &"":
 		return
+	# Formal tasks hear the transition first, as they do for a slot.
+	if pressed:
+		tasks.input_action_pressed(action)
+	else:
+		tasks.input_action_released(action)
 	for spec: GameplayAbilitySpec in _specs.duplicate():
 		if spec.input_action != action:
 			continue
 		if pressed:
-			_deliver_input(
-				spec,
-				func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
-				func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
-			)
+			_press(spec)
 		else:
 			_deliver_input(
 				spec,
@@ -583,20 +584,26 @@ func input_pressed(input_id: int) -> void:
 	tasks.input_pressed(input_id)
 	# Snapshot: a sibling granted by this press must not also receive it.
 	for spec: GameplayAbilitySpec in _specs.duplicate():
-		if spec.input_id != input_id:
-			continue
-		_deliver_input(
-			spec,
-			func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
-			func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
-		)
-		# PER_EXECUTION has no instance to ask above, so a press still means
-		# "start one more" even while an earlier one keeps running.
-		if (
-			spec.definition != null
-			and spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION
-		):
-			instancing.activate_spec(spec)
+		if spec.input_id == input_id:
+			_press(spec)
+
+
+## One press reaching one grant, the same whether it arrived by slot or by
+## action name. Written once because it used to be written twice, and the copy
+## for actions had lost the half that starts a PER_EXECUTION grant.
+func _press(spec: GameplayAbilitySpec) -> void:
+	_deliver_input(
+		spec,
+		func(a: GameplayAbility) -> void: a._input_pressed(owner_asc),
+		func(a: GameplayAbility) -> void: a._active_input_pressed(owner_asc)
+	)
+	# PER_EXECUTION has no instance to ask above, so a press still means
+	# "start one more" even while an earlier one keeps running.
+	if (
+		spec.definition != null
+		and spec.definition.instancing_policy == GameplayAbility.InstancingPolicy.PER_EXECUTION
+	):
+		instancing.activate_spec(spec)
 
 
 func input_released(input_id: int) -> void:

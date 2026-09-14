@@ -409,7 +409,7 @@ func prepared_component_states() -> Array[GameplayEffectComponentState]:
 ## calculation on an effect can register its own captures without needing to
 ## know what the others already asked for.
 func register_capture(definition: GameplayAttributeCaptureDefinition) -> bool:
-	if definition == null or definition.attribute_name == &"":
+	if definition == null or definition.resolved_attribute_name() == &"":
 		return false
 	if not _captures.has(definition):
 		var captured: GameplayCapturedAttribute = GameplayCapturedAttribute.new()
@@ -523,7 +523,7 @@ func _read_attribute(
 	definition: GameplayAttributeCaptureDefinition, asc: AbilitySystemComponent
 ) -> AttributeCaptureResult:
 	var result: AttributeCaptureResult = AttributeCaptureResult.new()
-	if definition == null or definition.attribute_name == &"":
+	if definition == null or definition.resolved_attribute_name() == &"":
 		result.status = AttributeCaptureResult.Status.INVALID_DEFINITION
 		return result
 	if asc == null:
@@ -533,15 +533,13 @@ func _read_attribute(
 			else AttributeCaptureResult.Status.TARGET_MISSING
 		)
 		return result
-	if not asc.has_attribute(definition.attribute_name):
+	var read: AttributeData = asc.attributes.find_by_ref(definition.attribute_ref())
+	if read == null:
 		result.status = AttributeCaptureResult.Status.ATTRIBUTE_NOT_FOUND
 		return result
 
-	var value: float = (
-		asc.get_attribute_base(definition.attribute_name)
-		if definition.value == GameplayAttributeCaptureDefinition.Value.BASE
-		else asc.get_attribute_current(definition.attribute_name)
-	)
+	var base: bool = definition.value == GameplayAttributeCaptureDefinition.Value.BASE
+	var value: float = read.base_value if base else read.current_value
 	if not is_finite(value):
 		result.status = AttributeCaptureResult.Status.NON_FINITE_VALUE
 		return result

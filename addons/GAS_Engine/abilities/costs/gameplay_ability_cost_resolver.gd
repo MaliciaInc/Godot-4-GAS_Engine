@@ -66,31 +66,39 @@ static func _resolve_one(
 	level: float,
 	resolved: GameplayResolvedCost
 ) -> GameplayResolvedCostEntry:
-	if cost == null or cost.amount == null or String(cost.target_attribute).is_empty():
+	# Either way of naming either attribute: the inspector's picker fills the
+	# reference, and everything written before it fills the bare name.
+	if cost == null or cost.amount == null or cost.resolved_target_attribute().is_empty():
 		resolved.status = GameplayResolvedCost.Status.INVALID_DEFINITION
 		return null
 
+	var reference_name: StringName = cost.resolved_reference_attribute()
 	if cost.mode == GameplayAbilityCost.Mode.ABSOLUTE:
-		if not String(cost.reference_attribute).is_empty():
+		if not reference_name.is_empty():
 			resolved.status = GameplayResolvedCost.Status.INVALID_DEFINITION
 			return null
-	elif String(cost.reference_attribute).is_empty():
+	elif reference_name.is_empty():
 		resolved.status = GameplayResolvedCost.Status.INVALID_DEFINITION
 		return null
 
-	if not asc.has_attribute(cost.target_attribute):
+	if not asc.has_attribute(cost.resolved_target_attribute()):
 		resolved.status = GameplayResolvedCost.Status.TARGET_ATTRIBUTE_NOT_FOUND
 		return null
 
 	var entry: GameplayResolvedCostEntry = GameplayResolvedCostEntry.new()
-	entry.target_attribute = cost.target_attribute
+	entry.target_attribute = cost.resolved_target_attribute()
 	entry.mode = cost.mode
-	entry.reference_attribute = cost.reference_attribute
+	entry.reference_attribute = reference_name
 	entry.authored_value = cost.amount.evaluate(level)
 
 	var amount: float = entry.authored_value
 	if cost.mode != GameplayAbilityCost.Mode.ABSOLUTE:
-		if not asc.has_attribute(cost.reference_attribute):
+		# Read by reference, so a percentage priced against one set's attribute
+		# is never priced against another set's attribute of the same name.
+		var priced_against: AttributeData = asc.attributes.find_by_ref(
+			GameplayAttributeRef.resolved(cost.reference, cost.reference_attribute)
+		)
+		if priced_against == null:
 			resolved.status = GameplayResolvedCost.Status.REFERENCE_ATTRIBUTE_NOT_FOUND
 			return null
 		# The fraction itself, not yet multiplied by the reference value: a
@@ -99,9 +107,9 @@ static func _resolve_one(
 			resolved.status = GameplayResolvedCost.Status.PERCENT_OUT_OF_RANGE
 			return null
 		entry.reference_value = (
-			asc.get_attribute_base(cost.reference_attribute)
+			priced_against.base_value
 			if cost.mode == GameplayAbilityCost.Mode.PERCENT_OF_BASE
-			else asc.get_attribute_current(cost.reference_attribute)
+			else priced_against.current_value
 		)
 		amount = entry.reference_value * amount
 

@@ -98,6 +98,14 @@ func input_released(input_id: int) -> void:
 	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_input_released(input_id))
 
 
+func input_action_pressed(action: StringName) -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_input_action_pressed(action))
+
+
+func input_action_released(action: StringName) -> void:
+	_dispatch(func(task: GameplayAbilityTask) -> void: task.handle_input_action_released(action))
+
+
 ## Somebody said yes, without naming a slot.
 ##
 ## Its own door rather than an input id, because the generic confirm is not a

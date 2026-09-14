@@ -34,6 +34,18 @@ enum Policy {
 ## Which attribute is captured, said so it cannot mean two of them.
 @export var attribute: GameplayAttributeRef = null
 
+## The bare name, read only when `attribute` names nothing.
 @export var attribute_name: StringName = &""
 @export var value: GameplayAttributeCaptureDefinition.Value = Value.CURRENT
 @export var policy: GameplayAttributeCaptureDefinition.Policy = Policy.SNAPSHOT
+
+
+## The attribute this reads, whichever way it was authored.
+func resolved_attribute_name() -> StringName:
+	return GameplayAttributeRef.name_of(attribute, attribute_name)
+
+
+## The same, as a reference: the shape a read is answered by, so a capture that
+## names its set reads that set's attribute and not the first one declaring it.
+func attribute_ref() -> GameplayAttributeRef:
+	return GameplayAttributeRef.resolved(attribute, attribute_name)

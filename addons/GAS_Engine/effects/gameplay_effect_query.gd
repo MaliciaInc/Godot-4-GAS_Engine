@@ -105,7 +105,7 @@ func _matches_common(subject: _MatchSubject, target_asc: AbilitySystemComponent)
 ## declared outputs is never run just to find out what it might change.
 static func _modifies_attribute(effect: GameplayEffect, attribute_name: StringName) -> bool:
 	for modifier: GameplayEffectModifier in effect.modifiers:
-		if modifier != null and modifier.attribute_name == attribute_name:
+		if modifier != null and modifier.resolved_attribute_name() == attribute_name:
 			return true
 	for execution: GameplayExecutionCalculation in effect.executions:
 		if execution != null and execution.declared_output_attributes().has(attribute_name):

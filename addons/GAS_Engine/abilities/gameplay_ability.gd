@@ -649,12 +649,20 @@ func _fail_commit(
 ## @composer
 func commit_ability() -> AbilityCommitResult:
 	var result: AbilityCommitResult = AbilityCommitResult.new()
+	_attempt_commit(result)
+	_announce_commit(result)
+	return result
+
+
+## The commit itself. Every way out only settles `result`, so the one
+## announcement in `commit_ability()` covers each refusal as well as the success.
+func _attempt_commit(result: AbilityCommitResult) -> void:
 	if owner_asc == null:
 		result.status = AbilityCommitResult.Status.OWNER_MISSING
-		return result
+		return
 	if _committed:
 		result.status = AbilityCommitResult.Status.ALREADY_COMMITTED
-		return result
+		return
 
 	# The snapshot froze this ability's authoring, so it is what can tell when
 	# this instance stopped agreeing with it. Said once: it is a wiring mistake.
@@ -666,15 +674,15 @@ func commit_ability() -> AbilityCommitResult:
 	result.resolved_cost = cost.resolved_cost
 	if not cost.is_ok():
 		result.status = cost.as_commit_status()
-		return result
+		return
 
 	var cooldown: AbilityCommitPreflight = check_cooldown()
 	if not cooldown.is_ok():
 		result.status = cooldown.as_commit_status()
-		return result
+		return
 
 	if not apply_cooldown(cooldown, result):
-		return result
+		return
 
 	# Asked again, not trusted from a moment ago: every cooldown that just
 	# started raised signals, and a listener is allowed to have spent the
@@ -683,22 +691,20 @@ func commit_ability() -> AbilityCommitResult:
 	if not again.is_ok():
 		_roll_back(result)
 		result.status = AbilityCommitResult.Status.RESOURCES_CHANGED_DURING_COMMIT
-		return result
+		return
 
 	if not apply_cost(again, result):
-		return result
+		return
 
 	_committed = true
 	result.status = AbilityCommitResult.Status.SUCCESS
-	_announce_commit(result)
-	return result
 
 
 ## Say what a commit did, whichever way it went.
 ##
-## Every path out of `commit_ability()` passes through here or through a refusal
-## above it, so a listener hears about the commits that failed as well - which
-## are the ones somebody is debugging.
+## Every attempt passes through here, so a listener hears about the commits
+## that were refused as well - which are the ones somebody is debugging. Only a
+## missing owner goes unsaid: there is no component to say it on.
 func _announce_commit(result: AbilityCommitResult) -> void:
 	if owner_asc == null or current_spec == null:
 		return
@@ -1021,8 +1027,9 @@ func wait_delay(seconds: float) -> AbilityTaskWaitDelay:
 	return _own(AbilityTaskWaitDelay.create(self, seconds)) as AbilityTaskWaitDelay
 
 
-## `-1` means this ability's own bound slot. Resolved in the body, not a
-## default parameter value: that would freeze `input_id` at parse time.
+## `-1` means this ability's own bound input: its slot, and its action when the
+## grant has one. Resolved in the body, not a default parameter value: that
+## would freeze `input_id` at parse time.
 ## @composer
 func wait_input_pressed(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.PRESSED)
@@ -1033,11 +1040,18 @@ func wait_input_released(input_slot: int = -1) -> AbilityTaskWaitInput:
 	return _wait_input(input_slot, AbilityTaskWaitInput.Transition.RELEASED)
 
 
+## A grant bound by action has no slot, so "my own input" waiting on the slot
+## alone waited on -1, which nothing presses, and never woke.
 func _wait_input(
 	input_slot: int, transition: AbilityTaskWaitInput.Transition
 ) -> AbilityTaskWaitInput:
-	var slot: int = get_input_id() if input_slot == -1 else input_slot
-	return _own(AbilityTaskWaitInput.create(self, slot, transition)) as AbilityTaskWaitInput
+	var own: bool = input_slot == -1
+	var task: AbilityTaskWaitInput = AbilityTaskWaitInput.create(
+		self, get_input_id() if own else input_slot, transition
+	)
+	if own:
+		task.input_action = current_spec.input_action if current_spec != null else input_action
+	return _own(task) as AbilityTaskWaitInput
 
 
 ## @composer

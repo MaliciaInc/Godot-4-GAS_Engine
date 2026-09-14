@@ -12,8 +12,9 @@
 ## choosing.
 ##
 ## Draws nothing it decided: every line comes from a GasDebugPage, which turns
-## one snapshot into rows without touching a Control. What is here is the tabs,
-## the table and the clock.
+## one snapshot into rows without touching a Control, and GasDebugTable puts the
+## rows and the tabs on screen the way the editor's Debugger tab does. What is
+## here is the heading, the watching and the clock.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
@@ -79,15 +80,10 @@ var _since_last_refresh: float = 0.0
 
 #region Lifecycle
 func _ready() -> void:
-	_pages = [
-		GasDebugPageAttributes.new(),
-		GasDebugPageEffects.new(),
-		GasDebugPageAbilities.new(),
-		GasDebugPageTags.new(),
-	]
+	_pages = GasDebugCommands.pages()
 	_history.limit = history_limit
 	($Panel as Control).theme = _own_theme()
-	_build_tabs()
+	GasDebugTable.build_tabs(_tabs, _pages, show_page)
 	refresh()
 
 
@@ -201,55 +197,8 @@ func history() -> GasAttributeHistory:
 func refresh() -> void:
 	if not is_inside_tree() or _table == null:
 		return
-	_heading.text = NOBODY if _watched == null else WATCHING % _named()
-
-	var page: GasDebugPage = _pages[_showing] if _showing < _pages.size() else null
-	_table.clear()
-	if page == null:
-		return
-
-	var headings: PackedStringArray = page.columns()
-	_table.columns = maxi(headings.size(), 1)
-	_table.hide_root = true
-	for column: int in headings.size():
-		_table.set_column_title(column, headings[column])
-	_table.column_titles_visible = true
-
-	var root: TreeItem = _table.create_item()
-	for row: GasDebugPage.Row in page.rows(snapshot()):
-		_draw_row(root, row)
-
-
-func _draw_row(under: TreeItem, row: GasDebugPage.Row) -> void:
-	var item: TreeItem = _table.create_item(under)
-	# The whole line as the tooltip of every cell: an overlay is drawn over
-	# somebody's game and gets whatever width is left, so a column wide enough
-	# for `Status.Stunned` is not wide enough for the effect that granted it.
-	var whole: String = row.said()
-	for column: int in row.cells.size():
-		if column >= _table.columns:
-			break
-		item.set_text(column, row.cells[column])
-		item.set_tooltip_text(column, whole)
-		item.set_custom_color(column, notable_color if row.notable else ordinary_color)
-
-
-## The entity's own name, whichever of its two nodes has one.
-func _named() -> String:
 	var taken: GasRuntimeSnapshot = snapshot()
-	if not taken.owner_name.is_empty():
-		return taken.owner_name
-	if not taken.avatar_name.is_empty():
-		return taken.avatar_name
-	return str(taken.asc_id)
-
-
-func _build_tabs() -> void:
-	for existing: Node in _tabs.get_children():
-		existing.queue_free()
-	for index: int in _pages.size():
-		var tab: Button = Button.new()
-		tab.text = _pages[index].title()
-		tab.pressed.connect(show_page.bind(index))
-		_tabs.add_child(tab)
+	_heading.text = NOBODY if _watched == null else WATCHING % GasDebugTable.named(taken)
+	var page: GasDebugPage = _pages[_showing] if _showing < _pages.size() else null
+	GasDebugTable.draw(_table, page, taken, notable_color, ordinary_color)
 #endregion

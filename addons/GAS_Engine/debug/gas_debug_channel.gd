@@ -19,7 +19,19 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GasDebugChannel extends RefCounted
 
+## How often the watched entity is sent again while it is watched.
+##
+## A snapshot sent once, when watching began, is a Debugger tab that shows the
+## entity as it was a minute ago. Four times a second is the overlay's own rate:
+## a cooldown visibly counts down, and sending is not so frequent that it becomes
+## what somebody ends up measuring.
+const SNAPSHOT_INTERVAL: float = 0.25
+
 var _watched: AbilitySystemComponent = null
+
+## Which watch a pending resend belongs to, so a timer started for an earlier
+## watch never keeps a second chain of resends running beside the current one.
+var _generation: int = 0
 
 
 ## Start reporting on `component`, if anything is listening.
@@ -31,6 +43,7 @@ func watch(component: AbilitySystemComponent) -> bool:
 	if component == null or not EngineDebugger.is_active():
 		return false
 
+	_generation += 1
 	_watched = component
 	component.ability_granted.connect(_on_ability_granted)
 	component.ability_committed.connect(_on_ability_committed)
@@ -45,6 +58,7 @@ func watch(component: AbilitySystemComponent) -> bool:
 	component.tag_count_changed.connect(_on_tag_count_changed)
 	component.attribute_changed.connect(_on_attribute_changed)
 	send_snapshot()
+	_schedule_snapshot(_generation)
 	return true
 
 
@@ -67,6 +81,7 @@ func stop() -> void:
 	_watched.tag_count_changed.disconnect(_on_tag_count_changed)
 	_watched.attribute_changed.disconnect(_on_attribute_changed)
 	_watched = null
+	_generation += 1
 
 
 #region What an entity looks like right now
@@ -79,6 +94,28 @@ func send_snapshot() -> void:
 	if _watched == null:
 		return
 	EngineDebugger.send_message(GasDebugMessage.SNAPSHOT, [snapshot_of(_watched)])
+
+
+## Send the entity again in a moment, for as long as this watch lasts.
+##
+## A timer on the tree rather than a node of ours: the channel is not in the
+## tree, and a game should not have to add something to it for the Debugger tab
+## to stay current. Processed always and on the real clock, so a paused or
+## slowed fight keeps reporting.
+func _schedule_snapshot(generation: int) -> void:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	tree.create_timer(SNAPSHOT_INTERVAL, true, false, true).timeout.connect(
+		_on_snapshot_due.bind(generation)
+	)
+
+
+func _on_snapshot_due(generation: int) -> void:
+	if generation != _generation or not is_instance_valid(_watched):
+		return
+	send_snapshot()
+	_schedule_snapshot(generation)
 
 
 ## One component, as a plain Dictionary.

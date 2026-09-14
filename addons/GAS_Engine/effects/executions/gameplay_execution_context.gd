@@ -51,7 +51,7 @@ func captured(definition: GameplayAttributeCaptureDefinition) -> AttributeCaptur
 	if not read.is_ok() or definition == null:
 		return read
 	var adjusted: AttributeCaptureResult = AttributeCaptureResult.new()
-	adjusted.value = adjust(definition.attribute_name, read.value)
+	adjusted.value = adjust(definition.resolved_attribute_name(), read.value)
 	return adjusted
 
 

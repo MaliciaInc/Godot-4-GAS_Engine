@@ -145,12 +145,12 @@ static func _resolve_authored_magnitudes(
 			continue
 		if _is_direct_live_self_cycle(modifier):
 			result.status = AttributeEvaluationResult.Status.LIVE_MAGNITUDE_CYCLE
-			result.error_attribute_name = modifier.attribute_name
+			result.error_attribute_name = modifier.resolved_attribute_name()
 			return false
 		var resolved: GameplayMagnitudeResult = modifier.magnitude.resolve(context)
 		if not resolved.is_ok():
 			result.status = _translate_magnitude_status(resolved.status)
-			result.error_attribute_name = modifier.attribute_name
+			result.error_attribute_name = modifier.resolved_attribute_name()
 			return false
 		spec._cache_evaluation_magnitude(index, resolved.value)
 	return true
@@ -169,7 +169,7 @@ static func _is_direct_live_self_cycle(modifier: GameplayEffectModifier) -> bool
 	return (
 		capture.policy == GameplayAttributeCaptureDefinition.Policy.LIVE
 		and capture.actor == GameplayAttributeCaptureDefinition.Actor.TARGET
-		and capture.attribute_name == modifier.attribute_name
+		and capture.resolved_attribute_name() == modifier.resolved_attribute_name()
 	)
 
 
@@ -322,10 +322,9 @@ static func _channel_folded_profile(request: Request) -> bool:
 static func _modifier_attribute_names(spec: GameplayEffectSpec) -> Array[StringName]:
 	var names: Array[StringName] = []
 	for modifier: GameplayEffectModifier in spec.effect_def.modifiers:
-		if modifier == null or modifier.attribute_name.is_empty():
-			continue
-		if not names.has(modifier.attribute_name):
-			names.append(modifier.attribute_name)
+		var target: StringName = modifier.resolved_attribute_name() if modifier != null else &""
+		if not target.is_empty() and not names.has(target):
+			names.append(target)
 	return names
 
 
@@ -376,7 +375,7 @@ static func _build_contributions(
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-		if modifier == null or modifier.attribute_name.is_empty():
+		if modifier == null or modifier.resolved_attribute_name().is_empty():
 			continue
 		if not _qualifies(request, modifier):
 			continue
@@ -384,13 +383,13 @@ static func _build_contributions(
 		var magnitude: float = _stack_scaled_magnitude(spec, index, _channel_folded_profile(request))
 		if not is_finite(magnitude):
 			result.status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
-			result.error_attribute_name = modifier.attribute_name
+			result.error_attribute_name = modifier.resolved_attribute_name()
 			result.contributions.clear()
 			return
 
 		if modifier.operation == GameplayEffectModifier.Operation.DIVIDE and is_zero_approx(magnitude):
 			result.status = AttributeEvaluationResult.Status.DIVISION_BY_ZERO
-			result.error_attribute_name = modifier.attribute_name
+			result.error_attribute_name = modifier.resolved_attribute_name()
 			result.contributions.clear()
 			return
 
@@ -402,12 +401,12 @@ static func _build_contributions(
 		# carries one.
 		if not GameplayEffectModifier.Operation.values().has(modifier.operation):
 			result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
-			result.error_attribute_name = modifier.attribute_name
+			result.error_attribute_name = modifier.resolved_attribute_name()
 			result.contributions.clear()
 			return
 
 		var contribution: AttributeModifierContribution = AttributeModifierContribution.new()
-		contribution.attribute_name = modifier.attribute_name
+		contribution.attribute_name = modifier.resolved_attribute_name()
 		contribution.operation = modifier.operation
 		contribution.evaluation_channel = modifier.evaluation_channel
 		contribution.magnitude = magnitude
@@ -479,7 +478,7 @@ static func _compose_for_attribute(
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-		if modifier == null or modifier.attribute_name != attribute_name:
+		if modifier == null or modifier.resolved_attribute_name() != attribute_name:
 			continue
 
 		var magnitude: float = _stack_scaled_magnitude(spec, index, _channel_folded_profile(request))

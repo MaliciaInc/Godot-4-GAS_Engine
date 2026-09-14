@@ -28,13 +28,14 @@ enum Operation {
 	ADD_FINAL,
 }
 
-## The exact attribute name in the AttributeSet (e.g. &"health" or &"mana").
 ## Which attribute this changes, said so it cannot mean two of them.
 ##
 ## Authoritative where it is set. `attribute_name` below stays for everything
 ## authored before this and is what a reference falls back to.
 @export var attribute: GameplayAttributeRef = null
 
+## The exact attribute name in the AttributeSet (e.g. &"health" or &"mana"),
+## read only when `attribute` names nothing.
 @export var attribute_name: StringName = &""
 
 ## How the math should be applied.
@@ -61,4 +62,13 @@ enum Operation {
 
 ## And the tags the target must carry.
 @export var target_requirements: GameplayTagQuery = null
+
+
+## The attribute this changes, whichever way it was authored.
+##
+## Every runtime reader asks this rather than either field: a picker that fills
+## the reference and an evaluator that reads only the name is a modifier that
+## silently does nothing.
+func resolved_attribute_name() -> StringName:
+	return GameplayAttributeRef.name_of(attribute, attribute_name)
 

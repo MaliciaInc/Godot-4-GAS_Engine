@@ -30,7 +30,7 @@ run again.
 
 Nothing. Every defect this sandbox found in the addon is fixed on `main`,
 re-deployed here and re-run - the last were GAS-011 to GAS-013, closed
-2026-09-14 and moved below, beside GAS-014 to GAS-016, which had no repro in
+2026-09-14 and moved below, beside GAS-014 to GAS-024, which had no repro in
 this game to re-run and are closed by their regression tests on `main`. A finding is only allowed to leave this section by being
 re-measured here, never by a fix existing somewhere else.
 
@@ -727,6 +727,16 @@ Fixed here: `_land()` names a payload after its ability, a cooldown is named by
 its tag, and the energy tick by what it is. `test/gas_overlay_probe.gd` checks
 that the row says Focus. Asking why it was blank also turned up GAS-014.
 
+## SBX-013 — this branch called the engine MIT · **FIXED**
+
+`SANDBOX.md` said `addons/GAS_Engine` was MIT and pointed at a
+`addons/GAS_Engine/LICENSE` that does not exist. The engine is under the
+GAS_Engine Community Use License 1.0, with modification reserved to a paid
+Commercial Modification License, and both files live at the root of `main`.
+Found while writing the manual's installation page.
+
+Fixed here: `SANDBOX.md` names both licences and where they are.
+
 ---
 
 ## 2026-09-01 — combat runs on GAS_Engine end to end
@@ -1011,6 +1021,31 @@ cooldown, and a buff's contribution withdrawn on expiry lands "exactly back to
 base, no float drift". What a playtest would add is confirmation that this game
 wires them correctly - not evidence about the engine.
 
+## The smoke's paste checks, on a machine whose clipboard would not open · **NOT A DEFECT**
+
+**Status:** `NOT A DEFECT` - of GAS_Engine; measured 2026-09-14 at the re-deploy
+of `main`'s `9a26ef6`
+
+`composer_smoke` ran 87 of 89 twice in a row. The two red checks were
+`12 · Ctrl+V puts it back` and `12 · Ctrl+C then Ctrl+V adds one`, each after
+`ERROR: Unable to open clipboard.`
+
+Measured rather than reasoned:
+
+- No file under `addons/GAS_Engine/editor/composer/` changed in that deploy.
+- A script that does nothing but `DisplayServer.clipboard_get()` failed the same
+  way - three times at start-up, and twice more five frames after its window was
+  up.
+- On the same machine, .NET's single attempt to open the clipboard failed as
+  well, while PowerShell's `Get-Clipboard`, which retries, got through.
+
+Something outside Godot held the clipboard open often enough that a single
+attempt to open it lost, and Godot makes a single attempt. Before writing up a
+paste failure here, run a one-line `clipboard_get()` script first: if that fails
+too, the machine is the subject, not the Composer.
+
+---
+
 # Closed
 
 ## GAS-011 — a wait the Composer wrote did not wait · **VERIFIED IN SANDBOX**
@@ -1204,6 +1239,149 @@ ever stopped being true.
 
 **Fix:** the double parses what it is given as JSON and freezes it, as Dialogic
 does, and a test pins the shape it hands over.
+
+---
+
+GAS-017 to GAS-024 were found while writing the GAS_Engine manual, by checking
+every sentence of it against the code. None of them is reachable from this
+game's own content, so each is closed by its regression test on `main`, and the
+probes below re-ran green on the re-deploy.
+
+## GAS-017 — an attribute chosen with the picker was never read · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — deployed here. This game names every
+attribute by its bare name, so there is no repro here to re-run
+**Severity:** high - an effect authored the way the Inspector invites did nothing,
+and said nothing
+**Where:** every runtime reader of `GameplayEffectModifier`,
+`GameplayAttributeCaptureDefinition` and `GameplayAbilityCost`
+
+The attribute picker writes the typed references - `attribute`, `target`,
+`reference` - and leaves the bare names beside them empty. The runtime read only
+the bare names: a modifier chosen with the picker was skipped, and a capture or a
+cost was refused as an invalid definition. The manual's first draft had to tell
+every reader to fill in both.
+
+**Fix:** every reader asks the resource which attribute it names, reference first;
+a capture and a cost's percentage reference read the set their reference names.
+Regression on `main`: `test/unit/test_attribute_reference.gd`, region "What the
+runtime reads".
+
+---
+
+## GAS-018 — the Gameplay Effect editor was never in the editor · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — editor-only, nothing headless here reaches it
+**Severity:** medium - a finished screen nobody could open
+**Where:** `addons/GAS_Engine/editor/effects/gameplay_effect_editor_plugin.gd`
+
+The effect editor existed as an `EditorPlugin` of its own that nothing
+registered, so its bottom panel never appeared.
+
+**Fix:** the addon's plugin attaches the panel through `GameplayEffectPanelHost`,
+which follows the Inspector; the orphan plugin is gone. Regression on `main`:
+`test/unit/test_gameplay_effect_editor.gd`, region "The bottom panel".
+
+---
+
+## GAS-019 — the editor's debugger kept what the game said and drew none of it · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — editor-only, nothing headless here reaches it
+**Severity:** medium
+**Where:** `addons/GAS_Engine/editor/debugger/gas_runtime_debugger_plugin.gd`,
+`addons/GAS_Engine/debug/gas_debug_channel.gd`
+
+Every component reported snapshots and traces to the editor, and the editor
+kept them in a log with no screen. The snapshot was sent once, when watching
+began, so a screen would have shown each entity as it started. And the console
+had no word for the Abilities page the overlay drew.
+
+**Fix:** a GAS_Engine tab per session in the Debugger dock, drawn with the
+overlay's own pages; a snapshot resent four times a second while watched; one
+list of pages for the overlay, the console and the tab. Regression on `main`:
+`test/unit/test_gas_runtime_debugger_panel.gd`, `test_gas_runtime_debugger.gd`
+and `test_gas_debug_commands.gd`.
+
+---
+
+## GAS-020 — a magnitude's declared dependencies were never followed · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — deployed here; this game's magnitudes read
+attributes only
+**Severity:** medium
+**Where:** `addons/GAS_Engine/magnitudes/gameplay_magnitude.gd:external_dependencies()`
+
+Declared and documented as how a magnitude says it reads something outside the
+attribute system, and read by nothing: a lasting contribution drawn from the
+weather kept the value it had when the effect landed.
+
+**Fix:** the live-magnitude registry subscribes to those signals for as long as a
+lasting effect carries the modifier, and `GameplayCustomMagnitude` answers with its
+calculation's. Regression on `main`: `test/unit/test_gameplay_live_magnitudes.gd`.
+
+---
+
+## GAS-021 — a press by action name did half of what a press by slot does · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — this game acts through `Battler.act()`, not
+input, so there is no repro here to re-run
+**Severity:** medium
+**Where:** `addons/GAS_Engine/components/ability_runtime.gd:_route_action()`
+
+The route by action carried its own copy of the delivery and had lost two halves
+of it: a `PER_EXECUTION` grant was never started, and no task heard the press - an
+ability bound by action and waiting on its own input waited forever.
+
+**Fix:** one press path for both routes, tasks hear actions, and `wait_input_*`
+waits on the grant's action as well as its slot. Regression on `main`:
+`test/unit/test_ability_instancing.gd` and `test_ability_input.gd`.
+
+---
+
+## GAS-022 — a refused commit was never announced · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — deployed here; `composer_game_probe`, which
+counts the commits of the ability it runs, still counts one
+**Severity:** low - a debugger never showed the commit somebody was debugging
+**Where:** `addons/GAS_Engine/abilities/gameplay_ability.gd:commit_ability()`
+
+`ability_committed` and the comment beside the call promised every attempt; the
+code emitted only on success.
+
+**Fix:** every attempt is announced with its status, and `wait_ability_commit`
+still wakes only on a commit that paid. Regression on `main`:
+`test/unit/test_ability_commit.gd` and `test_new_ability_task_behaviour.gd`.
+
+---
+
+## GAS-023 — the reference abilities awaited a signal a task may already have fired · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6` — `composer_game_probe` reads them back byte for
+byte here
+**Severity:** low - the examples a reader copies taught the unsafe wait
+**Where:** `addons/GAS_Engine/reference/`
+
+Four of the six awaited `task.finished`, which never returns for a task that ended
+inside its own `start()` - the trap `GameplayAbilityTask.completed()` exists for.
+
+**Fix:** `completed()`, in them and in the suite's fixtures.
+
+---
+
+## GAS-024 — the READMEs described an engine that had moved on · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 9a26ef6`
+**Severity:** low
+**Where:** `README.md`; `examples/action_sample/README.md` and two of its scripts
+
+The README said the Composer opens anything it cannot draw read-only (it keeps
+the statement and leaves the rest editable), that every public method is on the
+palette (only those marked `@composer`), and that effects have no authored-resource
+alternative (`.tres` effect assets exist). The action sample pointed at a
+`registry_file` setting that does not exist, and at an effect editor by a phase
+number.
+
+**Fix:** rewritten against the code, and the manual in `documentation/` beside it.
 
 ---
 
