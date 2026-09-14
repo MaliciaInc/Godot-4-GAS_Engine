@@ -1,4 +1,5 @@
-## Wait for one input slot to be pressed, or to be released.
+## Wait for one input to be pressed, or to be released - named by its slot, by
+## its InputMap action, or both.
 ##
 ## Both halves matter. "Hold to charge, release to fire" is two waits on the same
 ## slot in opposite directions, and a release task woken by the press that

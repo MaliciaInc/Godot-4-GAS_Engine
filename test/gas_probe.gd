@@ -1,7 +1,7 @@
 ## Drives a real battle and writes down what the engine did.
 ##
 ## The addon's own suite cannot reach here. Every engine defect this sandbox has
-## found was invisible to thirty thousand assertions and visible the moment a
+## found was invisible to every assertion in the engine's suite and visible the moment a
 ## game used the engine for real, so the evidence that matters is a fight that
 ## actually happened - not a fixture shaped like one.
 ##

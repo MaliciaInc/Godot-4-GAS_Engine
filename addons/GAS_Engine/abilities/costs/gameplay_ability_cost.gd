@@ -4,8 +4,8 @@
 ## Three ways to price an entry:
 ##
 ##     ABSOLUTE            a fixed amount, optionally scaled by level
-##     PERCENT_OF_BASE      a fraction of `reference_attribute`'s durable base
-##     PERCENT_OF_CURRENT   a fraction of `reference_attribute`'s derived value
+##     PERCENT_OF_BASE      a fraction of the reference attribute's durable base
+##     PERCENT_OF_CURRENT   a fraction of the reference attribute's derived value
 ##
 ## This Resource only describes intent. `GameplayAbilityCostResolver` turns a
 ## list of these, read against a live ASC, into one frozen amount to charge. It

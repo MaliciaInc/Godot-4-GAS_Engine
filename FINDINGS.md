@@ -1044,6 +1044,10 @@ attempt to open it lost, and Godot makes a single attempt. Before writing up a
 paste failure here, run a one-line `clipboard_get()` script first: if that fails
 too, the machine is the subject, not the Composer.
 
+Later the same day, with nothing contending for the clipboard - 120 single
+attempts to open it in six seconds, none refused - the same script read it, and
+the smoke ran 89 of 89 on the same deploy.
+
 ---
 
 # Closed
@@ -1377,9 +1381,10 @@ inside its own `start()` - the trap `GameplayAbilityTask.completed()` exists for
 The README said the Composer opens anything it cannot draw read-only (it keeps
 the statement and leaves the rest editable), that every public method is on the
 palette (only those marked `@composer`), and that effects have no authored-resource
-alternative (`.tres` effect assets exist). The action sample pointed at a
-`registry_file` setting that does not exist, and at an effect editor by a phase
-number.
+alternative (`.tres` effect assets exist). The action sample told a project to
+list its cues where the `registry_file` setting points - a setting that now only
+says where a registry from before the generated file used to live, so its
+bindings can be folded in once - and named an effect editor by a phase number.
 
 **Fix:** rewritten against the code, and the manual in `documentation/` beside it.
 

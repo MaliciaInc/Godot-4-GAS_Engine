@@ -13,13 +13,13 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `9a26ef6`, with `gas_engine/` re-rendered here |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `e17b56e`, with `gas_engine/` re-rendered here |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
 
 The unit suite already covers what can be asserted in isolation - it is green at
-30k+ assertions. What it cannot cover is a system meeting a real scene tree: node
+67k+ assertions. What it cannot cover is a system meeting a real scene tree: node
 lifetimes, autoload ordering, a real Dialogic install, input routing, and the
 order real gameplay happens in. Every defect found here is one the suite could
 not have found by construction.
@@ -103,7 +103,7 @@ which is where the addon is copied from.
 
 ## What runs here, and what only runs here
 
-All from the command line, none of them needing the editor:
+All from the command line; only the last one opens the editor:
 
 ```bash
 GODOT="/c/Program Files (x86)/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe"
@@ -115,6 +115,7 @@ GODOT="/c/Program Files (x86)/Steam/steamapps/common/Godot Engine/godot.windows.
 "$GODOT" --headless --path . res://test/dialogic_bridge_probe.tscn # real Dialogic timelines into the bridge
 "$GODOT" --path . res://test/composer_harness.tscn                 # the Composer, 58 checks, needs a window
 "$GODOT" --path . res://test/composer_smoke.tscn                   # the Composer, with a hand on the mouse
+"$GODOT" --editor --path . -- --gas-editor-probe                   # the Gameplay Effect panel and the Debugger tab, in a real editor
 ```
 
 ### The four that hold the engine to its word in a real game
@@ -134,13 +135,33 @@ quietly shrinking it, which is SBX-009's lesson applied from the start.
 wakes. What the four found the first time they ran is in `FINDINGS.md`, GAS-011
 to GAS-016 and SBX-010 to SBX-012.
 
-The first one says one thing and one thing only: **both arenas reach
+### The one that opens the editor
+
+`addons/gas_editor_probe/` is an `EditorPlugin`, enabled in this project and
+inert unless the editor is started with `-- --gas-editor-probe`. The engine's
+suite can prove the Gameplay Effect panel and the Debugger tab only in parts,
+because an editor plugin refuses to exist outside an editor; this is the check
+that an editor actually shows them.
+
+It opens an effect whose modifier names its attribute the way the Inspector's
+picker does, and looks for the panel, the modifier's row and the attribute's
+name on it. It plays `test/gas_probe.tscn` and looks for the GAS_Engine tab
+listing the running battlers, drawing a page and their events, and being sent
+the same battler again several times in two seconds. Then it brings that tab up,
+closes the editor, and ends with `GAS_EDITOR_PROBE_RESULT: PASS passed=N failed=0`.
+Screenshots go to `user://gas_editor_probe`.
+
+The editor rewrites `project.godot` as it opens, so run
+`git checkout -- project.godot` afterwards, as after any editor run - the
+probe's entry in `[editor_plugins]` is committed and comes back with it.
+
+`gas_probe`, the first in that list, says one thing and one thing only: **both arenas reach
 `combat_finished`**. It is not reproducible round for round - accuracy is rolled
 off a stream whose draw order moves with the wall clock - so comparing a run
 against the last one reads as a regression when nothing has changed. SBX-005 in
 `FINDINGS.md` has the measurements; do not use round counts as evidence.
 
-The last one is the Composer 3.2 smoke, and it is the reason this branch exists.
+`composer_smoke` is the Composer 3.2 smoke, and it is the reason this branch exists.
 The phase document expects a person to do it because `GraphEdit` reads picking,
 dragging, sweeping, panning and zooming inside `_gui_input`, which no script can
 call. It turns out a script does not have to: an event pushed into the viewport
@@ -154,13 +175,13 @@ read:
 SMOKE_RESULT: PASS passed=89 failed=0
 ```
 
-At the re-deploy of `main`'s `9a26ef6` the other seven are green: the four
-below at 47, 28, 16 and 34 checks, `composer_harness` at 58, and `gas_probe`
-with both arenas reaching `combat_finished`. The smoke ran 87 of 89 there: its
-two paste checks were red because no Godot process on that machine could open
-the Windows clipboard at the time - a script that does nothing but read the
-clipboard failed the same way, and no Composer file changed in that deploy. See
-"Checked and not defects" in `FINDINGS.md`. The smoke was first green at `aad0cbc`. It was not, and the two checks that were red were the
+Green at the re-deploy of `main`'s `e17b56e`, as are the other eight: the four
+in the table at 47, 28, 16 and 34 checks, `composer_harness` at 58, `gas_probe`
+with both arenas reaching `combat_finished`, `composer_probe` printing this
+game's ability back byte for byte, and the editor probe at 13. At the re-deploy
+of `9a26ef6` the smoke ran 87 of 89 once, because the Windows clipboard could not
+be opened on that machine at the time - see "Checked and not defects" in
+`FINDINGS.md`. The smoke was first green at `aad0cbc`. It was not, and the two checks that were red were the
 harness aiming at a card that was off the canvas rather than anything the engine
 did - see GAS-009 under "Checked and not defects", which is worth reading before
 writing up the next one.
