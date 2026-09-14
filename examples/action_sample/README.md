@@ -45,13 +45,15 @@ Every effect, cue and preset here is built by a static function rather than
 saved as a `.tres`. That is a decision about this sample rather than a
 recommendation: it keeps every number in the diff, under the same gates as the
 rest of the engine, so a reader can see what a strike costs without opening an
-inspector. A project of your own authors these in the effect editor the addon
-ships, which produces exactly these objects.
+inspector. A project of your own can save its effects as `.tres` assets -
+**Project → Tools → Create Gameplay Effect**, then the Inspector and the
+**Gameplay Effect** bottom panel - which load as exactly these objects.
 
 The cues are bound in code for a different reason: this sample lives inside the
 engine's own repository and must not rewrite the repository's cue registry to
-run. A project of your own lists them in the registry file the
-`gas_engine/resources/cues/registry_file` setting points at.
+run. A project of your own lists them in its generated cue registry,
+`res://gas_engine/gameplay_cues.gd` by default (the
+`gas_engine/resources/cues/generated_script` setting).
 
 ## Running it as two processes
 

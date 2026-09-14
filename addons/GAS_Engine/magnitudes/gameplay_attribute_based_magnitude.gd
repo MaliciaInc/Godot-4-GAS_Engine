@@ -174,10 +174,11 @@ func _up_to_channel(context: GameplayMagnitudeContext) -> AttributeCaptureResult
 	if asc == null:
 		made.status = _missing_status()
 		return made
-	if not asc.has_attribute(capture.attribute_name):
+	var reference: GameplayAttributeRef = capture.attribute_ref()
+	if asc.attributes.find_by_ref(reference) == null:
 		made.status = AttributeCaptureResult.Status.ATTRIBUTE_NOT_FOUND
 		return made
-	made.value = asc.get_attribute_up_to_channel(capture.attribute_name, final_channel)
+	made.value = asc.attributes.value_up_to_channel(reference.attribute_name, final_channel, reference)
 	return made
 
 

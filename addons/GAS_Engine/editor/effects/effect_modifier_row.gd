@@ -89,7 +89,7 @@ func show_what_is_there() -> void:
 	var modifier: GameplayEffectModifier = document.modifier_at(index) if document != null else null
 	if modifier == null or _attribute == null:
 		return
-	_attribute.text = String(modifier.attribute_name)
+	_attribute.text = String(modifier.resolved_attribute_name())
 	_operation.select(int(modifier.operation))
 	# Without a signal, in both fields: filling a SpinBox emits value_changed,
 	# which writes back to the document, which announces a change, which

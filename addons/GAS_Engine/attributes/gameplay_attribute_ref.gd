@@ -35,6 +35,18 @@ static func resolved(
 	return made
 
 
+## Just the name, for the places that address an attribute by name.
+##
+## The same rule as `resolved()` - the typed one wins where somebody wrote it -
+## without building a reference only to read one field back off it. Writes are
+## addressed by name everywhere in the engine, which is why a name two sets
+## share is refused on the way in rather than sent to whichever was listed first.
+static func name_of(authored: GameplayAttributeRef, legacy: StringName) -> StringName:
+	if authored != null and authored.is_valid():
+		return authored.attribute_name
+	return legacy
+
+
 func equals(other: GameplayAttributeRef) -> bool:
 	return (
 		other != null

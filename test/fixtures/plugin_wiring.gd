@@ -24,8 +24,10 @@ const PLUGIN_SOURCE: String = "res://addons/GAS_Engine/gas_engine_plugin.gd"
 ##
 ## `wired` is a table of [what the line does, the line]. Empty means every one
 ## of them is there, which is the only answer a caller should accept.
-static func missing(wired: Array) -> Array[String]:
-	var source: String = FileAccess.get_file_as_string(PLUGIN_SOURCE)
+## `source_path` names another editor-only script with the same problem - the
+## debugger plugin refuses to be built headless too.
+static func missing(wired: Array, source_path: String = PLUGIN_SOURCE) -> Array[String]:
+	var source: String = FileAccess.get_file_as_string(source_path)
 	if source.is_empty():
 		return ["the plugin's source could not be read at all"]
 

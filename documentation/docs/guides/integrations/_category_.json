@@ -1,0 +1,8 @@
+{
+  "label": "Integrations",
+  "position": 12,
+  "link": {
+    "type": "generated-index",
+    "description": "Optional bridges between GAS_Engine and third-party addons. None of them is required, and each works only when its addon is installed."
+  }
+}

@@ -23,19 +23,29 @@ enum Mode {
 
 @export var mode: GameplayAbilityCost.Mode = Mode.ABSOLUTE
 
-## The attribute this entry actually spends.
-## Which attribute is charged, said so it cannot mean two of them.
+## The attribute this entry actually spends, said so it cannot mean two of them.
 @export var target: GameplayAttributeRef = null
 
+## The bare name of the spent attribute, read only when `target` names nothing.
 @export var target_attribute: StringName = &""
 
 ## For a percent mode, the attribute the percentage is computed against. Must
 ## stay empty for ABSOLUTE: nothing is referenced when nothing is a fraction.
-## Which attribute a percentage is priced against, the same way.
 @export var reference: GameplayAttributeRef = null
 
+## The bare name of that attribute, read only when `reference` names nothing.
 @export var reference_attribute: StringName = &""
 
 ## ABSOLUTE: the amount itself. Percent modes: the fraction - `0.10` for 10%,
 ## `1.00` for 100%. Never negative, never over 1.00 for a percent mode.
 @export var amount: GameplayScalableFloat = null
+
+
+## What this entry spends, whichever way it was authored.
+func resolved_target_attribute() -> StringName:
+	return GameplayAttributeRef.name_of(target, target_attribute)
+
+
+## What a percentage is priced against, whichever way it was authored.
+func resolved_reference_attribute() -> StringName:
+	return GameplayAttributeRef.name_of(reference, reference_attribute)

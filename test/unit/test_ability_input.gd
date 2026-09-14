@@ -297,6 +297,44 @@ func test_one_press_does_not_double_activate_a_spec_bound_two_ways() -> void:
 	)
 
 
+## A grant that keeps running once pressed, reachable by `slot` or by `action`.
+##
+## ChannelingAbility rather than a probe: `channels` is not exported, so it
+## never survives the pack-then-instantiate round trip a grant goes through,
+## and the ability would end the instant it started.
+func _channelling_grant(slot: int, action: StringName, while_held: bool) -> GameplayAbilitySpec:
+	var channelling: ChannelingAbility = ChannelingAbility.new()
+	channelling.ability_tags = [&"Ability.Held"] as Array[StringName]
+	if while_held:
+		channelling.activation_policy = GameplayAbility.ActivationPolicy.WHILE_INPUT_ACTIVE
+	var scene: PackedScene = PackedScene.new()
+	scene.pack(channelling)
+	channelling.free()
+	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
+	options.input_id = slot
+	options.input_action = action
+	var handle: GameplayAbilityHandle = asc.give_ability_with_options(scene, options)
+	return asc.get_ability_spec(handle)
+
+
+## An ability waiting on its own input hears it by name too.
+##
+## "Its own input" read only the slot, and a grant bound by action has none, so
+## the wait sat on -1 - which nothing presses - and the ability never resumed.
+## Waited from inside a running activation, which is where an ability waits: an
+## idle grant's press would start it and end it, cancelling the wait with it.
+func test_waiting_on_its_own_input_hears_the_action_it_is_bound_to() -> void:
+	var spec: GameplayAbilitySpec = _channelling_grant(-1, &"hold", false)
+	asc.ability_local_input_action_pressed(&"hold")
+	assert_true(spec.per_actor_instance.is_active, "the press started it, and it is still running")
+	var release: AbilityTaskWaitInput = spec.per_actor_instance.wait_input_released()
+
+	asc.ability_local_input_action_released(&"hold")
+
+	assert_eq(release.state, GameplayAbilityTask.State.SUCCEEDED, "its own action, let go, woke it")
+	(spec.per_actor_instance as ChannelingAbility).channel_gate.emit()
+
+
 ## Held down it runs; let go it ends - whichever way the input is named.
 ##
 ## Over both spellings because they are one rule with two front doors, and a
@@ -314,21 +352,7 @@ func test_while_input_active_starts_on_press_and_ends_on_release(
 	var described: String = case[0]
 	var slot: int = case[1]
 	var action: StringName = case[2]
-
-	# ChannelingAbility rather than a probe: `channels` is not exported, so it
-	# never survives the pack-then-instantiate round trip a grant goes through,
-	# and the ability would end the instant it started.
-	var channelling: ChannelingAbility = ChannelingAbility.new()
-	channelling.ability_tags = [&"Ability.Held"] as Array[StringName]
-	channelling.activation_policy = GameplayAbility.ActivationPolicy.WHILE_INPUT_ACTIVE
-	var scene: PackedScene = PackedScene.new()
-	scene.pack(channelling)
-	channelling.free()
-	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
-	options.input_id = slot
-	options.input_action = action
-	var handle: GameplayAbilityHandle = asc.give_ability_with_options(scene, options)
-	var spec: GameplayAbilitySpec = asc.get_ability_spec(handle)
+	var spec: GameplayAbilitySpec = _channelling_grant(slot, action, true)
 
 	if action == &"":
 		asc.ability_local_input_pressed(slot)

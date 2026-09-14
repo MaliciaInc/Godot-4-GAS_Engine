@@ -51,14 +51,20 @@ const SEPARATOR: String = " | "
 const LINE_BREAK: String = "\n"
 
 
-## The pages a command can print, each answering to its own word.
+## The pages, in the order they are tabbed, each answering the console to its
+## own word.
 ##
-## Built here rather than listed, so a page added to the overlay is a command
-## without anybody remembering to add it - and so the console can never offer a
-## word that prints nothing.
+## The one list of them. The in-game overlay tabs these and the editor's
+## Debugger tab tabs these, so a page added here is a tab in both and a command
+## without anybody remembering to add it - and the three can never offer
+## different pages. They did once: the overlay drew Abilities and the console
+## had no word for it.
 static func pages() -> Array[GasDebugPage]:
 	var offered: Array[GasDebugPage] = [
-		GasDebugPageAttributes.new(), GasDebugPageEffects.new(), GasDebugPageTags.new()
+		GasDebugPageAttributes.new(),
+		GasDebugPageEffects.new(),
+		GasDebugPageAbilities.new(),
+		GasDebugPageTags.new(),
 	]
 	return offered
 

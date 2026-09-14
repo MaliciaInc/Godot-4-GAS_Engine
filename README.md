@@ -195,9 +195,9 @@ Put the same component on a second node, add that node to the `enemies` group, a
 
 Read a value back with `asc.get_attribute_current(&"health")`, and watch it move by connecting `asc.attribute_changed`.
 
-### Why the effect is built in code
+### Code or an effect asset
 
-Effects, costs and cooldowns are built in GDScript from numbers authored on the ability's scene, never as an authored resource beside them. There is deliberately no authored-resource alternative sitting beside them: two ways to say what an ability does is two places to look when it does the wrong thing, and the hand-written one is the one nothing can check.
+The effect above is built in GDScript so the whole example fits in one file. An effect can just as well be a `.tres` asset: **Project → Tools → Create Gameplay Effect** writes one, and selecting it opens the Inspector and the **Gameplay Effect** bottom panel, which lists its modifiers and saves them back. An ability exports the asset like any other resource. Both routes produce the same `GameplayEffect`, and nothing in the engine tells them apart.
 
 ### Where to go from here
 
@@ -600,15 +600,16 @@ An ability body is drawn when every line of it is one of these:
 - `super()`;
 - `pass`.
 
-Everything else opens **read-only**, with the line and the reason on the Output panel. This is not an error in your file — it is the Composer saying it cannot draw something, and declining to touch a file it does not fully understand:
+Anything else is **kept**: it stays in the file byte for byte, is drawn as one card that cannot be edited, and the Output panel gives the line and the reason. Nothing around it is locked — the rest of the ability stays editable:
 
-- `for` and `while` — a loop has no single place on a canvas;
+- `for` and `while` — a loop has no single place on a canvas, so the whole loop is one kept card;
 - an inline `func` or `lambda` — code the graph cannot show;
 - `assert` and `breakpoint` — a debugger statement has no node;
 - `continue` and `break` — loop keywords;
-- two calls side by side, such as `open() + shut()` — neither one is the statement.
+- two calls side by side, such as `open() + shut()` — neither one is the statement;
+- a local without a written type, such as `var level := 1.0` — a port shows the type of what flows through it, and inferring one would let the canvas and the file disagree until somebody ran the game.
 
-A local must carry a written type. `var level := 1.0` is refused where `var level: float = 1.0` is drawn, because a port shows the type of what flows through it and inferring one here would let the canvas and the file disagree until somebody ran the game.
+Move a kept statement into a helper method of the same script and call the helper, and the call is drawn. Only an ability with no `_activate_ability()` of its own — one that inherits the body and overrides hooks — opens read-only, because there is nothing of its own to draw.
 
 ### Putting a node down
 
@@ -621,7 +622,7 @@ Click a group's header to open it, and click it again to close it.
 
 ### What is on the palette
 
-Every public method of `GameplayAbility`, `AbilitySystemComponent`, `GameplayTargetingService`, `AbilityTaskFactory` and `GameplayAbilityTargetData`, read from those scripts rather than listed anywhere. A method added to the engine appears the next time the editor starts; one that is renamed takes its node with it.
+Every method of `GameplayAbility`, `AbilitySystemComponent`, `GameplayTargetingService`, `AbilityTaskFactory` and `GameplayAbilityTargetData` whose doc comment carries an `## @composer` annotation, read from those scripts rather than listed anywhere. `## @composer: Group` files it under a named group, `## @composer_name:` gives it a title, and `## @composer_deprecated:` keeps it offered but marked with what to use instead. Methods the runtime only uses internally carry no annotation and are not offered. An annotated method added to the engine appears the next time the editor starts; one that is renamed takes its node with it.
 
 A game can offer calls of its own through `ComposerCatalog.register(method, group, path, suspends)`, and they are admitted on exactly the same terms the engine's own are. There are no privileged nodes: every node prints as its own call and reads back the same way, so a custom one needs a signature and nothing else.
 

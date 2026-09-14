@@ -375,11 +375,28 @@ func test_the_editor_registers_the_debugger_and_takes_it_back() -> void:
 	)
 
 
+const DEBUGGER_PLUGIN: String = "res://addons/GAS_Engine/editor/debugger/gas_runtime_debugger_plugin.gd"
+
+## Each run of the game gets a tab in the Debugger dock, drawn on the main thread.
+##
+## The plugin kept a log and drew nothing, so everything a game reported reached
+## an editor with no screen for it.
+const TAB_WIRED: Array = [
+	["each run of the game gets a tab", "session.add_session_tab(panel)"],
+	["a new run starts that tab from nothing", "log_for(session_id).forget()"],
+	["and it is redrawn on the main thread", "_refresh_panels.call_deferred()"],
+]
+
+
+func test_each_run_of_the_game_gets_a_tab_in_the_debugger_dock() -> void:
+	assert_eq(
+		PluginWiring.missing(TAB_WIRED, DEBUGGER_PLUGIN), [] as Array[String], "every part of it is there"
+	)
+
+
 ## And the door hands everything to the log rather than deciding itself.
 func test_the_door_decides_nothing_of_its_own() -> void:
-	var source: String = FileAccess.get_file_as_string(
-		"res://addons/GAS_Engine/editor/debugger/gas_runtime_debugger_plugin.gd"
-	)
+	var source: String = FileAccess.get_file_as_string(DEBUGGER_PLUGIN)
 
 	assert_true(source.contains("log.take(message, data)"), "it asks the log")
 	assert_false(

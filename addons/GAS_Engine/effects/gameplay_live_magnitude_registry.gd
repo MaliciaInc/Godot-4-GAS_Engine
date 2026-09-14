@@ -1,5 +1,6 @@
-## Keeps every persistent contribution whose GameplayAttributeBasedMagnitude
-## depends on a LIVE capture updated as the attribute it reads moves.
+## Keeps every persistent contribution whose magnitude can move up to date: an
+## attribute-based one reading a LIVE capture as that attribute moves, and any
+## magnitude as the signals it names in `external_dependencies()` fire.
 ##
 ## Split out of GameplayEffectRuntime the way AbilityInstancingRuntime is
 ## split out of AbilityRuntime: one focused collaborator instead of one file
@@ -33,9 +34,9 @@ var _reevaluation_depth: int = 0
 
 #region Creation and teardown
 ## Scan one newly-committed (or refreshed) persistent effect for modifiers
-## whose magnitude is attribute-based and LIVE, and subscribe to each one's
-## observed attribute. Does nothing for a SNAPSHOT magnitude, an effect with
-## no such modifiers, or one whose observed ASC cannot be resolved yet.
+## whose magnitude can move, and subscribe to what moves it. Does nothing for
+## an effect with no such modifiers, a SNAPSHOT capture, or a LIVE capture whose
+## observed ASC cannot be resolved yet.
 func create_bindings_for(active: ActiveGameplayEffect) -> void:
 	var spec: GameplayEffectSpec = active.spec
 	if spec == null or spec.effect_def == null:
@@ -43,8 +44,9 @@ func create_bindings_for(active: ActiveGameplayEffect) -> void:
 
 	for index: int in spec.effect_def.modifiers.size():
 		var modifier: GameplayEffectModifier = spec.effect_def.modifiers[index]
-		if modifier == null:
+		if modifier == null or modifier.magnitude == null:
 			continue
+		_connect_external(active, index, modifier)
 		var attribute_based: GameplayAttributeBasedMagnitude = modifier.magnitude as GameplayAttributeBasedMagnitude
 		if attribute_based == null or attribute_based.capture == null:
 			continue
@@ -59,7 +61,7 @@ func create_bindings_for(active: ActiveGameplayEffect) -> void:
 		if observed == null:
 			continue
 
-		_connect(active, index, modifier.attribute_name, attribute_based, observed)
+		_connect(active, index, modifier.resolved_attribute_name(), attribute_based, observed)
 
 
 func _connect(
@@ -80,7 +82,7 @@ func _connect(
 	binding.attribute_changed_handler = func(
 		attribute_name: StringName, _old_value: float, _new_value: float, _source_spec: GameplayEffectSpec
 	) -> void:
-		if attribute_name == binding.capture.attribute_name:
+		if attribute_name == binding.capture.resolved_attribute_name():
 			_reevaluate(binding)
 	observed.attribute_changed.connect(binding.attribute_changed_handler)
 
@@ -104,6 +106,29 @@ func _connect(
 	_bindings.append(binding)
 
 
+## Subscribe to whatever outside the attribute system this modifier's magnitude
+## says it reads - the weather, an inventory - so a change there re-resolves the
+## contribution the way a LIVE capture's attribute moving does.
+##
+## The handler takes any arguments and uses none: the signal is the magnitude's
+## to choose, and so is what it carries. The contribution only wants the moment.
+func _connect_external(
+	active: ActiveGameplayEffect, modifier_index: int, modifier: GameplayEffectModifier
+) -> void:
+	for dependency: Signal in modifier.magnitude.external_dependencies():
+		if dependency.is_null():
+			continue
+		var binding: GameplayLiveMagnitudeBinding = GameplayLiveMagnitudeBinding.new()
+		binding.active_effect = active
+		binding.modifier_index = modifier_index
+		binding.output_attribute = modifier.resolved_attribute_name()
+		binding.magnitude = modifier.magnitude
+		binding.external = dependency
+		binding.external_handler = func(..._carried: Array) -> void: _reevaluate(binding)
+		dependency.connect(binding.external_handler)
+		_bindings.append(binding)
+
+
 ## Every binding this effect owns, disconnected and dropped - removal,
 ## cleanup, or a REFRESH_DURATION reapplication about to build fresh ones for
 ## the same logical instance.
@@ -115,6 +140,11 @@ func disconnect_bindings_for(active: ActiveGameplayEffect) -> void:
 
 func _disconnect(binding: GameplayLiveMagnitudeBinding) -> void:
 	_bindings.erase(binding)
+	# Asked of the object id rather than of the signal: a dependency whose
+	# emitter is already gone has nothing left to disconnect from.
+	var emitter: Object = binding.external.get_object()
+	if emitter != null and binding.external.is_connected(binding.external_handler):
+		binding.external.disconnect(binding.external_handler)
 	if not is_instance_valid(binding.observed_asc):
 		return
 	_suspend(binding)
@@ -204,9 +234,10 @@ func _reevaluate(binding: GameplayLiveMagnitudeBinding) -> void:
 	_reevaluation_depth -= 1
 
 
-## Whether everything this binding has to read still exists.
+## Whether everything this binding has to read still exists. A binding to an
+## external dependency watches no component, so only a capture needs one.
 func _still_resolvable(binding: GameplayLiveMagnitudeBinding) -> bool:
-	if not is_instance_valid(binding.observed_asc):
+	if binding.capture != null and not is_instance_valid(binding.observed_asc):
 		return false
 	if binding.active_effect == null or binding.active_effect.spec == null:
 		return false

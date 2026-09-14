@@ -94,6 +94,21 @@ func test_a_commit_watch_aimed_at_one_grant_ignores_another_grants_commit() -> v
 	assert_true(task.committed_handle.same_as(mine), "and it kept which grant that was")
 
 
+## A refused commit is announced too, and is not the moment this waits for.
+##
+## The component says every attempt now, refusals included, so the task has to
+## tell a price being paid from one that was not - or a shield waiting on its
+## owner's cast would go up for a cast that never paid.
+func test_waiting_for_a_commit_is_not_woken_by_a_refused_one() -> void:
+	assert_true(ability.commit_ability().is_ok(), "the first commit pays")
+	var task: AbilityTaskWaitAbilityCommit = AbilityTaskFactory.wait_ability_commit(ability)
+
+	var refused: AbilityCommitResult = ability.commit_ability()
+
+	assert_eq(refused.status, AbilityCommitResult.Status.ALREADY_COMMITTED, "the second is refused")
+	assert_eq(task.state, GameplayAbilityTask.State.RUNNING, "and the task is still waiting")
+
+
 ## An effect turned away by an immunity is a moment nothing else announces.
 func test_waiting_for_an_immunity_block_wakes_when_one_bounces() -> void:
 	var task: AbilityTaskWaitEffectBlockedByImmunity = (

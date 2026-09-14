@@ -69,6 +69,7 @@ const COMPOSER_REFUSED: String = (
 ## scene being edited - answers a different question. See
 ## GasRuntimeDebuggerPlugin.
 var _runtime_debugger: GasRuntimeDebuggerPlugin = null
+var _effect_panel: GameplayEffectPanelHost = null
 
 const GameplayTagInspectorPlugin = preload("res://addons/GAS_Engine/gameplay_tag/gameplay_tag_inspector_plugin.gd")
 const GameplayAttributeInspectorPlugin = preload(
@@ -245,6 +246,8 @@ func _enter_tree() -> void:
 
 	add_tool_menu_item(COMPOSER_MENU, _open_composer)
 	add_tool_menu_item(EFFECT_MENU, _ask_for_new_effect)
+	_effect_panel = GameplayEffectPanelHost.new()
+	_effect_panel.attach(self, EditorInterface.get_inspector())
 	_runtime_debugger = GasRuntimeDebuggerPlugin.new()
 	add_debugger_plugin(_runtime_debugger)
 	_make_visible(false)
@@ -266,6 +269,9 @@ func _disable_plugin() -> void:
 func _exit_tree() -> void:
 	remove_tool_menu_item(COMPOSER_MENU)
 	remove_tool_menu_item(EFFECT_MENU)
+	if _effect_panel != null:
+		_effect_panel.detach()
+		_effect_panel = null
 	if _runtime_debugger != null:
 		remove_debugger_plugin(_runtime_debugger)
 		_runtime_debugger = null

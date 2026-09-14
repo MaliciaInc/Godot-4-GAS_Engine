@@ -8,8 +8,10 @@
 ##
 ## Bound in code because this sample lives inside the engine's own repository
 ## and must not rewrite the repository's cue registry to run. A project of your
-## own lists these in the registry the `gas_engine/resources/cues/registry_file`
-## setting points at, and `bind_cue` is what loading that file calls.
+## own lists these in its generated registry - `res://gas_engine/gameplay_cues.gd`
+## by default, the `gas_engine/resources/cues/generated_script` setting - which
+## the cue manager builds its table from; `bind_cue` makes the same binding at
+## runtime instead.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0

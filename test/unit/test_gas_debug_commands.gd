@@ -379,6 +379,8 @@ func test_the_console_shows_what_the_overlay_would_draw() -> void:
 
 	assert_true(_ran("gas.attributes Hero").contains(String(HEALTH)), "attributes")
 	assert_true(_ran("gas.tags Hero").contains(String(STUNNED)), "tags")
+	_committing_grant()
+	assert_true(_ran("gas.abilities Hero").contains(ABILITY_NAME), "abilities, which the overlay drew and the console had no word for")
 
 	var buff: Array[GameplayEffectModifier] = [EffectFactory.add(HEALTH, 5.0)]
 	EffectFactory.apply(asc, EffectFactory.infinite(buff))

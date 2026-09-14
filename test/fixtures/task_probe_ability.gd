@@ -73,7 +73,7 @@ func _activate_ability() -> bool:
 	last_task.owner_ability = self
 	if owner_asc.register_ability_task(last_task) == null:
 		return false
-	await last_task.finished
+	await last_task.completed()
 	return last_task.state == GameplayAbilityTask.State.SUCCEEDED
 
 

@@ -41,6 +41,14 @@ func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
 	return calculation.required_captures() if calculation != null else []
 
 
+## Whatever the calculation says it reads besides attributes.
+func external_dependencies() -> Array[Signal]:
+	if calculation == null:
+		var none: Array[Signal] = []
+		return none
+	return calculation.external_dependencies()
+
+
 func resolve(context: GameplayMagnitudeContext) -> GameplayMagnitudeResult:
 	if calculation == null:
 		return GameplayMagnitudeResult.failure(GameplayMagnitudeResult.Status.INVALID_DEFINITION)

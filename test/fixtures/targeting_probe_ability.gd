@@ -43,7 +43,7 @@ func _activate_ability() -> bool:
 	var targets: AbilityTaskWaitTargetData = wait_target_data()
 	if targets == null:
 		return false
-	await targets.finished
+	await targets.completed()
 	# A cancelled wait must not be read as an answer. The task's own state is
 	# the single place that already decided, so it is asked rather than
 	# inferred from whatever `finished` carried.
@@ -56,7 +56,7 @@ func _activate_ability() -> bool:
 	var confirmation: AbilityTaskWaitGameplayEvent = wait_gameplay_event(confirmation_tag)
 	if confirmation == null:
 		return false
-	await confirmation.finished
+	await confirmation.completed()
 	if confirmation.state != GameplayAbilityTask.State.SUCCEEDED:
 		return false
 

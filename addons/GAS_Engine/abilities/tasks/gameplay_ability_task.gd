@@ -161,6 +161,15 @@ func handle_input_released(_input_id: int) -> void:
 	pass
 
 
+## The same two moments, for an input named by its InputMap action.
+func handle_input_action_pressed(_action: StringName) -> void:
+	pass
+
+
+func handle_input_action_released(_action: StringName) -> void:
+	pass
+
+
 func handle_gameplay_event(_event: GameplayEventData) -> void:
 	pass
 

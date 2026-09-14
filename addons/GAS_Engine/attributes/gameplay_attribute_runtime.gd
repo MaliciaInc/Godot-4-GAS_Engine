@@ -327,9 +327,10 @@ func _compose(
 ## Only the channel-folded profile has channels at all: the native one is a single pass,
 ## so every channel ceiling answers the whole composition there. That is the
 ## honest answer rather than a refusal - a project on the native profile
-## asking this is asking what the attribute is, and that is what it gets.
-func value_up_to_channel(attribute_name: StringName, through_channel: int) -> float:
-	var attribute: AttributeData = find(attribute_name)
+## asking this is asking what the attribute is, and that is what it gets. A
+## reference, when given, says which set's attribute it is.
+func value_up_to_channel(attribute_name: StringName, through_channel: int, reference: GameplayAttributeRef = null) -> float:
+	var attribute: AttributeData = find(attribute_name) if reference == null else find_by_ref(reference)
 	if attribute == null:
 		return 0.0
 	var reading: AttributeEvaluationResult = AttributeEvaluationResult.new()

@@ -15,8 +15,7 @@ var target_asc: AbilitySystemComponent = null
 ## Which grant to watch, or an invalid handle for "any of them".
 var watched: GameplayAbilityHandle = null
 
-## What the commit that woke this said, so a waiter can act on the reason
-## rather than only on the fact.
+## The commit that woke this: what it charged and which cooldowns it started.
 var result: AbilityCommitResult = null
 var committed_handle: GameplayAbilityHandle = null
 
@@ -43,8 +42,10 @@ func _on_finish() -> void:
 		target_asc.ability_committed.disconnect(_on_committed)
 
 
+## A refused commit is announced too, and does not wake this: the moment this
+## waits for is the price being paid, and a refusal is the moment it was not.
 func _on_committed(handle: GameplayAbilityHandle, committed: AbilityCommitResult) -> void:
-	if not _matches(handle):
+	if not _matches(handle) or committed == null or not committed.is_ok():
 		return
 	committed_handle = handle
 	result = committed

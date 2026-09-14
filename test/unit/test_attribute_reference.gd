@@ -21,6 +21,9 @@ const Vehicle = preload("res://test/fixtures/vehicle_attribute_set.gd")
 const HEALTH: StringName = &"health"
 const FUEL: StringName = &"fuel"
 const MANA: StringName = &"mana"
+const ATTACK: StringName = &"attack"
+const DRIVER_SET: StringName = &"TestAttributeSet"
+const VEHICLE_SET: StringName = &"VehicleAttributeSet"
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -210,4 +213,95 @@ func test_two_references_to_one_attribute_are_equal() -> void:
 		_ref(HEALTH, &"VehicleAttributeSet").equals(_ref(HEALTH)),
 		"and naming the set is not the same as not naming it"
 	)
+#endregion
+
+
+#region What the runtime reads
+## The Inspector's picker fills a typed reference and leaves the bare name
+## empty. A runtime that read only the name skipped every modifier authored that
+## way and refused every capture and cost - no warning, just an effect that did
+## nothing. Every case below leaves the bare name empty on purpose.
+func _flat(amount: float, reference: GameplayAttributeRef) -> GameplayEffectModifier:
+	var made: GameplayEffectModifier = TestEffectFactory.modifier(
+		&"", GameplayEffectModifier.Operation.ADD, amount
+	)
+	made.attribute = reference
+	return made
+
+
+func _captured(spec: GameplayEffectSpec, reference: GameplayAttributeRef) -> AttributeCaptureResult:
+	var capture: GameplayAttributeCaptureDefinition = TestEffectFactory.capture_definition(
+		GameplayAttributeCaptureDefinition.Actor.TARGET,
+		&"",
+		GameplayAttributeCaptureDefinition.Value.CURRENT,
+		GameplayAttributeCaptureDefinition.Policy.LIVE
+	)
+	capture.attribute = reference
+	return spec.resolve_capture(capture, asc, asc)
+
+
+func _priced_against(reference: GameplayAttributeRef, fraction: float) -> GameplayAbilityCost:
+	var amount: GameplayScalableFloat = GameplayScalableFloat.new()
+	amount.value = fraction
+	var cost: GameplayAbilityCost = GameplayAbilityCost.new()
+	cost.mode = GameplayAbilityCost.Mode.PERCENT_OF_CURRENT
+	cost.target = _ref(MANA)
+	cost.reference = reference
+	cost.amount = amount
+	return cost
+
+
+## A modifier named only by its reference changes the attribute it names.
+##
+## Both policies, because they are two different paths: an instant one writes
+## the base, a lasting one becomes a contribution - and a query for what an
+## effect modifies reads the same field a third way.
+func test_a_modifier_named_only_by_its_reference_changes_that_attribute() -> void:
+	var drain: GameplayEffect = TestEffectFactory.instant([_flat(-10.0, _ref(MANA))] as Array[GameplayEffectModifier])
+	var boost: GameplayEffect = TestEffectFactory.infinite([_flat(5.0, _ref(ATTACK))] as Array[GameplayEffectModifier])
+
+	TestEffectFactory.apply(asc, drain)
+	var held: ActiveGameplayEffect = TestEffectFactory.apply(asc, boost)
+	var query: GameplayEffectQuery = GameplayEffectQuery.new()
+	query.modified_attribute = ATTACK
+
+	assert_eq(asc.get_attribute_base(MANA), 40.0, "an instant one writes the base")
+	assert_eq(asc.get_attribute_current(ATTACK), 15.0, "a lasting one contributes")
+	assert_true(query.matches(held, asc), "and a query for what it modifies finds it")
+
+
+## A capture that names its set reads that set's attribute.
+##
+## Both sets, because reading whichever set declares `health` first would pass
+## an assertion about the driver alone.
+func test_a_capture_reads_the_attribute_its_reference_names() -> void:
+	var spec: GameplayEffectSpec = GameplayEffectSpec.new(
+		GameplayEffect.new(), GameplayEffectContext.new(fixture.owner), 1.0
+	)
+	assert_eq(_captured(spec, _ref(MANA)).value, 50.0, "a bare reference is read")
+
+	_also_drive_a_vehicle()
+
+	assert_eq(_captured(spec, _ref(HEALTH, DRIVER_SET)).value, 100.0, "the driver's health")
+	assert_eq(_captured(spec, _ref(HEALTH, VEHICLE_SET)).value, 500.0, "and the vehicle's")
+	assert_eq(
+		_captured(spec, _ref(HEALTH)).status,
+		AttributeCaptureResult.Status.ATTRIBUTE_NOT_FOUND,
+		"while a bare name that means two is refused rather than guessed"
+	)
+
+
+## A cost named only by its references is priced against the set it names.
+func test_a_cost_named_only_by_its_references_is_priced_and_passes_the_check() -> void:
+	_also_drive_a_vehicle()
+	var cost: GameplayAbilityCost = _priced_against(_ref(HEALTH, VEHICLE_SET), 0.05)
+	var costs: Array[GameplayAbilityCost] = [cost]
+
+	var resolved: GameplayResolvedCost = GameplayAbilityCostResolver.resolve(costs, asc, 1.0)
+
+	assert_true(resolved.is_ok(), "it is not refused as an empty definition")
+	assert_eq(resolved.entries[0].target_attribute, MANA, "it spends the mana it names")
+	assert_eq(resolved.entries[0].reference_value, 500.0, "priced against the vehicle's health")
+	assert_almost_eq(resolved.entries[0].resolved_amount, 25.0, 0.0001, "so five percent of it")
+	assert_eq(GameplayAssetValidator.validate_costs(costs).size(), 0, "and the asset check agrees")
 #endregion

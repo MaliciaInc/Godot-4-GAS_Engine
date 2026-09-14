@@ -6,6 +6,8 @@ __pycache__/
 *.pyc
 
 docs/
+# The public manual is committed; only the internal planning docs above are not.
+!documentation/docs/
 
 # Local verify receipts. Task receipts (T7, GAS_ENGINE_FINAL) are committed;
 # a per-run "full" directory is machine output that changes every invocation.

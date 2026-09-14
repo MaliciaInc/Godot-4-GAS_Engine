@@ -67,6 +67,57 @@ func test_live_instant_resolves_fresh_each_time_without_a_binding() -> void:
 	assert_almost_eq(target.base_of(DEFENSE), 65.0, TOLERANCE, "second read the fresh 50, no binding needed")
 
 
+## Something outside the attribute system a magnitude can read.
+class Weather extends RefCounted:
+	signal changed(intensity: float)
+
+	var intensity: float = 1.0
+
+	func set_intensity(value: float) -> void:
+		intensity = value
+		changed.emit(value)
+
+
+## A calculation that reads the weather, and says so.
+class WeatherCalculation extends GameplayMagnitudeCalculation:
+	var weather: Weather = null
+
+	func calculate(_context: GameplayMagnitudeContext) -> GameplayMagnitudeResult:
+		return GameplayMagnitudeResult.ok(weather.intensity * 10.0)
+
+	func external_dependencies() -> Array[Signal]:
+		var read: Array[Signal] = [weather.changed]
+		return read
+
+
+## A contribution follows a signal its magnitude names as a dependency.
+##
+## `external_dependencies()` was declared and read by nothing, so a
+## contribution drawn from the weather kept whatever it was when the effect
+## landed. The last two asserts are the other half: a removed effect stops
+## listening rather than recomposing an attribute it no longer touches.
+func test_a_contribution_follows_a_signal_its_magnitude_depends_on() -> void:
+	var weather: Weather = Weather.new()
+	var calculation: WeatherCalculation = WeatherCalculation.new()
+	calculation.weather = weather
+	var magnitude: GameplayCustomMagnitude = GameplayCustomMagnitude.new()
+	magnitude.calculation = calculation
+	target.set_base(DEFENSE, 5.0)
+
+	var active: ActiveGameplayEffect = Factory.apply(
+		target.asc, Factory.infinite([_add_modifier(DEFENSE, magnitude)])
+	)
+	assert_almost_eq(target.current_of(DEFENSE), 15.0, TOLERANCE, "it lands at what the weather was")
+
+	weather.set_intensity(3.0)
+	assert_almost_eq(target.current_of(DEFENSE), 35.0, TOLERANCE, "and follows it when it changes")
+
+	target.asc.remove_active_effect(active)
+	weather.set_intensity(5.0)
+	assert_almost_eq(target.current_of(DEFENSE), 5.0, TOLERANCE, "a removed effect is gone")
+	assert_eq(weather.changed.get_connections().size(), 0, "and nothing is left listening")
+
+
 ## One shape, two directions: a persistent contribution whose LIVE capture
 ## points at the source actor, and one whose LIVE capture points back at the
 ## target itself.

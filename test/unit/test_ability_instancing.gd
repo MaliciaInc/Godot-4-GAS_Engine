@@ -12,6 +12,7 @@ const AbilityFactory = preload("res://test/fixtures/test_ability_factory.gd")
 const PROBE_TAG: StringName = &"Ability.Probe"
 const EVENT_TAG: StringName = &"Event.Cast"
 const SLOT: int = 4
+const CAST_ACTION: StringName = &"probe_cast"
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -219,6 +220,30 @@ func test_a_press_starts_one_more_execution_alongside_those_already_running() ->
 
 	assert_eq(spec.active_instances.size(), 2, "the press added one more, not replaced the first")
 	assert_true(already_running.is_active, "the press did not disturb it")
+
+	for instance: GameplayAbility in spec.active_instances.duplicate():
+		(instance as ChannelingAbility).channel_gate.emit()
+
+
+## The same press, said by the name of an action.
+##
+## A grant bound to an action heard the press and started nothing: the route by
+## name carried its own copy of the delivery, without the half that starts one.
+func test_an_action_press_starts_one_more_execution_the_way_a_slot_press_does() -> void:
+	var template: ChannelingAbility = ChannelingAbility.new()
+	template.ability_tags = [PROBE_TAG]
+	template.instancing_policy = GameplayAbility.InstancingPolicy.PER_EXECUTION
+	var packed: PackedScene = PackedScene.new()
+	packed.pack(template)
+	template.free()
+	var options: GameplayAbilityGrantOptions = GameplayAbilityGrantOptions.new()
+	options.input_action = CAST_ACTION
+	var spec: GameplayAbilitySpec = asc.get_ability_spec(asc.give_ability_with_options(packed, options))
+
+	asc.ability_local_input_action_pressed(CAST_ACTION)
+	asc.ability_local_input_action_pressed(CAST_ACTION)
+
+	assert_eq(spec.active_instances.size(), 2, "each press started one")
 
 	for instance: GameplayAbility in spec.active_instances.duplicate():
 		(instance as ChannelingAbility).channel_gate.emit()

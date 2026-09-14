@@ -1,7 +1,8 @@
-## One persistent modifier's subscription to the attribute its LIVE capture
-## reads. Owns no registry of its own - `GameplayEffectRuntime` keeps the
-## list, connects and disconnects every binding, and is the only thing that
-## ever reacts to one firing.
+## One persistent modifier's subscription to something its magnitude reads:
+## the attribute a LIVE capture reads, or one signal the magnitude named in
+## `external_dependencies()`. Owns no registry of its own -
+## `GameplayLiveMagnitudeRegistry` keeps the list, connects and disconnects
+## every binding, and is the only thing that ever reacts to one firing.
 ##
 ## Only SNAPSHOT-free: a SNAPSHOT capture never creates one of these, because
 ## nothing about it can change after it was taken.
@@ -22,16 +23,22 @@ var modifier_index: int = -1
 ## if something about the definition were to change underneath it.
 var output_attribute: StringName = &""
 
-## What is captured: whose attribute, BASE or CURRENT.
+## What is captured: whose attribute, BASE or CURRENT. Null for a binding to an
+## external dependency, which reads no attribute.
 var capture: GameplayAttributeCaptureDefinition = null
 
 ## The magnitude this binding re-resolves through - the same
 ## GameplayMagnitude.resolve() the initial evaluation used.
-var magnitude: GameplayAttributeBasedMagnitude = null
+var magnitude: GameplayMagnitude = null
 
 ## The ASC this binding listens to: `capture`'s SOURCE or TARGET, resolved
-## once when the binding was created.
+## once when the binding was created. Null for an external dependency.
 var observed_asc: AbilitySystemComponent = null
+
+## The external dependency this binding follows, and the Callable connected to
+## it. Both empty for a LIVE capture, which listens to `observed_asc` instead.
+var external: Signal = Signal()
+var external_handler: Callable = Callable()
 
 ## The Callable connected to `observed_asc.attribute_changed`, kept so it can
 ## be disconnected later without reconstructing an equivalent one - two

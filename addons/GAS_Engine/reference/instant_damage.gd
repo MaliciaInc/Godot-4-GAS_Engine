@@ -20,7 +20,7 @@ func _activate_ability() -> bool:
 		return false
 
 	var pick: AbilityTaskWaitTargetData = wait_target_data()
-	await pick.finished
+	await pick.completed()
 	if pick.target_data == null:
 		return false
 

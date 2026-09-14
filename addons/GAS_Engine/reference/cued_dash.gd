@@ -29,7 +29,7 @@ func _activate_ability() -> bool:
 	owner_asc.apply_gameplay_effect(haste, owner_asc, get_ability_level())
 
 	var travel: AbilityTaskWaitDelay = wait_delay(travel_time)
-	await travel.finished
+	await travel.completed()
 
 	execute_cue(landing_cue)
 	end_ability()

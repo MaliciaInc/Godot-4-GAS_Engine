@@ -163,6 +163,27 @@ func test_a_second_commit_in_one_activation_is_refused() -> void:
 	assert_almost_eq(
 		fixture.base_of(MANA), STARTING_MANA - COST_AMOUNT, TOLERANCE, "and it was taken once"
 	)
+
+
+## A refused commit is announced as well, carrying its reason.
+##
+## The signal promised both and only ever said the success, so a debugger never
+## showed the commit somebody was debugging - the one that did not go through.
+func test_a_refused_commit_is_announced_with_its_reason() -> void:
+	var heard: Array[int] = []
+	asc.ability_committed.connect(
+		func(_handle: GameplayAbilityHandle, result: AbilityCommitResult) -> void:
+			heard.append(int(result.status))
+	)
+
+	ability.commit_ability()
+	ability.commit_ability()
+
+	assert_eq(
+		heard,
+		[int(AbilityCommitResult.Status.SUCCESS), int(AbilityCommitResult.Status.ALREADY_COMMITTED)] as Array[int],
+		"the commit that paid, and the one that was refused"
+	)
 #endregion
 
 

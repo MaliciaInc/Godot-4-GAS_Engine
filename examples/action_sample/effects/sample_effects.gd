@@ -4,8 +4,8 @@
 ## Built in code rather than authored as `.tres` files so that every number in
 ## the sample is in the diff and under the same gates as the rest: a person
 ## reading this can see what a strike costs without opening an inspector. A real
-## project would author these in the effect editor F6.4.1 ships, which produces
-## exactly these objects.
+## project can author these as `.tres` assets instead - Project > Tools > Create
+## Gameplay Effect - which load as exactly these objects.
 ##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0

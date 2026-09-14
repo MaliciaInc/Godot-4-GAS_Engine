@@ -14,12 +14,12 @@ extends GameplayAbility
 
 func _activate_ability() -> bool:
 	var pick: AbilityTaskWaitTargetData = wait_target_data()
-	await pick.finished
+	await pick.completed()
 	if pick.target_data == null:
 		return false
 
 	var confirm: AbilityTaskWaitInput = wait_input_pressed()
-	await confirm.finished
+	await confirm.completed()
 	if confirm.state != GameplayAbilityTask.State.SUCCEEDED:
 		return false
 

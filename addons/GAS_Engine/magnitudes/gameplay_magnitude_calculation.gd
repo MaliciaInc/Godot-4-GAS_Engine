@@ -15,6 +15,15 @@ func required_captures() -> Array[GameplayAttributeCaptureDefinition]:
 	return []
 
 
+## Anything outside the attribute system this calculation reads, as signals.
+##
+## What `GameplayCustomMagnitude.external_dependencies()` answers, because the
+## calculation is where the reading actually happens. Empty by default.
+func external_dependencies() -> Array[Signal]:
+	var none: Array[Signal] = []
+	return none
+
+
 func calculate(_context: GameplayMagnitudeContext) -> GameplayMagnitudeResult:
 	push_error(
 		"GAS_Engine: calculate() called on the base GameplayMagnitudeCalculation. "

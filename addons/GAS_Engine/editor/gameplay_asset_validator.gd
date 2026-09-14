@@ -193,13 +193,13 @@ static func validate_costs(costs: Array[GameplayAbilityCost], asset: Object = nu
 		var target: Object = asset if asset != null else cost
 		if cost.amount == null:
 			findings.append(Result.error(target, "costs[%d].amount" % index, Result.Code.MISSING_COST_AMOUNT))
-		if cost.target_attribute == &"":
+		if cost.resolved_target_attribute() == &"":
 			findings.append(Result.error(target, "costs[%d].target_attribute" % index, Result.Code.MISSING_COST_TARGET_ATTRIBUTE))
 		var needs_reference: bool = (
 			cost.mode == GameplayAbilityCost.Mode.PERCENT_OF_BASE
 			or cost.mode == GameplayAbilityCost.Mode.PERCENT_OF_CURRENT
 		)
-		if needs_reference and cost.reference_attribute == &"":
+		if needs_reference and cost.resolved_reference_attribute() == &"":
 			findings.append(
 				Result.error(target, "costs[%d].reference_attribute" % index, Result.Code.MISSING_COST_REFERENCE_ATTRIBUTE)
 			)

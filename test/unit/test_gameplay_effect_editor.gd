@@ -413,3 +413,38 @@ func _descendants(of: Node) -> Array[Node]:
 		found.append_array(_descendants(child))
 	return found
 #endregion
+
+
+#region The bottom panel
+const PluginWiring = preload("res://test/fixtures/plugin_wiring.gd")
+
+## The addon puts the panel in the editor, and takes it back out.
+##
+## It used to be a plugin of its own that nothing registered, so the panel was
+## never there. Asserted against source because an EditorPlugin cannot be built
+## headless; `plugin_wiring.gd` says why that is the honest check.
+const PANEL_WIRED: Array = [
+	["the panel is put in the editor", "_effect_panel.attach(self, EditorInterface.get_inspector())"],
+	["and taken back out", "_effect_panel.detach()"],
+]
+
+
+func test_the_addon_puts_the_effect_panel_in_the_editor_and_takes_it_back() -> void:
+	assert_eq(PluginWiring.missing(PANEL_WIRED), [] as Array[String], "every part of it is there")
+
+
+## The effect the Inspector names is the one the panel shows - the same object,
+## not a second copy loaded from its path.
+func test_the_panel_shows_the_effect_it_is_handed() -> void:
+	var host: GameplayEffectPanelHost = GameplayEffectPanelHost.new()
+	var scene: PackedScene = load(GameplayEffectPanelHost.EDITOR_SCENE) as PackedScene
+	host.screen = scene.instantiate() as GameplayEffectEditor
+	add_child_autofree(host.screen)
+	var modifiers: Array[GameplayEffectModifier] = [Factory.add(HEALTH, 5.0)]
+	var effect: GameplayEffect = Factory.infinite(modifiers)
+
+	assert_true(host.show_effect(effect), "an effect is shown")
+	assert_eq(host.screen.document.effect, effect, "the one handed over")
+	assert_not_null(_first_row(host.screen), "with its modifier on screen")
+	assert_false(host.show_effect(null), "and nothing is not an effect")
+#endregion
