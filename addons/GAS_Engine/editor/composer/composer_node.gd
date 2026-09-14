@@ -204,6 +204,14 @@ var prefix: String = ""
 ## the catalog had never heard of, which is most of the calls there are.
 var receiver: String = ""
 
+## What a wait says after the call's own brackets: `.completed()` in
+## `await wait_delay(1.0).completed()`, empty for a statement ending on them.
+##
+## Kept for the reason `prefix` is. It is the half of a wait that makes it wait,
+## and a writer that knew only the call printed `await wait_delay(1.5)` over it -
+## a line that reads the same and waits on nothing.
+var suffix: String = ""
+
 ## The same statement as one line, with the wrapping taken out.
 ##
 ## A person wraps a long call across three lines and means one statement. The

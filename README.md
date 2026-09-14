@@ -553,6 +553,29 @@ None of them is required by the core runtime. The integrations are intentionally
 
 Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
 
+### Dialogic
+
+A timeline reaches the ability system through Dialogic's own signal event, and nothing else. Put a `DialogicGasBridge` in the scene and bind it to the ability system a dialogue speaks for, on a channel you name:
+
+```gdscript
+var bridge: DialogicGasBridge = DialogicGasBridge.new()
+add_child(bridge)
+bridge.bind_installed(get_tree(), player_asc, &"Player")
+```
+
+A writer then adds a signal event whose argument is a dictionary. `bridge` addresses this addon, `channel` picks which bound ability system it is for, `command` is one of the three below, `tag` is the tag it is about, and `magnitude` is an optional number the event carries:
+
+```text
+[signal arg_type="dict" arg="{"bridge":"GAS_Engine","channel":"Player","command":"send_event","tag":"Event.Dialogue.Accepted","magnitude":3}"]
+[signal arg_type="dict" arg="{"bridge":"GAS_Engine","channel":"Player","command":"add_tag","tag":"State.Sworn"}"]
+[signal arg_type="dict" arg="{"bridge":"GAS_Engine","channel":"Player","command":"remove_tag","tag":"State.Sworn"}"]
+```
+
+- `send_event` sends a gameplay event. It wakes whatever ability is triggered on that tag or on a parent of it; a dialogue never activates an ability directly, so it cannot fire a cast the activation gate would have refused.
+- `add_tag` and `remove_tag` grant and take away a loose tag.
+
+The signal bus is shared with the rest of the game. A message addressed to another bridge or another channel is ignored without a word; one addressed to this bridge that is malformed — no channel, an unknown command, a tag that is not a tag, a magnitude that is not a number — is refused, and `command_rejected` says which.
+
 ## Ability Composer
 
 The Composer is a visual editor for abilities that is a **view of the code**, not a second way to author them. There is no JSON, no cached graph, no `.tres`, no interpreter: the `.gd` file is the ability, and the canvas is read out of it every time it is opened. Opening an ability and saving it without changing anything gives the file back byte for byte, comments and formatting included.
@@ -567,7 +590,10 @@ An ability body is drawn when every line of it is one of these:
 
 - a call to an engine method, with whatever it takes between its brackets;
 - an assignment — to a local with a written type, or to a property;
-- `await`, on an ability task or on a signal;
+- `await` on a signal, or on an ability task through the task -
+  `await wait_delay(1.5).completed()`, which is what the palette writes. An
+  `await` on the call itself does not wait (it takes the task and carries on),
+  and the Output panel says so on that card;
 - `if` / `elif` / `else`;
 - `match`, over an enum;
 - `return`;

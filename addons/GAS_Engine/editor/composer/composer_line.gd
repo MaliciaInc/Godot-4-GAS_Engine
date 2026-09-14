@@ -55,6 +55,10 @@ class Brackets extends RefCounted:
 	## Where a trailing comment begins, or -1 for a line that is all code.
 	var comment: int = -1
 
+	## Where the depth first came back down to zero, or -1. Of a text that
+	## starts on an opening bracket, that is where that bracket closes.
+	var settles: int = -1
+
 
 ## The part of `line` that is code, without the comment trailing it.
 ##
@@ -94,6 +98,8 @@ static func scan(text: String) -> Brackets:
 		elif CLOSING.contains(character):
 			found.depth -= 1
 			found.lowest = mini(found.lowest, found.depth)
+			if found.depth == 0 and found.settles < 0:
+				found.settles = index
 		elif character == COMMA and found.depth == 0:
 			found.breaks.append(index)
 		elif character == EQUALS and found.depth == 0 and found.assign < 0:
@@ -124,6 +130,15 @@ static func arguments_of(inside: String) -> PackedStringArray:
 		start = stop + 1
 	found.append(inside.substr(start))
 	return found
+
+
+## Where the bracket at `open` closes, or -1 when it never does on this line.
+##
+## Asked when a call has something after its own brackets - the `.completed()`
+## of a wait - because the last bracket on the line is then somebody else's.
+static func closing_of(text: String, open: int) -> int:
+	var tail: Brackets = scan(text.substr(open))
+	return open + tail.settles if tail.settles >= 0 else -1
 
 
 ## One call: a name, and one pair of brackets closing at the end of the line.

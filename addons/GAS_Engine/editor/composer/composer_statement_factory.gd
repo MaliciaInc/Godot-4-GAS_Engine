@@ -18,6 +18,10 @@ const AWAIT_MARK: String = "await "
 const RESULT_SUFFIX: String = "_result"
 const ARGUMENT_JOIN: String = ", "
 
+## What waits on a task. Public because the writer puts it back on a wait it
+## rebuilds, and two spellings of it would be two ways to wait on nothing.
+const COMPLETED: String = ".completed()"
+
 
 ## A call statement, ready to be a line of a body.
 ## Named `call_statement` rather than `call`: a static called `call` is hidden by
@@ -86,6 +90,11 @@ static func unique_local_name(
 
 
 ## `receiver.method(args)`, awaited where the entry says it suspends.
+##
+## A call that hands back a task is waited on through the task. `await` on the
+## call itself takes the task and carries straight on - GDScript waits only on a
+## signal or a coroutine - so an ability ran past every wait this used to write.
+## A call a game registered as suspending is its own coroutine, awaited as is.
 static func _invocation(entry: ComposerCatalog.Entry, path: String) -> String:
 	var receiver: String = ComposerTypes.name_reaching(entry.source, path)
 	var written: String = String(entry.type_id)
@@ -94,4 +103,12 @@ static func _invocation(entry: ComposerCatalog.Entry, path: String) -> String:
 	var made: String = "%s(%s)" % [
 		written, ARGUMENT_JOIN.join(arguments(entry))
 	]
-	return AWAIT_MARK + made if entry.awaits else made
+	if not entry.awaits:
+		return made
+	return AWAIT_MARK + made + (COMPLETED if returns_task(entry) else "")
+
+
+## Whether a call hands back an ability task, which is waited on through
+## `completed()` rather than awaited directly.
+static func returns_task(entry: ComposerCatalog.Entry) -> bool:
+	return entry != null and ComposerTypes.inherits(entry.result_type, ComposerCatalog.TASK_CLASS)

@@ -23,6 +23,8 @@ class_name ComposerValidator extends RefCounted
 const MISSING_ARGUMENT: String = "%s needs %s"
 const WRONG_TYPE: String = "%s: %s"
 const UNREAD_VALUE: String = "%s is never read"
+const AWAIT_ON_THE_CALL: String = "%s does not wait: await takes the task it hands back and carries on - wait with .completed() after the call"
+const AWAIT_INTO_A_LOCAL: String = "%s does not wait, and the local holds the task rather than what it finds - keep the task in a local and await its completed()"
 
 
 ## Inspect `graph`, replace its findings, and mark every card to match.
@@ -66,6 +68,7 @@ static func inspect(graph: ComposerGraph) -> Array[ComposerGraph.Diagnostic]:
 		_check_arguments(node, found)
 		_check_wires(graph, node, found)
 		_check_unread(graph, node, found)
+		_check_waits(node, found)
 	return found
 
 
@@ -153,6 +156,25 @@ static func _check_unread(
 		ComposerGraph.Severity.WARNING,
 		GameplayCompileDiagnostic.UNREAD_VALUE,
 		UNREAD_VALUE % value.label,
+		node
+	))
+
+
+## An `await` on a call that hands back a task, which waits on nothing.
+##
+## GDScript waits only on a signal or a coroutine. A task is neither, so the line
+## takes the task and the ability carries on past the one place a person wrote it
+## to pause. A warning and not an error: the file compiles and runs.
+static func _check_waits(node: ComposerNode, found: Array[ComposerGraph.Diagnostic]) -> void:
+	if not node.awaits or not node.suffix.is_empty():
+		return
+	if not ComposerStatementFactory.returns_task(node.entry):
+		return
+	var said: String = AWAIT_ON_THE_CALL if node.prefix.is_empty() else AWAIT_INTO_A_LOCAL
+	found.append(_at(
+		ComposerGraph.Severity.WARNING,
+		GameplayCompileDiagnostic.AWAIT_WITHOUT_WAITING,
+		said % node.title,
 		node
 	))
 #endregion

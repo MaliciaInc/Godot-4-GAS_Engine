@@ -71,7 +71,7 @@ func test_a_call_the_catalog_does_not_offer_is_left_alone() -> void:
 #region Wires that do not fit
 func test_a_value_landing_in_a_slot_that_refuses_it_is_an_error() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray([
-		"var target: GameplayAbilityTargetData = await wait_target_data()",
+		"var target: GameplayAbilityTargetData = get_activation_target_data()",
 		"add_tag(target)",
 	]))
 
@@ -85,7 +85,7 @@ func test_a_value_landing_in_a_slot_that_refuses_it_is_an_error() -> void:
 ## the value - that is the line someone has to open.
 func test_the_refusal_is_reported_against_the_statement_that_receives_it() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray([
-		"var target: GameplayAbilityTargetData = await wait_target_data()",
+		"var target: GameplayAbilityTargetData = get_activation_target_data()",
 		"add_tag(target)",
 	]))
 
@@ -98,7 +98,7 @@ func test_the_refusal_is_reported_against_the_statement_that_receives_it() -> vo
 
 func test_a_value_landing_where_it_fits_is_not_reported() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray([
-		"var target: GameplayAbilityTargetData = await wait_target_data()",
+		"var target: GameplayAbilityTargetData = get_activation_target_data()",
 		"apply_effect_to_targets(fire, target)",
 	]))
 
@@ -212,7 +212,7 @@ func test_looking_twice_says_the_same_thing() -> void:
 func test_an_ability_with_nothing_wrong_reports_nothing() -> void:
 	var graph: ComposerGraph = _read(PackedStringArray([
 		"commit_ability()",
-		"var target: GameplayAbilityTargetData = await wait_target_data()",
+		"var target: GameplayAbilityTargetData = get_activation_target_data()",
 		"apply_effect_to_targets(fire, target)",
 		"end_ability()",
 	]))

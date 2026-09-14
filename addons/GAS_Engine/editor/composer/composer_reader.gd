@@ -189,6 +189,7 @@ static func _node(
 	node.receiver = called.left(dot) if dot > 0 else ""
 	node.type_id = StringName(called.substr(dot + 1))
 	node.prefix = _prefix(text, called)
+	node.suffix = _suffix(text, called) if node.awaits else ""
 
 	node.entry = ComposerCatalog.entry_for(node.type_id, node.receiver, path, locals)
 	node.title = _title(node, verdict)
@@ -249,6 +250,13 @@ static func _prefix(text: String, called: String) -> String:
 	if at <= 0:
 		return ""
 	return text.left(at).trim_suffix(AWAIT_MARK)
+
+
+## What a wait says after the call's own brackets - `.completed()` - code only.
+static func _suffix(text: String, called: String) -> String:
+	var open: int = text.find(called + OPEN_BRACKET) if not called.is_empty() else -1
+	var shut: int = ComposerLine.closing_of(text, open + called.length()) if open >= 0 else -1
+	return ComposerLine.code_of(text.substr(shut + 1)).strip_edges() if shut >= 0 else ""
 
 
 ## What kind of card a verdict draws, or none at all.

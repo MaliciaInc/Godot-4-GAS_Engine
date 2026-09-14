@@ -86,11 +86,73 @@ func test_nothing_picked_changes_nothing() -> void:
 	assert_eq(_document.history().depth(), 0, "with nothing to undo")
 
 
-## Asked before anything is open, it answers rather than failing.
+## Asked before anything is open, it answers rather than failing - and a paste
+## with nowhere to go says so, rather than answering the way a paste that landed
+## does.
 func test_with_nothing_open_it_answers_rather_than_crashing() -> void:
 	assert_eq(_ops.spans_of([&"whoever"] as Array[StringName]).size(), 0)
 	assert_eq(_ops.copy([&"whoever"] as Array[StringName]), "")
-	assert_null(_ops.paste([] as Array[StringName], "\tend_ability()"))
+	assert_not_null(_ops.paste([] as Array[StringName], "\tend_ability()"), "nothing is open to paste into")
+#endregion
+
+
+#region Refusing, and saying why
+## An answer of null is what the screen redraws as done. Every one of these did
+## nothing and answered null, so the person clicked, saw nothing happen, and was
+## told nothing - on an ability the Composer opens read-only, which is most of
+## the abilities a game built on a base class holds.
+const UNDRAWABLE: String = "extends GameplayAbility\n\n\nfunc _perform() -> void:\n\tpass\n"
+
+
+func _open_undrawable() -> String:
+	_document.open(UNDRAWABLE, PATH)
+	return _document.graph().blocked_reason()
+
+
+func test_a_call_on_an_ability_that_cannot_be_drawn_is_refused_with_its_reason() -> void:
+	var reason: String = _open_undrawable()
+	var refusal: ComposerGraph.Diagnostic = _ops.insert_call([] as Array[StringName], _a_call().key)
+
+	assert_not_null(refusal, "refused")
+	assert_true(refusal != null and refusal.message.contains(reason), "and says what the file is: %s" % [refusal.message if refusal != null else ""])
+	assert_eq(_document.printed(), UNDRAWABLE, "and the file is untouched")
+
+
+func test_a_call_dropped_on_an_ability_that_cannot_be_drawn_is_refused_too() -> void:
+	_open_undrawable()
+
+	assert_not_null(
+		_ops.insert_call_at([] as Array[StringName], _a_call().key, Vector2(64.0, 64.0)), "refused"
+	)
+	assert_eq(_document.printed(), UNDRAWABLE, "and the file is untouched")
+
+
+## A palette row that went stale while the catalog was rebuilt.
+func test_a_call_the_catalog_does_not_have_is_refused() -> void:
+	_open(["commit_ability()", "return true"])
+	var before: String = _document.printed()
+
+	assert_not_null(_ops.insert_call([] as Array[StringName], &"nobody#nothing"), "refused")
+	assert_not_null(_ops.insert_call_at([] as Array[StringName], &"nobody#nothing", Vector2.ZERO), "dropped or clicked")
+	assert_eq(_document.printed(), before, "and the file is untouched")
+	assert_eq(_document.history().depth(), 0, "with nothing to undo")
+
+
+## Refused for what the file already is, not for what the paste would have made
+## of it - "that would leave a file the Composer cannot read" sent a person
+## looking for something wrong with what they pasted.
+func test_a_paste_into_an_ability_that_cannot_be_drawn_says_why() -> void:
+	var reason: String = _open_undrawable()
+	var refusal: ComposerGraph.Diagnostic = _ops.paste([] as Array[StringName], "\tend_ability()")
+
+	assert_true(refusal != null and refusal.message.contains(reason), "the file's own reason: %s" % [refusal.message if refusal != null else "null"])
+	assert_eq(_document.printed(), UNDRAWABLE, "and the file is untouched")
+
+
+func test_a_paste_of_nothing_is_refused() -> void:
+	_open(["commit_ability()", "return true"])
+
+	assert_not_null(_ops.paste([] as Array[StringName], "   "), "there is nothing to put in")
 #endregion
 
 

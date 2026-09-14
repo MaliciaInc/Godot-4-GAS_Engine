@@ -23,6 +23,7 @@ class_name GameplayCompileDiagnostic extends RefCounted
 const MISSING_ARGUMENT: StringName = &"gas.missing_argument"
 const WRONG_TYPE: StringName = &"gas.wrong_type"
 const UNREAD_VALUE: StringName = &"gas.unread_value"
+const AWAIT_WITHOUT_WAITING: StringName = &"gas.await_without_waiting"
 const KEPT_REGION: StringName = &"gas.kept_region"
 const NOT_DRAWABLE: StringName = &"gas.not_drawable"
 const UNCLASSIFIED: StringName = &"gas.unclassified"

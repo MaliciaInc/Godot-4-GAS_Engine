@@ -131,7 +131,8 @@ const PLACED: Array[Array] = [
 	],
 	[
 		ComposerCatalog.ABILITY_CLASS, &"wait_target_data",
-		"	await wait_target_data()", "with the word that makes it wait",
+		"	await wait_target_data().completed()",
+		"waited on through the task it hands back, which is what makes it wait",
 	],
 ]
 

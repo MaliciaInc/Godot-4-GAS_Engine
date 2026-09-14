@@ -312,6 +312,57 @@ func test_a_freed_bridge_disconnects_itself() -> void:
 #endregion
 
 
+#region What a writer actually sends
+## How a Dialogic signal line carrying a dictionary begins, in a timeline.
+const TIMELINE_LINE: String = "[signal arg_type=\"dict\" arg=\""
+const TIMELINE_END: String = "\"]"
+
+
+## The double says what Dialogic says. A signal event parses the writer's text
+## as JSON, so its keys arrive as String and its numbers as float, and it is
+## frozen. A double handing over StringName keys and raw ints was proving the
+## bridge against a message no timeline can send.
+func test_the_double_hands_over_a_message_shaped_the_way_a_timeline_sends_it() -> void:
+	var heard: Array = []
+	dialogic.signal_event.connect(func _heard(argument: Variant) -> void: heard.append(argument))
+	var message: Dictionary = _message()
+	message[DialogicGasCommandParser.MAGNITUDE_KEY] = 3
+
+	dialogic.say(message)
+
+	assert_eq(heard.size(), 1, "one message")
+	var arrived: Dictionary = heard[0]
+	for key: Variant in arrived.keys():
+		assert_eq(typeof(key), TYPE_STRING, "a key arrives as text: %s" % [key])
+	assert_eq(typeof(arrived["magnitude"]), TYPE_FLOAT, "a number arrives as a float")
+	assert_true(arrived.is_read_only(), "and the message is frozen")
+
+
+## The README prints the line a writer types. Every one it prints is a line the
+## bridge applies - and between them they cover the whole vocabulary.
+func test_every_timeline_line_the_readme_prints_is_one_the_bridge_applies() -> void:
+	var lines: Array[String] = []
+	for line: String in FileAccess.get_file_as_string("res://README.md").split("\n"):
+		if line.strip_edges().begins_with(TIMELINE_LINE):
+			lines.append(line.strip_edges())
+	assert_false(lines.is_empty(), "the README shows a writer what to type")
+	assert_true(_bound())
+
+	var covered: Array[String] = []
+	for line: String in lines:
+		var parsed: Variant = JSON.parse_string(line.trim_prefix(TIMELINE_LINE).trim_suffix(TIMELINE_END))
+		assert_true(parsed is Dictionary, "the line's argument is a dictionary: %s" % line)
+		dialogic.say(parsed)
+		var fields: Dictionary = parsed if parsed is Dictionary else {}
+		covered.append(str(fields.get("command", "")))
+
+	assert_eq(rejected.size(), 0, "every printed line is understood: %s" % [rejected])
+	assert_eq(applied.size(), lines.size(), "and applied")
+	for command: String in DialogicGasCommandParser.COMMANDS.keys():
+		assert_true(covered.has(command), "the README shows %s" % command)
+#endregion
+
+
 #region One grammar, one owner
 ## The bridge validates tags with the registry's expression, not a copy of it.
 ##

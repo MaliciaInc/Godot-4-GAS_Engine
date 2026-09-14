@@ -144,6 +144,25 @@ func test_a_snapshot_carries_running_effects_with_their_time_and_stacks() -> voi
 	assert_almost_eq(found.seconds_left, 30.0, 0.0001, "with its time on it")
 
 
+## An effect a designer saved to a file and never named is called by its file.
+##
+## The name came from `resource_name` alone, which the Inspector leaves empty
+## unless somebody fills it in - so an effect authored as `smouldering.tres` sat
+## in the debugger as a row with nothing where its name goes.
+func test_an_effect_loaded_from_a_file_it_was_never_named_in_is_called_by_its_file() -> void:
+	var path: String = "user://smouldering.tres"
+	var buff: Array[GameplayEffectModifier] = [EffectFactory.add(ATTACK, 5.0)]
+	assert_eq(ResourceSaver.save(EffectFactory.duration(buff, 30.0), path), OK, "saved to a file")
+	var loaded: GameplayEffect = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as GameplayEffect
+	var active: ActiveGameplayEffect = EffectFactory.apply(asc, loaded)
+
+	var found: GasRuntimeSnapshot.Effect = _round_tripped().effect(active.handle.id)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+	assert_eq(loaded.resource_name, "", "a file nobody named inside")
+	assert_eq(found.name if found != null else "<not in the snapshot>", "smouldering", "is called by its file")
+
+
 ## An entity with nothing on it is a snapshot with nothing in it, not a failure.
 func test_an_entity_with_nothing_on_it_snapshots_cleanly() -> void:
 	var said: GasRuntimeSnapshot = _round_tripped()

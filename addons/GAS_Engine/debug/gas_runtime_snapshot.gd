@@ -184,13 +184,26 @@ static func _effects_of(component: AbilitySystemComponent) -> Array[Effect]:
 	for active: ActiveGameplayEffect in component.get_active_effects():
 		var one: Effect = Effect.new()
 		one.handle = active.handle.id if active.handle != null else 0
-		one.name = String(active.get_effect_def().resource_name)
+		one.name = _effect_name(active.get_effect_def())
 		one.stacks = active.stack_count
 		one.seconds_left = active.time_remaining
 		one.turns_left = component.get_effect_turns_remaining(active.handle)
 		one.inhibited = active.inhibited
 		found.append(one)
 	return found
+
+
+## What an effect is called: the name it was given, or the file it was saved as
+## when nobody named it inside - the Inspector leaves `resource_name` empty unless
+## somebody fills it in, and a row with nothing where the name goes tells nobody
+## anything. An effect built in code and never named has neither; a game that
+## wants it shown names it, as the engine's own sample does.
+static func _effect_name(effect: GameplayEffect) -> String:
+	if effect == null:
+		return ""
+	if not effect.resource_name.is_empty():
+		return effect.resource_name
+	return effect.resource_path.get_file().get_basename()
 
 
 static func _abilities_of(component: AbilitySystemComponent) -> Array[Ability]:
