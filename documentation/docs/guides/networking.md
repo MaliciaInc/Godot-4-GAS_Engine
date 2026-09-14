@@ -129,7 +129,7 @@ A predicting client does things before it is allowed to. The `journal` records t
 network.journal.record(GameplayPredictionOperation.cost(null, &"mana", 12.0))
 ```
 
-What can be predicted and undone is closed: costs, cooldowns, attribute changes and cues. Periodic ticks, execution calculations, custom costs whose `prediction_kind()` is `NONE`, and anything the client cannot observe are not predicted.
+What can be predicted and undone is closed, one `GameplayPredictionOperation.Kind` each: a cost, a cooldown, an attribute change, a cue, a tag with its counts on either side, and an animation with the claim it took on its surface. Periodic ticks, execution calculations, custom costs whose `prediction_kind()` is `NONE`, and anything the client cannot observe are not predicted.
 
 ## Aiming over the network
 

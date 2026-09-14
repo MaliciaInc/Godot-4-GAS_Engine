@@ -2,7 +2,7 @@
 
 **GAS_Engine** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
 
-It is developed as a standalone reusable Godot addon.
+It is a standalone, reusable Godot addon - version **3.0.0** - with a visual ability editor, debugging tools inside the game and inside the editor, and multiplayer.
 
 > **License model:** use GAS_Engine unmodified in personal or commercial games for free. Modifying GAS_Engine itself, distributing modified versions, or creating a derivative framework requires a separate paid Commercial Modification License.
 
@@ -13,19 +13,42 @@ See [License](#license) for the exact distinction.
 | | |
 |---|---|
 | Godot | **4.7.2** |
-| Language | GDScript |
-| Dependencies | none |
+| Language | GDScript, strictly typed |
+| Runtime dependencies | none |
 
 The exact patch version is named rather than "4.7" because GDScript warnings promoted to errors can change between patch releases, and this framework is strictly typed throughout.
 
+The repository's own test suite runs on GUT `v9.7.1`, vendored under `addons/gut/`. A game does not need it.
+
+## Documentation
+
+The manual lives in [`documentation/`](documentation/README.md): getting started, one guide per subsystem, and end-to-end tutorials, covering the runtime API and the Ability Composer alike. This README is the overview; the manual is where each claim below is explained in full.
+
+| Start with | For |
+|---|---|
+| [Quickstart](documentation/docs/quickstart.md) | A damaging ability cast on a character and watched in the runtime overlay, in about ten minutes. |
+| [Core concepts](documentation/docs/getting-started/core-concepts.md) | The model: components, attributes, effects, abilities, tags, events, cues and tasks. |
+| [Guides](documentation/docs/guides/) | One page per subsystem - what it guarantees, how to use it, and what to avoid. |
+| [Integrate GAS_Engine into a turn-based RPG](documentation/docs/tutorials/integrate-gas-into-a-turn-based-rpg.md) | The engine wired into a complete game. |
+| [Common pitfalls](documentation/docs/guides/common-pitfalls.md) | Symptoms, their causes, and the fix for each. |
+
 ## Installation
 
-1. Copy the `addons/GAS_Engine/` folder into your project's `addons/` folder.
+1. Copy the `addons/GAS_Engine/` folder, whole, into your project's `addons/` folder.
 2. **Project → Project Settings → Plugins**, and tick **GAS_Engine**.
 
-Enabling the plugin adds one autoload, `GameplayCueManager`. If your project already declares an autoload by that name, GAS_Engine leaves your declaration alone and warns rather than overwriting it.
+Enabling the plugin:
 
-That is the whole installation. There is no build step, and nothing needs configuring before the next section works.
+- adds one autoload, `GameplayCueManager`. If your project already declares an autoload by that name, GAS_Engine leaves your declaration alone and warns rather than overwriting it;
+- creates the project's two registries in `res://gas_engine/` when they do not exist yet - `gameplay_tags.gd` and `gameplay_cues.gd`, ordinary GDScript it never rewrites;
+- registers its project settings under `gas_engine/`;
+- adds the tools described under [Editor tools](#editor-tools).
+
+There is no build step, and nothing needs configuring before the next section works.
+
+### Updating
+
+Replace `addons/GAS_Engine/` whole - never merge an old folder and a new one - and keep `res://gas_engine/`, which belongs to your project. Then re-render the two registries with the new generators: the engine reads them as text, so a declaration a newer engine expects is simply absent from a file an older one wrote, and an absent declaration reads as an empty one. The [installation guide](documentation/docs/getting-started/installation.md#updating-gas_engine) has the script.
 
 ### Exporting
 
@@ -43,7 +66,7 @@ The reason is Godot's, not this addon's, and it is worth knowing because it is i
 
 ## Quick start: a fireball in five minutes
 
-Two scripts and a scene. Everything below is plain GDScript that runs the moment you save it.
+Three scripts and a scene. Everything below is plain GDScript that runs the moment you save it; the [Quickstart](documentation/docs/quickstart.md) in the manual goes on to cast it in a scene and watch it in the runtime overlay.
 
 ### 1. Your first AttributeSet
 
@@ -89,7 +112,7 @@ The `_init()` block is not boilerplate you can skip. It is the most common first
 
 ### 2. Your first GameplayEffect
 
-A **GameplayEffect** is what an ability lands. It is built in code, from numbers the ability already declares:
+A **GameplayEffect** is what an ability lands. Here it is built in code, from a number the ability already declares:
 
 ```gdscript
 func _payload() -> GameplayEffect:
@@ -171,7 +194,7 @@ An ability never subtracts a cost itself. It calls `commit_ability()`, and the e
 
 ### 4. Give it to a character
 
-A character is any node with an `AbilitySystemComponent` **as a child named `AbilitySystemComponent`**. The component asks its parent what effects and cues act on, so it is never an orphan.
+A character is any node with an `AbilitySystemComponent` **as a child named `AbilitySystemComponent`** - the name is how `AbilitySystemLocator` finds the component from any node of the character. The component asks its parent what effects and cues act on, so it is never an orphan.
 
 ```gdscript
 extends Node
@@ -191,7 +214,9 @@ func _ready() -> void:
 	asc.ability_runtime.try_activate(handle)
 ```
 
-Put the same component on a second node, add that node to the `enemies` group, and the fireball takes it from 100 health to 70.
+Put the same component on a second node, add that node to the `enemies` group, and the fireball takes it from 100 health to 70 while its caster is untouched. `give_ability()` returns a `GameplayAbilityHandle`; the handle, not the ability node, is how a grant is referred to from then on. The activation returns a result whose status says what happened - `SUCCESS`, or why it was refused, such as `ON_COOLDOWN` or `INSUFFICIENT_RESOURCES` - instead of collapsing into `false`.
+
+This quick start is executed by the test suite, so it cannot quietly stop working. The manual's [Quickstart](documentation/docs/quickstart.md) aims at a chosen target instead of a group, through `try_activate_ability_handle()` and an activation context.
 
 Read a value back with `asc.get_attribute_current(&"health")`, and watch it move by connecting `asc.attribute_changed`.
 
@@ -201,10 +226,25 @@ The effect above is built in GDScript so the whole example fits in one file. An 
 
 ### Where to go from here
 
-- `addons/GAS_Engine/reference/` holds six complete abilities, written by hand and commented: an instant hit, a paid strike, a timed buff, an aimed-then-confirmed blast, an area sweep, and one that fires cues.
-- The **Ability Composer** below draws any ability as a graph, and writes your edits back to the same file. Choose it from **Project → Tools** and it finds your abilities for you.
+- The [manual](documentation/README.md) explains every subsystem, with tutorials.
+- `addons/GAS_Engine/reference/` holds six complete abilities, written by hand and commented - see [Examples](#examples).
+- The **Ability Composer** draws any ability as a graph, and writes your edits back to the same file. Choose it from **Project → Tools** and it finds your abilities for you.
 - The rest of this document explains what each subsystem guarantees, and why.
 
+## Editor tools
+
+Everything here is editor-only: nothing under `addons/GAS_Engine/editor/` is reachable from a running game.
+
+| Tool | What it does |
+|---|---|
+| **Ability Composer** - **Project → Tools → Ability Composer**, or the **GAS_Engine** tab at the top of the editor | Draws an ability's `_activate_ability()` as a graph and writes edits back to the same `.gd`. See [Ability Composer](#ability-composer). |
+| **Project → Tools → Create Gameplay Effect** | Writes a blank `GameplayEffect` asset and opens it. |
+| **Gameplay Effect** bottom panel | Follows the Inspector. For the effect it has open: timing, stacking, a row per modifier, its components and cues, the asset validator's findings, and a save button. |
+| Inspector pickers | A tag editor for tag properties, a tree editor for tag queries, and an attribute picker that offers the attributes the project declares and flags a name nothing declares. |
+| **GAS_Engine** tab in the Debugger dock | Every entity a game running from the editor reports - its attributes, active effects, abilities and tags, kept current - with what happened to it beside them. See [Debugging](#debugging). |
+| `GameplayAssetValidator` | Checks authored effects, ability scenes, tag queries and costs from editor code: an `EditorScript`, a test, a build step. |
+
+The [editor tools page](documentation/docs/getting-started/editor-tools.md) covers each in full.
 
 ## Scope and support model
 
@@ -326,6 +366,8 @@ Run the two-process sample to see all of it at once:
 pwsh -File tooling/run_multiplayer_sample.ps1
 ```
 
+The [networking guide](documentation/docs/guides/networking.md) and the [two-process tutorial](documentation/docs/tutorials/multiplayer-across-two-processes.md) walk through it in code.
+
 ## Proven in a real game
 
 A suite proves a framework against itself. It cannot prove that a game built on
@@ -376,18 +418,15 @@ Abilities have explicit activation policies and a typed lifecycle.
 
 Supported behavior includes:
 
-- manual activation;
-- activation on grant;
-- gameplay-event activation;
-- passive abilities;
-- activation by stable ability handle;
-- cancellable ability tasks;
-- transactional costs and cooldown commits;
-- removal policies for active abilities;
-- gameplay-tag requirements, blocking, and cancellation;
-- target requirements enforced by the runtime rather than left to UI code.
+- activation by call, by stable ability handle, on grant, passively, by a gameplay-event or owned-tag trigger, and by input - an input slot, an InputMap action, or both;
+- `WHILE_INPUT_ACTIVE`: held down it runs, let go it ends;
+- instancing per actor, per execution - several casts of one ability running at once - or not instanced at all;
+- transactional commits: attribute costs (a fixed amount, or a percentage of another attribute), cost effects and custom costs, and cooldowns in seconds or in turns, shareable through their tags - all paid, or nothing paid;
+- tag rules: requirements on the owner, the source and the target, tags held while running, blocking and cancelling other abilities, and a tag relationship table;
+- ability sets that grant a whole loadout - attribute sets, abilities and effects - and take it back in one call;
+- cancellable ability tasks, and removal policies that cancel a running activation or let it finish.
 
-An activation returns a typed result describing what happened instead of collapsing every failure into a generic boolean.
+An activation returns a typed result describing what happened instead of collapsing every failure into a generic boolean, and a refusal carries a failure tag a game's UI can react to.
 
 ### Attributes
 
@@ -413,7 +452,7 @@ to `9`, each channel composing over the value the previous one produced:
 ```text
 value =
 (
-	(value + sum(ADD_BASE))
+	(value + sum(ADD))
 	* (1 + sum(MULTIPLY_ADDITIVE - 1))
 	/ (1 + sum(DIVIDE_ADDITIVE - 1))
 )
@@ -432,35 +471,33 @@ profile rebalances every stat in a game that already shipped on the other one**,
 so it is a decision made once, at the start.
 
 Base and effective-value clamps are separate hooks so temporary presentation
-constraints cannot silently corrupt durable state.
+constraints cannot silently corrupt durable state. Beyond them:
 
+- **meta attributes** - incoming damage, say - are messages rather than stores: read once by the attribute set and returned to zero;
+- **aggregator policies** decide per attribute which contributions count - every one, or only the one that leaves the value lowest or highest, so four slowing puddles slow a character once;
+- an attribute can be named with its set, through `GameplayAttributeRef`, where two sets on one entity share a name - and a write to a name two sets share is refused rather than guessed.
 
 ### Gameplay effects
 
 Gameplay effects support:
 
-- instant, duration, infinite, periodic, and turn-aware behavior;
+- instant, duration, infinite, periodic, and turn-based behavior;
 - atomic evaluation and commit;
-- typed modifier magnitudes;
-- scalable values;
-- attribute-based magnitudes;
-- SetByCaller values;
-- custom magnitude calculations;
-- stacking policies and overflow behavior;
-- application, ongoing, and removal tag requirements;
-- effect immunity;
+- typed modifier magnitudes: scalable values, attribute-based magnitudes, SetByCaller values, and custom calculations;
+- magnitudes that stay live on a lasting effect - re-resolved when a captured attribute moves, or when a signal the magnitude depends on fires;
+- execution calculations, with attribute captures, richer outputs and scoped modifiers;
+- stacking with limits, overflow effects, and refresh and expiration policies;
+- components: target and asset tags, application tag requirements, chance to apply, custom can-apply checks, immunity, removing other effects, blocking and cancelling abilities, additional effects, granted abilities, and UI data;
 - effect inhibition without destroying runtime identity;
-- chained additional effects;
-- granted abilities;
-- pre/post gameplay-effect execute hooks;
-- explicit removal reasons;
-- bounded effect-chain recursion.
+- pre/post gameplay-effect execute hooks on the attribute set;
+- effect queries, explicit removal reasons, and bounded effect-chain recursion;
+- effects authored as `.tres` assets or built in code, interchangeably.
 
 A failed application leaves no half-applied modifiers, tags, cues, registrations, or observable partial state behind.
 
 ### Gameplay tags
 
-Gameplay tags are hierarchical and query-driven.
+Gameplay tags are hierarchical and query-driven. A project declares them once, in `res://gas_engine/gameplay_tags.gd` - by hand or through the Inspector's tag editor - with redirects for tags that were renamed after they shipped, and branches another team can own.
 
 They are used for:
 
@@ -476,36 +513,38 @@ They are used for:
 
 Tag semantics are centralized so different subsystems do not invent slightly different definitions of what a tag match means.
 
+### Gameplay events
+
+A gameplay event is a tagged message sent to one component - "this character parried" - with an instigator, a target, a magnitude and optional objects. Tasks waiting for it hear it first, then the component's signal, then abilities whose triggers match; matching is hierarchical and one-directional. Effects send events of their own as they apply, tick and stack, and the Dialogic and QuestSystem bridges carry events in from outside the ability system.
+
 ### Targeting
 
-GAS_Engine supports typed targeting in both **2D and 3D**.
+GAS_Engine supports typed targeting in both **2D and 3D**, and never reads the mouse, the camera or the input map itself: a game turns input into positions and rays, and the engine turns those into targets.
 
 The targeting boundary handles:
 
-- traces;
-- overlaps;
-- target-data conversion;
-- duplicate collider resolution;
-- self-filtering;
-- ability-system resolution;
-- per-target application copies.
+- target data made of hits - on nodes, or at places - with each target of an area effect given only its own share;
+- physics queries: raycasts and overlaps, with filters;
+- presets: the same query authored as select, filter and sort steps;
+- providers: a person aims over time, sees a preview and confirms - and over a network, the authority validates the aim;
+- reticles that show where an aim will land;
+- ability-system resolution, duplicate collider resolution and self-filtering.
 
 One actor represented by several colliders resolves as one gameplay target rather than several accidental hits.
 
 ### Gameplay cues
 
-Gameplay cues provide cosmetic feedback without making visual effects part of authoritative gameplay state.
+Gameplay cues provide cosmetic feedback without making visual effects part of authoritative gameplay state. Gameplay code asks for a cue by tag, and it is answered by a scene whose root is a `GameplayCueNotify`, by a handler script with nothing to instantiate, or by the target's own `handle_gameplay_cue()`.
 
 The cue system supports:
 
-- one-shot execution cues;
-- periodic cues;
-- persistent cue lifecycle;
-- typed cue parameters;
-- cue handles;
+- bindings in `res://gas_engine/gameplay_cues.gd`, or bound at runtime;
+- fallback up a tag's family, stopped where a tag overrides its parent;
+- ready-made burst and looping templates, filled with sounds, particles and decals rather than code;
+- one-shot, periodic and persistent cues, with typed parameters and handles;
 - pooling;
-- effect-handle association;
-- clean activation and removal when effects become inhibited or active again.
+- cues on effects and on abilities, with clean activation and removal when effects become inhibited or active again;
+- replication chosen per binding.
 
 A missing cosmetic cue cannot invalidate gameplay application.
 
@@ -515,19 +554,17 @@ The task layer provides reusable asynchronous gameplay operations owned by an ab
 
 Examples include waiting for:
 
-- delays;
-- input;
-- target data;
+- delays, and input by slot or by action;
+- target data, and confirmation or cancellation;
 - gameplay events;
-- attribute changes and thresholds;
-- tag changes and tag queries;
-- gameplay-effect application/removal/stack changes;
-- ability activation/end;
-- confirmation or cancellation;
-- repeated runtime ticks;
-- animation completion.
+- attribute changes, thresholds and ratios;
+- tags added, removed, counted, or matching a query;
+- effects applied, removed, blocked by immunity, or changing their stack count;
+- another ability activating, ending, or paying for itself;
+- repeated ticks, a condition, a named state, and a network sync point;
+- an animation playing to its end, root motion, moving to a point, an overlap, and a spawned actor's lifetime.
 
-Ending or cancelling an ability cancels the tasks it owns, and each task completes exactly once.
+Ending or cancelling an ability cancels the tasks it owns, and each task completes exactly once. Await a task's `completed()` rather than its `finished` signal: a task can end before its caller gets to wait for it.
 
 ### Debugging
 
@@ -559,13 +596,13 @@ Games can define their own context payload classes for information such as weapo
 
 The addon contains optional integration bridges for:
 
-- **Dialogic**;
-- **GLoot**;
-- **QuestSystem**.
+- **Dialogic** - timelines send gameplay events and add or remove tags;
+- **GLoot** - equipping an item into a bound slot grants the abilities, passive effects and tags a catalog lists for it, and unequipping takes back exactly what was granted;
+- **QuestSystem** - quests becoming available, accepted or completed send gameplay events, and gameplay events count as quest progress.
 
 None of them is required by the core runtime. The integrations are intentionally kept at narrow public API boundaries so installing one optional addon does not turn it into an architectural dependency of the gameplay system.
 
-Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`.
+Certified integration versions and third-party dependency information are documented in `THIRD_PARTY.md`, and each bridge has a page in the [manual](documentation/docs/guides/integrations/).
 
 ### Dialogic
 
@@ -594,9 +631,11 @@ The signal bus is shared with the rest of the game. A message addressed to anoth
 
 The Composer is a visual editor for abilities that is a **view of the code**, not a second way to author them. There is no JSON, no cached graph, no `.tres`, no interpreter: the `.gd` file is the ability, and the canvas is read out of it every time it is opened. Opening an ability and saving it without changing anything gives the file back byte for byte, comments and formatting included.
 
-Open it from **Project → Tools → Ability Composer**. It finds the abilities in your project for you — every script whose base chain reaches `GameplayAbility`, however many classes deep — and offers them; if you have exactly one, it simply opens it. Whatever the Script editor has open is drawn straight away when it is an ability, so moving between the two views costs nothing. The `Code` chip takes you back to the same file as text.
+Open it from **Project → Tools → Ability Composer**. It finds the abilities in your project for you — every script whose base chain reaches `GameplayAbility`, however many classes deep — and offers them; if you have exactly one, it simply opens it. Whatever the Script editor has open is drawn straight away when it is an ability, so moving between the two views costs nothing. The **Code** button in the top bar takes you back to the same file as text.
 
 The list is kept between openings and refreshed whenever the editor reports a change on disk, with **Re-scan abilities** in the picker for anything that misses and **Browse** for a file you would rather point at yourself.
+
+**New ability** writes an ability's script and, beside it, the scene `give_ability()` takes. Values are edited in the Composer's own Inspector; an execution cable is the order of statements in the file, a data cable is a typed local passed as an argument, and branches and matches are drawn from `if` and `match`. The **Output** panel lists everything wrong with the open ability, each row at a line - an ability with errors still saves, so a half-finished one can be put down and picked up later. Opening another ability with unsaved changes asks first, and closing the editor writes a recovery copy.
 
 ### What it can draw
 
@@ -644,24 +683,45 @@ A game can offer calls of its own through `ComposerCatalog.register(method, grou
 
 Nothing outside `addons/GAS_Engine/editor/` names anything inside it, so there is no path by which a running game loads any part of the Composer. That is checked by the test suite rather than promised here.
 
+The [Ability Composer guide](documentation/docs/guides/ability-composer/index.md) covers every gesture, menu and key, and the [tutorial](documentation/docs/tutorials/build-an-ability-in-the-composer.md) builds an ability in it from scratch.
+
+## Examples
+
+- **`addons/GAS_Engine/reference/`** - six complete abilities, written by hand and commented, each adding one idea to the last: an instant hit (`instant_damage.gd`), a paid strike (`costly_strike.gd`), a timed buff (`timed_buff.gd`), an aimed-then-confirmed blast (`confirmed_blast.gd`), an area sweep (`sweeping_volley.gd`), and one that fires cues (`cued_dash.gd`). All six open in the Ability Composer.
+- **`examples/action_sample/`** - a 3D hero with a loadout: an instant strike, a channel with a persistent cue, and an aimed ground slam with a reticle and a preset, three dummies to hit, and the runtime overlay. Play `examples/action_sample/main.tscn` inside this repository; it also runs as a project of its own, and as an authority and a client over ENet. Its [README](examples/action_sample/README.md) and the [walkthrough](documentation/docs/tutorials/action-sample-walkthrough.md) explain it.
+
+## Repository layout
+
+| Path | Holds |
+|---|---|
+| `addons/GAS_Engine/` | The addon - the only folder a game copies. |
+| `addons/gut/` | GUT, vendored for the test suite. |
+| `gas_engine/` | This project's own tag and cue registries, as the plugin writes them into any host project. |
+| `documentation/` | The manual. |
+| `examples/action_sample/` | The action sample. |
+| `test/` | The GUT suite - `unit/`, `integration/`, `parity/` and `perf/` - with its fixtures. |
+| `tooling/` | `verify.ps1`, the gates, and the scripts behind them. |
+| `artifacts/` | Committed receipts: gate, parity and dependency evidence. |
+
+The integration sandbox - the turn-based RPG under [Proven in a real game](#proven-in-a-real-game) - lives on its own orphan branch, `godot-open-rpg_GAS_Engine`, and is never merged into `main`.
+
 ## Runtime architecture
 
 The `AbilitySystemComponent` acts as a facade rather than a single god object.
 
-Mutable responsibilities are separated into focused runtimes for areas such as:
+Mutable responsibilities are separated into focused runtimes:
 
-- abilities;
-- activation policy;
+- abilities - grants, activation lifecycle, instancing, activation policy, queries, tag semantics and cooldowns;
 - ability tasks;
 - attributes;
-- effects;
-- stacking;
-- effect chains;
+- effects - with their components, stacking, inhibition, effect chains and live magnitudes;
 - gameplay tags;
-- cooldowns;
-- cues;
-- events;
-- targeting.
+- gameplay events;
+- cue parameters, with playback and pooling in the `GameplayCueManager` autoload;
+- networking - activations, requests, state and batches - one runtime per process rather than per component;
+- a debug channel per component.
+
+Targeting has no runtime of its own: `GameplayTargetingService` queries and presets produce target data per call, and a provider lives exactly as long as the aim it belongs to.
 
 The goal is simple: every important piece of mutable state should have one clear owner.
 
@@ -697,19 +757,27 @@ Domain contracts avoid generic dictionaries where a closed type can express the 
 
 ## Verification
 
-The repository contains an automated GUT test suite and a headless runner.
-
-The project is developed against structural and behavioral gates including:
-
-- strict parsing of framework scripts;
-- zero test failures;
-- zero orphan nodes after the suite;
-- reproducible fresh-project import behavior;
-- bounded file and function size;
-- duplicated-logic review;
-- deterministic gameplay arithmetic.
-
 The repository itself is the executable specification: important gameplay rules are expected to have tests rather than exist only as comments or documentation claims.
+
+```bash
+# The GUT suite, headless. It ends with a line a runner reads:
+# GAS_ENGINE_GUT_RESULT: PASS passed=N failed=0 pending=0 orphans=0
+godot --headless --path . res://test/gut_headless_runner.tscn
+
+# The gate chain. It ends with GAS_ENGINE_VERIFY_PASS or GAS_ENGINE_VERIFY_FAIL.
+pwsh -File tooling/verify.ps1
+```
+
+`verify.ps1` runs, in order: the policy seal, the gates' own self-tests, the project invariants, the product identity check, the parity receipts, the file and function size gate, the test-location gate, the magic-string gate, the duplicated-logic gate, the engine evidence for the import and the suite, and `git diff --check`. The engine evidence is checked against a content fingerprint of every tracked script and scene, so a receipt from before a change does not count for after it.
+
+Beyond the chain, work is held to:
+
+- zero test failures and zero orphan nodes after the suite;
+- a strict typing pass - `tooling/strict_typing_pass.py` switches the project to warnings-as-errors with the addon included, for validating every script, and back;
+- a fresh clone imported cold, where an uncommitted `.uid` file or local state cannot hide;
+- bounded file and function size, and duplicated-logic review;
+- deterministic gameplay arithmetic;
+- the harnesses on the sandbox branch, above.
 
 A suite proves the framework against itself. What a real game proved it does is at the top of this file, under [Proven in a real game](#proven-in-a-real-game).
 

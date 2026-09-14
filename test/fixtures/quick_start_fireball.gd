@@ -4,10 +4,9 @@
 ## [QuickStartAttributes] carries: this repository already spends `Fireball` on
 ## a Composer test double.
 ##
-## The effect is built here, in code, from the ability's own exported number.
-## There is deliberately no authored-resource twin: two ways to say what an
-## ability does is two places to look when it does the wrong thing, and the
-## hand-written one is the one nothing can check.
+## The effect is built here, in code, from the ability's own exported number,
+## because that is how the README prints it. A `.tres` effect asset would land
+## the same `GameplayEffect`; this keeps the printed example to one file.
 ##
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name QuickStartFireball extends GameplayAbility
