@@ -17,6 +17,13 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name ComposerStatementOps extends RefCounted
 
+## Why an operation that could do nothing did nothing. Every one of these used
+## to answer null, which is what the screen redraws as done: the person clicked,
+## nothing happened, and nothing said why.
+const CANNOT_WRITE_HERE: String = "%s, so nothing can be put into it"
+const NO_SUCH_CALL: String = "the catalog has no call %s any more"
+const NOTHING_TO_PASTE: String = "there is nothing to put in"
+
 var _document: ComposerDocument = null
 
 
@@ -76,8 +83,11 @@ func copy(picked: Array[StringName]) -> String:
 ## Anything at all may be on a clipboard, so what comes off one goes through the
 ## same door every other edit does and is read back before it is accepted.
 func paste(picked: Array[StringName], written: String) -> ComposerGraph.Diagnostic:
-	if _document == null or not _document.is_open() or written.strip_edges().is_empty():
-		return null
+	var refused: ComposerGraph.Diagnostic = _refused_to_write()
+	if refused != null:
+		return refused
+	if written.strip_edges().is_empty():
+		return ComposerWriter.refuse(NOTHING_TO_PASTE)
 	return _document.insert(written, _document.after(spans_of(picked)))
 
 
@@ -87,14 +97,36 @@ func paste(picked: Array[StringName], written: String) -> ComposerGraph.Diagnost
 ## pointed at anywhere, so anywhere the layout puts it is as good an answer as
 ## any.
 func insert_call(picked: Array[StringName], key: StringName) -> ComposerGraph.Diagnostic:
-	if _document == null or not _document.may_write():
-		return null
-	var written: String = ComposerWriter.call_for(
-		ComposerCatalog.find(key), _document.path()
-	)
-	if written.is_empty():
-		return null
+	var refused: ComposerGraph.Diagnostic = _refused_call(key)
+	if refused != null:
+		return refused
+	var written: String = ComposerWriter.call_for(ComposerCatalog.find(key), _document.path())
 	return _document.insert(written, _document.after(spans_of(picked)))
+
+
+## Why nothing can be written into the ability that is open, or null when it can.
+##
+## Said for what the file is, and before any edit is attempted. Refused after the
+## edit instead, a file the Composer already could not draw came back as "that
+## would leave a file the Composer cannot read" - a person reading that looks
+## for something wrong with what they pasted.
+func _refused_to_write() -> ComposerGraph.Diagnostic:
+	if _document == null or not _document.is_open():
+		return ComposerWriter.refuse(ComposerDocument.NOTHING_OPEN)
+	if not _document.may_write():
+		return ComposerWriter.refuse(CANNOT_WRITE_HERE % _document.graph().blocked_reason())
+	return null
+
+
+## The same, for a call chosen by its catalog key - which may have gone stale if
+## the catalog was rebuilt after the palette row was drawn.
+func _refused_call(key: StringName) -> ComposerGraph.Diagnostic:
+	var refused: ComposerGraph.Diagnostic = _refused_to_write()
+	if refused != null:
+		return refused
+	if ComposerCatalog.find(key) == null:
+		return ComposerWriter.refuse(NO_SUCH_CALL % key)
+	return null
 
 
 ## The same call, put where the person let go of it.
@@ -110,13 +142,10 @@ func insert_call(picked: Array[StringName], key: StringName) -> ComposerGraph.Di
 func insert_call_at(
 	picked: Array[StringName], key: StringName, graph_position: Vector2
 ) -> ComposerGraph.Diagnostic:
-	if _document == null or not _document.may_write():
-		return null
-	var written: String = ComposerWriter.call_for(
-		ComposerCatalog.find(key), _document.path()
-	)
-	if written.is_empty():
-		return null
+	var refused: ComposerGraph.Diagnostic = _refused_call(key)
+	if refused != null:
+		return refused
+	var written: String = ComposerWriter.call_for(ComposerCatalog.find(key), _document.path())
 
 	var at: int = _document.after(spans_of(picked))
 	var made: String = ComposerEdits.insert_after(_document.printed(), at, written)

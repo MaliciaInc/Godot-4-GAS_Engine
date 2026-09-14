@@ -109,6 +109,10 @@ func _build_cooldown() -> GameplayEffect:
 		return null
 
 	var effect: GameplayEffect = GameplayEffect.new()
+	# By its tag, not by `display_name`: a scene sets its properties in file
+	# order, so the name may not be there yet when this runs - and the tag is
+	# what the cooldown is anyway.
+	effect.resource_name = String(cooldown_tag)
 	effect.policy = GameplayEffect.DurationPolicy.TURN_BASED
 	effect.duration_turns = cooldown_turns
 
@@ -207,6 +211,12 @@ func _land() -> void:
 	var effect: GameplayEffect = _payload()
 	if effect == null:
 		return
+	# Named, because the engine's debugger shows an effect by its name and an
+	# effect built in code has no file to be called by. Unnamed, the Focus a
+	# player just cast sat in the overlay as a row with nothing where the name
+	# goes - which is how the engine's own sample names what it builds.
+	if effect.resource_name.is_empty():
+		effect.resource_name = display_name
 	var data: GameplayAbilityTargetData = GameplayAbilityTargetData.new()
 	for battler: Battler in targets:
 		if battler == null or battler.asc == null:
@@ -289,6 +299,23 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 		return
 	var origin: Vector2 = caster.position
 
+	await _swing(caster, origin, offset, out_time, back_time)
+
+	# Home however the swing ended. It stops at every await a cancel can land
+	# across, and a caster cancelled on its way out used to stay out there - a
+	# wolf measured three hundred and fifty pixels from its own place in the line
+	# for the rest of the fight. Put back rather than walked back: a tween home
+	# would still be running when the next ability read where it stands.
+	if is_instance_valid(caster):
+		caster.position = origin
+	if is_active:
+		await _pause(recovery)
+
+
+## Out, land, hold, back - stopping at whichever beat the ability is cancelled
+## across. Coming home after a stop is `_lunge()`'s job, so no stop here has to
+## remember it.
+func _swing(caster: Battler, origin: Vector2, offset: Vector2, out_time: float, back_time: float) -> void:
 	var winding: bool = await _pause(windup)
 	if not winding or not is_instance_valid(caster):
 		return
@@ -315,9 +342,6 @@ func _lunge(offset: Vector2, out_time: float, back_time: float) -> void:
 	var back_tween: Tween = caster.create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
 	back_tween.tween_property(caster, "position", origin, back_time)
 	await back_tween.finished
-	if not is_active or not is_instance_valid(caster):
-		return
-	await _pause(recovery)
 
 
 ## A deliberate beat, counted on the engine's clock.

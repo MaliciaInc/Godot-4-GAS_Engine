@@ -110,7 +110,22 @@ static func render_with_field_overrides(
 	var called: String = String(node.type_id)
 	if not node.receiver.is_empty():
 		called = "%s.%s" % [node.receiver, called]
-	return rebuilt + "%s(%s)" % [called, _arguments(node, overrides)]
+	return rebuilt + "%s(%s)" % [called, _arguments(node, overrides)] + _after_the_call(node)
+
+
+## What follows the call's brackets when it is written back.
+##
+## What the file said, when it said anything. A bare wait on a task that said
+## nothing is given `completed()`: an edit is the moment somebody is looking,
+## and writing back `await wait_delay(1.5)` is writing a wait that waits on
+## nothing. One bound to a local is left alone - `completed()` hands nothing
+## back, so adding it there would be a line that no longer compiles.
+static func _after_the_call(node: ComposerNode) -> String:
+	if not node.suffix.is_empty():
+		return node.suffix
+	if node.awaits and node.prefix.is_empty() and ComposerStatementFactory.returns_task(node.entry):
+		return ComposerStatementFactory.COMPLETED
+	return ""
 
 
 ## What one field is written as.

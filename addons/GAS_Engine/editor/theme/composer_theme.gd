@@ -69,10 +69,10 @@ const TRANSPARENT: Color = Color(0.0, 0.0, 0.0, 0.0)
 ## The theme type a Label resolves its own font against. Named once: a card
 ## says it about the label GraphNode draws its title in, and the chrome theme
 ## says it about every other label a widget builds for itself.
-const LABEL_TYPE: StringName = &"Label"
+const LABEL_TYPE: StringName = GASThemeNames.LABEL_TYPE
 
 const CHROME_TYPES: Array[StringName] = [
-	&"Button",
+	GASThemeNames.BUTTON_TYPE,
 	&"CheckBox",
 	&"CheckButton",
 	LABEL_TYPE,

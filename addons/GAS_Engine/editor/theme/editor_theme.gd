@@ -20,7 +20,7 @@ const ERROR_COLOR: String = "error_color"
 const PANEL_STYLEBOX: String = "panel"
 const NORMAL_STYLEBOX: String = "normal"
 const SEPARATION: String = "separation"
-const FONT_SIZE: String = "font_size"
+const FONT_SIZE: String = GASThemeNames.FONT_SIZE
 
 ## GraphNode draws its own title, out of its own theme items rather than the
 ## ones above. Named here so a card can say how its title looks instead of

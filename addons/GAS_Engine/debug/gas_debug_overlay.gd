@@ -49,6 +49,23 @@ const WATCHING: String = "GAS_Engine — %s"
 ## How many attribute changes are kept for the entity being watched.
 @export var history_limit: int = GasAttributeHistory.DEFAULT_LIMIT
 
+## Godot's own size, which is what the overlay draws at unless told otherwise.
+const DEFAULT_FONT_SIZE: int = 16
+
+## The types whose text the overlay sizes.
+const DRAWN_TYPES: Array[StringName] = [
+	GASThemeNames.LABEL_TYPE, GASThemeNames.BUTTON_TYPE, GASThemeNames.TREE_TYPE
+]
+
+## How big the overlay's text is, whatever the game's theme says.
+##
+## Said by the overlay rather than left to the tree it stands in. A Control that
+## names no size takes the one from the theme around it, and a game whose theme
+## said 96 drew this heading and table at 96: a panel anchored to half a 1920 by
+## 1080 screen needed 1193 by 1408, and showed eight rows. It looked right in the
+## editor, whose theme is quiet. A game that wants it bigger says so here.
+@export var font_size: int = DEFAULT_FONT_SIZE
+
 var _watched: AbilitySystemComponent = null
 var _history: GasAttributeHistory = GasAttributeHistory.new()
 var _pages: Array[GasDebugPage] = []
@@ -69,8 +86,24 @@ func _ready() -> void:
 		GasDebugPageTags.new(),
 	]
 	_history.limit = history_limit
+	($Panel as Control).theme = _own_theme()
 	_build_tabs()
 	refresh()
+
+
+## A theme that names the size of every piece of text the overlay draws.
+##
+## Each type named outright rather than only a default size: the lookup walks the
+## chain by type, so a game theme naming Label beats a default set nearer the
+## label. Built here rather than borrowed from the Composer's, because a running
+## game must name nothing under `editor/`.
+func _own_theme() -> Theme:
+	var own: Theme = Theme.new()
+	own.default_font_size = font_size
+	for kind: StringName in DRAWN_TYPES:
+		own.set_font_size(GASThemeNames.FONT_SIZE, kind, font_size)
+	own.set_font_size(GASThemeNames.TITLE_BUTTON_FONT_SIZE, GASThemeNames.TREE_TYPE, font_size)
+	return own
 
 
 ## Keep drawing while the game is paused.

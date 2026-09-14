@@ -75,6 +75,36 @@ func pre_attribute_change(attribute_name: StringName, proposed_current_value: fl
 	return _bounded(attribute_name, proposed_current_value)
 
 
+## Asked after a current value moved, which is when a pool's ceiling can have
+## come down under the pool.
+##
+## The clamp above bounds what is shown, and that is only half: a hit writes the
+## base, and a base left standing above a ceiling that dropped is health nobody
+## can see. With max health raised to 150 and then lowered again, a battler read
+## 100 and still carried 150 underneath - so the next blow of thirty took nothing
+## off the bar. The engine names this hook for exactly that, and the base is
+## brought down through the component's own write rather than poked, so the
+## change is recomposed and announced like any other.
+func post_attribute_change(asc: Node, attribute_name: StringName, _old_value: float, new_value: float) -> void:
+	var pool: StringName = _pool_under(attribute_name)
+	var component: AbilitySystemComponent = asc as AbilitySystemComponent
+	if pool == &"" or component == null:
+		return
+	if component.get_attribute_base(pool) > new_value:
+		component.set_attribute_base(pool, new_value)
+
+
+## The pool a ceiling bounds, or nothing when this attribute is nobody's ceiling.
+func _pool_under(ceiling: StringName) -> StringName:
+	match ceiling:
+		MAX_HEALTH:
+			return HEALTH
+		MAX_ENERGY:
+			return ENERGY
+		_:
+			return &""
+
+
 ## One rule, asked at both boundaries. Two copies of it would be two chances for
 ## a pool to be bounded on the way in and unbounded on the way out.
 func _bounded(attribute_name: StringName, value: float) -> float:

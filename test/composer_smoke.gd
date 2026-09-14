@@ -34,7 +34,7 @@ const SETTLE: int = 4
 const A_WAIT: StringName = &"wait_delay"
 const A_WAIT_TITLE: String = "Wait Delay"
 const A_WAIT_SECONDS: String = "1.5"
-const A_WAIT_WRITTEN: String = "await wait_delay(1.5)"
+const A_WAIT_WRITTEN: String = "await wait_delay(1.5).completed()"
 
 var screen: ComposerScreen = null
 var hand: RefCounted = null

@@ -141,6 +141,8 @@ func _energy_tick() -> GameplayEffect:
 	modifier.magnitude = magnitude
 
 	var effect: GameplayEffect = GameplayEffect.new()
+	# Named for the engine's debugger, which shows an effect by its name.
+	effect.resource_name = "Energy per round"
 	effect.policy = GameplayEffect.DurationPolicy.INSTANT
 	effect.modifiers = [modifier] as Array[GameplayEffectModifier]
 	return effect

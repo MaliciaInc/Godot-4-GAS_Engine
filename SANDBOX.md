@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `958394d` (FASE 6) |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `4bbfca0`, with `gas_engine/` re-rendered here |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -99,15 +99,36 @@ redistribution here relies on them.
 
 ## What runs here, and what only runs here
 
-Three things, all from the command line, none of them needing the editor:
+All from the command line, none of them needing the editor:
 
 ```bash
 GODOT="/c/Program Files (x86)/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe"
-"$GODOT" --headless --path . res://test/gas_probe.tscn      # two arenas, to combat_finished
-"$GODOT" --headless --path . res://test/composer_probe.tscn # this game's abilities, read and printed back
-"$GODOT" --path . res://test/composer_harness.tscn          # the Composer, 58 checks, needs a window
-"$GODOT" --path . res://test/composer_smoke.tscn            # the Composer, with a hand on the mouse
+"$GODOT" --headless --path . res://test/gas_probe.tscn             # two arenas, to combat_finished
+"$GODOT" --headless --path . res://test/composer_probe.tscn        # this game's abilities, read and printed back
+"$GODOT" --headless --path . res://test/gas_contract_probe.tscn    # the engine's contracts, through Battler.act()
+"$GODOT" --headless --path . res://test/composer_game_probe.tscn   # an ability made in the Composer, run in the game
+"$GODOT" --headless --path . res://test/gas_overlay_probe.tscn     # the runtime overlay, over this game's theme
+"$GODOT" --headless --path . res://test/dialogic_bridge_probe.tscn # real Dialogic timelines into the bridge
+"$GODOT" --path . res://test/composer_harness.tscn                 # the Composer, 58 checks, needs a window
+"$GODOT" --path . res://test/composer_smoke.tscn                   # the Composer, with a hand on the mouse
 ```
+
+### The four that hold the engine to its word in a real game
+
+Each ends with a line a runner can read, and each checks that every one of its
+cases ran to its last line - a case that stops part way fails the run instead of
+quietly shrinking it, which is SBX-009's lesson applied from the start.
+
+| Probe | Result line | What it holds GAS_Engine to |
+|---|---|---|
+| `gas_contract_probe` | `GAS_CONTRACT_RESULT: PASS passed=N failed=0` | Damage and overkill, a corpse refused, healing and its ceiling, a cost refused and a cost paid, a cooldown counted in turns, energy bounds, two buffs stacking and withdrawn to exactly base, percentages bounded, a ceiling dropping under its pool, and a swing cancelled in its windup and in the air - on real battlers, through `Battler.act()`, the seam the game itself uses. |
+| `composer_game_probe` | `COMPOSER_GAME_RESULT: PASS passed=N failed=0` | Every ability in this game and the engine's reference abilities read and printed back byte for byte; a new ability made through the Composer's own document and statement operations, saved, given to Baloo and run - and it has to actually wait; refusals that say why rather than saying done. |
+| `gas_overlay_probe` | `GAS_OVERLAY_RESULT: PASS passed=N failed=0` | `GasDebugOverlay` watching Baloo: its pages, attribute rows, an effect row that says which effect it is, cooldown tags, refreshing while the game is paused, the watched battler freed under it, and its text at its own size over a game theme that says 96. |
+| `dialogic_bridge_probe` | `DIALOGIC_BRIDGE_RESULT: PASS passed=N failed=0` | Timelines built with `DialogicTimeline.from_text` and started with `Dialogic.start_timeline` against a real battler: tags added and removed, an event with a magnitude waking a listening ability, the game's own signal traffic left alone, malformed messages refused, channels, the legacy bridge name, two bridges on one bus, a freed target, a freed bridge, and unbinding. |
+
+`test/dialogic_probe_listener.gd` is the listening ability the bridge probe
+wakes. What the four found the first time they ran is in `FINDINGS.md`, GAS-011
+to GAS-016 and SBX-010 to SBX-012.
 
 The first one says one thing and one thing only: **both arenas reach
 `combat_finished`**. It is not reproducible round for round - accuracy is rolled
@@ -126,10 +147,12 @@ It needs a window - no `--headless` - and it finishes with a line a runner can
 read:
 
 ```text
-SMOKE_RESULT: PASS passed=82 failed=0
+SMOKE_RESULT: PASS passed=89 failed=0
 ```
 
-Green as of `aad0cbc`. It was not, and the two checks that were red were the
+Green at the re-deploy of `main`'s `4bbfca0`, as are the other seven: the four
+below at 47, 28, 16 and 34 checks, `composer_harness` at 58, and `gas_probe`
+with both arenas reaching `combat_finished`. The smoke was first green at `aad0cbc`. It was not, and the two checks that were red were the
 harness aiming at a card that was off the canvas rather than anything the engine
 did - see GAS-009 under "Checked and not defects", which is worth reading before
 writing up the next one.

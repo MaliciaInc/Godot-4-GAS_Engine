@@ -36,7 +36,7 @@ static func of(
 	node: ComposerNode, verdict: ComposerSubset.Verdict, returns: StringName
 ) -> Array[ComposerNode.Field]:
 	if not node.type_id.is_empty():
-		return of_call(node.text, node.entry)
+		return of_call(node.text.trim_suffix(node.suffix), node.entry)
 	return structural(node, verdict, returns)
 
 

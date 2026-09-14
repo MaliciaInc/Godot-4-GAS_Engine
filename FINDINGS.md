@@ -29,9 +29,27 @@ run again.
 # Open — GAS_Engine
 
 Nothing. Every defect this sandbox found in the addon is fixed on `main`,
-re-deployed here and re-run - the last was GAS-010, closed 2026-09-11 and
-moved below. A finding is only allowed to leave this section by being
+re-deployed here and re-run - the last were GAS-011 to GAS-013, closed
+2026-09-14 and moved below, beside GAS-014 to GAS-016, which had no repro in
+this game to re-run and are closed by their regression tests on `main`. A finding is only allowed to leave this section by being
 re-measured here, never by a fix existing somewhere else.
+
+## Open questions - for a decision, not defects
+
+Found by the same sweep, and left alone on purpose: each is a choice about what
+the engine should be, and fixing either one would be deciding it.
+
+1. **A tag nobody declared.** The Dialogic bridge checks that a tag is spelled
+   like a tag and deliberately does not repair it; it does not check that the
+   project declares it. A typo in a timeline - `State.Sword` for `State.Sworn` -
+   is granted as a new tag that nothing listens for, and nothing says so. Whether
+   the runtime refuses, warns, or allows an undeclared tag decides what a game may
+   do at runtime, so it is not a bug fix.
+2. **Abilities written as a base class with hooks.** Five of this game's six
+   abilities open read-only in the Composer. They extend `BattlerAbility` and
+   fill in `_perform()` and `_payload()`, and the Composer draws an ability's own
+   body. That is the structure this game chose, and a common one. Whether the
+   Composer should draw a hook override is a question about its scope.
 
 ## GAS-006 — a call from the palette was written after the return · **FIXED ON MAIN**
 
@@ -657,6 +675,60 @@ afterwards.
 
 ---
 
+## SBX-010 — a cancelled swing left the caster standing out there · **FIXED**
+
+`test/gas_contract_probe.gd`, case `cancel_travel` - the wolf sets off, and its
+ability is cancelled on the way:
+
+```text
+ok    cancel_travel · a swing cancelled on its way never lands
+ok    cancel_travel · its turn still ends, once
+FAIL  cancel_travel · and the caster comes home rather than staying out there   (0, 0) -> (350, 0)
+```
+
+`BattlerAbility._lunge()` returned at every await a cancel can land across, which
+is right - the payload must not land - and every one of those returns skipped the
+way home. Not the engine's: the cancel reached the ability, its task stopped and
+the turn ended exactly once. The game forgot where it had put its battler.
+
+Fixed here: the swing is its own function, and `_lunge()` puts the caster back
+where it started however the swing ended. Put back rather than tweened back, so
+the next ability never reads a position that is still moving.
+
+## SBX-011 — health nobody could see, under a ceiling that came down · **FIXED**
+
+`test/gas_contract_probe.gd`, case `max_drop`:
+
+```text
+ok    max_drop · with max health raised to 150, health may reach 150
+ok    max_drop · when the raise ends, max health is 100 again
+ok    max_drop · and health is not left standing above it
+FAIL  max_drop · and the next hit of thirty takes thirty off what is shown     health 100.0, base 100.0
+```
+
+`BattlerAttributes` bounded what is shown (`pre_attribute_change`) and what is
+written (`pre_attribute_base_change`), and nothing brought the base down when the
+ceiling dropped. So the battler read 100 and carried 150 underneath; a blow of
+thirty wrote 120, was clamped to 100, and took nothing off the bar.
+
+The engine names the hook for exactly this - `post_attribute_change`, "e.g.
+clamping Health when MaxHealth drops" - and its own test attribute set does it.
+The game had not used it. Fixed here: health and energy are brought down to a
+ceiling that dropped under them, through `set_attribute_base`, so the change is
+recomposed and announced like any other.
+
+## SBX-012 — this game's effects had no names · **FIXED**
+
+The overlay's effects page showed Focus as a row with an empty name. Every
+effect this game applies is built in code - the payloads, the cooldowns, the
+energy tick - and none was named, so the debugger had nothing to show.
+
+Fixed here: `_land()` names a payload after its ability, a cooldown is named by
+its tag, and the energy tick by what it is. `test/gas_overlay_probe.gd` checks
+that the row says Focus. Asking why it was blank also turned up GAS-014.
+
+---
+
 ## 2026-09-01 — combat runs on GAS_Engine end to end
 
 A battle was played through: entered from the field, action menu, target
@@ -890,6 +962,31 @@ receives the event" and never asked *what did*. Nothing did.
 Recorded because a question asked and answered is worth as much as a bug found,
 and because the next person to wonder should not have to re-measure.
 
+## A wait begun inside a long frame is charged for that frame · **NOT A DEFECT**
+
+**Status:** `NOT A DEFECT` (of GAS_Engine). Measured 2026-09-14, after GAS-011 was
+re-deployed and the half-second wait ended after 256 ms of wall time.
+
+It looked like a clock running double. It was not: the probe reloaded the
+script, packed the scene and granted the ability in one long frame, and
+activated it straight afterwards. Measured on the deltas themselves:
+
+```text
+wall 248 ms, frames 38
+delta of the frame the wait began in   0.150 s
+deltas of the frames after it          0.357 s
+```
+
+The ASC advances a task once per `_process`, with that frame's delta, and the
+frame a wait begins in is one of them - so the wait was handed exactly the half
+second, 0.15 s of it time spent before the wait existed. Godot's own timers
+count the same way, and a clock is what `AbilityTaskWaitDelay` promises. Started
+at the top of an ordinary frame, the probe measures 517 ms.
+
+A game that grants and activates in the frame it loads something will see the
+same thing, and the answer there is the one the probe now uses: activate on the
+next frame.
+
 ## `can_activate(get_spec(handle))` with a stale handle
 
 The obvious line a consumer writes, and it is safe: `get_spec()` returns null
@@ -915,6 +1012,200 @@ base, no float drift". What a playtest would add is confirmation that this game
 wires them correctly - not evidence about the engine.
 
 # Closed
+
+## GAS-011 — a wait the Composer wrote did not wait · **VERIFIED IN SANDBOX**
+
+**Status:** `VERIFIED IN SANDBOX` — fixed on `main` at `4bbfca0`, re-deployed here
+2026-09-14 and re-run: `COMPOSER_GAME_RESULT: PASS passed=28 failed=0`, the wait
+holding the ability 517 ms
+**Severity:** high - every wait, and every other ability task, the palette puts down
+**Where:** `addons/GAS_Engine/editor/composer/composer_statement_factory.gd:_invocation()`,
+`composer_writer.gd:render_with_field_overrides()`
+
+### Repro
+
+`test/composer_game_probe.gd`, case `run`: a new ability made through the
+Composer's own document and statement operations, `Wait Delay` put in from the
+palette and given half a second, saved, granted to Baloo and activated.
+
+```text
+FAIL  run · the ability is still waiting when the call that started it returns
+FAIL  run · and waits the half second                     ended after 0 ms
+```
+
+### Expected / Actual
+
+**Expected:** the wait holds the ability for its seconds.
+
+**Actual:** the palette wrote `await wait_delay(0.5)`. `wait_delay()` hands back
+an `AbilityTaskWaitDelay`, which is neither a signal nor a coroutine, and
+GDScript's `await` on such a value returns it straight away. The ability ran its
+whole body inside `try_activate()` and ended after 0 ms. Every test on `main`
+read the text the palette wrote and agreed with it; running it is what did not.
+
+### Fix
+
+- A call whose result is a `GameplayAbilityTask` is written
+  `await wait_delay(0.5).completed()` - `completed()` is the engine's own wait
+  that returns at once for a task already finished.
+- The reader keeps what follows the call's closing bracket, so editing a wait's
+  seconds keeps `.completed()`, and editing a wait written the old way repairs it.
+- A file that already holds a bare `await` on a task opens and draws as before,
+  with a warning on that card (`gas.await_without_waiting`) saying it does not
+  wait. A call a game registers as suspending is a coroutine and is left alone.
+- The README says which form waits.
+
+Regression on `main`: `test/unit/test_composer_waits.gd` runs the body - a wait
+of one second still holds the ability at 0.4 and has let it go at 1.0.
+
+### Impact
+
+A windup, a channel, a pause before the hit - anything put together in the
+Composer with a wait did all of it in one frame, and looked right on the canvas
+and in the file.
+
+---
+
+## GAS-012 — the runtime overlay drew its text at the game's size · **VERIFIED IN SANDBOX**
+
+**Status:** `VERIFIED IN SANDBOX` — fixed on `main` at `4bbfca0`, re-deployed here
+2026-09-14 and re-run: `GAS_OVERLAY_RESULT: PASS passed=16 failed=0`, heading and
+table at 16 over this game's 96
+**Severity:** medium - the overlay was unreadable in this game
+**Where:** `addons/GAS_Engine/debug/gas_debug_overlay.gd:_ready()`
+
+### Repro
+
+`test/gas_overlay_probe.gd`, case `theme`, in this project, whose theme says 96:
+
+```text
+FAIL  theme · heading 96, table 96; the table 1248 px wide and about 8 rows tall;
+              a panel anchored to half of 1920x1080 needed 1193x1408
+```
+
+### Expected / Actual
+
+**Expected:** an overlay anchored to half the screen fits in it, at a size of its own.
+
+**Actual:** none of its controls said how big their text was, so every one took
+the game's size. GAS-008 again, one folder over: the Composer learned this, the
+overlay did not, and in the editor both looked right because its theme is quiet.
+
+### Fix
+
+The overlay builds its own theme in `_ready()`, naming the size for Label,
+Button, Tree and the Tree's column titles, with `font_size` exported at 16 for a
+game that wants it larger. Godot's theme names now have one owner outside
+`editor/`, `GASThemeNames`, which the editor's themes and the overlay both read.
+
+Regression on `main`: `test/unit/test_gas_debug_overlay_in_a_themed_game.gd`
+raises Godot's fallback theme to 96 and proves the raise on a bystander Label
+before measuring the overlay - a theme set on the root window does not reach a
+CanvasLayer's controls, and the first version of that test passed against nothing.
+
+---
+
+## GAS-013 — the Composer answered "done" for things it did not do · **VERIFIED IN SANDBOX**
+
+**Status:** `VERIFIED IN SANDBOX` — fixed on `main` at `4bbfca0`, re-deployed here
+2026-09-14 and re-run: the unknown key and the call into a read-only file are
+both refused with their reason, inside the 28 of 28 above
+**Severity:** medium - a click that does nothing and says nothing
+**Where:** `addons/GAS_Engine/editor/composer/composer_statement_ops.gd`
+
+### Repro
+
+`test/composer_game_probe.gd`, cases `author` and `read`:
+
+```text
+FAIL  author · a call the catalog does not have is refused                  null
+FAIL  read   · a palette call into a file drawn read-only says why           null
+ok    read   · and a paste into it is refused     that would leave a file the Composer cannot read
+```
+
+### Expected / Actual
+
+**Expected:** an operation that changes nothing says why.
+
+**Actual:** `insert_call()` and `insert_call_at()` with a key the catalog no
+longer has, or into a file the Composer draws read-only, returned null - which
+the screen redraws as success. Paste was refused, but for the wrong reason: the
+edit was attempted first and then refused as one that "would leave a file the
+Composer cannot read", so a person looks for something wrong with what they pasted.
+
+### Fix
+
+Every operation that writes asks first whether anything can be written - nothing
+open, a file drawn read-only (with that file's own reason), a key no longer in
+the catalog, nothing to paste - and refuses with the answer. Remove and repeat
+with nothing selected still do nothing quietly: that is not a refusal.
+
+Regression on `main`: `test/unit/test_composer_statement_ops.gd`, region
+"Refusing, and saying why".
+
+---
+
+## GAS-014 — an effect saved as a file showed with no name · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 4bbfca0` — deployed here. Nothing this game applies is
+an effect file, so there is no repro here to re-run; the regression test on
+`main` is what closes it
+**Severity:** low
+**Where:** `addons/GAS_Engine/debug/gas_runtime_snapshot.gd:_effects_of()`
+
+The runtime debugger named an effect by `resource_name`, which the Inspector
+leaves empty unless somebody fills it in. An effect authored as
+`smouldering.tres` was a row with nothing where the name goes, in the overlay and
+in the editor's debugger alike.
+
+Found by asking why this game's Focus row was blank (SBX-012). The game's half
+was that it named nothing; the engine's half was that a file-authored effect
+came out blank too.
+
+**Fix:** the name it was given, or else the file it was saved as. An effect built
+in code has neither, and a game that wants it shown names it - as the engine's
+own sample does. Regression on `main`: `test/unit/test_gas_runtime_debugger.gd`.
+
+---
+
+## GAS-015 — nothing told a writer what to type into a timeline · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 4bbfca0` — the README is `main`'s. Against real Dialogic
+here the bridge stays at `DIALOGIC_BRIDGE_RESULT: PASS passed=34 failed=0`
+**Severity:** medium - the bridge was usable only by reading its parser
+**Where:** `README.md`, Optional integrations
+
+The Dialogic bridge is a protocol - a dictionary carrying `bridge`, `channel`,
+`command`, `tag` and `magnitude` - and the README named the bridge and nothing
+else. `test/dialogic_bridge_probe.gd` had to be written from
+`dialogic_gas_command_parser.gd`, which is the only place the keys were written.
+
+**Fix:** a Dialogic section with the binding, the three timeline lines a writer
+types, what each command does, and how a refusal is reported. On `main`,
+`test_dialogic_bridge.gd` reads every such line out of the README, sends it
+through the bridge, and fails when one is not applied or a command in the
+vocabulary is not shown - so the page cannot drift away from the parser.
+
+---
+
+## GAS-016 — the Dialogic double sent a message no timeline can send · **FIXED ON MAIN**
+
+**Status:** `FIXED ON MAIN 4bbfca0` — a test fixture, which is not part of the
+addon and never reaches this branch
+**Severity:** low - no wrong behaviour, a suite that could not have seen one
+**Where:** `test/fixtures/fake_dialogic.gd:say()`
+
+Measured here against real Dialogic: `DialogicSignalEvent` parses what the writer
+typed as JSON, so a message arrives with String keys and float numbers, frozen.
+The double handed over whatever a test built - StringName keys, int magnitudes -
+so the bridge's tests proved it against a shape it never meets. The bridge was
+right, because its parser reads both; the suite could not have said so if that
+ever stopped being true.
+
+**Fix:** the double parses what it is given as JSON and freezes it, as Dialogic
+does, and a test pins the shape it hands over.
+
+---
 
 ## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **VERIFIED IN SANDBOX**
 
