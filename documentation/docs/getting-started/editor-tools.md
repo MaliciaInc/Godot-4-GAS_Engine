@@ -83,7 +83,7 @@ While a game runs from the editor, the **Debugger** dock gains a **GAS_Engine** 
 
 - down the side, every ability system the game reports;
 - the chosen one's **Attributes**, **Active effects**, **Abilities** and **Tags** pages, kept current while the game runs;
-- beneath them, what happened to it, newest first - grants, commits (refused ones included), activations, effects applied, ticked and removed, tag counts and attribute changes.
+- beside them, what happened to it, newest first - grants, commits (refused ones included), activations, effects applied, ticked and removed, tag counts and attribute changes.
 
 Every component reports on its own; nothing has to be attached, and an exported release build sends nothing. The game can also draw and answer the same information itself:
 

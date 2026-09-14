@@ -23,6 +23,7 @@ const NOTHING_YET: String = (
 )
 const EVENTS_HEADING: String = "What happened, newest first"
 const ENTITY_LIST_WIDTH: float = 180.0
+const EVENTS_WIDTH: float = 360.0
 
 ## What this tab draws from: one session's log.
 var reported: GasRuntimeDebuggerLog = null
@@ -151,22 +152,33 @@ func _build() -> void:
 	_entities.item_selected.connect(_on_entity_chosen)
 	add_child(_entities)
 
-	var body: VBoxContainer = VBoxContainer.new()
+	# The page beside what happened rather than above it. The Debugger dock is
+	# wide and short, and stacked the two shared its height: measured in a real
+	# editor, the table had room for two rows.
+	var body: HSplitContainer = HSplitContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(body)
+
+	var page: VBoxContainer = VBoxContainer.new()
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_nothing_yet = Label.new()
 	_nothing_yet.text = NOTHING_YET
-	body.add_child(_nothing_yet)
+	page.add_child(_nothing_yet)
 	_tabs = HBoxContainer.new()
 	GasDebugTable.build_tabs(_tabs, _pages, show_page)
-	body.add_child(_tabs)
+	page.add_child(_tabs)
 	_table = Tree.new()
 	_table.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(_table)
+	page.add_child(_table)
+	body.add_child(page)
+
+	var happened: VBoxContainer = VBoxContainer.new()
+	happened.custom_minimum_size.x = EVENTS_WIDTH
 	var heading: Label = Label.new()
 	heading.text = EVENTS_HEADING
-	body.add_child(heading)
+	happened.add_child(heading)
 	_events = ItemList.new()
 	_events.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(_events)
-	add_child(body)
+	happened.add_child(_events)
+	body.add_child(happened)
 #endregion
