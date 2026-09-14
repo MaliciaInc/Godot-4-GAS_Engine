@@ -1390,6 +1390,28 @@ bindings can be folded in once - and named an effect editor by a phase number.
 
 ---
 
+## GAS-025 — the Debugger tab left an entity's table two rows · **VERIFIED IN SANDBOX**
+
+**Status:** `VERIFIED IN SANDBOX` — fixed on main at `3b3ae38`, found and then
+re-checked by `gas_editor_probe`'s screenshot: at the re-deploy of `cd7134f` the
+same dock shows all six of a battler's attributes, with its events beside them
+**Severity:** low - everything was there, and most of it out of sight
+**Where:** `addons/GAS_Engine/editor/debugger/gas_runtime_debugger_panel.gd:_build()`
+
+The tab stacked the page above the list of what happened. The Debugger dock is
+wide and short, so the two shared its height: at the dock's usual size in a real
+editor the attributes table showed its heading and two rows, and the rest sat
+behind a scrollbar.
+
+Nothing headless could have seen it. The suite asks the table how many rows it
+holds, and it held all of them.
+
+**Fix:** the page and what happened side by side, in a split. Checked by the
+editor probe's screenshot rather than by a test, because the defect was the
+room on a screen.
+
+---
+
 ## GAS-010 — Ctrl-drag between two argument pins refuses with the wrong reason · **VERIFIED IN SANDBOX**
 
 **Status:** `VERIFIED IN SANDBOX` — fixed on `main`, re-run here 2026-09-11 and

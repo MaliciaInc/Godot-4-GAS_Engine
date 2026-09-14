@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `e17b56e`, with `gas_engine/` re-rendered here |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `cd7134f`, with `gas_engine/` re-rendered here |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -175,7 +175,7 @@ read:
 SMOKE_RESULT: PASS passed=89 failed=0
 ```
 
-Green at the re-deploy of `main`'s `e17b56e`, as are the other eight: the four
+Green at the re-deploy of `main`'s `cd7134f`, as are the other eight: the four
 in the table at 47, 28, 16 and 34 checks, `composer_harness` at 58, `gas_probe`
 with both arenas reaching `combat_finished`, `composer_probe` printing this
 game's ability back byte for byte, and the editor probe at 13. At the re-deploy
