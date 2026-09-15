@@ -787,7 +787,7 @@ godot --headless --path . res://test/gut_headless_runner.tscn
 pwsh -File tooling/verify.ps1
 ```
 
-`verify.ps1` runs, in order: the policy seal, the gates' own self-tests, the project invariants, the product identity check, the parity receipts, the file and function size gate, the test-location gate, the magic-string gate, the duplicated-logic gate, the engine evidence for the import and the suite, and `git diff --check`. The engine evidence is checked against a content fingerprint of every tracked script and scene, so a receipt from before a change does not count for after it.
+`verify.ps1` runs, in order: the policy seal, the gates' own self-tests, the project invariants, the product identity check, the parity receipts and the self-test of their checker, the file and function size gate, the test-location gate, the magic-string gate, the duplicated-logic gate, the engine evidence for the import and the suite, and `git diff --check`. The engine evidence is checked against a content fingerprint of every tracked script and scene, so a receipt from before a change does not count for after it.
 
 Beyond the chain, work is held to:
 

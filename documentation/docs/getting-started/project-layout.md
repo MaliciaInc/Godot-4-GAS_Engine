@@ -34,10 +34,11 @@ res://
 | `effects/` | `GameplayEffect`, specs, active effects, queries, `components/` and `executions/`. |
 | `events/` | `GameplayEventData` and event dispatch. |
 | `gameplay_tag/` | Tag queries, the registry, the generator, redirects and restrictions. |
+| `icons/` | The icons the editor shows for the engine's classes and tools. |
 | `integrations/` | Optional bridges for Dialogic, GLoot and QuestSystem. |
 | `magnitudes/` | Every way a modifier can say how much. |
 | `managers/` | The `GameplayCueManager` autoload. |
-| `networking/` | The network runtime, replication, prediction and the transport (`transport/`). |
+| `networking/` | The network runtime, replication, prediction, the transport (`transport/`) and the bit stream messages cross as (`wire/`). |
 | `reference/` | Six complete, commented abilities to read and copy. |
 | `target_data/` | `GameplayAbilityTargetData`, hits, the effect context and context payloads. |
 | `targeting/` | The physics service, filters, providers (`providers/`), presets (`presets/`) and reticles. |
