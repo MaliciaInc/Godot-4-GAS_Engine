@@ -13,7 +13,7 @@ environment*. It is deliberately not part of the distributed addon.
 |---|---|
 | Base game | [godot-open-rpg](https://github.com/gdquest-demos/godot-open-rpg) by GDQuest |
 | Upstream commit | `19bd328` |
-| Engine under test | `addons/GAS_Engine`, copied from `main` at `6704f19`, with `gas_engine/` re-rendered here |
+| Engine under test | `addons/GAS_Engine`, copied from `main` at `81634bc` (4.0.0), with `gas_engine/` re-rendered here |
 | Godot | 4.7, GL Compatibility |
 
 ## Why a whole game instead of a synthetic harness
@@ -175,7 +175,11 @@ read:
 SMOKE_RESULT: PASS passed=89 failed=0
 ```
 
-Green at the re-deploy of `main`'s `6704f19`, as are the other eight: the four
+Green at the re-deploy of `main`'s `81634bc`, as are the other eight - with one
+thing to know about the battle probe on that deploy: arena1 reached its round
+cap on two of thirteen runs, which the engine before that deploy's changes can
+do as well; "The battle probe's arena1 can run past its round cap" under
+"Checked and not defects" in `FINDINGS.md` has the measurements. The other eight: the four
 in the table at 47, 28, 16 and 34 checks, `composer_harness` at 58, `gas_probe`
 with both arenas reaching `combat_finished`, `composer_probe` printing this
 game's ability back byte for byte, and the editor probe at 13. At the re-deploy

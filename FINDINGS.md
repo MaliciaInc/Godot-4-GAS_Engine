@@ -908,6 +908,7 @@ looked up.
 | `f4653ad` | The dashboard refuses an attribute named for a GDScript keyword, which used to generate a file that would not parse. |
 | `bab301b` | The asset validator reports an empty row in an authored array instead of stepping over it. |
 | `6704f19` | The network wire is a bit stream instead of JSON: typed messages, a names table both machines check by fingerprint, places to the centimetre. Applying an effect no longer re-reads which attributes a set declares, and granting a tag reevaluates only the effects whose requirements name it. |
+| `81634bc` | GAS_Engine 4.0.0, because the wire above cannot be mixed with a 3.x build: its packets are refused as `unsupported_schema`. Nothing else changed. |
 
 Of these, `7afb25e` is the one this game could meet: a crowded battle sweeping
 for targets was silently answered with at most thirty-two colliders. `6704f19`
@@ -999,6 +1000,44 @@ at the top of an ordinary frame, the probe measures 517 ms.
 A game that grants and activates in the frame it loads something will see the
 same thing, and the answer there is the one the probe now uses: activate on the
 next frame.
+
+## The battle probe's arena1 can run past its round cap · **NOT A DEFECT**
+
+**Status:** `NOT A DEFECT` (of GAS_Engine). Measured 2026-09-14, at the re-deploy
+of `81634bc`, whose first `gas_probe` run ended
+`arena1: ended=false victory=false rounds=10 reason=hit the round cap`.
+
+The deploy before it had been green and only a version string lay between the
+two, so the question was whether `6704f19` - the change to how effects are
+applied, deployed just before - had changed how a fight goes. Twenty-four runs,
+the engine from before that change (`1619cc2`) against the current one, the last
+twelve interleaved so the machine's load fell on both alike:
+
+```text
+before (3.0.0)   11 of 11 finished   rounds 5 5 5 6 5 4 5 3 7 5 5
+current (4.0.0)  11 of 13 finished   rounds 4 6 4 3 5 4 4 3 4 5 4, and 2 at the cap
+```
+
+Nothing about how a round plays out differs. Read column by column, both engines
+show the same energy climbing one a turn, Punch unaffordable for two turns,
+landing on the third and then four turns on cooldown, one more Focus effect on
+Baloo each turn he cannot punch, 40 from a bugcat's Quick Attack (10 attack plus
+30) and 50 from Nutsy's Heal. Neither capped run stalled - a stuck round is
+reported as `STALLED`, and neither said so.
+
+What decides the fight is the hand the probe plays. Baloo's Punch is the only
+thing that damages an enemy, once every four turns at 65%, so after its first
+target is down the fight ends only when the party falls. When the bugcats land on
+Nutsy early, Baloo follows within two turns. When they spread their hits, Nutsy's
+50 outheals one 40 a turn on Baloo, and the fight outlasts nine rounds. Which of
+those happens is accuracy rolls and target picks drawn off a stream whose order
+moves with the wall clock - SBX-005 - and the engine before these changes already
+ran one fight to seven of the nine.
+
+The cap was left where it is. Raising it until the probe passes would make its
+one claim mean less, and the race is in that claim rather than in the engine.
+Read a round-cap result the way SBX-005 says to read round counts: re-run it, and
+compare the columns rather than how many rounds there were.
 
 ## `can_activate(get_spec(handle))` with a stale handle
 
