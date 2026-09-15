@@ -2,6 +2,8 @@
 
 > [!IMPORTANT]
 > **"GAS Engine doesn’t adapt to any game... the game is the one that must adapt and be built around GAS as its backbone. I’d say it’s a very good trade-off, especially if you come from another Game Engine."**
+>
+> To report a bug or request a feature, open a [new issue](https://github.com/MaliciaInc/Godot-4-GAS_Engine/issues/new) in [Issues](https://github.com/MaliciaInc/Godot-4-GAS_Engine/issues).
 
 ### Proof of Concept & Real-World Integration
 If you want to see the framework operating as the actual core of a production environment, switch over to the **`godot-open-rpg_GAS_Engine`** branch.
