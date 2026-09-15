@@ -2,7 +2,7 @@
 
 **GAS_Engine** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
 
-It is a standalone, reusable Godot addon - version **3.0.0** - with a visual ability editor, debugging tools inside the game and inside the editor, and multiplayer.
+It is a standalone, reusable Godot addon - version **4.0.0** - with a visual ability editor, debugging tools inside the game and inside the editor, and multiplayer.
 
 > **License model:** use GAS_Engine unmodified in personal or commercial games for free. Modifying GAS_Engine itself, distributing modified versions, or creating a derivative framework requires a separate paid Commercial Modification License.
 

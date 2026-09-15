@@ -42,7 +42,7 @@ Anything that carries packets without being a transport - a replay, a relay - ha
 - **Numbers.** Whole numbers are packed seven bits at a time, so a small count is one byte. Definition identities are 32 bits. Attributes, durations and magnitudes cross as 32-bit floats.
 - **Places.** A position is quantized to the centimetre, with only as many bits per component as the largest one needs, and falls back to full precision for a value too large for that to help. A normal is sixteen bits a component over `[-1, 1]`.
 - **Bounds.** Every list has a ceiling - 1023 entries per state list, 31 hits per aim, 64 messages per batch, 255 tags per snapshot - and a packet past one is refused rather than trimmed.
-- **Refusals.** A packet that does not read cleanly is refused whole with `malformed`: a count past its bound, a presence bit followed by the value that means nothing, text that is not valid UTF-8, a byte left over. A packet from another schema version is `unsupported_schema`.
+- **Refusals.** A packet that does not read cleanly is refused whole with `malformed`: a count past its bound, a presence bit followed by the value that means nothing, text that is not valid UTF-8, a byte left over. A packet from another schema version is `unsupported_schema`. GAS_Engine 4.0.0 writes schema 2; a 3.x build wrote text, so its packets are refused the same way, and the two cannot share a session.
 
 | Message | Size |
 |---|---|

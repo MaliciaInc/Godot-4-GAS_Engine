@@ -147,7 +147,7 @@ def authority_problems(root: Path) -> list[str]:
         'name="GAS_Engine"',
         'author="MaliciaInc"',
         'script="gas_engine_plugin.gd"',
-        'version="3.0.0"',
+        'version="4.0.0"',
     )
     for line in required_plugin_lines:
         if line not in plugin:
