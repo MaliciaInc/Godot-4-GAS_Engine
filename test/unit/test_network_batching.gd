@@ -59,6 +59,7 @@ func test_what_is_gathered_leaves_as_one_packet() -> void:
 
 	var sent: GameplayNetMessage = GameplayNetCodec.decode(wires[1].sent[0])
 	assert_eq(sent.kind, GameplayNetMessage.Kind.BATCH, "and it is a batch")
+	assert_eq(sent.batch.messages.size(), 2, "carrying both of what was gathered")
 
 
 ## Everything gathered is still announced on the machine that gathered it.
@@ -179,13 +180,14 @@ func test_a_batch_with_one_bad_member_applies_none_of_it() -> void:
 
 
 ## A batch carrying something that is not a message is refused whole.
-func test_a_batch_carrying_something_unreadable_is_refused_whole() -> void:
-	var message: GameplayNetMessage = GameplayNetMessage.of(
-		GameplayNetMessage.Kind.BATCH, authority.entity
+func test_a_batch_carrying_something_that_is_not_a_message_is_refused_whole() -> void:
+	var batch: GameplayNetBatch = GameplayNetBatch.new()
+	batch.messages.append(
+		GameplayNetMessage.of(GameplayNetMessage.Kind.GENERIC_CONFIRM, authority.entity)
 	)
-	message.payload[GameplayNetMessage.BATCH_KEY] = [{"not": "a message"}]
+	batch.messages.append(null)
 
-	assert_false(authority.runtime.receive(message), "it was refused")
+	assert_false(authority.runtime.receive(_wrapping(batch)), "it was refused")
 	assert_eq(refusals, [GameplayNetBatch.REASON_MEMBER_REFUSED] as Array[StringName])
 
 
@@ -201,8 +203,10 @@ func test_a_batch_past_the_limit_is_refused() -> void:
 		)
 
 	assert_false(batch.is_sendable(), "it is not one to send")
-	assert_null(
-		GameplayNetBatch.from_wire(batch.to_wire()), "nor one to read"
+	assert_false(batch.is_readable(), "nor one to read")
+	assert_true(
+		GameplayNetCodec.encode(_wrapping(batch)).is_empty(),
+		"nor one the wire will carry"
 	)
 
 
@@ -319,16 +323,16 @@ func test_atomicity_catches_a_duplicate_within_the_same_batch() -> void:
 	)
 
 
-## An aim that does not read as one at all, discovered only once something
-## tries to decode it - shape-checked, addressed, and owned by the peer that
+## An aim nothing on this machine is waiting for, discovered only once something
+## tries to act on it - shape-checked, addressed, and owned by the peer that
 ## sent it, and still not a thing `honour_target_data` can use.
-func test_atomicity_catches_an_aim_that_is_not_shaped_like_one() -> void:
+func test_atomicity_catches_an_aim_nobody_is_waiting_for() -> void:
 	var bad_aim: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.TARGET_DATA, authority.entity
 	)
 	bad_aim.activation = GameplayNetActivationId.of(authority.entity, 1)
 	bad_aim.prediction_key = GameplayPredictionKey.of(OWNING_PEER, 1)
-	bad_aim.payload[GameplayNetMessage.TARGET_DATA_KEY] = "not a dictionary"
+	bad_aim.aim = GameplayNetAim.new()
 	_assert_atomic_confirm_and_second_apply_neither(
 		bad_aim, "the confirm did not stay applied either"
 	)
@@ -347,8 +351,7 @@ func _wrapping(batch: GameplayNetBatch) -> GameplayNetMessage:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.BATCH, authority.entity
 	)
-	message.payload[GameplayNetMessage.BATCH_KEY] = batch.to_wire()
-	message.payload[GameplayNetMessage.ATOMIC_KEY] = batch.atomic
+	message.batch = batch
 	return message
 
 

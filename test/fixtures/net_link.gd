@@ -50,6 +50,11 @@ var _machines: Array[GameplayNetworkRuntime] = []
 var _connected: Array[GameplayNetworkRuntime] = []
 var _waiting: Array[GameplayNetMessage] = []
 
+## Who sent each waiting message, in the same order, so a reorder or a
+## duplicate carries the right sender along with it rather than silently
+## losing whose packet it was.
+var _senders: Array[GameplayNetworkRuntime] = []
+
 
 func join(runtime: GameplayNetworkRuntime) -> void:
 	if runtime == null or _machines.has(runtime):
@@ -70,12 +75,6 @@ func leave(runtime: GameplayNetworkRuntime) -> void:
 	_machines.erase(runtime)
 
 
-## Who sent each waiting message, in the same order, so a reorder or a
-## duplicate carries the right sender along with it rather than silently
-## losing whose packet it was.
-var _senders: Array[int] = []
-
-
 ## Take a message from one machine. Delivered now, or held for `flush()`.
 func _carry(message: GameplayNetMessage, from: GameplayNetworkRuntime) -> void:
 	if drops_next > 0:
@@ -83,7 +82,7 @@ func _carry(message: GameplayNetMessage, from: GameplayNetworkRuntime) -> void:
 		dropped += 1
 		return
 	_waiting.append(message)
-	_senders.append(from.peer if from != null else GameplayNetRegistry.NO_PEER)
+	_senders.append(from)
 	if not holds:
 		flush()
 
@@ -91,7 +90,7 @@ func _carry(message: GameplayNetMessage, from: GameplayNetworkRuntime) -> void:
 ## Hand over everything that is waiting, and say how many were handed over.
 func flush() -> int:
 	var carried: Array[GameplayNetMessage] = _waiting.duplicate()
-	var senders: Array[int] = _senders.duplicate()
+	var senders: Array[GameplayNetworkRuntime] = _senders.duplicate()
 	_waiting.clear()
 	_senders.clear()
 
@@ -112,25 +111,28 @@ func flush() -> int:
 ## Hand one message over, as bytes.
 ##
 ## Through the codec, always, because a link that handed the object across is a
-## link that proves the rules and nothing about the crossing. Everything a
-## message has to survive - being written as numbers and strings, and read back
-## by something that was not there when it was built - happens here, and what it
-## was hiding was two years of readers that refused every message which had in
-## fact crossed a wire.
+## link that proves the rules and nothing about the crossing. Written against
+## the sender's own names and read by each machine against its own, through the
+## same door a transport's packet reaches - which is everything a message has to
+## survive, and what a link handing objects across was hiding was two years of
+## readers that refused every message which had in fact crossed a wire.
 ##
 ## A message that will not encode is delivered to nobody and counted, rather
 ## than handed over as the object it already was: a sender that put an
 ## incomplete message on a wire has a bug, and the far side receiving one
 ## anyway is that bug going unnoticed.
-func _hand(message: GameplayNetMessage, from_peer: int) -> int:
-	var packet: PackedByteArray = GameplayNetCodec.encode(message)
+func _hand(message: GameplayNetMessage, from: GameplayNetworkRuntime) -> int:
+	var packet: PackedByteArray = GameplayNetCodec.encode(
+		message, from.names if from != null else null
+	)
 	if packet.is_empty():
 		unsendable += 1
 		return 0
 
+	var from_peer: int = from.peer if from != null else GameplayNetRegistry.NO_PEER
 	var handed: int = 0
 	for machine: GameplayNetworkRuntime in _machines:
-		machine.receive_from_peer(GameplayNetCodec.decode(packet), from_peer)
+		machine.receive_packet(packet, from_peer)
 		delivered += 1
 		handed += 1
 	return handed

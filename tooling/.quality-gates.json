@@ -586,6 +586,11 @@
         "reason": "Task 8's own design calls for two DTOs here, not one: a runtime context and a removal context that happen to carry the same five fields today, kept separate because they answer different questions and a future field (a removal reason, an applied-vs-refreshed flag) belongs on only one of them. Collapsing them into a shared type the moment they match exactly would force every later addition to decide whether the other call site tolerates an unused field, coupling two call sites the framework deliberately keeps free to diverge."
       },
       {
+        "left": "addons/GAS_Engine/events/gameplay_event_data.gd:<file>",
+        "right": "addons/GAS_Engine/events/gameplay_event_wire.gd:<file>",
+        "reason": "One event said twice, on purpose: GameplayEventData holds the Nodes and Objects a game dispatches with, and GameplayEventWire holds the identities a wire can carry instead, because an ObjectID means something else in the next process. The field names agree so that the translator between them reads as a list of assignments; the types are what differ, and the types are the point. Both files are nothing but field declarations, which is all the similarity is - there is no behaviour in either to share. Merging them would put network identities into every single-player event or Nodes onto every packet. The pair matched once the wire lost two fields nothing wrote or read when the text wire was replaced by the bit stream."
+      },
+      {
         "left": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:_notify_runtime",
         "right": "addons/GAS_Engine/effects/gameplay_effect_component_runtime.gd:notify_removed",
         "reason": "Both walk the same components/states pairing, but one builds a GameplayEffectComponentRuntimeContext for on_effect_applied/on_effect_executed and the other a GameplayEffectComponentRemovalContext for on_effect_removed - the same two deliberately-separate DTOs declared above. Sharing one iterator between them would mean it either returns Variant or takes a context-building Callable per call site, in both cases hiding which context type a given notification actually builds behind a layer neither reader nor the type checker can see through."
@@ -704,11 +709,6 @@
         "left": "addons/GAS_Engine/debug/gas_debug_channel.gd:_*_of",
         "right": "addons/GAS_Engine/debug/gas_debug_channel.gd:_*_of",
         "reason": "The four halves of one codec. Each walks a different typed row of a GasRuntimeSnapshot and writes a different set of wire keys, and they are alike in shape because a codec is a list of fields copied one way. Folding them would mean driving the copy from a table of field names - a Variant-keyed loop over Object.get() in the middle of our own code, which the typing rules forbid and which would turn a rename into a field that silently stops crossing the process boundary. What keeps them honest is that the whole message is read back by GasRuntimeSnapshot.from_message in the same round trip test, so a field dropped from either end fails rather than producing a debugger that shows nothing. Same reason the networking translators are declared, and declared per file so a duplication between two things that are NOT one codec still fails."
-      },
-      {
-        "left": "addons/GAS_Engine/**:_expected",
-        "right": "addons/GAS_Engine/**:_expected",
-        "reason": "A wire contract's type table: every key of a format mapped to the TYPE_* it must arrive as. It is data rather than logic - the whole content of one is the field names of one format - and two of them are alike in shape precisely because they are both exhaustive. Folding them would mean one table for two formats, which is how a field added to one silently becomes required by the other."
       },
       {
         "left": "addons/GAS_Engine/effects/gameplay_effect_stacking_runtime.gd:find_candidate",

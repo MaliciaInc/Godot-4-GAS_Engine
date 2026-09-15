@@ -23,11 +23,11 @@ The script uses the Godot executable in the `GAS_ENGINE_GODOT` environment varia
 Each half can also be run by hand, in two terminals:
 
 ```bash
-godot --headless --path . -s res://examples/action_sample/network/server_main.gd -- --server --port=47921 --automation --out=server.json
+godot --headless --path . -s res://examples/action_sample/network/server_main.gd -- --server --port=47921 --automation --out=server.txt
 ```
 
 ```bash
-godot --headless --path . -s res://examples/action_sample/network/client_main.gd -- --client=127.0.0.1:47921 --automation --out=client.json
+godot --headless --path . -s res://examples/action_sample/network/client_main.gd -- --client=127.0.0.1:47921 --automation --out=client.txt
 ```
 
 Without `--automation` the processes stay up. Each writes what it did, and the state it ended with, to its `--out` file.

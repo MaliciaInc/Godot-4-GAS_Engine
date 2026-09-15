@@ -86,16 +86,26 @@ otherwise.
 Three defects, none of which any in-process test could see. They are listed
 because the gate's value is exactly this:
 
-- **JSON has one number type.** Every integer written to the wire comes back a
+- **JSON has one number type.** Every integer written to the wire came back a
   float, and every reader comparing `typeof(value)` against `TYPE_INT` refused
   every message that had actually crossed. Gameplay events and aims both. Fixed
-  in `addons/GAS_Engine/networking/gameplay_wire_reader.gd::is_a`, and both wire
-  suites now round-trip through a real `JSON.stringify` rather than handing the
-  dictionary back.
+  at the time in the wire reader's `is_a`, and both wire suites round-tripped
+  through a real `JSON.stringify` rather than handing the dictionary back.
 - **JSON has no vectors.** `JSON.stringify` writes a `Vector3` as the text
-  `(3, 0, 0)` and the far side reads a String, so no aim with a position in it
-  ever reached an authority. Positions now cross as the numbers they are made
-  of — `addons/GAS_Engine/networking/gameplay_target_data_translator.gd`.
+  `(3, 0, 0)` and the far side read a String, so no aim with a position in it
+  ever reached an authority. Positions crossed as the numbers they are made of
+  — `addons/GAS_Engine/networking/gameplay_target_data_translator.gd`.
+
+> **Superseded 2026-09-14.** The wire is no longer text, and neither of the two
+> defects above can recur by construction. `GameplayNetCodec` writes a typed bit
+> stream: a whole number crosses as a whole number
+> (`addons/GAS_Engine/networking/wire/gameplay_net_bit_reader.gd::read_signed`)
+> and a position as a place quantized to the centimetre
+> (`addons/GAS_Engine/networking/wire/gameplay_net_quantize.gd::read_position_3d`).
+> The wire reader named above went with the text format, and the suites that
+> round-tripped through text now round-trip through bytes
+> (`test/unit/test_network_codec.gd::test_a_game_s_own_payload_crosses_as_the_types_it_left_as`).
+> The findings are kept as they were found.
 - **An accepted request was answered and then nothing happened.** The runtime
   answers; it does not activate, because what activating means belongs to the
   game. `GameplayNetworkRuntime.activation_requested` is the announcement the
@@ -126,6 +136,8 @@ sending ignored it. A message now carries who it is for:
 ```text
 test/unit/test_networking_identity.gd
 test/unit/test_network_codec.gd
+test/unit/test_network_codec_refusals.gd
+test/unit/test_network_bit_stream.gd
 test/unit/test_network_transport.gd
 test/unit/test_network_replication.gd
 test/unit/test_network_entity_replication.gd

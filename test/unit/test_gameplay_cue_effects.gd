@@ -151,24 +151,24 @@ func test_cue_params_wire_contains_ids_not_nodes() -> void:
 	params.source_object = fixture.owner
 	params.set_magnitude(30.0, 0.0, 60.0)
 
-	var wire: Dictionary = GameplayCueTranslator.to_wire(params, registry).to_wire()
-
-	for key: Variant in wire:
-		var kind: int = typeof(wire[key])
-		assert_ne(kind, TYPE_OBJECT, "%s carries no object" % key)
-		assert_ne(kind, TYPE_NODE_PATH, "%s carries no path either" % key)
-	var crossed_causer: int = wire[GameplayCueWire.CAUSER_KEY]
-	var crossed_fraction: float = wire[GameplayCueWire.NORMALIZED_KEY]
+	var said: GameplayCueWire = GameplayCueTranslator.to_wire(params, registry)
 	assert_eq(
-		crossed_causer,
+		said.causer_entity.value,
 		named.value,
-		"the causer crossed as the identity of the entity behind it"
+		"the causer is said as the identity of the entity behind it"
 	)
-	assert_eq(crossed_fraction, 0.5, "and the fraction crossed as a number")
 
-	var back: GameplayCueParams = GameplayCueTranslator.from_wire(
-		GameplayCueWire.from_wire(wire), registry
-	)
+	# Through real bytes, because a shape handed straight back proves the
+	# translator and nothing about the crossing.
+	var carrying: GameplayNetMessage = GameplayNetMessage.of(GameplayNetMessage.Kind.CUE, named)
+	carrying.cue = said
+	var arrived: GameplayNetMessage = GameplayNetCodec.decode(GameplayNetCodec.encode(carrying))
+	assert_not_null(arrived, "it crossed as bytes")
+	var crossed: GameplayCueWire = arrived.cue
+	assert_eq(crossed.causer_entity.value, named.value, "and the identity crossed with it")
+	assert_almost_eq(crossed.normalized_magnitude, 0.5, 0.0001, "and the fraction crossed as a number")
+
+	var back: GameplayCueParams = GameplayCueTranslator.from_wire(crossed, registry)
 	assert_eq(back.raw_magnitude, 30.0, "and the cue is the same cue on the far side")
 	assert_eq(back.causer, fixture.owner, "resolved back to a node this machine has")
 

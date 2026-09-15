@@ -392,11 +392,9 @@ func _authored(
 	return AbilityFactory.packed_at(probe, A_PATH % made)
 
 
-## The slot a message names, read as an int rather than as whatever came back
-## out of an untyped dictionary.
+## The slot a message names.
 func _slot_named_by(message: GameplayNetMessage) -> int:
-	var named: int = message.payload.get(GameplayNetMessage.INPUT_KEY, -1)
-	return named
+	return message.input_id
 
 
 func _a_request_for(scene: PackedScene) -> GameplayNetMessage:
@@ -415,7 +413,7 @@ func _an_input_for(scene: PackedScene, pressed: bool) -> GameplayNetMessage:
 		entity
 	)
 	message.definition = GameplayNetDefinitionId.of_resource(scene)
-	message.payload[GameplayNetMessage.INPUT_KEY] = A_SLOT
+	message.input_id = A_SLOT
 	return message
 
 

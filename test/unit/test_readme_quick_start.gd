@@ -240,9 +240,10 @@ func test_the_readme_describes_the_final_network_contract() -> void:
 	# Limitations that are limitations. A section whose only caveat is that
 	# something is coming later has told a reader nothing to plan around.
 	assert_true(
-		lowered.contains("json") and lowered.contains("not compact"),
-		"the section says what the wire costs"
+		lowered.contains("bit stream") and lowered.contains("protocol mismatch"),
+		"the section says what the wire is and what a peer on a different one is told"
 	)
+	assert_false(lowered.contains("json"), "and no longer describes a text wire")
 	assert_true(
 		lowered.contains("interest management"),
 		"and what it does not do about how many entities there are"

@@ -183,10 +183,9 @@ func test_an_aim_the_provider_could_not_have_produced_is_invalid() -> void:
 ## client can be wrong about and a game reacting to one wants to know which.
 func test_an_aim_naming_somebody_who_is_not_here_is_unknown() -> void:
 	_aiming()
-	# Written by the translator against a registry that knows the stranger, and
+	# Said by the translator against a registry that knows the stranger, and
 	# read by one that does not - which is what an aim naming somebody the
-	# authority has never registered actually looks like. A hit built by hand
-	# would be refused for its shape and prove nothing about identity.
+	# authority has never registered actually looks like.
 	var elsewhere: GameplayNetRegistry = GameplayNetRegistry.new()
 	var stranger: ASCFixture = Fixture.create("Stranger")
 	add_child_autofree(stranger.owner)
@@ -199,9 +198,7 @@ func test_an_aim_naming_somebody_who_is_not_here_is_unknown() -> void:
 	)
 	message.activation = _the_activation()
 	message.prediction_key = _the_key()
-	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = (
-		GameplayTargetDataTranslator.to_wire(aimed, elsewhere)
-	)
+	message.aim = GameplayTargetDataTranslator.to_aim(aimed, elsewhere)
 
 	assert_false(authority.receive(message), "it was refused")
 	assert_eq(
@@ -210,19 +207,22 @@ func test_an_aim_naming_somebody_who_is_not_here_is_unknown() -> void:
 	)
 
 
-## Something that is not an aim at all is refused as invalid.
-func test_something_that_is_not_an_aim_is_invalid() -> void:
+## An aim message carrying no aim is refused before anybody is asked about it.
+##
+## A claim that does not read as an aim never becomes one: on a wire it is a
+## packet the codec refuses, and a message built without one is incomplete -
+## refused at the door rather than handed to a provider as an empty claim.
+func test_an_aim_message_with_no_aim_is_refused_as_incomplete() -> void:
 	_aiming()
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.TARGET_DATA, entity
 	)
 	message.activation = _the_activation()
 	message.prediction_key = _the_key()
-	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = {"nonsense": true}
 
 	assert_false(authority.receive(message), "it was refused")
 	assert_eq(
-		refusals, [GameplayNetworkRuntime.REASON_TARGET_INVALID] as Array[StringName]
+		refusals, [GameplayNetworkRuntime.REASON_INCOMPLETE] as Array[StringName]
 	)
 #endregion
 
@@ -271,12 +271,11 @@ func test_an_event_crosses_and_arrives_as_an_event() -> void:
 	assert_eq(heard, [EVENT_TAG] as Array[StringName], "and arrived as an event")
 
 
-## An event message carrying something that is not one is refused.
-func test_an_event_message_carrying_nonsense_is_refused() -> void:
+## An event message carrying no event is refused.
+func test_an_event_message_carrying_no_event_is_refused() -> void:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.GAMEPLAY_EVENT, entity
 	)
-	message.payload[GameplayNetMessage.EVENT_KEY] = {"not": "an event"}
 
 	assert_false(authority.receive(message), "it was refused")
 	assert_eq(refusals.size(), 1, "and said so")
@@ -307,7 +306,7 @@ func test_an_input_naming_an_unknown_definition_is_refused() -> void:
 		GameplayNetMessage.Kind.INPUT_RELEASED, entity
 	)
 	message.definition = GameplayNetDefinitionId.from_wire(4242)
-	message.payload[GameplayNetMessage.INPUT_KEY] = 1
+	message.input_id = 1
 
 	assert_false(authority.receive(message), "it was refused")
 	assert_eq(
@@ -355,8 +354,6 @@ func _an_aim_at(spot: Vector3) -> GameplayNetMessage:
 	)
 	message.activation = _the_activation()
 	message.prediction_key = _the_key()
-	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = (
-		GameplayTargetDataTranslator.to_wire(data, authority.registry)
-	)
+	message.aim = GameplayTargetDataTranslator.to_aim(data, authority.registry)
 	return message
 #endregion

@@ -1,7 +1,7 @@
 ## The sample, run as a client, in a process of its own.
 ##
 ##     godot --headless --path . -s res://examples/action_sample/network/client_main.gd \
-##         -- --client=127.0.0.1:47921 --automation --out=user://client.json
+##         -- --client=127.0.0.1:47921 --automation --out=user://client.txt
 ##
 ## The half that guesses. It predicts a strike and is told yes, aims a slam and
 ## sends where it aimed, predicts a channel and is told no - and the last of

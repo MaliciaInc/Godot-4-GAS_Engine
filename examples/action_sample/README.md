@@ -61,11 +61,12 @@ The sample is also the engine's only check that bytes actually cross. Every
 other networking test in this repository puts two runtimes in one process, which
 checks the rules and cannot check the wire - and the difference is not
 academic. The first run of this harness found two defects that had been
-invisible for the whole of F6.6: this addon's wire is JSON, JSON has a single
+invisible for the whole of F6.6: the wire was text then, text has a single
 number type, and every reader comparing `typeof(value)` against `TYPE_INT`
 refused every message that had actually crossed one. Beside it, a `Vector3`
-written to JSON arrives as the text `(3, 0, 0)`, so no aim with a position in it
-ever reached an authority.
+written as text arrived as `(3, 0, 0)`, so no aim with a position in it ever
+reached an authority. The wire is a typed bit stream now, and this harness is
+still what proves it crosses between two processes.
 
 ```powershell
 pwsh -File tooling/run_multiplayer_sample.ps1
@@ -75,15 +76,15 @@ It launches an authority and a client as separate operating-system processes
 with an ENet connection between them, runs the scenario below, and fails unless
 both exited zero, neither reported a fault, and the two ended on the same
 reading of the same character. The receipt goes to
-`artifacts/gates/F6.6/multiplayer-sample.json`, and
+`artifacts/gates/F6.6/multiplayer-sample.txt`, and
 `test/integration/test_network_two_processes.gd` reads it - refusing one older
 than the code it vouches for.
 
 Either half can also be run by hand:
 
 ```powershell
-godot --headless --path . -s res://examples/action_sample/network/server_main.gd -- --server --port=47921 --automation --out=server.json
-godot --headless --path . -s res://examples/action_sample/network/client_main.gd -- --client=127.0.0.1:47921 --automation --out=client.json
+godot --headless --path . -s res://examples/action_sample/network/server_main.gd -- --server --port=47921 --automation --out=server.txt
+godot --headless --path . -s res://examples/action_sample/network/client_main.gd -- --client=127.0.0.1:47921 --automation --out=client.txt
 ```
 
 What happens, in order: the client connects and both halves bind the same

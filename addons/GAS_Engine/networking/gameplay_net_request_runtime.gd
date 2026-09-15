@@ -21,9 +21,9 @@ var net: GameplayNetworkRuntime = null
 
 ## What this machine aimed at, on its way to be checked.
 ##
-## The aim travels as the shape the targeting layer already crosses wires in,
-## and the run it belongs to travels with it: an aim with no activation is an
-## aim the authority cannot match to anything waiting for one.
+## The aim travels as identities and places, and the run it belongs to travels
+## with it: an aim with no activation is an aim the authority cannot match to
+## anything waiting for one.
 func target_data(
 	id: GameplayNetEntityId,
 	data: GameplayAbilityTargetData,
@@ -37,9 +37,7 @@ func target_data(
 	)
 	message.activation = activation
 	message.prediction_key = key
-	message.payload[GameplayNetMessage.TARGET_DATA_KEY] = (
-		GameplayTargetDataTranslator.to_wire(data, net.registry)
-	)
+	message.aim = GameplayTargetDataTranslator.to_aim(data, net.registry)
 	net.publish(message)
 	return message
 
@@ -55,9 +53,9 @@ func generic_cancel(id: GameplayNetEntityId) -> GameplayNetMessage:
 
 ## An event, in the one shape events already cross a wire in.
 ##
-## Never a second shape: F6.1.3 decided what an event looks like on a wire, and
-## a networking layer that rebuilt one would be two descriptions of an event
-## with nothing keeping them in step.
+## Never a second shape: an event has one description on a wire, and a
+## networking layer that rebuilt one would be two descriptions of an event with
+## nothing keeping them in step.
 func gameplay_event(
 	id: GameplayNetEntityId, event: GameplayEventData
 ) -> GameplayNetMessage:
@@ -67,7 +65,7 @@ func gameplay_event(
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.GAMEPLAY_EVENT, id
 	)
-	message.payload[GameplayNetMessage.EVENT_KEY] = said.to_wire()
+	message.event = said
 	net.publish(message)
 	return message
 
@@ -90,7 +88,7 @@ func input(
 		id
 	)
 	message.definition = named
-	message.payload[GameplayNetMessage.INPUT_KEY] = input_id
+	message.input_id = input_id
 	net.publish(message)
 	return message
 
@@ -127,7 +125,7 @@ static func _slot_for(asc: AbilitySystemComponent, definition: Resource) -> int:
 	var spec: GameplayAbilitySpec = asc.ability_runtime.queries.spec_for_scene(
 		definition as PackedScene
 	)
-	return spec.input_id if spec != null else -1
+	return spec.input_id if spec != null else GameplayNetMessage.NO_INPUT
 
 
 func _bare(
@@ -151,15 +149,8 @@ func _bare(
 ## real then does.
 func honour_target_data(message: GameplayNetMessage, apply: bool = true) -> bool:
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
-	var carried: Variant = message.payload.get(GameplayNetMessage.TARGET_DATA_KEY, {})
-	if not carried is Dictionary:
-		if apply:
-			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_INVALID)
-		return false
-
-	var claimed: Dictionary = carried
-	var aim: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_wire(
-		claimed, net.registry
+	var aim: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_aim(
+		message.aim, net.registry
 	)
 	if aim == null:
 		if apply:
@@ -168,8 +159,10 @@ func honour_target_data(message: GameplayNetMessage, apply: bool = true) -> bool
 
 	# A claim that named somebody and resolved to nobody. It is not a place -
 	# a place never had an identity to be unknown - so it is a client naming an
-	# entity this machine has never registered.
-	if _named_nobody(claimed, aim):
+	# entity this machine has never registered. Asked of what arrived rather
+	# than of what came back, because a hit on an unknown entity comes back as
+	# a place: that somebody was named is in the claim and nowhere else.
+	if aim.get_target_nodes().is_empty() and message.aim.names_somebody():
 		if apply:
 			net._refuse(message, GameplayNetworkRuntime.REASON_TARGET_UNKNOWN)
 		return false
@@ -196,46 +189,12 @@ func honour_target_data(message: GameplayNetMessage, apply: bool = true) -> bool
 	return true
 
 
-## Whether the claim named entities and none of them resolved.
-##
-## Asked of what arrived rather than of what came back, because the translator
-## turns a hit on an unknown entity into a place: the information that somebody
-## was named is in the wire and nowhere else.
-static func _named_nobody(
-	claimed: Dictionary, aim: GameplayAbilityTargetData
-) -> bool:
-	if not aim.get_target_nodes().is_empty():
-		return false
-	var hits: Variant = claimed.get(GameplayTargetDataTranslator.HITS_KEY, [])
-	if not hits is Array:
-		return false
-	var listed: Array = hits
-	for entry: Variant in listed:
-		if not entry is Dictionary:
-			continue
-		var hit: Dictionary = entry
-		if GameplayWireReader.number_in(
-			hit, GameplayTargetDataTranslator.ENTITY_KEY, 0
-		) != 0:
-			return true
-	return false
-
-
 ## An event a client sent, in the one shape events cross a wire in.
 ##
 ## `apply` false decodes and stops there - R7-01 - so a batch can ask whether
 ## this member would be honoured without sending it anywhere.
 func honour_event(message: GameplayNetMessage, apply: bool = true) -> bool:
-	var carried: Variant = message.payload.get(GameplayNetMessage.EVENT_KEY, {})
-	if not carried is Dictionary:
-		if apply:
-			net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
-		return false
-	# Named rather than handed straight over: the guard above proved it is
-	# a Dictionary, and the local is where that proof is written down.
-	var payload: Dictionary = carried
-	var said: GameplayEventWire = GameplayEventWire.from_wire(payload)
-	var event: GameplayEventData = GameplayEventTranslator.from_wire(said, net.registry)
+	var event: GameplayEventData = GameplayEventTranslator.from_wire(message.event, net.registry)
 	if event == null:
 		if apply:
 			net._refuse(message, GameplayNetworkRuntime.REASON_INCOMPLETE)
@@ -283,11 +242,8 @@ func honour_input(message: GameplayNetMessage, apply: bool = true) -> bool:
 	if not apply:
 		return true
 	var asc: AbilitySystemComponent = net.registry.asc_for(message.entity)
-	var slot: int = GameplayWireReader.number_in(
-		message.payload, GameplayNetMessage.INPUT_KEY, -1
-	)
 	if pressed:
-		asc.ability_local_input_pressed(slot)
+		asc.ability_local_input_pressed(message.input_id)
 	else:
-		asc.ability_local_input_released(slot)
+		asc.ability_local_input_released(message.input_id)
 	return true

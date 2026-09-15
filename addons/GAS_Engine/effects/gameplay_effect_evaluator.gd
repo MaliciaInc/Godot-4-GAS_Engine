@@ -398,8 +398,8 @@ static func _build_contributions(
 		# runs long after the effect is registered, so the refusal has nowhere to go
 		# and the attribute silently stops recomposing for EVERY effect, not just
 		# this one. Refused here, beside its two siblings, so no contribution ever
-		# carries one.
-		if not GameplayEffectModifier.Operation.values().has(modifier.operation):
+		# carries one - asked of the enum's keys, as `values()` builds an array a call.
+		if GameplayEffectModifier.Operation.find_key(modifier.operation) == null:
 			result.status = AttributeEvaluationResult.Status.INVALID_OPERATION
 			result.error_attribute_name = modifier.resolved_attribute_name()
 			result.contributions.clear()

@@ -270,6 +270,21 @@ constructing whatever class the far side named. Bring your own transport by
 implementing the base class - Steam, WebRTC, a recording of yesterday's match -
 and the runtime does not change.
 
+**What crosses.** A bit stream, not text. A message is its kind in four bits, the
+entity it is about, presence bits for the fields it carries, and only those
+fields: a confirm is 5 bytes, a predicted request 11, and a whole character
+reading - six attributes, four tags, three grants, five running effects, two
+cues - about 160 once both machines share the project's tag table. Names cross
+as their position in a table both machines build from the project's own tags, a
+name outside it is spelled once per packet and pointed back at after, and a peer
+holding a different table is refused as a protocol mismatch rather than reading
+every tag as some other tag. Whole numbers are packed, attributes and durations
+cross as 32-bit floats, a place is quantized to the centimetre and a normal to
+sixteen bits a component, and every list has a bound. A packet that does not
+read cleanly - a count past its bound, a presence bit followed by nothing, a
+byte left over - is refused whole. The game's own `payload` crosses as the
+values it holds, each as the type it left as, and never as an object.
+
 **Authority.** One runtime authors. A runtime that does not own a thing refuses
 to author it rather than being trusted not to, and every message is checked for
 direction, ownership and having been seen before. A client's request is answered
@@ -348,9 +363,13 @@ refuses them rather than guessing.
   authoritative reading that moved the same attribute between the guess and the
   refusal is undone along with the guess, and the next reading corrects it - a
   tag and an animation can say more, and do; those two cannot.
-- The wire is JSON. It is readable, debuggable and portable across builds, and
-  it is not compact. A project counting bytes should implement
-  `GameplayNetTransport` over its own encoding.
+- Two machines have to hold the same table of names. A packet written against a
+  different one is refused as a protocol mismatch, so two builds whose tags
+  differ do not talk until one of them is updated - which is the honest failure,
+  since the alternative is every tag arriving as some other tag.
+- Numbers cross at the precision the state needs, not the precision a physics
+  simulation would: attributes and durations at 32 bits, places at the
+  centimetre, normals at sixteen bits a component.
 - There is no interest management, no delta compression and no client-side
   interpolation. Which entities a peer hears about is the game's decision, made
   by choosing when to send.

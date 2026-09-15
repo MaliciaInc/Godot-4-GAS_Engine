@@ -6,10 +6,12 @@
 ## a reader can tell what a message is about without knowing which RPC it
 ## arrived on.
 ##
-## The engine never reads `payload`. Everything the ability system itself needs
-## is a named field above it; the payload is where a game's own data travels,
-## and keeping the two apart is what stops the engine growing a second, untyped
-## API made of dictionary keys.
+## What a kind carries beyond those is a typed field of its own - an aim, an
+## event, an input slot, a batch, a cue - so the codec writes each in the shape
+## its serializer knows and a receiver reads a value rather than looking a key up
+## in a dictionary somebody else filled. The engine never reads `payload`: that is
+## where a game's own data travels, and keeping the two apart is what stops the
+## engine growing a second, untyped API made of dictionary keys.
 ##
 ## No `get_instance_id()` reaches this class, and no local handle is converted
 ## into one of these ids. A handle names an object in one process; these name
@@ -43,7 +45,7 @@ enum Kind {
 	GENERIC_CONFIRM,
 	GENERIC_CANCEL,
 
-	## An event, in the one shape F6.1.3 already gave events on a wire.
+	## An event, in the one shape events cross a wire in.
 	GAMEPLAY_EVENT,
 
 	## An input, for the abilities whose policy says the input itself crosses
@@ -55,23 +57,8 @@ enum Kind {
 	BATCH,
 }
 
-## Where a target aim travels in the payload.
-##
-## A key rather than a field of its own: an aim is a shape the targeting layer
-## owns, and a message that had a typed field for it would be the networking
-## layer holding an opinion about what an aim is made of.
-const TARGET_DATA_KEY: String = "payload.target_data"
-
-## Which input slot an INPUT_PRESSED or INPUT_RELEASED is about.
-const INPUT_KEY: String = "payload.input"
-
-## The messages a BATCH carries, each in its own wire form, and whether the
-## batch stands or falls together.
-const BATCH_KEY: String = "payload.messages"
-const ATOMIC_KEY: String = "payload.atomic"
-
-## The event an GAMEPLAY_EVENT carries, in GameplayEventWire's own shape.
-const EVENT_KEY: String = "payload.event"
+## The slot an input names when the grant was bound to none.
+const NO_INPUT: int = -1
 
 var kind: GameplayNetMessage.Kind = Kind.STATE_DELTA
 
@@ -92,6 +79,22 @@ var prediction_key: GameplayPredictionKey = null
 
 ## The state a snapshot or a delta carries. Null on every other kind.
 var state: GameplayNetState = null
+
+## Where a TARGET_DATA message's client aimed, in the shape an aim crosses in.
+var aim: GameplayNetAim = null
+
+## The event a GAMEPLAY_EVENT carries.
+var event: GameplayEventWire = null
+
+## Which input slot an INPUT_PRESSED or INPUT_RELEASED is about.
+var input_id: int = NO_INPUT
+
+## The messages a BATCH carries, and whether they stand or fall together.
+var batch: GameplayNetBatch = null
+
+## The cue a CUE carries, when it carries one of the ability system's own.
+## Null for a cue that is only the game's own payload.
+var cue: GameplayCueWire = null
 
 ## Which reading of an entity's state this is, counted by the authority.
 ##
@@ -121,7 +124,8 @@ const EVERYBODY: int = 0
 ## was there and the sending ignored it.
 var to_peer: int = EVERYBODY
 
-## The game's own data. Never read by this addon.
+## The game's own data. Never read by this addon, and carried as the values it
+## holds - see GameplayNetPayloadSerializer for which values those may be.
 var payload: Dictionary = {}
 
 
@@ -197,18 +201,18 @@ func is_complete() -> bool:
 			# `_identified()` checks an aim's claimed sender against, and an
 			# aim that carried none would cross that check for free.
 			return (
-				payload.has(TARGET_DATA_KEY)
+				aim != null
 				and activation != null and activation.is_valid()
 				and prediction_key != null and prediction_key.is_valid()
 			)
 		Kind.GAMEPLAY_EVENT:
-			return payload.has(EVENT_KEY)
+			return event != null
 		Kind.INPUT_PRESSED, Kind.INPUT_RELEASED:
 			# By definition rather than by the client's own handle: a handle is
 			# a number one machine made up, and resolving a request by it is
 			# resolving it by something the authority never agreed to.
-			return definition != null and definition.is_valid() and payload.has(INPUT_KEY)
+			return definition != null and definition.is_valid()
 		Kind.BATCH:
-			return payload.has(BATCH_KEY)
+			return batch != null
 		_:
 			return true

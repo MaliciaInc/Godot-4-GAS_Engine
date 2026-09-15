@@ -30,6 +30,12 @@ const TAG_LOOKUPS: int = 10000
 const TAG_CHANGE_REEVALUATIONS: int = 1000
 const STACK_SEARCHES: int = 1000
 
+## An area ability's worth of work in one call: five effects on each of twenty
+## targets, the shape of a spell that slows, armours, burns, marks and weakens
+## everybody it touches.
+const AREA_TARGETS: int = 20
+const AREA_EFFECTS: int = 5
+
 ## Enough runs for a percentile to mean something, few enough that the largest
 ## load does not turn the suite into something people skip.
 const WARMUP: int = 1
@@ -37,6 +43,7 @@ const RUNS: int = 5
 
 const BURNING: StringName = &"State.Burning"
 const ABILITY_TAG: StringName = &"Ability.Probe"
+const ARMOURED: StringName = &"Status.Armoured"
 
 var fixture: ASCFixture = null
 var asc: AbilitySystemComponent = null
@@ -118,6 +125,16 @@ func test_every_load_named_above_is_measured_and_recorded() -> void:
 	var rows: Array[String] = []
 	for scale: int in EFFECT_SCALES:
 		rows.append(_timed("apply effects", scale, _applying.bind(scale)))
+	var struck: Array[ASCFixture] = _struck(AREA_TARGETS)
+	rows.append(
+		_timed(
+			"apply effects across twenty targets",
+			AREA_TARGETS * AREA_EFFECTS,
+			_applying_across.bind(struck, _area_effects())
+		)
+	)
+	for target: ASCFixture in struck:
+		target.destroy()
 	for scale: int in ABILITY_SCALES:
 		rows.append(_timed("grant abilities", scale, _granting.bind(scale)))
 	rows.append(_timed("tag lookups", TAG_LOOKUPS, _looking_up.bind(TAG_LOOKUPS)))
@@ -132,7 +149,7 @@ func test_every_load_named_above_is_measured_and_recorded() -> void:
 		_timed("stack candidate searches", STACK_SEARCHES, _searching.bind(STACK_SEARCHES))
 	)
 
-	assert_eq(rows.size(), 9, "every load the phase names was measured")
+	assert_eq(rows.size(), 10, "every load the phase names was measured")
 	_write(rows)
 	assert_true(FileAccess.file_exists(RECEIPT), "and written down")
 #endregion
@@ -144,6 +161,16 @@ func _applying(scale: int) -> void:
 	for _index: int in scale:
 		asc.apply_gameplay_effect(EffectFactory.infinite(nothing), asc, 1.0)
 	asc.effects.cleanup()
+
+
+## The area load: every definition on every target, then everything taken off
+## again untimed by the next run's own cleanup.
+func _applying_across(struck: Array[ASCFixture], definitions: Array[GameplayEffect]) -> void:
+	for target: ASCFixture in struck:
+		for definition: GameplayEffect in definitions:
+			EffectFactory.apply(target.asc, definition, fixture.owner)
+	for target: ASCFixture in struck:
+		target.asc.effects.cleanup()
 
 
 func _granting(scale: int) -> void:
@@ -232,18 +259,48 @@ func _crowd(size: int) -> void:
 
 
 func _requiring(tag: StringName) -> GameplayEffect:
-	var effect: GameplayEffect = EffectFactory.infinite(
-		[] as Array[GameplayEffectModifier]
+	return EffectFactory.with_ongoing_requirement(
+		EffectFactory.infinite([] as Array[GameplayEffectModifier]), [tag] as Array[StringName]
 	)
-	var query: GameplayTagQuery = GameplayTagQuery.new()
-	GameplayTagQueryEdits.add_tag(GameplayTagQueryEdits.ensure_root(query), tag)
 
-	var requirement: GameplayEffectTargetTagRequirementsComponent = (
-		GameplayEffectTargetTagRequirementsComponent.new()
+
+## Twenty characters in the tree, each with its own set.
+func _struck(count: int) -> Array[ASCFixture]:
+	var made: Array[ASCFixture] = []
+	for index: int in count:
+		var target: ASCFixture = Fixture.create("Struck%d" % index)
+		add_child(target.owner)
+		target.asc.set_process(false)
+		made.append(target)
+	return made
+
+
+## The five definitions the area load applies, authored once the way a game's
+## assets are rather than rebuilt per target.
+func _area_effects() -> Array[GameplayEffect]:
+	var slow: GameplayEffect = EffectFactory.duration(
+		[EffectFactory.multiply(&"attack", 0.7)] as Array[GameplayEffectModifier], 5.0
 	)
-	requirement.ongoing_query = query
-	effect.components.append(requirement)
-	return effect
+	var armour: GameplayEffect = EffectFactory.granting(
+		EffectFactory.duration(
+			[EffectFactory.add(&"defense", 10.0)] as Array[GameplayEffectModifier], 5.0
+		),
+		[ARMOURED] as Array[StringName]
+	)
+	var burn: GameplayEffect = EffectFactory.periodic(
+		[EffectFactory.add(&"health", -3.0)] as Array[GameplayEffectModifier], 5.0, 1.0
+	)
+	var mark: GameplayEffect = EffectFactory.granting(
+		EffectFactory.duration([] as Array[GameplayEffectModifier], 5.0),
+		[BURNING] as Array[StringName]
+	)
+	var weaken: GameplayEffect = EffectFactory.duration(
+		[
+			EffectFactory.add(&"attack", -2.0), EffectFactory.multiply(&"max_mana", 0.9)
+		] as Array[GameplayEffectModifier],
+		5.0
+	)
+	return [slow, armour, burn, mark, weaken] as Array[GameplayEffect]
 
 
 ## One load, warmed up and then measured.
@@ -318,15 +375,18 @@ func _footer() -> String:
 		"\n"
 		+ "## What the suite actually fails for\n"
 		+ "\n"
-		+ "The two searches that used to read every effect on a character do not\n"
-		+ "grow with how many there are. Asserted rather than reported, because the\n"
-		+ "counts are the same on every machine:\n"
+		+ "The work that used to read every effect, or every set, on a character\n"
+		+ "does not grow with how many there are. Asserted rather than reported,\n"
+		+ "because the counts are the same on every machine:\n"
 		+ "\n"
 		+ "- a stack search compares at most the effects sharing its definition,\n"
 		+ "  whether a hundred or ten thousand are standing;\n"
 		+ "- a tag change reevaluates only the effects whose requirements name that\n"
 		+ "  tag or an ancestor of it;\n"
-		+ "- a thousand applications and removals leave the index holding nothing.\n"
+		+ "- a thousand applications and removals leave the index holding nothing;\n"
+		+ "- effects coming and going never ask a set again which attributes it\n"
+		+ "  declares, and granting a tag asks only the effects whose requirements\n"
+		+ "  are about it - those two in `test/unit/test_effect_application_certification.gd`.\n"
 		+ "\n"
 		+ "`test/unit/test_indexed_search_performance_certification.gd::"
 		+ "test_the_stack_search_does_not_grow_with_the_crowd`\n"

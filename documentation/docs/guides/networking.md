@@ -1,7 +1,7 @@
 ---
 title: Networking
 sidebar_position: 11
-description: The network runtime, transports, entities and definitions, ability network policies, prediction and rollback, aiming over the wire, and replication modes.
+description: The network runtime, transports, the wire format, entities and definitions, ability network policies, prediction and rollback, aiming over the wire, and replication modes.
 ---
 
 # Networking
@@ -31,6 +31,42 @@ network.peer = api.get_unique_id()
 | `GameplayNetTransportMultiplayer` | Godot's `SceneMultiplayer`, over raw packets rather than RPCs. Object decoding is never enabled. |
 | Your own `GameplayNetTransport` subclass | Any other socket layer: override `send()`, `local_peer()`, `peers()` and `is_connected_to_network()`, and emit `packet_received(packet, from_peer)`. |
 | None | Carry messages yourself: send what `message_ready(message)` emits and hand what arrives to `receive(message)`. |
+
+Anything that carries packets without being a transport - a replay, a relay - hands them to `receive_packet(packet, from_peer)`, which decodes them the way a transport's packet is decoded.
+
+## The wire
+
+`GameplayNetCodec` turns a message into a bit stream and back. There is no text format anywhere in it.
+
+- **Only what a message carries.** A message is its kind in four bits, the entity it is about, presence bits for its optional fields, and only the fields those bits vouch for. A state reading has a presence bit per list, and each running effect a presence bit per reading that is not its default.
+- **Numbers.** Whole numbers are packed seven bits at a time, so a small count is one byte. Definition identities are 32 bits. Attributes, durations and magnitudes cross as 32-bit floats.
+- **Places.** A position is quantized to the centimetre, with only as many bits per component as the largest one needs, and falls back to full precision for a value too large for that to help. A normal is sixteen bits a component over `[-1, 1]`.
+- **Bounds.** Every list has a ceiling - 1023 entries per state list, 31 hits per aim, 64 messages per batch, 255 tags per snapshot - and a packet past one is refused rather than trimmed.
+- **Refusals.** A packet that does not read cleanly is refused whole with `malformed`: a count past its bound, a presence bit followed by the value that means nothing, text that is not valid UTF-8, a byte left over. A packet from another schema version is `unsupported_schema`.
+
+| Message | Size |
+|---|---|
+| A generic confirm | 5 bytes |
+| A predicted activation request | 11 bytes |
+| A delta moving two attributes and one effect's clock | 34 bytes |
+| An aim at two places | 32 bytes |
+| A whole reading: six attributes, four tags, three grants, five effects, two cues | 159 bytes with shared names, 306 without |
+
+### Names both machines agree about
+
+A tag crosses as its position in `network.names`, a table sorted by text and built from the project's own tag file - which two builds of one project share. A name outside the table is spelled out once per packet and pointed back at after that.
+
+Add the names your game sends most on **every** machine, in any order:
+
+```gdscript
+network.names.add([&"health", &"max_health", &"mana"] as Array[StringName])
+```
+
+The table has a fingerprint, and a packet that used it carries it. A peer holding a different table refuses that packet as `protocol_mismatch` rather than reading every tag as some other tag - the fix is on a machine, not in a sender.
+
+### The game's own payload
+
+`message.payload` is where a game's own data travels; the engine never reads it. It crosses as the values it holds and arrives as the same types: `null`, `bool`, `int`, `float`, `String`, `StringName`, `Vector2`, `Vector3`, and `Array` and `Dictionary` of those, up to eight levels deep and 256 entries each. Anything else - an object in particular - refuses the packet on the machine that tried to send it.
 
 ## Entities and definitions
 
@@ -137,7 +173,7 @@ An ability that aims interactively is aimed on the client and checked on the aut
 
 1. The client asks with `start()` and, when accepted, aims locally.
 2. The authority, on `activation_requested`, starts the same ability and claims its provider for that run: `provider.claim(activation)`.
-3. The client sends where it aimed: `send_target_data(entity, data, activation, key)`.
+3. The client sends where it aimed: `send_target_data(entity, data, activation, key)`. What was hit crosses as the entity it belongs to, and where it was hit as a place quantized to the centimetre.
 4. The authority checks the claim with the provider's `validate_authoritative(data, source_asc)` and refuses a target that is unknown, out of reach, impossible, or addressed to a run nobody is aiming for.
 
 See [Writing a provider](targeting.md#writing-a-provider).
@@ -158,7 +194,7 @@ See [Writing a provider](targeting.md#writing-a-provider).
 | `snapshot_for(entity, peer)` | Everything about an entity that peer may be told. Send one first. |
 | `delta_for(entity, peer)` | What changed since that peer was last told, or nothing. Call it at a steady rate. |
 
-A client applies readings in order and emits `state_applied(entity, state)`. Attributes arrive as values and tags as counts; effects arrive as readings - which effect, how many stacks, how long left - for your UI to show.
+A client applies readings in order and emits `state_applied(entity, state)`. Attributes arrive as values and tags as counts; effects arrive as readings - which effect, how many stacks, how long left - for your UI to show. A delta carries only what changed: an effect that moved is sent by the identity it keeps for its whole life, and one that ended by that identity alone.
 
 `replication_mode` decides how much each peer is told:
 
@@ -174,7 +210,7 @@ Cue bindings choose separately whether a cue is sent: `REPLICATED` or `LOCAL_ONL
 
 Wrap several messages that must arrive together in `begin_batch()` and `end_batch()`; call `flush_deferred_batch()` from wherever you tick the network.
 
-Every message that is not acted on is reported through `message_refused(message, reason)`. The reasons include `wrong_direction`, `unknown_entity`, `unknown_definition`, `not_owned`, `policy_refuses`, `already_applied`, `out_of_order`, `peer_mismatch`, `target_unknown`, `target_unreachable`, `target_invalid` and `activation_unknown`. Log them: a refusal otherwise looks exactly like a lost packet.
+Every message that is not acted on is reported through `message_refused(message, reason)`. The reasons include `wrong_direction`, `unknown_entity`, `unknown_definition`, `not_owned`, `policy_refuses`, `already_applied`, `out_of_order`, `peer_mismatch`, `target_unknown`, `target_unreachable`, `target_invalid` and `activation_unknown`. A packet that never became a message is reported with `message` null and the codec's own reason: `malformed`, `incomplete`, `unsupported_schema` or `protocol_mismatch`. Log them: a refusal otherwise looks exactly like a lost packet.
 
 ## Next
 

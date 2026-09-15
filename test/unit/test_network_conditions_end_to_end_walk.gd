@@ -102,8 +102,8 @@ func _asc(machine: GameplayNetworkRuntime, id: GameplayNetEntityId) -> AbilitySy
 ## as it. A link that handed the message object between runtimes would pass all
 ## thirteen and prove nothing about a crossing - and that is not hypothetical:
 ## two defects in this addon's wire readers survived a whole phase behind
-## exactly that, because JSON has one number type and no vectors and nothing
-## that never serialised could see it.
+## exactly that, because the text format the wire used then had one number type
+## and no vectors, and nothing that never serialised could see it.
 ##
 ## A message that will not encode is handed to nobody. That is the observable
 ## end of it: it is not delivered as the object it already was.

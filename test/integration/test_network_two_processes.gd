@@ -3,11 +3,12 @@
 ## Every other networking suite in this repository puts two runtimes in one
 ## process. That checks the rules and it cannot check the wire, and the
 ## difference is not academic: the run this file is about found two defects that
-## were invisible in-process for the whole of F6.6. This addon's wire is JSON,
-## JSON has one number type, and every reader that compared `typeof(value)`
-## against `TYPE_INT` refused every message that had actually crossed a wire.
-## Beside it, a Vector3 written to JSON arrives as the text `(3, 0, 0)`, so no
-## aim with a position in it ever reached an authority.
+## were invisible in-process for the whole of F6.6. The wire was text then, text
+## has one number type, and every reader that compared `typeof(value)` against
+## `TYPE_INT` refused every message that had actually crossed a wire. Beside it,
+## a Vector3 written as text arrived as `(3, 0, 0)`, so no aim with a position in
+## it ever reached an authority. The wire is a typed bit stream now, and this is
+## still the only place that proves it crosses between two processes.
 ##
 ## What this file checks is the receipt `tooling/run_multiplayer_sample.ps1`
 ## leaves behind, because a GUT test cannot be two processes and should not
@@ -24,7 +25,7 @@
 ## @meta_license: GAS_Engine Community Use License 1.0
 extends GutTest
 
-const RECEIPT: String = "res://artifacts/gates/F6.6/multiplayer-sample.json"
+const RECEIPT: String = "res://artifacts/gates/F6.6/multiplayer-sample.txt"
 
 ## What the receipt vouches for. A change under any of these makes a receipt
 ## written before it a claim about code that no longer exists.
@@ -167,14 +168,44 @@ func test_the_two_processes_converged() -> void:
 
 
 #region Getting there
+## The receipt, one fact per line with a tab between its name and its value,
+## gathered into the shape the checks above read. Steps, faults and the lines of
+## the state repeat their name and keep the order they were written in.
 func _read() -> Dictionary:
 	if not FileAccess.file_exists(RECEIPT):
 		return {}
-	var text: String = FileAccess.get_file_as_string(RECEIPT)
-	var parser: JSON = JSON.new()
-	if parser.parse(text) != OK or not parser.data is Dictionary:
+	var server_steps: Array = []
+	var client_steps: Array = []
+	var faults: Array = []
+	var state: PackedStringArray = PackedStringArray()
+	var said: Dictionary = {}
+	for written: String in FileAccess.get_file_as_string(RECEIPT).split("\n", false):
+		var line: String = written.trim_suffix("\r")
+		var parts: PackedStringArray = line.split("\t", true, 1)
+		if parts.size() != 2:
+			continue
+		var value: String = parts[1]
+		match parts[0]:
+			"verdict":
+				said["verdict"] = value
+			"server_exit":
+				said["server_exit"] = value.to_int()
+			"client_exit":
+				said["client_exit"] = value.to_int()
+			"server_step":
+				server_steps.append(value)
+			"client_step":
+				client_steps.append(value)
+			"state":
+				state.append(value)
+			"fault":
+				faults.append(value)
+	if said.is_empty():
 		return {}
-	var said: Dictionary = parser.data
+	said["server_steps"] = server_steps
+	said["client_steps"] = client_steps
+	said["faults"] = faults
+	said["state"] = "\n".join(state)
 	return said
 
 

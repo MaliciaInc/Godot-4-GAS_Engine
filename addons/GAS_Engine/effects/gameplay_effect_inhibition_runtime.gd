@@ -28,6 +28,21 @@ var _mutation_depth: int = 0
 var _reevaluating: bool = false
 var _dirty: bool = false
 
+## Which tags moved while a mutation was in flight.
+##
+## A deferred reevaluation used to walk every active effect, because nothing
+## remembered what had moved - so every effect that granted a tag paid, on
+## application, for asking each effect already on the character whether a tag
+## it has nothing to do with changed its answer. Measured with fifty standing,
+## that walk was 150 of the 650 microseconds one application took. The tags are
+## remembered now, and the pass they defer is the scoped one a tag change
+## outside a mutation already makes.
+var _dirty_tags: Dictionary[StringName, bool] = {}
+
+## Whether something that cannot say which tag moved asked during a mutation,
+## which is the one case the deferred pass still walks everything for.
+var _dirty_unscoped: bool = false
+
 
 #region Mutation-depth guard
 func begin_state_mutation() -> void:
@@ -37,7 +52,31 @@ func begin_state_mutation() -> void:
 func end_state_mutation() -> void:
 	_mutation_depth = maxi(_mutation_depth - 1, 0)
 	if _mutation_depth == 0 and _dirty:
-		_reevaluate(effects.active_effects())
+		_reevaluate(_deferred_first_pass())
+
+
+## What the reevaluation a mutation deferred walks first.
+##
+## Everything, when something asked without saying which tag moved. Otherwise
+## the effects whose requirements are about a tag that moved - or an ancestor of
+## one - in the order the full list holds them, so the transitions happen in the
+## order walking everything would have made them in: an effect whose
+## requirements name none of those tags cannot have changed its answer, and is
+## the only thing left out.
+func _deferred_first_pass() -> Array[ActiveGameplayEffect]:
+	if _dirty_unscoped:
+		return effects.active_effects()
+	var wanted: Dictionary[ActiveGameplayEffect, bool] = {}
+	for tag: StringName in _dirty_tags:
+		for active: ActiveGameplayEffect in effects.index.requirement_dependents(tag):
+			wanted[active] = true
+	var first: Array[ActiveGameplayEffect] = []
+	if wanted.is_empty():
+		return first
+	for active: ActiveGameplayEffect in effects.live_active_effects():
+		if wanted.has(active):
+			first.append(active)
+	return first
 #endregion
 
 
@@ -47,6 +86,7 @@ func end_state_mutation() -> void:
 func on_owner_tags_changed() -> void:
 	if _mutation_depth > 0:
 		_dirty = true
+		_dirty_unscoped = true
 		return
 	_reevaluate(effects.active_effects())
 
@@ -58,12 +98,13 @@ func on_owner_tags_changed() -> void:
 ## transition grants and removes tags of its own, and what those changed is no
 ## longer only about the tag that started this.
 ##
-## Deferred the same way as the unscoped call, and deferred as a full one: a
-## mutation in flight can change any of it, so the tag that arrived here is no
-## longer the whole story by the time the guard unwinds.
+## Deferred the same way as the unscoped call when a mutation is in flight, and
+## remembered by tag, so the pass the mutation defers asks about the tags that
+## moved while it ran - every one of them, since a mutation can move several.
 func on_owner_tag_changed(tag: StringName) -> void:
 	if _mutation_depth > 0:
 		_dirty = true
+		_dirty_tags[tag] = true
 		return
 	_reevaluate(effects.index.requirement_dependents(tag))
 
@@ -74,6 +115,7 @@ func on_owner_tag_changed(tag: StringName) -> void:
 func _reevaluate(first_pass: Array[ActiveGameplayEffect]) -> void:
 	if _reevaluating:
 		_dirty = true
+		_dirty_unscoped = true
 		return
 	_reevaluating = true
 	begin_state_mutation()
@@ -83,7 +125,7 @@ func _reevaluate(first_pass: Array[ActiveGameplayEffect]) -> void:
 	var last_pass_changed: Array[ActiveGameplayEffect] = []
 	var over: Array[ActiveGameplayEffect] = first_pass
 	while passes < MAX_REQUIREMENT_REEVALUATION_PASSES:
-		_dirty = false
+		_forget_what_moved()
 		passes += 1
 		last_pass_changed = _reevaluate_one_pass(over)
 		if last_pass_changed.is_empty() and not _dirty:
@@ -98,11 +140,18 @@ func _reevaluate(first_pass: Array[ActiveGameplayEffect]) -> void:
 		# Stop for this call no matter what triggered dirty during the last
 		# pass - unwinding end_state_mutation() below must not immediately
 		# restart a reevaluation that just proved it cannot converge.
-		_dirty = false
+		_forget_what_moved()
 
 	effects.recompose_and_emit(null)
 	_reevaluating = false
 	end_state_mutation()
+
+
+## A pass is about to walk what moved, so what moved has been heard.
+func _forget_what_moved() -> void:
+	_dirty = false
+	_dirty_unscoped = false
+	_dirty_tags.clear()
 
 
 ## One pass over a snapshot of active effects. Returns every effect that

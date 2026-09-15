@@ -115,7 +115,7 @@ func test_a_packet_that_is_not_a_message_says_why_it_was_refused() -> void:
 			reasons.append(reason)
 	)
 
-	wires[0].send('{"v":2,"kind":0}'.to_utf8_buffer(), 2)
+	wires[0].send(PackedByteArray([GameplayNetCodec.SCHEMA_VERSION + 1, 0]), 2)
 
 	assert_eq(reasons.size(), 1, "it was refused")
 	assert_eq(
@@ -138,7 +138,7 @@ func test_binding_a_second_transport_lets_go_of_the_first() -> void:
 		func(_message: GameplayNetMessage, reason: StringName) -> void:
 			arrivals.append(reason)
 	)
-	wires[0].send("not json".to_utf8_buffer(), 2)
+	wires[0].send(PackedByteArray([0xFF]), 2)
 
 	assert_eq(arrivals.size(), 1, "one packet, judged once")
 

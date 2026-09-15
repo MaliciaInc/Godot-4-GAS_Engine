@@ -4,13 +4,13 @@
 #
 # Globs: tooling/.quality-gates.json, tooling/*.py, tooling/verify.ps1, tooling/gates/*.py, tooling/gates/*.json, tooling/gates/lib/*.py
 #
-# Renamed GameplayCompatibilityProfile.Mode.UE_5_7 to CHANNEL_FOLDED (and every derived identifier) and purged remaining Unreal/UE naming from tooling and its config, per an explicit rule that nothing in this Godot addon may name the reference engine it stays compatible with.
+# Declare the event data and event wire field lists as one event said twice
 #
 # python: 3.14.6
-# date-utc: 2026-09-14T14:57:35Z
-# commit-previo: ff5eaf4655f72129ba2b0de9ea2299338df9bdec
+# date-utc: 2026-09-15T00:50:51Z
+# commit-previo: 6f3b979721e7e89641a830beb1a61a5fb50f1035
 # files: 27
-36a64d70616aff059efd9559fa7c3c5c40236920a21dfd63e516ba1505d9e17b  tooling/.quality-gates.json
+541368ffc94a0363e92f3a0638f69525605dac5afac7ae1c8e616bde855cd9fa  tooling/.quality-gates.json
 4093bdbfb1a3927065e91c9a938a0ef6654eb79d485ec3cefbaf7b0b31a525e3  tooling/_gatelib.py
 14c23696fe28342aa7ff8dca2698706cded155b972a550d9f0608a2aa31cf5c4  tooling/distribution_check.py
 3423d889b171cbe3f993ad18ac4310a3927df982eb571d1e1c5cfd70b8948af1  tooling/engine_evidence.py

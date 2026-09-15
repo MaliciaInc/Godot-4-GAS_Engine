@@ -10,6 +10,9 @@
 ## having arrived: nothing having arrived is a state the next snapshot repairs.
 ## A game grouping genuinely independent operations says so by setting it false.
 ##
+## How a batch crosses is the codec's: its atomicity, a count, and each member
+## written the way a message is.
+##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayNetBatch extends RefCounted
@@ -45,31 +48,16 @@ func is_sendable() -> bool:
 	return not messages.is_empty() and messages.size() <= MAX_MESSAGES
 
 
-## Every message in it, as the wire carries them.
-func to_wire() -> Array:
-	var written: Array = []
-	for message: GameplayNetMessage in messages:
-		written.append(GameplayNetCodec.to_wire(message))
-	return written
-
-
-## A batch back, or null when any part of it is not a message.
+## Whether a receiver may start judging this batch at all: within its bounds,
+## and every member a message that is not itself a batch.
 ##
-## All or nothing at the reading stage too: a batch with one unreadable member
-## is refused whole rather than applied without it, because "without it" is
-## exactly the partially applied character the atomicity is for.
-static func from_wire(wire: Variant, is_atomic: bool = true) -> GameplayNetBatch:
-	if not wire is Array:
-		return null
-	var listed: Array = wire
-	if listed.is_empty() or listed.size() > MAX_MESSAGES:
-		return null
-
-	var made: GameplayNetBatch = GameplayNetBatch.new()
-	made.atomic = is_atomic
-	for entry: Variant in listed:
-		var message: GameplayNetMessage = GameplayNetCodec.from_wire(entry)
-		if message == null:
-			return null
-		made.messages.append(message)
-	return made
+## All or nothing at this stage too: a batch with one member that is not a
+## message is refused whole rather than applied without it, because "without
+## it" is exactly the partially applied character the atomicity is for.
+func is_readable() -> bool:
+	if not is_sendable():
+		return false
+	for message: GameplayNetMessage in messages:
+		if message == null or message.kind == GameplayNetMessage.Kind.BATCH:
+			return false
+	return true

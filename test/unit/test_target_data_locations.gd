@@ -18,6 +18,10 @@ const UP_2D: Vector2 = Vector2(0.0, 1.0)
 const SPOT_3D: Vector3 = Vector3(5.0, 0.0, -9.0)
 const UP_3D: Vector3 = Vector3(0.0, 1.0, 0.0)
 
+## Half a centimetre, in metres: the most a place can move by being rounded to
+## the centimetre it crosses at - and a little float32 room on top.
+const CENTIMETRE_ROUNDING: float = 0.0051
+
 var data: GameplayAbilityTargetData = null
 
 
@@ -110,19 +114,22 @@ func test_applying_to_a_location_reaches_nobody_and_says_so() -> void:
 
 
 #region Across a wire
-## The same dictionary after a real crossing.
+## An aim after a real crossing, as bytes, in the message an aim travels in.
 ##
-## Through JSON, because that is what this addon's wire is. A round trip that
-## handed the dictionary straight back proved the translator and nothing at all
-## about the crossing - and what it was hiding was that JSON has no vectors:
-## `JSON.stringify` writes a Vector3 as the text `(3, 0, 0)` and the far side
-## read back a String where a position should have been, so no aimed ability
-## ever worked between two processes.
-func _crossed(wire: Dictionary, described: String) -> Dictionary:
-	var read: Variant = JSON.parse_string(JSON.stringify(wire))
-	assert_true(read is Dictionary, "%s: it is still a dictionary after JSON" % described)
-	var said: Dictionary = read if read is Dictionary else {}
-	return said
+## A round trip that handed the shape straight back would prove the translator
+## and nothing about the crossing - and the crossing is where a text wire once
+## turned every position into the string `(3, 0, 0)`, so that no aimed ability
+## worked between two processes.
+func _crossed(aim: GameplayNetAim, described: String) -> GameplayNetAim:
+	var carrying: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.TARGET_DATA, GameplayNetEntityId.of(3)
+	)
+	carrying.activation = GameplayNetActivationId.of(carrying.entity, 1)
+	carrying.prediction_key = GameplayPredictionKey.of(2, 1)
+	carrying.aim = aim
+	var arrived: GameplayNetMessage = GameplayNetCodec.decode(GameplayNetCodec.encode(carrying))
+	assert_not_null(arrived, "%s: it crossed as bytes" % described)
+	return arrived.aim if arrived != null else GameplayNetAim.new()
 
 
 ## Both dimensions round-trip, and what was hit crosses as an identity.
@@ -148,20 +155,16 @@ func test_an_aim_round_trips_as_identities_and_numbers(
 	data.append_node(struck.owner)
 	data.append_location(position, normal)
 
-	var wire: Dictionary = _crossed(
-		GameplayTargetDataTranslator.to_wire(data, registry), described
+	var crossed: GameplayNetAim = _crossed(
+		GameplayTargetDataTranslator.to_aim(data, registry), described
 	)
+	assert_eq(crossed.hits.size(), 2, "%s: both hits crossed" % described)
+	if crossed.hits.size() == 2:
+		assert_eq(
+			crossed.hits[0].entity, named.value, "%s: what was hit crossed as its identity" % described
+		)
 
-	var crossed: Array = wire[GameplayTargetDataTranslator.HITS_KEY]
-	for entry: Variant in crossed:
-		var fields: Dictionary = entry
-		for key: Variant in fields:
-			var kind: int = typeof(fields[key])
-			assert_ne(kind, TYPE_OBJECT, "%s: %s carries no object" % [described, key])
-
-	var back: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_wire(
-		wire, registry
-	)
+	var back: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_aim(crossed, registry)
 	assert_eq(
 		back.get_target_nodes(),
 		[struck.owner] as Array[Node],
@@ -171,10 +174,32 @@ func test_an_aim_round_trips_as_identities_and_numbers(
 	var place: GameplayTargetHit = back.get_all_hits()[1]
 	if position is Vector2:
 		var flat: Vector2 = position
+		var facing: Vector2 = normal
 		assert_eq(place.position_2d, flat, "%s: at the same spot" % described)
+		assert_eq(place.normal_2d, facing, "%s: facing the same way" % described)
 	else:
 		var spatial: Vector3 = position
+		var up: Vector3 = normal
 		assert_eq(place.position_3d, spatial, "%s: at the same spot" % described)
+		assert_eq(place.normal_3d, up, "%s: facing the same way" % described)
+
+
+## A place crosses to the centimetre.
+##
+## The precision the reference keeps for a hit's location, said in this
+## engine's unit: a metre here where the reference counts centimetres. A spot
+## with more digits than that comes back within half of one, never further.
+func test_a_place_crosses_to_the_centimetre() -> void:
+	var spot: Vector3 = Vector3(1.23456, -7.891, 1000.004)
+	data.append_location(spot, UP_3D)
+
+	var back: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_aim(
+		_crossed(GameplayTargetDataTranslator.to_aim(data), "a spot with digits to spare"), null
+	)
+	var place: Vector3 = back.get_all_hits()[0].position_3d
+	assert_almost_eq(place.x, spot.x, CENTIMETRE_ROUNDING, "across")
+	assert_almost_eq(place.y, spot.y, CENTIMETRE_ROUNDING, "up")
+	assert_almost_eq(place.z, spot.z, CENTIMETRE_ROUNDING, "and along, a kilometre out")
 
 
 ## A hit on somebody this machine has never registered comes back as nothing
@@ -190,23 +215,55 @@ func test_a_hit_on_an_unknown_entity_does_not_come_back_as_somebody_else() -> vo
 	sender.register_entity(GameplayNetEntityId.of(11), struck.asc)
 	data.append_node(struck.owner)
 
-	var wire: Dictionary = GameplayTargetDataTranslator.to_wire(data, sender)
-	var back: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_wire(
-		wire, GameplayNetRegistry.new()
+	var back: GameplayAbilityTargetData = GameplayTargetDataTranslator.from_aim(
+		_crossed(GameplayTargetDataTranslator.to_aim(data, sender), "a stranger"),
+		GameplayNetRegistry.new()
 	)
 
 	assert_eq(back.get_target_nodes().size(), 0, "nobody came back")
 	assert_false(back.has_locations(), "and no place was invented for them either")
 
 
+## A malformed aim is refused rather than repaired.
+##
+## A hit that says it names somebody and then names nobody is not something a
+## writer produces, and an aim past the reference's ceiling of hits never
+## becomes bytes at all.
 func test_a_malformed_aim_is_refused_rather_than_repaired() -> void:
-	assert_null(
-		GameplayTargetDataTranslator.from_wire({}, null), "a wire with no hits key"
+	var body: GameplayNetBitWriter = GameplayNetBitWriter.new()
+	body.write_bits(GameplayNetMessage.Kind.TARGET_DATA, GameplayNetCodec.KIND_BITS)
+	body.write_signed(3)
+	body.write_bits(
+		(1 << GameplayNetCodec.Carries.ACTIVATION)
+		| (1 << GameplayNetCodec.Carries.PREDICTION)
+		| (1 << GameplayNetCodec.Carries.BODY),
+		GameplayNetCodec.CARRIES_BITS
 	)
-	assert_null(
-		GameplayTargetDataTranslator.from_wire(
-			{GameplayTargetDataTranslator.HITS_KEY: [42]}, null
-		),
-		"and one whose hits are not hits"
+	body.write_signed(1)
+	body.write_signed(2)
+	body.write_signed(1)
+	body.write_packed(1)
+	body.write_bool(false)
+	body.write_bool(true)
+	body.write_bool(false)
+	body.write_signed(GameplayNetEntityId.NONE)
+	var packet: PackedByteArray = PackedByteArray([GameplayNetCodec.SCHEMA_VERSION, 0])
+	packet.append_array(body.finish())
+
+	assert_null(GameplayNetCodec.decode(packet), "a hit naming nobody by name")
+	assert_eq(GameplayNetCodec.last_refusal, GameplayNetCodec.REASON_MALFORMED)
+
+	var crowded: GameplayNetAim = GameplayNetAim.new()
+	for _index: int in GameplayNetAim.MOST_HITS + 1:
+		crowded.hits.append(GameplayNetAim.Hit.new())
+	var carrying: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.TARGET_DATA, GameplayNetEntityId.of(3)
+	)
+	carrying.activation = GameplayNetActivationId.of(carrying.entity, 1)
+	carrying.prediction_key = GameplayPredictionKey.of(2, 1)
+	carrying.aim = crowded
+	assert_true(
+		GameplayNetCodec.encode(carrying).is_empty(),
+		"and one hit past the ceiling never becomes bytes"
 	)
 #endregion

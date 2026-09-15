@@ -29,7 +29,7 @@ python tooling/traceability.py
 | 11 | F6.5 did not close without a real reference | yes | `artifacts/parity/GATE_F6_5.md` — the reference ran 2026-09-11, D-08 and D-11 CLOSED |
 | 12 | `NetExecutionPolicy` and `NetSecurityPolicy` are distinct enums | yes | `test/unit/test_network_ability_policies.gd::test_the_execution_policy_does_not_decide_what_the_authority_accepts` |
 | 13 | `NetSecurityPolicy` is CLIENT_OR_SERVER / SERVER_ONLY_EXECUTION / SERVER_ONLY_TERMINATION / SERVER_ONLY | yes | `test/unit/test_network_ability_policies.gd::test_a_remote_request_is_asked_of_the_security_policy` covers all four |
-| 14 | the transport carries bytes, not objects | yes | `test/unit/test_network_codec.gd::test_nothing_a_wire_says_becomes_an_object` |
+| 14 | the transport carries bytes, not objects | yes | `test/unit/test_network_codec_refusals.gd::test_nothing_a_wire_says_becomes_an_object` |
 | 15 | `SceneMultiplayer` object decoding stays false | yes | `test/unit/test_network_transport.gd::test_the_multiplayer_adapter_binds_without_allowing_objects` |
 | 16 | the 3D sample depends on the targeting already implemented | yes | `test/unit/test_action_sample_probe.gd::test_the_sample_demonstrates_everything_it_claims_to` |
 | 17 | traceability has thirty-three unique findings | yes | `python tooling/traceability.py`, and `artifacts/parity/TRACEABILITY_F6.md` |

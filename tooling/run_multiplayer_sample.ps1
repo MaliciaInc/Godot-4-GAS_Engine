@@ -11,8 +11,9 @@
 	zero, neither reported a fault, and the two ended on the same reading of the
 	same character.
 
-	It writes artifacts/gates/<TaskId>/multiplayer-sample.json, which
-	test/integration/test_network_two_processes.gd reads.
+	It writes artifacts/gates/<TaskId>/multiplayer-sample.txt, which
+	test/integration/test_network_two_processes.gd reads: one fact per line, its
+	name and its value either side of a tab.
 
 .PARAMETER TaskId
 	Which receipt directory to write into. F6.6 by default, since that is the
@@ -45,8 +46,8 @@ $null = New-Item -ItemType Directory -Force -Path $receipts
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("gas_engine_mp_" + [System.Guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Force -Path $work
 
-$serverOut = Join-Path $work 'server.json'
-$clientOut = Join-Path $work 'client.json'
+$serverOut = Join-Path $work 'server.txt'
+$clientOut = Join-Path $work 'client.txt'
 $serverLog = Join-Path $work 'server.log'
 $clientLog = Join-Path $work 'client.log'
 
@@ -92,10 +93,25 @@ foreach ($half in @($client, $server)) {
 	}
 }
 
+# One half's receipt, read line by line: a name, a tab, a value. Steps and the
+# lines of the state repeat their name, and come back in the order they were
+# written.
 function Read-Half {
 	param([string] $Path)
 	if (-not (Test-Path -LiteralPath $Path)) { return $null }
-	return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+	$fault = ''
+	$steps = @()
+	$state = @()
+	foreach ($line in Get-Content -LiteralPath $Path -Encoding utf8) {
+		$parts = $line -split "`t", 2
+		if ($parts.Count -ne 2) { continue }
+		switch ($parts[0]) {
+			'fault' { $fault = $parts[1] }
+			'step' { $steps += $parts[1] }
+			'state' { $state += $parts[1] }
+		}
+	}
+	return [pscustomobject]@{ fault = $fault; steps = $steps; state = ($state -join "`n") }
 }
 
 $serverSaid = Read-Half $serverOut
@@ -114,18 +130,22 @@ if ($serverSaid -and $clientSaid -and ($serverSaid.state -ne $clientSaid.state))
 }
 
 $verdict = if ($faults.Count -eq 0) { 'PASS' } else { 'FAIL' }
-$receipt = [ordered]@{
-	verdict      = $verdict
-	port         = $Port
-	server_exit  = $server.ExitCode
-	client_exit  = $client.ExitCode
-	server_steps = if ($serverSaid) { $serverSaid.steps } else { @() }
-	client_steps = if ($clientSaid) { $clientSaid.steps } else { @() }
-	state        = if ($clientSaid) { $clientSaid.state } else { '' }
-	faults       = $faults
+$lines = @(
+	"verdict`t$verdict",
+	"port`t$Port",
+	"server_exit`t$($server.ExitCode)",
+	"client_exit`t$($client.ExitCode)"
+)
+if ($serverSaid) {
+	foreach ($step in $serverSaid.steps) { $lines += "server_step`t$step" }
 }
-$receiptPath = Join-Path $receipts 'multiplayer-sample.json'
-$receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding utf8
+if ($clientSaid) {
+	foreach ($step in $clientSaid.steps) { $lines += "client_step`t$step" }
+	foreach ($reading in ($clientSaid.state -split "`n")) { $lines += "state`t$reading" }
+}
+foreach ($fault in $faults) { $lines += "fault`t$fault" }
+$receiptPath = Join-Path $receipts 'multiplayer-sample.txt'
+Set-Content -LiteralPath $receiptPath -Value $lines -Encoding utf8
 
 Write-Host ''
 Write-Host '--- authority ---'

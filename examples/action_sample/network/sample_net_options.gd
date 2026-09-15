@@ -35,7 +35,7 @@ var automation: bool = false
 
 ## Where the ending is written. A file, because two processes writing their
 ## conclusions to one console is two conclusions nobody can tell apart.
-var out: String = "user://sample_net.json"
+var out: String = "user://sample_net.txt"
 
 
 static func read(arguments: PackedStringArray = PackedStringArray()) -> SampleNetOptions:

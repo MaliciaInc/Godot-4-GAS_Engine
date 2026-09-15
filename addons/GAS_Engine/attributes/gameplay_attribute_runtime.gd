@@ -16,6 +16,10 @@
 ## This class emits nothing. It returns results and the ASC facade emits from
 ## them, so a caller cannot be surprised by a signal fired inside a query.
 ##
+## Which set declares what is kept by GameplayAttributeIndex, and the standing
+## contributions by GameplayAttributeContributions. This is what composes one
+## from the other.
+##
 ## @meta_addon: GAS_Engine
 ## @meta_license: GAS_Engine Community Use License 1.0
 class_name GameplayAttributeRuntime extends RefCounted
@@ -24,28 +28,8 @@ class_name GameplayAttributeRuntime extends RefCounted
 ## The node handed to `post_attribute_change`, normally the ASC.
 var owner_node: Node = null
 
-var _sets: Array[AttributeSet] = []
-
-## Every contribution from every active effect, in no particular order. Ordering
-## is expressed by the contribution's own two axes, not by array position, so an
-## erase from the middle cannot change the result.
-var _contributions: Array[AttributeModifierContribution] = []
-
-## The same contributions, kept by the attribute they are about.
-##
-## Composing one attribute used to walk every contribution on the entity,
-## skipping the ones about something else - measured at a thousand effects on
-## one character, that is six seconds, because every attribute pays for every
-## other attribute's modifiers.
-##
-## An index rather than a sort, because the order within one attribute is
-## the application order the algebra reads and must not move. `_contributions`
-## stays the ordered truth; this is a second way in to the same objects.
-## The value type is a bare `Array` because GDScript will not nest typed
-## collections. What is stored in it is always a typed one, made below and
-## read back into a typed local - so the type survives even though the
-## dictionary cannot declare it.
-var _by_attribute: Dictionary[StringName, Array] = {}
+var _index: GameplayAttributeIndex = GameplayAttributeIndex.new()
+var _contributions: GameplayAttributeContributions = GameplayAttributeContributions.new()
 
 
 #region Sets and lookup
@@ -74,7 +58,7 @@ func set_attribute_sets(sets: Array[AttributeSet], isolate: bool) -> void:
 			taken.append(authored.duplicate(true) as AttributeSet)
 		else:
 			taken.append(authored)
-	_sets = taken
+	_index.hold(taken)
 	initialize()
 
 
@@ -94,7 +78,7 @@ func adopt_attribute_set(authored: AttributeSet, isolate: bool) -> AttributeSet:
 	var taken: AttributeSet = (
 		authored.duplicate(true) as AttributeSet if isolate else authored
 	)
-	_sets.append(taken)
+	_index.adopt(taken)
 	_seed_only(taken)
 	return taken
 
@@ -104,10 +88,7 @@ func adopt_attribute_set(authored: AttributeSet, isolate: bool) -> AttributeSet:
 ## Nothing else is touched, which is the contract: the attributes that stay
 ## keep the values they had, contributions and all.
 func release_attribute_set(taken: AttributeSet) -> bool:
-	if taken == null or not _sets.has(taken):
-		return false
-	_sets.erase(taken)
-	return true
+	return _index.release(taken)
 
 
 ## Seed the attributes one set declares, and no others.
@@ -126,12 +107,7 @@ func _seed_only(taken: AttributeSet) -> void:
 
 ## The set that declares an attribute, or null.
 func find_set(attribute_name: StringName) -> AttributeSet:
-	for attribute_set: AttributeSet in _sets:
-		if attribute_set == null:
-			continue
-		if attribute_set.attribute_named(attribute_name) != null:
-			return attribute_set
-	return null
+	return _index.declaring(attribute_name)
 
 
 ## Whether more than one set on this entity declares that attribute.
@@ -140,7 +116,7 @@ func find_set(attribute_name: StringName) -> AttributeSet:
 ## make `health` mean two different values, and picking whichever was walked
 ## into first is an answer that changes with the order somebody listed them in.
 func is_ambiguous(attribute_name: StringName) -> bool:
-	return GameplayAttributeLookup.is_ambiguous(_sets, attribute_name)
+	return _index.is_ambiguous(attribute_name)
 
 
 ## The first of these names this entity cannot uniquely address.
@@ -156,12 +132,12 @@ func first_ambiguous(names: Array[StringName]) -> StringName:
 
 ## The set a reference names, or null when nothing answers to it.
 func find_set_by_ref(reference: GameplayAttributeRef) -> AttributeSet:
-	return GameplayAttributeLookup.set_for(_sets, reference)
+	return GameplayAttributeLookup.set_for(_index.held(), reference)
 
 
 ## The attribute a reference names, or null.
 func find_by_ref(reference: GameplayAttributeRef) -> AttributeData:
-	return GameplayAttributeLookup.attribute_for(_sets, reference)
+	return GameplayAttributeLookup.attribute_for(_index.held(), reference)
 
 
 ## The attribute itself, or null when no set declares it.
@@ -169,7 +145,7 @@ func find(attribute_name: StringName) -> AttributeData:
 	var attribute_set: AttributeSet = find_set(attribute_name)
 	if attribute_set == null:
 		return null
-	return attribute_set.get(String(attribute_name))
+	return attribute_set.attribute_named(attribute_name)
 
 
 func has(attribute_name: StringName) -> bool:
@@ -229,58 +205,32 @@ func apply_replicated_attribute(
 
 ## Every attribute name across every set, for a full recomposition.
 func all_attribute_names() -> Array[StringName]:
-	var names: Array[StringName] = []
-	for attribute_set: AttributeSet in _sets:
-		if attribute_set == null:
-			continue
-		for name: StringName in attribute_set.get_attribute_names():
-			if not names.has(name):
-				names.append(name)
-	return names
+	return _index.names()
 #endregion
 
 
 #region Contributions
 func add_contributions(new_contributions: Array[AttributeModifierContribution]) -> void:
-	for contribution: AttributeModifierContribution in new_contributions:
-		if contribution != null:
-			_contributions.append(contribution)
-			_bucket(contribution.attribute_name).append(contribution)
+	_contributions.add(new_contributions)
 
 
 ## Drop every contribution belonging to one application. Removal is by
 ## application order rather than by object identity so a caller cannot leave a
 ## stale contribution behind by holding a different array.
 func remove_contributions_of(application_order: int) -> void:
-	for index: int in range(_contributions.size() - 1, -1, -1):
-		var leaving: AttributeModifierContribution = _contributions[index]
-		if leaving.application_order == application_order:
-			_contributions.remove_at(index)
-			_bucket(leaving.attribute_name).erase(leaving)
+	_contributions.remove_of(application_order)
 
 
 func clear_contributions() -> void:
 	_contributions.clear()
-	_by_attribute.clear()
 
 
 func contribution_count() -> int:
-	return _contributions.size()
+	return _contributions.count()
 
 
 func contributions_for(attribute_name: StringName) -> Array[AttributeModifierContribution]:
-	return _bucket(attribute_name).duplicate()
-
-
-## The live list for one attribute, created empty the first time it is asked
-## for. Private, because handing the stored array out is how a caller appends
-## past the validation every contribution goes through on the way in.
-func _bucket(attribute_name: StringName) -> Array[AttributeModifierContribution]:
-	if not _by_attribute.has(attribute_name):
-		var started: Array[AttributeModifierContribution] = []
-		_by_attribute[attribute_name] = started
-	var found: Array[AttributeModifierContribution] = _by_attribute[attribute_name]
-	return found
+	return _contributions.copy_for(attribute_name)
 #endregion
 
 
@@ -296,8 +246,10 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 		result.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
 		return result
 
-	var attribute: AttributeData = attribute_set.get(String(attribute_name))
-	var composed: float = _compose(attribute.base_value, attribute_name, result)
+	var attribute: AttributeData = attribute_set.attribute_named(attribute_name)
+	var composed: float = _compose_from(
+		attribute.base_value, attribute_name, result, _contributions.standing(attribute_name)
+	)
 	if not result.is_ok():
 		return result
 
@@ -309,17 +261,6 @@ func evaluate(attribute_name: StringName) -> AttributeEvaluationResult:
 
 	result.final_value = clamped
 	return result
-
-
-## Apply the canonical order to one attribute. Writes failure into `result`.
-## Composed from this attribute's own contributions rather than from every
-## contribution on the entity. The algebra skips the ones about something
-## else either way, so the answer is the same one - it is arrived at without
-## walking a thousand modifiers about mana to work out a health value.
-func _compose(
-	base: float, attribute_name: StringName, result: AttributeEvaluationResult
-) -> float:
-	return _compose_from(base, attribute_name, result, _bucket(attribute_name))
 
 
 ## What this attribute would read if only the first channels had run.
@@ -338,7 +279,7 @@ func value_up_to_channel(attribute_name: StringName, through_channel: int, refer
 		attribute.base_value,
 		attribute_name,
 		reading,
-		_bucket(attribute_name),
+		_contributions.standing(attribute_name),
 		through_channel
 	)
 
@@ -353,6 +294,7 @@ func policy_for(attribute_name: StringName) -> AttributeSet.AggregatorPolicy:
 	return declaring.aggregator_policy(attribute_name)
 
 
+## Apply the canonical order to one attribute. Writes failure into `result`.
 func _compose_from(
 	base: float,
 	attribute_name: StringName,
@@ -360,20 +302,9 @@ func _compose_from(
 	contributions: Array[AttributeModifierContribution],
 	through_channel: int = AttributeAggregateMath.CHANNELS - 1
 ) -> float:
-	# Asked of the set that declares the attribute, and handed in: the
-	# arithmetic knows nothing about sets, and an aggregate that went looking
-	# for one would answer differently depending on who called it.
-	var policy: AttributeSet.AggregatorPolicy = policy_for(attribute_name)
-	var folded: AttributeAggregateMath.Composed = (
-		AttributeAggregateMath.channel_folded(
-			base, attribute_name, contributions, through_channel, policy
-		)
-		if _uses_channel_folded_algebra()
-		else AttributeAggregateMath.godot_native(
-			base, attribute_name, contributions, policy
-		)
+	var folded: AttributeAggregateMath.Composed = _fold(
+		base, attribute_name, contributions, policy_for(attribute_name), through_channel
 	)
-
 	if not folded.is_ok():
 		result.status = folded.status
 		return 0.0
@@ -381,6 +312,25 @@ func _compose_from(
 	result.winning_override_application_order = folded.winning_override_application_order
 	result.winning_override_modifier_index = folded.winning_override_modifier_index
 	return folded.value
+
+
+## Either arithmetic, asked of one attribute's contributions.
+##
+## The policy is asked of the set that declares the attribute and handed in:
+## the arithmetic knows nothing about sets, and an aggregate that went looking
+## for one would answer differently depending on who called it.
+func _fold(
+	base: float,
+	attribute_name: StringName,
+	contributions: Array[AttributeModifierContribution],
+	policy: AttributeSet.AggregatorPolicy,
+	through_channel: int = AttributeAggregateMath.CHANNELS - 1
+) -> AttributeAggregateMath.Composed:
+	if _uses_channel_folded_algebra():
+		return AttributeAggregateMath.channel_folded(
+			base, attribute_name, contributions, through_channel, policy
+		)
+	return AttributeAggregateMath.godot_native(base, attribute_name, contributions, policy)
 
 
 ## Which arithmetic this entity's attributes are composed by.
@@ -392,8 +342,15 @@ func _compose_from(
 func _uses_channel_folded_algebra() -> bool:
 	var component: AbilitySystemComponent = owner_node as AbilitySystemComponent
 	return component != null and component.uses_channel_folded_contracts()
+
+
 ## Pure aggregate preflight. It never publishes or temporarily installs the
 ## candidate contributions in the live runtime.
+##
+## Composed per attribute from that attribute's own standing contributions and
+## the candidates about it, in that order - the same order a copy of every
+## contribution on the entity used to be read in, without copying the ones the
+## fold was always going to skip.
 func validate_additional_contributions(
 	additional: Array[AttributeModifierContribution]
 ) -> AttributeAggregateValidationResult:
@@ -402,9 +359,6 @@ func validate_additional_contributions(
 	)
 	if additional.is_empty():
 		return validation
-
-	var combined: Array[AttributeModifierContribution] = _contributions.duplicate()
-	combined.append_array(additional)
 
 	var affected: Array[StringName] = []
 	for contribution: AttributeModifierContribution in additional:
@@ -422,10 +376,13 @@ func validate_additional_contributions(
 			validation.attribute_name = attribute_name
 			return validation
 
-		var attribute: AttributeData = attribute_set.get(String(attribute_name))
+		var attribute: AttributeData = attribute_set.attribute_named(attribute_name)
 		var evaluated: AttributeEvaluationResult = AttributeEvaluationResult.new()
 		var raw: float = _compose_from(
-			attribute.base_value, attribute_name, evaluated, combined
+			attribute.base_value,
+			attribute_name,
+			evaluated,
+			_contributions.with_candidates(attribute_name, additional)
 		)
 		if not evaluated.is_ok():
 			validation.status = evaluated.status
@@ -439,18 +396,11 @@ func validate_additional_contributions(
 			return validation
 
 	return validation
+#endregion
 
 
 #region Recomposition
-## Recompute one attribute's current value and write it.
-##
-## Returns what happened. The caller emits from the result; this never emits,
-## so a query and a notification can never interleave.
-
 ## The values a mutation started from, recorded before anything is written.
-##
-## Repeated verbatim in recompose() and commit_base_write(), which is three
-## lines today and a field one of them forgets tomorrow.
 func _snapshot(mutation: AttributeMutationResult, attribute: AttributeData) -> void:
 	mutation.old_base_value = attribute.base_value
 	mutation.new_base_value = attribute.base_value
@@ -458,40 +408,93 @@ func _snapshot(mutation: AttributeMutationResult, attribute: AttributeData) -> v
 	mutation.new_current_value = attribute.current_value
 
 
+## Recompute one attribute's current value and write it.
+##
+## Returns what happened. The caller emits from the result; this never emits,
+## so a query and a notification can never interleave.
 func recompose(attribute_name: StringName) -> AttributeMutationResult:
-	var mutation: AttributeMutationResult = AttributeMutationResult.new()
-	mutation.attribute_name = attribute_name
-
-	var attribute: AttributeData = find(attribute_name)
-	if attribute == null:
-		mutation.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
-		return mutation
-
-	_snapshot(mutation, attribute)
-
-	var evaluation: AttributeEvaluationResult = evaluate(attribute_name)
-	if not evaluation.is_ok():
-		mutation.status = evaluation.status
-		return mutation
-
-	if is_equal_approx(evaluation.final_value, attribute.current_value):
-		return mutation
-
-	attribute.current_value = evaluation.final_value
-	mutation.new_current_value = evaluation.final_value
-	mutation.current_changed = true
-	return mutation
+	var attribute_set: AttributeSet = find_set(attribute_name)
+	if attribute_set == null:
+		var missing: AttributeMutationResult = AttributeMutationResult.new()
+		missing.attribute_name = attribute_name
+		missing.status = AttributeEvaluationResult.Status.ATTRIBUTE_NOT_FOUND
+		return missing
+	return _recompose_in(attribute_set, attribute_name, true)
 
 
 ## Recompose every attribute. Used after a base write or an effect change, since
 ## one attribute's clamp may depend on another's value.
+##
+## Reports only what moved or failed, and builds a result only for those: one
+## per attribute, most of them thrown straight away, was a third of what a
+## recomposition cost.
 func recompose_all() -> Array[AttributeMutationResult]:
 	var results: Array[AttributeMutationResult] = []
-	for attribute_name: StringName in all_attribute_names():
-		var mutation: AttributeMutationResult = recompose(attribute_name)
-		if mutation.current_changed or not mutation.is_ok():
+	for attribute_name: StringName in _index.listed():
+		var attribute_set: AttributeSet = find_set(attribute_name)
+		if attribute_set == null:
+			continue
+		var mutation: AttributeMutationResult = _recompose_in(attribute_set, attribute_name, false)
+		if mutation != null:
 			results.append(mutation)
 	return results
+
+
+## One attribute recomposed against the set that declares it.
+##
+## Null when it composed, did not move, and `always` is false. Everything else is
+## a result: a failure carries its status, a move carries both values, and an
+## unmoved attribute asked about by name carries the value it kept. What it
+## started from is taken before the clamp hook runs, as a snapshot always was.
+func _recompose_in(
+	attribute_set: AttributeSet, attribute_name: StringName, always: bool
+) -> AttributeMutationResult:
+	var attribute: AttributeData = attribute_set.attribute_named(attribute_name)
+	var base_before: float = attribute.base_value
+	var current_before: float = attribute.current_value
+
+	var contributions: Array[AttributeModifierContribution] = _contributions.standing(attribute_name)
+	var status: AttributeEvaluationResult.Status = AttributeEvaluationResult.Status.OK
+	var unclamped: float = base_before
+	if contributions.is_empty():
+		# Both arithmetics fold an empty list to the base itself, and refuse a
+		# base that is not finite. Asking them anyway was most of what
+		# recomposing an untouched attribute cost - one call and one result for
+		# the native profile, ten of each for the channel-folded one - and an
+		# untouched attribute is what most attributes are, most of the time.
+		if not is_finite(base_before):
+			status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+	else:
+		var folded: AttributeAggregateMath.Composed = _fold(
+			base_before, attribute_name, contributions, attribute_set.aggregator_policy(attribute_name)
+		)
+		status = folded.status
+		unclamped = folded.value
+
+	var clamped: float = 0.0
+	if status == AttributeEvaluationResult.Status.OK:
+		clamped = attribute_set.pre_attribute_change(attribute_name, unclamped)
+		if not is_finite(clamped):
+			status = AttributeEvaluationResult.Status.NON_FINITE_VALUE
+	var composed: bool = status == AttributeEvaluationResult.Status.OK
+	var moved: bool = composed and not is_equal_approx(clamped, current_before)
+	if composed and not moved and not always:
+		return null
+
+	var mutation: AttributeMutationResult = AttributeMutationResult.new()
+	mutation.attribute_name = attribute_name
+	mutation.old_base_value = base_before
+	mutation.new_base_value = base_before
+	mutation.old_current_value = current_before
+	mutation.new_current_value = current_before
+	if not composed:
+		mutation.status = status
+		return mutation
+	if moved:
+		attribute.current_value = clamped
+		mutation.new_current_value = clamped
+		mutation.current_changed = true
+	return mutation
 #endregion
 
 
@@ -558,7 +561,7 @@ func stage_base_write(attribute_name: StringName, requested: float) -> Attribute
 func _stage_clamped(
 	attribute_set: AttributeSet, attribute_name: StringName, requested: float
 ) -> AttributeBaseMutation:
-	var attribute: AttributeData = attribute_set.get(String(attribute_name))
+	var attribute: AttributeData = attribute_set.attribute_named(attribute_name)
 	var staged: AttributeBaseMutation = AttributeBaseMutation.new()
 	staged.attribute_name = attribute_name
 	staged.old_base_value = attribute.base_value

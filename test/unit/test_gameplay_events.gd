@@ -233,20 +233,11 @@ func test_gameplay_event_wire_round_trips_without_object_references() -> void:
 	said.target_tags = [&"Victim.Living"] as Array[StringName]
 	said.magnitude = 3.5
 
-	var wire: Dictionary = said.to_wire()
-	for key: Variant in wire:
-		var carried: Variant = wire[key]
-		assert_false(carried is Object, "`%s` crosses as a value, not a reference" % key)
-
-	# Through JSON, because that is what this addon's wire is. Handing the
-	# dictionary straight back proved the shape and nothing about the crossing:
-	# JSON has one number type, every integer comes back a float, and a reader
-	# comparing against TYPE_INT refused every event that had actually crossed.
-	var read: Variant = JSON.parse_string(JSON.stringify(wire))
-	assert_true(read is Dictionary, "it is still a dictionary after JSON")
-	var crossed: Dictionary = read if read is Dictionary else {}
-
-	var back: GameplayEventWire = GameplayEventWire.from_wire(crossed)
+	# Through real bytes, in the message an event travels in. Handing the shape
+	# straight back would prove the shape and nothing about the crossing, which
+	# is how a text wire's single number type once got past every test that
+	# never serialised.
+	var back: GameplayEventWire = _crossed(said)
 	assert_not_null(back, "it came back")
 	assert_eq(back.event_tag, CRITICAL, "the tag survived")
 	assert_eq(back.instigator.value, 7, "and who caused it")
@@ -260,11 +251,30 @@ func test_gameplay_event_wire_round_trips_without_object_references() -> void:
 ## disagrees about this contract, and guessing what it meant is how one bad
 ## sender becomes two.
 func test_a_malformed_wire_is_refused_rather_than_repaired() -> void:
-	var wire: Dictionary = GameplayEventWire.new().to_wire()
-	wire[GameplayEventWire.MAGNITUDE_KEY] = "not a number"
+	# An event whose tag is spelled as nothing, which no writer produces.
+	var body: GameplayNetBitWriter = GameplayNetBitWriter.new()
+	body.write_bits(GameplayNetMessage.Kind.GAMEPLAY_EVENT, GameplayNetCodec.KIND_BITS)
+	body.write_signed(7)
+	body.write_bits(1 << GameplayNetCodec.Carries.BODY, GameplayNetCodec.CARRIES_BITS)
+	body.write_bool(false)
+	body.write_bool(false)
+	body.write_text("")
+	body.write_bits(0, GameplayNetEventSerializer.CARRIES_BITS)
+	var packet: PackedByteArray = PackedByteArray([GameplayNetCodec.SCHEMA_VERSION, 0])
+	packet.append_array(body.finish())
 
-	assert_null(GameplayEventWire.from_wire(wire), "a field of the wrong type is a refusal")
-	assert_null(GameplayEventWire.from_wire({}), "and so is nothing at all")
+	assert_null(GameplayNetCodec.decode(packet), "a tag that is not a name is a refusal")
+	assert_eq(
+		GameplayNetCodec.last_refusal, GameplayNetCodec.REASON_MALFORMED, "refused as malformed"
+	)
+
+	var hollow: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.GAMEPLAY_EVENT, GameplayNetEntityId.of(7)
+	)
+	assert_true(
+		GameplayNetCodec.encode(hollow).is_empty(),
+		"and an event message carrying no event never becomes bytes at all"
+	)
 
 
 ## An object with no place to live has no name another machine could resolve, so
@@ -279,10 +289,17 @@ func test_an_unregistered_optional_object_is_omitted_not_stringified() -> void:
 
 	assert_not_null(said, "the event still crosses")
 	assert_null(said.optional_definition, "the nameless object did not")
-	var wire: Dictionary = said.to_wire()
-	# Compared as a bool rather than handed to assert_eq: a Dictionary answers
-	# Variant, tests are not excluded from this project's warnings, and an
-	# untyped argument to a typed parameter is one of them.
-	var says_none: bool = wire[GameplayEventWire.OPTIONAL_KEY] == GameplayNetDefinitionId.NONE
-	assert_true(says_none, "the wire says there was none rather than describing it")
+	var back: GameplayEventWire = _crossed(said)
+	assert_not_null(back, "and it crossed as bytes")
+	assert_null(back.optional_definition, "saying there was none rather than describing it")
+
+
+## One event through the codec, in the message it travels in.
+func _crossed(said: GameplayEventWire) -> GameplayEventWire:
+	var carrying: GameplayNetMessage = GameplayNetMessage.of(
+		GameplayNetMessage.Kind.GAMEPLAY_EVENT, GameplayNetEntityId.of(7)
+	)
+	carrying.event = said
+	var arrived: GameplayNetMessage = GameplayNetCodec.decode(GameplayNetCodec.encode(carrying))
+	return arrived.event if arrived != null else null
 #endregion

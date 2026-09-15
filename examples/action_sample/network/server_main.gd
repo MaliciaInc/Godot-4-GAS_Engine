@@ -1,7 +1,7 @@
 ## The sample, run as the authority, in a process of its own.
 ##
 ##     godot --headless --path . -s res://examples/action_sample/network/server_main.gd \
-##         -- --server --port=47921 --automation --out=user://server.json
+##         -- --server --port=47921 --automation --out=user://server.txt
 ##
 ## What it is for: everything else about this engine's networking is checked
 ## with two runtimes in one process, which is a fine way to check the rules and

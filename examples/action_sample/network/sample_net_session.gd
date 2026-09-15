@@ -238,19 +238,32 @@ static func _by_id(effects: Array[GameplayNetEffectState]) -> Array[GameplayNetE
 ##
 ## A file rather than stdout, because two processes interleaving their output is
 ## exactly the kind of thing that reads as a passing run until somebody looks.
+##
+## One fact per line, its name and its value either side of a tab: a line per
+## step and a line per line of the state. The harness reads it with a split, and
+## nothing in it needs escaping - no step and no line of a reading holds a tab or
+## a newline.
 func report(into: String, converged_on: String) -> void:
-	var receipt: Dictionary = {
-		"role": _role_name(),
-		"fault": fault,
-		"steps": steps,
-		"state": converged_on,
-	}
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append(RECEIPT_ROLE + _role_name())
+	lines.append(RECEIPT_FAULT + fault)
+	for step: String in steps:
+		lines.append(RECEIPT_STEP + step)
+	for line: String in converged_on.split("\n", false):
+		lines.append(RECEIPT_STATE + line)
 	var file: FileAccess = FileAccess.open(into, FileAccess.WRITE)
 	if file == null:
 		push_error("SampleNetSession: cannot write %s" % into)
 		return
-	file.store_string(JSON.stringify(receipt, "\t"))
+	file.store_string("\n".join(lines) + "\n")
 	file.close()
+
+
+## What each line of a receipt starts with. The harness reads the same four.
+const RECEIPT_ROLE: String = "role\t"
+const RECEIPT_FAULT: String = "fault\t"
+const RECEIPT_STEP: String = "step\t"
+const RECEIPT_STATE: String = "state\t"
 
 
 ## Let go of everything, in the order that leaves nothing holding anything.
