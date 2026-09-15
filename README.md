@@ -1,4 +1,14 @@
-# GAS_Engine
+# GAS_Engine (v4.0.0)
+
+> [!IMPORTANT]
+> **"GAS Engine doesn’t adapt to any game... the game is the one that must adapt and be built around GAS as its backbone. I’d say it’s a very good trade-off, especially if you come from another Game Engine."**
+
+### Proof of Concept & Real-World Integration
+If you want to see the framework operating as the actual core of a production environment, switch over to the **`godot-open-rpg_GAS_Engine`** branch.
+
+This branch contains the framework integrated into a real, fully realized game by **GDQuest** (Open RPG). To prove the architecture's power, I completely replaced their native `BattlerStats` system, re-mapped and re-wired the stats for all combat characters, and connected narrative dialogues seamlessly through the integration bridge.
+
+---
 
 **GAS_Engine** is a production-oriented Gameplay Ability System for **Godot 4.7.2**, built for games that need deterministic attributes, effects, abilities, gameplay tags, targeting, cues, and extensible combat rules without turning gameplay state into a pile of loosely typed dictionaries and side effects.
 
