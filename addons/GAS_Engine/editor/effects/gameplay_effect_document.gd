@@ -9,7 +9,7 @@
 ##
 ## There is no shadow model. The thing being edited is the `GameplayEffect`
 ## Resource itself, edits are made on it, and saving is `ResourceSaver` writing
-## that Resource back to its own path. A JSON or Dictionary intermediate would
+## that Resource back to its own path. A serialised or Dictionary intermediate would
 ## be a second description of an effect, and the two would disagree the first
 ## time somebody added a field to one of them.
 ##

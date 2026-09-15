@@ -907,9 +907,12 @@ looked up.
 | `7afb25e` | An overlap sweep is no longer capped at 32 targets by Godot's own default; `max_results` is authored. |
 | `f4653ad` | The dashboard refuses an attribute named for a GDScript keyword, which used to generate a file that would not parse. |
 | `bab301b` | The asset validator reports an empty row in an authored array instead of stepping over it. |
+| `6704f19` | The network wire is a bit stream instead of JSON: typed messages, a names table both machines check by fingerprint, places to the centimetre. Applying an effect no longer re-reads which attributes a set declares, and granting a tag reevaluates only the effects whose requirements name it. |
 
 Of these, `7afb25e` is the one this game could meet: a crowded battle sweeping
-for targets was silently answered with at most thirty-two colliders.
+for targets was silently answered with at most thirty-two colliders. `6704f19`
+reaches it through its half about effects, which every action a battler takes
+applies, and not through its wire: this game runs in one process.
 
 # Checked and not defects
 

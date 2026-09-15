@@ -139,16 +139,6 @@ var registry: GameplayNetRegistry = GameplayNetRegistry.new()
 ## behind it are the owner's business.
 var replication_mode: GameplayNetReplication.Mode = GameplayNetReplication.Mode.MIXED
 
-## What each peer was last told about each entity, so the next delta knows
-## what changed. Keyed by entity and peer together: two peers are told
-## different things under MIXED, so one record of "what was sent" would make
-## the second peer's delta a diff against the first peer's news.
-
-## The last reading of each entity this machine has applied, so an older one
-## arriving late is ignored rather than undoing a newer one.
-
-## What this machine did before it was allowed to, and still owes an answer
-## on. Empty on an authority, which never predicts because it never asks.
 ## How packets leave and arrive, when anything is carrying them.
 ##
 ## Null in a single-player game and in every test that drives two runtimes
@@ -227,6 +217,16 @@ func flush_deferred_batch() -> bool:
 
 
 #region On and off the wire
+## The names this machine agrees with its peers about, which is what lets a tag
+## cross as a position in a table rather than as its text.
+##
+## The project's own tags by default, which two builds of one project share. A
+## game that adds names - its attribute names, say - adds the same ones on every
+## machine: a packet written against a different table is refused as a protocol
+## mismatch rather than read as some other tag.
+var names: GameplayNetNames = GameplayNetNames.from_project()
+
+
 ## Announce a message, and put it on the wire when there is one.
 ##
 ## One funnel rather than a send beside each emit: there are four places that
@@ -248,7 +248,7 @@ func publish(message: GameplayNetMessage) -> void:
 ## about a conversation. A client tells the authority, because there is nobody
 ## else it is entitled to say anything to.
 func _send(message: GameplayNetMessage) -> void:
-	var packet: PackedByteArray = GameplayNetCodec.encode(message)
+	var packet: PackedByteArray = GameplayNetCodec.encode(message, names)
 	if packet.is_empty():
 		return
 	for id: int in _recipients(message):
@@ -281,16 +281,27 @@ func _must_arrive(message: GameplayNetMessage) -> bool:
 
 
 ## A packet arrived. Whatever it decodes to goes through the one door.
+func _on_packet_received(packet: PackedByteArray, from_peer: int) -> void:
+	receive_packet(packet, from_peer)
+
+
+## Bytes that arrived from `from_peer`, decoded against this machine's own names
+## and handed to the door a real packet reaches.
+##
+## Public because anything that carries packets without being a transport - a
+## test's link, a replay - has to reach the same decode a transport does, or it
+## proves the crossing against a table this machine does not hold.
 ##
 ## A packet that does not decode is refused with the codec's own reason rather
-## than dropped: a peer sending a version this build does not speak is a thing
-## somebody has to be able to find out.
-func _on_packet_received(packet: PackedByteArray, from_peer: int) -> void:
-	var message: GameplayNetMessage = GameplayNetCodec.decode(packet)
+## than dropped: a peer sending a version this build does not speak, or written
+## against names this machine does not hold, is a thing somebody has to be able
+## to find out.
+func receive_packet(packet: PackedByteArray, from_peer: int) -> bool:
+	var message: GameplayNetMessage = GameplayNetCodec.decode(packet, names)
 	if message == null:
 		message_refused.emit(null, GameplayNetCodec.last_refusal)
-		return
-	receive_from_peer(message, from_peer)
+		return false
+	return receive_from_peer(message, from_peer)
 #endregion
 
 

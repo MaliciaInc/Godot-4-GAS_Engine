@@ -67,8 +67,7 @@ func finish() -> bool:
 	var message: GameplayNetMessage = GameplayNetMessage.of(
 		GameplayNetMessage.Kind.BATCH, gathered.messages[0].entity
 	)
-	message.payload[GameplayNetMessage.BATCH_KEY] = gathered.to_wire()
-	message.payload[GameplayNetMessage.ATOMIC_KEY] = gathered.atomic
+	message.batch = gathered
 	net.publish(message)
 	return true
 
@@ -90,10 +89,10 @@ func flush() -> bool:
 	return finish()
 ## A batch, read whole and checked whole before any of it is applied.
 ##
-## The batch is read - one unreadable member refuses all of it. Every member
-## is then judged for shape, direction and identity, with nothing applied
-## yet: a batch whose third message is addressed to somebody who is not here
-## must not have applied its first two.
+## The batch is read - one member that is not a message refuses all of it.
+## Every member is then judged for shape, direction and identity, with nothing
+## applied yet: a batch whose third message is addressed to somebody who is not
+## here must not have applied its first two.
 ##
 ## An atomic batch takes one more pass before any of that applying starts -
 ## R7-01. The shallow judging above cannot see a duplicate, an unregistered
@@ -113,11 +112,8 @@ func flush() -> bool:
 func honour(
 	message: GameplayNetMessage, from_peer: int = GameplayNetRegistry.NO_PEER
 ) -> bool:
-	var atomic: bool = message.payload.get(GameplayNetMessage.ATOMIC_KEY, true) == true
-	var batch: GameplayNetBatch = GameplayNetBatch.from_wire(
-		message.payload.get(GameplayNetMessage.BATCH_KEY, []), atomic
-	)
-	if batch == null:
+	var batch: GameplayNetBatch = message.batch
+	if batch == null or not batch.is_readable():
 		net._refuse(message, GameplayNetBatch.REASON_MEMBER_REFUSED)
 		return false
 

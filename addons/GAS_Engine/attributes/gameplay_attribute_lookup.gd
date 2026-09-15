@@ -56,7 +56,7 @@ static func set_for(
 	if reference.set_name == &"":
 		if is_ambiguous(sets, reference.attribute_name):
 			return null
-		return _first_declaring(sets, reference.attribute_name)
+		return first_declaring(sets, reference.attribute_name)
 
 	for attribute_set: AttributeSet in sets:
 		if attribute_set == null or name_of(attribute_set) != reference.set_name:
@@ -76,7 +76,11 @@ static func attribute_for(
 	return attribute_set.attribute_named(reference.attribute_name)
 
 
-static func _first_declaring(
+## The first of those sets that declares the attribute, or null.
+##
+## Public because the runtime answers `find_set` from an index and falls back
+## here when the set the index names no longer holds the attribute.
+static func first_declaring(
 	sets: Array[AttributeSet], attribute_name: StringName
 ) -> AttributeSet:
 	for attribute_set: AttributeSet in sets:
